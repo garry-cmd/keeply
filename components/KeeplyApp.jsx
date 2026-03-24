@@ -250,7 +250,9 @@ const SECTIONS = {
   Deck:        "🛥",
   Dink:        "⛵",
   Electrical:  "⚡",
+  Electronics: "📡",
   Engine:      "🔧",
+  Galley:      "🍳",
   General:     "🚢",
   Hydrovane:   "🧭",
   Navigation:  "🗺",
@@ -394,9 +396,12 @@ function AdminDashboard({ orders, onUpdateStatus }) {
 }
 
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
-function TaskRow({ task, idx, total, onToggle, onComment, showSection }) {
+function TaskRow({ task, idx, total, onToggle, onComment, onDeleteTask, onUpdateTask, showSection }) {
   const [logsOpen, setLogsOpen] = useState(false);
-  const badge = getDueBadge(task.dueDate);
+  const [editing, setEditing] = useState(false);
+  const [editDue, setEditDue] = useState(task.dueDate || task.due_date || "");
+  const [editInterval, setEditInterval] = useState(task.interval || "30 days");
+  const badge = getDueBadge(task.dueDate || task.due_date);
   return (
     <div style={{ borderBottom: idx < total - 1 ? "1px solid #f8fafc" : "none", background: "#fff" }}>
       <div style={{ padding: "12px 20px", display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -407,12 +412,36 @@ function TaskRow({ task, idx, total, onToggle, onComment, showSection }) {
             <span style={{ background: PRIORITY_CFG[task.priority].bg, color: PRIORITY_CFG[task.priority].color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{task.priority}</span>
             {badge && <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
             {showSection && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 600 }}>{SECTIONS[task.section]} {task.section}</span>}
+            {onUpdateTask && <button onClick={() => setEditing(o => !o)} style={{ background: "none", border: "none", fontSize: 11, color: "#9ca3af", cursor: "pointer", padding: "0 2px" }}>✏️</button>}
+            {onDeleteTask && <button onClick={() => { if(window.confirm('Delete this task?')) onDeleteTask(task.id); }} style={{ background: "none", border: "none", fontSize: 11, color: "#dc2626", cursor: "pointer", padding: "0 2px" }}>🗑</button>}
           </div>
           <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-            Every {task.interval}
-            {task.lastService && <span> · Last: {fmt(task.lastService)}</span>}
-            {task.dueDate && <span style={{ color: badge ? badge.color : "#9ca3af", fontWeight: badge ? 700 : 400 }}> · Next due: {fmt(task.dueDate)}</span>}
+            Every {task.interval || (task.interval_days ? `${task.interval_days} days` : "")}
+            {(task.lastService || task.last_service) && <span> · Last: {fmt(task.lastService || task.last_service)}</span>}
+            {(task.dueDate || task.due_date) && <span style={{ color: badge ? badge.color : "#9ca3af", fontWeight: badge ? 700 : 400 }}> · Next due: {fmt(task.dueDate || task.due_date)}</span>}
           </div>
+          {editing && (
+            <div style={{ marginTop: 8, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", marginBottom: 4 }}>DUE DATE</div>
+                <input type="date" value={editDue} onChange={e => setEditDue(e.target.value)}
+                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", marginBottom: 4 }}>FREQUENCY</div>
+                <select value={editInterval} onChange={e => setEditInterval(e.target.value)}
+                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "5px 8px", fontSize: 12, background: "#fff" }}>
+                  {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(iv => (
+                    <option key={iv} value={iv}>{iv}</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={() => { onUpdateTask && onUpdateTask(task.id, { dueDate: editDue, interval: editInterval, interval_days: intervalToDays(editInterval) }); setEditing(false); }}
+                style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+              <button onClick={() => setEditing(false)}
+                style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: 7, padding: "6px 10px", fontSize: 12, cursor: "pointer", color: "#6b7280" }}>Cancel</button>
+            </div>
+          )}
           <div style={{ marginTop: 7 }}>
             <input placeholder="Add a comment (saved on check-off)" value={task.pendingComment} onChange={e => onComment(task.id, e.target.value)}
               style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "5px 9px", fontSize: 11, color: "#374151", outline: "none", boxSizing: "border-box" }} />
@@ -442,7 +471,7 @@ function TaskRow({ task, idx, total, onToggle, onComment, showSection }) {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [view, setView] = useState("customer");
-  const [tab, setTab]   = useState("equipment"); // equipment | repairs | maintenance | documentation
+  const [tab, setTab]   = useState("repairs"); // repairs | maintenance | equipment | documentation | suggested
 
   // Cart
   const [cart, setCart] = useState([]);
@@ -471,7 +500,7 @@ export default function App() {
   const [equipFilter, setEquipFilter]   = useState("All");      // status filter
   const [equipSectionFilter, setEquipSectionFilter] = useState("All"); // section filter
   const [showAddEquip, setShowAddEquip] = useState(false);
-  const [newEquip, setNewEquip]         = useState({ name: "", category: "Engine", status: "good", notes: "" });
+  const [newEquip, setNewEquip] = useState({ name: "", category: "Engine", status: "good", notes: "", serialNumber: "", modelNumber: "", other: "" });
   const [addingPartFor, setAddingPartFor] = useState(null);
   const [newPartForm, setNewPartForm]   = useState({ name: "", url: "", price: "" });
   const [addingDocFor, setAddingDocFor] = useState(null);
@@ -541,7 +570,6 @@ export default function App() {
     const days    = task.interval_days || intervalToDays(task.interval) || 0;
     const newDue  = days > 0 ? addDays(serviceDate, days) : task.due_date;
     const newLogs = [...(task.service_logs || []), { date: serviceDate, comment: task.pendingComment.trim() || "Service completed" }];
-    // Optimistic update
     setTasks(prev => prev.map(t => t.id !== id ? t : {
       ...t,
       last_service: serviceDate, lastService: serviceDate,
@@ -549,7 +577,6 @@ export default function App() {
       service_logs: newLogs,     serviceLogs: newLogs,
       pendingComment: '',
     }));
-    // Persist to Supabase
     await supabase.from('maintenance_tasks')
       .update({ last_service: serviceDate, due_date: newDue, service_logs: newLogs })
       .eq('id', id);
@@ -661,41 +688,7 @@ export default function App() {
   const [showVesselDropdown, setShowVesselDropdown] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState(BLANK_VESSEL);
-  const [editingVesselId, setEditingVesselId] = useState(null);
-
-  // Load vessels from Supabase on mount
-  useEffect(() => {
-    async function loadVessels() {
-      const { data, error } = await supabase
-        .from('vessels')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (error) console.error('Error loading vessels:', error);
-      else {
-        // Map DB column names to camelCase used in the UI
-        const mapped = (data || []).map(v => ({
-          ...v,
-          vesselName: v.vessel_name,
-          vesselType: v.vessel_type,
-          ownerName:  v.owner_name,
-          address:    v.home_port,
-        }));
-        setVessels(mapped);
-        if (mapped.length > 0) setActiveVesselId(mapped[0].id);
-      }
-      setLoading(false);
-    }
-    loadVessels();
-  }, []);
-
-  // Auto-open add vessel panel when DB is empty
-  useEffect(() => {
-    if (!loading && vessels.length === 0) {
-      setEditingVesselId(null);
-      setSettingsForm({ ...BLANK_VESSEL });
-      setShowSettings(true);
-    }
-  }, [loading, vessels.length]);
+  const [editingVesselId, setEditingVesselId] = useState(null); // null = new vessel
 
   const settings = vessels.find(v => v.id === activeVesselId) || vessels[0];
   const prefix   = settings ? (settings.vesselType === "motor" ? "M/V" : "S/V") : "S/V";
@@ -738,7 +731,6 @@ export default function App() {
       const mapped = { ...data, vesselName: data.vessel_name, vesselType: data.vessel_type, ownerName: data.owner_name, address: data.home_port };
       setVessels(vs => [...vs, mapped]);
       setActiveVesselId(data.id);
-      // Seed the default maintenance tasks for the new vessel
       const seedTasks = MAINTENANCE_TASKS.map(t => ({
         vessel_id:     data.id,
         task:          t.task,
@@ -762,27 +754,69 @@ export default function App() {
     if (activeVesselId === id) setActiveVesselId(remaining[0]?.id);
     setShowSettings(false);
   };
+  // Load vessels from Supabase on mount
+  useEffect(() => {
+    async function loadVessels() {
+      const { data, error } = await supabase
+        .from('vessels').select('*').order('created_at', { ascending: true });
+      if (error) console.error('Error loading vessels:', error);
+      else {
+        const mapped = (data || []).map(v => ({
+          ...v, vesselName: v.vessel_name, vesselType: v.vessel_type,
+          ownerName: v.owner_name, address: v.home_port,
+        }));
+        setVessels(mapped);
+        if (mapped.length > 0) setActiveVesselId(mapped[0].id);
+      }
+      setLoading(false);
+    }
+    loadVessels();
+  }, []);
 
-  // Load tasks from Supabase whenever the active vessel changes
+  useEffect(() => {
+    if (!loading && vessels.length === 0) {
+      setEditingVesselId(null);
+      setSettingsForm({ ...BLANK_VESSEL });
+      setShowSettings(true);
+    }
+  }, [loading, vessels.length]);
+
   useEffect(() => {
     if (!activeVesselId) return;
     async function loadTasks() {
       const { data, error } = await supabase
-        .from('maintenance_tasks')
-        .select('*')
-        .eq('vessel_id', activeVesselId)
-        .order('created_at');
+        .from('maintenance_tasks').select('*')
+        .eq('vessel_id', activeVesselId).order('created_at');
       if (error) { console.error('Error loading tasks:', error); return; }
       setTasks((data || []).map(t => ({
-        ...t,
-        lastService:    t.last_service,
-        dueDate:        t.due_date,
-        serviceLogs:    t.service_logs || [],
-        pendingComment: '',
+        ...t, lastService: t.last_service, dueDate: t.due_date,
+        serviceLogs: t.service_logs || [], pendingComment: '',
       })));
     }
     loadTasks();
   }, [activeVesselId]);
+
+  const updateTask = async (id, changes) => {
+    setTasks(prev => prev.map(t => t.id !== id ? t : {
+      ...t, ...changes,
+      due_date:      changes.dueDate        || t.due_date,
+      interval_days: changes.interval_days  || t.interval_days,
+    }));
+    await supabase.from('maintenance_tasks')
+      .update({ due_date: changes.dueDate, interval_days: changes.interval_days })
+      .eq('id', id);
+  };
+
+  // ── DELETE FUNCTIONS ──
+  const deleteTask = async (id) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    await supabase.from('maintenance_tasks').delete().eq('id', id);
+  };
+
+  const deleteRepair = (id) => setRepairs(prev => prev.filter(r => r.id !== id));
+
+  const deleteEquipment = (id) => setEquipment(eq => eq.filter(e => e.id !== id));
+
   const openRepairs = repairs.filter(r => r.status === "open").length;
   const criticalMaint = maintTasks.filter(t => getTaskUrgency(t) === "critical").length;
   const totalAlerts = openRepairs + criticalMaint;
@@ -872,7 +906,7 @@ export default function App() {
           )}
           {view === "customer" && <button onClick={() => setShowCartPanel(true)} style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>🛒 {cartQty > 0 ? `(${cartQty})` : ""}</button>}
           {/* Settings gear — edits active vessel */}
-          <button onClick={() => settings ? openEditVessel(settings) : openAddVessel ()}
+          <button onClick={() => settings ? openEditVessel(settings) : openAddVessel()}
             style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "none", borderRadius: 8, width: 34, height: 34, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
             ⚙️
           </button>
@@ -897,7 +931,7 @@ export default function App() {
       {view === "customer" && (
         <>
           <nav style={s.nav}>
-            {[["equipment","⚙ My Equipment"],["repairs","🔧 Repairs"],["maintenance","📅 Maintenance"],["documentation","📄 Documentation"],["suggested","🛒 Suggested Items"]].map(([id,label]) => (
+            {[["repairs","🔧 Repairs"],["maintenance","📅 Maintenance"],["equipment","⚙ My Equipment"],["documentation","📄 Documentation"],["suggested","🛒 Suggested Items"]].map(([id,label]) => (
               <button key={id} style={s.navBtn(tab===id)} onClick={() => setTab(id)}>{label}</button>
             ))}
           </nav>
@@ -950,7 +984,10 @@ export default function App() {
                           <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1d23" }}>{eq.name}</div>
                           <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
                             {SECTIONS[eq.category] || ""} {eq.category} · {fmt(eq.lastService)}
-                            {eq.notes && <span style={{ fontStyle: "italic", color: "#b0b8c8" }}> · {eq.notes}</span>}
+                            {eq.modelNumber && <span style={{ color: "#b0b8c8" }}> · Model: {eq.modelNumber}</span>}
+{eq.serialNumber && <span style={{ color: "#b0b8c8" }}> · S/N: {eq.serialNumber}</span>}
+{eq.notes && <span style={{ fontStyle: "italic", color: "#b0b8c8" }}> · {eq.notes}</span>}
+{eq.other && <span style={{ fontStyle: "italic", color: "#b0b8c8" }}> · {eq.other}</span>}
                           </div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -973,6 +1010,8 @@ export default function App() {
                             <span style={{ fontSize: 9, fontWeight: 700, color: isOpen && activeTab === "docs" ? "#7c3aed" : "#6b7280" }}>{docs.length}</span>
                             {docsAvail.length > 0 && <span style={{ position: "absolute", top: -4, right: -4, background: "#7c3aed", color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{docsAvail.length}</span>}
                           </button>
+                          <button onClick={e => { e.stopPropagation(); if(window.confirm('Delete ' + eq.name + '?')) deleteEquipment(eq.id); }}
+                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 15, padding: "2px 4px" }}>🗑</button>
                           <span style={{ color: "#c4cdd8", fontSize: 16, cursor: "pointer" }} onClick={() => setExpandedEquip(isOpen ? null : eq.id)}>{isOpen ? "▾" : "▸"}</span>
                         </div>
                       </div>
@@ -1163,9 +1202,13 @@ export default function App() {
                         </div>
                         <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{fmt(repair.date)} · {repair.status === "open" ? "Open" : "Closed"}</div>
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px", background: repair.status === "open" ? "#fff7ed" : "#f0fdf4", color: repair.status === "open" ? "#ea580c" : "#16a34a", flexShrink: 0 }}>
-                        {repair.status === "open" ? "Open" : "Closed"}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px", background: repair.status === "open" ? "#fff7ed" : "#f0fdf4", color: repair.status === "open" ? "#ea580c" : "#16a34a" }}>
+                          {repair.status === "open" ? "Open" : "Closed"}
+                        </span>
+                        <button onClick={() => { if(window.confirm('Delete this repair?')) deleteRepair(repair.id); }}
+                          style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 16, padding: "2px 4px" }}>🗑</button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1233,7 +1276,7 @@ export default function App() {
                         </div>
                         {isOpen && (
                           <div style={{ borderTop: "1px solid #f1f5f9" }}>
-                            {secTasks.map((task,idx) => <TaskRow key={task.id} task={task} idx={idx} total={secTasks.length} onToggle={toggleTask} onComment={updateComment} />)}
+                            {secTasks.map((task,idx) => <TaskRow key={task.id} task={task} idx={idx} total={secTasks.length} onToggle={toggleTask} onComment={updateComment} onDeleteTask={deleteTask} onUpdateTask={updateTask} />)}
                           </div>
                         )}
                       </div>
@@ -1242,7 +1285,7 @@ export default function App() {
                 ) : (
                   sortedTasks.length === 0
                     ? <div style={{ textAlign: "center", padding: "48px 0", color: "#9ca3af" }}><div style={{ fontSize: 32 }}>✅</div><div style={{ marginTop: 8 }}>No tasks match this filter</div></div>
-                    : sortedTasks.map((task,idx) => <TaskRow key={task.id} task={task} idx={idx} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} showSection />)
+                    : sortedTasks.map((task,idx) => <TaskRow key={task.id} task={task} idx={idx} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDeleteTask={deleteTask} onUpdateTask={updateTask} showSection />)
                 )}
               </>
             )}
@@ -1269,7 +1312,7 @@ export default function App() {
 
                 <div style={s.card}>
                   {docTasks.sort((a,b) => PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order)
-                    .map((task, idx) => <TaskRow key={task.id} task={task} idx={idx} total={docTasks.length} onToggle={toggleTask} onComment={updateComment} />)}
+                    .map((task, idx) => <TaskRow key={task.id} task={task} idx={idx} total={docTasks.length} onToggle={toggleTask} onComment={updateComment} onDeleteTask={deleteTask} onUpdateTask={updateTask} />)}
                   {docTasks.length === 0 && <div style={{ padding: "24px 20px", color: "#9ca3af", fontSize: 13 }}>No documentation items yet. Tap + to add one.</div>}
                 </div>
               </>
@@ -1468,7 +1511,10 @@ export default function App() {
           <div style={s.modalBox}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Add Equipment</div>
             <input placeholder="Name *" value={newEquip.name} onChange={e => setNewEquip({...newEquip, name: e.target.value})} style={s.inp} />
+            <input placeholder="Model Number" value={newEquip.modelNumber} onChange={e => setNewEquip({...newEquip, modelNumber: e.target.value})} style={s.inp} />
+            <input placeholder="Serial Number" value={newEquip.serialNumber} onChange={e => setNewEquip({...newEquip, serialNumber: e.target.value})} style={s.inp} />
             <input placeholder="Notes" value={newEquip.notes} onChange={e => setNewEquip({...newEquip, notes: e.target.value})} style={s.inp} />
+            <input placeholder="Other" value={newEquip.other} onChange={e => setNewEquip({...newEquip, other: e.target.value})} style={s.inp} />
             <select value={newEquip.category} onChange={e => setNewEquip({...newEquip, category: e.target.value})} style={s.sel}>
               {EQ_CATEGORIES.sort().map(c => <option key={c} value={c}>{SECTIONS[c] || ""} {c}</option>)}
             </select>
