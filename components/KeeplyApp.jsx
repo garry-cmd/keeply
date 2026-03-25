@@ -787,17 +787,13 @@ export default function App() {
     setSaving(true);
     try {
       const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open" };
-      console.log("[addRepair] saving payload:", payload);
       const created = await supa("repairs", { method: "POST", body: payload });
-      console.log("[addRepair] saved:", created);
       const newR = created[0];
       setRepairs(function(prev){ return [newR, ...prev]; });
       setNewRepair({ description: "", section: "Engine" });
       setShowAddRepair(false);
-      console.log("[addRepair] calling getSuggestionsForRepair for:", newR.id);
       getSuggestionsForRepair(newR);
     } catch(err){
-      console.error("[addRepair] FAILED:", err.message);
       setRepairs(function(prev){ return [{ id: "local-" + Date.now(), date: today(), section: newRepair.section, description: newRepair.description, status: "open", vessel_id: activeVesselId }, ...prev]; });
       setNewRepair({ description: "", section: "Engine" });
       setShowAddRepair(false);
@@ -818,11 +814,26 @@ export default function App() {
     const repairId = repair.id;
     setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = "loading"; return n; });
     try {
+      // Small delay to avoid rate limiting when multiple cards open at once
+      await new Promise(function(resolve){ setTimeout(resolve, 500); });
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ context: repair.section + ": " + repair.description, type: "repair" })
       });
+      if (res.status === 429) {
+        // Rate limited — retry after 3 seconds
+        await new Promise(function(resolve){ setTimeout(resolve, 3000); });
+        const retry = await fetch("/api/suggest-parts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ context: repair.section + ": " + repair.description, type: "repair" })
+        });
+        const retryData = await retry.json();
+        if (retryData.error) throw new Error(retryData.error);
+        setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = retryData.suggestions || []; return n; });
+        return;
+      }
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = data.suggestions || []; return n; });
@@ -838,11 +849,26 @@ export default function App() {
     const eqId = eq.id;
     setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "loading"; return n; });
     try {
+      // Small delay to avoid rate limiting when multiple cards open at once
+      await new Promise(function(resolve){ setTimeout(resolve, 500); });
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ context: eq.name + " " + eq.category + (eq.notes ? " " + eq.notes : ""), type: "equipment" })
       });
+      if (res.status === 429) {
+        // Rate limited — retry after 3 seconds
+        await new Promise(function(resolve){ setTimeout(resolve, 3000); });
+        const retry = await fetch("/api/suggest-parts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ context: eq.name + " " + eq.category + (eq.notes ? " " + eq.notes : ""), type: "equipment" })
+        });
+        const retryData = await retry.json();
+        if (retryData.error) throw new Error(retryData.error);
+        setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = retryData.suggestions || []; return n; });
+        return;
+      }
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = data.suggestions || []; return n; });
