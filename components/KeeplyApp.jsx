@@ -808,14 +808,17 @@ export default function App() {
     setSaving(true);
     try {
       const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open" };
+      console.log("[addRepair] saving payload:", payload);
       const created = await supa("repairs", { method: "POST", body: payload });
+      console.log("[addRepair] saved:", created);
       const newR = created[0];
       setRepairs(function(prev){ return [newR, ...prev]; });
       setNewRepair({ description: "", section: "Engine" });
       setShowAddRepair(false);
+      console.log("[addRepair] calling getSuggestionsForRepair for:", newR.id);
       getSuggestionsForRepair(newR);
     } catch(err){
-      // Repairs table missing — fall back to in-memory
+      console.error("[addRepair] FAILED:", err.message);
       setRepairs(function(prev){ return [{ id: "local-" + Date.now(), date: today(), section: newRepair.section, description: newRepair.description, status: "open", vessel_id: activeVesselId }, ...prev]; });
       setNewRepair({ description: "", section: "Engine" });
       setShowAddRepair(false);
