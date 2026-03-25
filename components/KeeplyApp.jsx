@@ -550,6 +550,9 @@ export default function App() {
   const switchVessel = useCallback(async function(vid) {
     setActiveVesselId(vid);
     setLoading(true);
+    setEquipSuggestions({});
+    setAiSuggestions({});
+    setExpandedEquip(null);
     try {
       const eq = await supa("equipment", { query: "vessel_id=eq." + vid + "&order=created_at" });
       setEquipment((eq || []).map(function(e){
@@ -792,14 +795,10 @@ export default function App() {
         'Return ONLY a JSON array like: [{"id":"p5","reason":"why this part is needed"}].',
         "Only suggest parts directly relevant to this repair. Parts catalog: " + partsJson
       ].join(" ");
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 400,
-          messages: [{ role: "user", content: prompt }]
-        })
+        body: JSON.stringify({ prompt })
       });
       const data = await res.json();
       const text = data.content && data.content[0] ? data.content[0].text : "[]";
@@ -830,14 +829,10 @@ export default function App() {
         'Return ONLY a JSON array like: [{"id":"p5","reason":"why this part is needed"}].',
         "Only suggest parts directly relevant to this equipment. Parts catalog: " + partsJson
       ].filter(Boolean).join(" ");
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 400,
-          messages: [{ role: "user", content: prompt }]
-        })
+        body: JSON.stringify({ prompt })
       });
       const data = await res.json();
       const text = data.content && data.content[0] ? data.content[0].text : "[]";
