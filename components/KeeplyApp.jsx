@@ -807,7 +807,6 @@ export default function App() {
       if (filterUrgency === "overdue"  && u !== "overdue")  return false;
       if (filterUrgency === "due-soon" && u !== "due-soon") return false;
     }
-    if (searchQuery && t.task.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0 && t.section.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0) return false;
     return true;
   });
   const sortedTasks = [...visibleTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; });
@@ -832,7 +831,6 @@ export default function App() {
   const filteredEquip = equipment.filter(function(e){
     if (equipFilter !== "All" && e.status !== equipFilter) return false;
     if (equipSectionFilter !== "All" && e.category !== equipSectionFilter) return false;
-    if (searchQuery && e.name.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0 && e.category.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0) return false;
     return true;
   });
 
@@ -840,7 +838,6 @@ export default function App() {
   const criticalMaint  = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).length;
   const totalAlerts    = openRepairs + criticalMaint;
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
-  const [searchQuery, setSearchQuery]         = useState("");
 
   const settings  = vessels.find(function(v){ return v.id === activeVesselId; }) || vessels[0] || {};
   const prefix    = settings.vesselType === "motor" ? "M/V" : "S/V";
@@ -946,17 +943,6 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Search bar */}
-          <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: 0.6 }}>🔍</span>
-            <input
-              value={searchQuery}
-              onChange={function(e){ setSearchQuery(e.target.value); }}
-              placeholder="Search…"
-              style={{ width: 200, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 12px 6px 32px", color: "#fff", fontSize: 12, outline: "none", boxSizing: "border-box" }}
-            />
-            {searchQuery && <button onClick={function(){ setSearchQuery(""); }} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>}
-          </div>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Saving…</span>}
           {totalAlerts > 0 && (
             <button onClick={function(){ setShowUrgentPanel(true); }} style={{ background: "#dc2626", border: "none", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
