@@ -146,23 +146,10 @@ const DOC_TYPE_CFG = {
   "Other":       { color: "#374151", bg: "#f3f4f6", icon: "📄" },
 };
 
-const MOCK_ORDERS = [
-  { id: "ORD-1041", customer: "S/V Patience — Bob & Linda Marsh", email: "bmarsh@cruisers.net", date: "2026-03-20", status: "pending", total: 213, items: [{ ...PARTS_CATALOG[2], qty: 1 }, { ...PARTS_CATALOG[3], qty: 1 }, { ...PARTS_CATALOG[1], qty: 2 }], vessel: "Hallberg-Rassy 42", location: "Barra de Navidad, Jalisco" },
-  { id: "ORD-1040", customer: "M/Y Blue Horizon — Capt. Dave Torres", email: "dtorres@bluehor.com", date: "2026-03-19", status: "ordered", total: 357, items: [{ ...PARTS_CATALOG[10], qty: 1 }, { ...PARTS_CATALOG[11], qty: 2 }, { ...PARTS_CATALOG[6], qty: 1 }], vessel: "Nordhavn 47", location: "La Cruz, Nayarit" },
-  { id: "ORD-1039", customer: "S/V Zephyr — Anna Kowalski", email: "anna@svzephyr.com", date: "2026-03-17", status: "fulfilled", total: 89, items: [{ ...PARTS_CATALOG[0], qty: 1 }], vessel: "Catalina 38", location: "Manzanillo, Colima" },
-];
-
-const VENDOR_COLORS = { westmarine: "#0057a8", defender: "#b91c1c", fishery: "#15803d" };
-const VENDOR_LABELS = { westmarine: "West Marine", defender: "Defender", fishery: "Fishery Supply" };
 const STATUS_CFG = {
   "good":          { label: "Good",          color: "#16a34a", bg: "#f0fdf4", dot: "#16a34a" },
   "watch":         { label: "Watch",         color: "#d97706", bg: "#fffbeb", dot: "#d97706" },
   "needs-service": { label: "Needs Service", color: "#dc2626", bg: "#fef2f2", dot: "#dc2626" },
-};
-const ORDER_STATUS = {
-  pending:   { label: "Pending",   bg: "#fef9c3", color: "#854d0e" },
-  ordered:   { label: "Ordered",   bg: "#dbeafe", color: "#1e40af" },
-  fulfilled: { label: "Fulfilled", bg: "#dcfce7", color: "#166534" },
 };
 const PRIORITY_CFG = {
   critical: { color: "#dc2626", bg: "#fee2e2", order: 0 },
@@ -229,102 +216,136 @@ function LoadingScreen() {
   );
 }
 
-// ─── STRIPE CHECKOUT ─────────────────────────────────────────────────────────
-function StripeCheckout({ cart, onSuccess, onClose }) {
-  const [step, setStep] = useState("form");
-  const [form, setForm] = useState({ email: "", name: "", vessel: "", card: "", exp: "", cvc: "" });
-  const total = cart.reduce(function(s, i){ return s + i.retailPrice * i.qty; }, 0);
-  const handlePay = function() {
-    if (!form.email || !form.name || !form.card) return;
-    setStep("processing");
-    setTimeout(function(){
-      setStep("done");
-      setTimeout(function(){ onSuccess({ ...form, total, items: cart, id: "ORD-" + (1042 + Math.floor(Math.random() * 10)) }); }, 1800);
-    }, 2000);
-  };
-  const inp = function(field, ph, half) {
-    return <input placeholder={ph} value={form[field]} onChange={function(e){ setForm({ ...form, [field]: e.target.value }); }} style={{ width: half ? "calc(50% - 6px)" : "100%", border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 14, background: "#fafafa", boxSizing: "border-box", outline: "none" }} />;
-  };
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,20,30,0.55)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 420, boxShadow: "0 24px 80px rgba(0,0,0,0.22)", overflow: "hidden" }}>
-        <div style={{ background: "#0f4c8a", padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div><div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>BilgeBoss Checkout</div>
-          <div style={{ color: "#93c5fd", fontSize: 13, marginTop: 2 }}>{cart.length} item{cart.length !== 1 ? "s" : ""} · <strong style={{ color: "#fff" }}>${total.toFixed(2)}</strong></div></div>
-          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
-        </div>
-        <div style={{ padding: 24 }}>
-          {step === "form" && (<>
-            <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", marginBottom: 20 }}>
-              {cart.map(function(item){ return (<div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "3px 0" }}><span>{item.name} × {item.qty}</span><span style={{ fontWeight: 600 }}>${(item.retailPrice * item.qty).toFixed(2)}</span></div>); })}
-              <div style={{ borderTop: "1px solid #e2e8f0", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 14 }}><span>Total</span><span>${total.toFixed(2)}</span></div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.8px" }}>CONTACT</div>
-              {inp("email","Email address")}{inp("name","Full name")}{inp("vessel","Vessel name (optional)")}
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.8px", marginTop: 4 }}>PAYMENT</div>
-              {inp("card","Card number")}<div style={{ display: "flex", gap: 12 }}>{inp("exp","MM / YY",true)}{inp("cvc","CVC",true)}</div>
-            </div>
-            <button onClick={handlePay} style={{ width: "100%", background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: 14, fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 20 }}>Pay ${total.toFixed(2)} →</button>
-            <div style={{ textAlign: "center", fontSize: 11, color: "#9ca3af", marginTop: 10 }}>🔒 Secured by Stripe</div>
-          </>)}
-          {step === "processing" && <div style={{ textAlign: "center", padding: "40px 0" }}><div style={{ fontSize: 40 }}>⏳</div><div style={{ fontWeight: 700, fontSize: 16, marginTop: 12 }}>Processing…</div></div>}
-          {step === "done" && <div style={{ textAlign: "center", padding: "40px 0" }}><div style={{ fontSize: 48 }}>✅</div><div style={{ fontWeight: 700, fontSize: 18, color: "#16a34a", marginTop: 12 }}>Order Confirmed!</div></div>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── ADMIN DASHBOARD ─────────────────────────────────────────────────────────
-function AdminDashboard({ orders, onUpdateStatus }) {
-  const [selected, setSelected] = useState(null);
-  const pending = orders.filter(function(o){ return o.status === "pending"; }).length;
+function AdminDashboard() {
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(function(){
+    async function loadMetrics() {
+      try {
+        const [vessels, equipment, tasks, repairs, storage] = await Promise.all([
+          supa("vessels", { query: "order=created_at.desc" }),
+          supa("equipment", { query: "select=id,vessel_id,status,category,docs" }),
+          supa("maintenance_tasks", { query: "select=id,vessel_id,section,priority,due_date,last_service" }),
+          supa("repairs", { query: "select=id,vessel_id,section,date,status" }).catch(function(){ return []; }),
+          fetch("https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/list/vessel-docs", {
+            method: "POST",
+            headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ prefix: "", limit: 500 })
+          }).then(function(r){ return r.json(); }).catch(function(){ return []; })
+        ]);
+
+        const now = new Date(); now.setHours(0,0,0,0);
+        const overdue = (tasks || []).filter(function(t){ return t.due_date && new Date(t.due_date) < now; });
+        const files = (storage || []).filter(function(f){ return f.id; });
+        const totalSize = files.reduce(function(s, f){ return s + (f.metadata && f.metadata.size ? f.metadata.size : 0); }, 0);
+        const totalDocs = (equipment || []).reduce(function(s, e){ return s + ((e.docs || []).length); }, 0);
+
+        // Recent vessels (last 7 days)
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        const recentVessels = (vessels || []).filter(function(v){ return new Date(v.created_at) > weekAgo; });
+
+        setMetrics({
+          vessels: vessels || [],
+          totalVessels: (vessels || []).length,
+          recentVessels: recentVessels.length,
+          sailboats: (vessels || []).filter(function(v){ return v.vessel_type === "sail"; }).length,
+          motorboats: (vessels || []).filter(function(v){ return v.vessel_type === "motor"; }).length,
+          totalEquipment: (equipment || []).length,
+          equipGood: (equipment || []).filter(function(e){ return e.status === "good"; }).length,
+          equipWatch: (equipment || []).filter(function(e){ return e.status === "watch"; }).length,
+          equipNeeds: (equipment || []).filter(function(e){ return e.status === "needs-service"; }).length,
+          totalTasks: (tasks || []).length,
+          overdueTasks: overdue.length,
+          totalRepairs: (repairs || []).length,
+          openRepairs: (repairs || []).filter(function(r){ return r.status === "open"; }).length,
+          totalFiles: files.length,
+          totalDocsAttached: totalDocs,
+          storageSizeMB: (totalSize / 1048576).toFixed(2),
+          repairs: repairs || [],
+        });
+      } catch(e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMetrics();
+  }, []);
+
+  if (loading) return <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>Loading metrics…</div>;
+  if (!metrics) return <div style={{ textAlign: "center", padding: 48, color: "#dc2626" }}>Failed to load metrics.</div>;
+
+  const m = metrics;
+  const card = function(val, label, sub, color, bg) {
+    return (
+      <div style={{ background: bg, border: "1px solid " + color + "25", borderRadius: 12, padding: "16px 18px" }}>
+        <div style={{ fontSize: 32, fontWeight: 800, color: color, lineHeight: 1 }}>{val}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: color, marginTop: 4 }}>{label}</div>
+        {sub && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{sub}</div>}
+      </div>
+    );
+  };
+
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 24 }}>
-        {[{ label: "Pending Orders", val: orders.filter(function(o){ return o.status==="pending"; }).length, color: "#854d0e", bg: "#fef9c3" },
-          { label: "Ordered / In Transit", val: orders.filter(function(o){ return o.status==="ordered"; }).length, color: "#1e40af", bg: "#dbeafe" },
-          { label: "Fulfilled This Month", val: orders.filter(function(o){ return o.status==="fulfilled"; }).length, color: "#166534", bg: "#dcfce7" },
-        ].map(function(st){ return (<div key={st.label} style={{ background: st.bg, border: "1px solid " + st.color + "25", borderRadius: 12, padding: "14px 18px" }}><div style={{ fontSize: 28, fontWeight: 800, color: st.color, lineHeight: 1 }}>{st.val}</div><div style={{ fontSize: 12, color: "#6b7280", marginTop: 4, fontWeight: 500 }}>{st.label}</div></div>); })}
+      <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>Admin Dashboard</div>
+
+      {/* Vessels & Users */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 10 }}>VESSELS & USERS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 24 }}>
+        {card(m.totalVessels, "Total Vessels", m.sailboats + " sail · " + m.motorboats + " motor", "#1e40af", "#eff6ff")}
+        {card(m.recentVessels, "New This Week", "registered in last 7 days", "#7c3aed", "#f5f3ff")}
+        {card(m.totalEquipment, "Equipment Items", m.equipGood + " good · " + m.equipWatch + " watch · " + m.equipNeeds + " needs service", "#0e7490", "#ecfeff")}
       </div>
-      {pending > 0 && (<div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 18 }}>🔔</span><span style={{ fontSize: 13, fontWeight: 600, color: "#92400e" }}>{pending} new order{pending !== 1 ? "s" : ""} need{pending === 1 ? "s" : ""} to be placed with your wholesale supplier.</span></div>)}
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>All Orders</div>
-      {orders.map(function(order){ return (
-        <div key={order.id} style={{ background: "#fff", border: "1px solid #e8eaed", borderRadius: 12, marginBottom: 10, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ setSelected(selected === order.id ? null : order.id); }}>
+
+      {/* Vessel list */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", fontWeight: 700, fontSize: 14 }}>All Vessels</div>
+        {m.vessels.map(function(v, i){ return (
+          <div key={v.id} style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < m.vessels.length - 1 ? "1px solid #f8fafc" : "none" }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 14, fontWeight: 700 }}>{order.id}</span><span style={{ background: ORDER_STATUS[order.status].bg, color: ORDER_STATUS[order.status].color, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{ORDER_STATUS[order.status].label}</span></div>
-              <div style={{ fontSize: 13, color: "#374151", marginTop: 3 }}>{order.customer}</div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 1 }}>{order.vessel} · {order.location} · {fmt(order.date)}</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#0f4c8a" }}>${order.total}</div>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{order.items.length} items</div>
-              <div style={{ fontSize: 18, color: "#9ca3af", marginTop: 4 }}>{selected === order.id ? "▾" : "▸"}</div>
-            </div>
-          </div>
-          {selected === order.id && (
-            <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 10 }}>ORDER ITEMS</div>
-              {Object.entries(order.items.reduce(function(acc, item){ const v = item.vendor; if (!acc[v]) acc[v] = []; acc[v].push(item); return acc; }, {})).map(function(entry){ const vendor = entry[0]; const items = entry[1]; return (
-                <div key={vendor} style={{ marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}><span style={{ background: VENDOR_COLORS[vendor], color: "#fff", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{VENDOR_LABELS[vendor]}</span><span style={{ fontSize: 11, color: "#9ca3af" }}>wholesale →</span></div>
-                  {items.map(function(item){ return (<div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "5px 0 5px 8px", borderLeft: "3px solid " + VENDOR_COLORS[vendor] + "30", marginBottom: 2 }}><span>{item.name} <span style={{ color: "#9ca3af" }}>× {item.qty}</span></span><div><span style={{ fontWeight: 600 }}>${(item.retailPrice * item.qty).toFixed(2)}</span><div style={{ fontSize: 10, color: "#9ca3af" }}>SKU: {item.sku}</div></div></div>); })}
-                </div>
-              ); })}
-              <div style={{ borderTop: "1px solid #e8eaed", paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>📧 <a href={"mailto:" + order.email} style={{ color: "#0f4c8a" }}>{order.email}</a></div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {order.status === "pending" && <button onClick={function(){ onUpdateStatus(order.id, "ordered"); }} style={{ background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✓ Ordered</button>}
-                  {order.status === "ordered" && <button onClick={function(){ onUpdateStatus(order.id, "fulfilled"); }} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✓ Fulfilled</button>}
-                  {order.status === "fulfilled" && <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>✓ Complete</span>}
-                </div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{v.vessel_type === "motor" ? "M/V" : "S/V"} {v.vessel_name}</div>
+              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                {v.owner_name || "No owner name"} {v.home_port ? "· " + v.home_port : ""}
               </div>
             </div>
-          )}
+            <div style={{ fontSize: 11, color: "#9ca3af" }}>Joined {fmt(v.created_at.split("T")[0])}</div>
+          </div>
+        ); })}
+      </div>
+
+      {/* Maintenance & Repairs */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 10 }}>MAINTENANCE & REPAIRS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 24 }}>
+        {card(m.totalTasks, "Total Tasks", "across all vessels", "#374151", "#f9fafb")}
+        {card(m.overdueTasks, "Overdue Tasks", "past due date", "#dc2626", "#fef2f2")}
+        {card(m.openRepairs, "Open Repairs", m.totalRepairs + " total logged", "#d97706", "#fffbeb")}
+      </div>
+
+      {/* Repairs list */}
+      {m.repairs.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", fontWeight: 700, fontSize: 14 }}>All Repairs</div>
+          {m.repairs.map(function(r, i){ return (
+            <div key={r.id} style={{ padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < m.repairs.length - 1 ? "1px solid #f8fafc" : "none" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ background: r.status === "open" ? "#fee2e2" : "#f0fdf4", color: r.status === "open" ? "#dc2626" : "#16a34a", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{r.status.toUpperCase()}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px" }}>{r.section}</span>
+              </div>
+              <div style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</div>
+            </div>
+          ); })}
         </div>
-      ); })}
+      )}
+
+      {/* Storage */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 10 }}>FILES & STORAGE</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 24 }}>
+        {card(m.totalFiles, "Files Uploaded", m.storageSizeMB + " MB used", "#7c3aed", "#f5f3ff")}
+        {card(m.totalDocsAttached, "Docs on Equipment", "manuals, parts lists, etc.", "#0e7490", "#ecfeff")}
+      </div>
     </div>
   );
 }
@@ -391,23 +412,11 @@ export default function App() {
 
   // ── Cart (in-memory only, intentional) ──
   const [cart, setCart]             = useState([]);
-  const [showCheckout, setShowCheckout]     = useState(false);
   const [showCartPanel, setShowCartPanel]   = useState(false);
   const addToCart    = function(part){ setCart(function(prev){ const ex = prev.find(function(i){ return i.id === part.id; }); if (ex) return prev.map(function(i){ return i.id === part.id ? { ...i, qty: i.qty + 1 } : i; }); return [...prev, { ...part, qty: 1 }]; }); };
   const removeFromCart = function(id){ setCart(function(prev){ return prev.filter(function(i){ return i.id !== id; }); }); };
   const cartTotal = cart.reduce(function(s,i){ return s + i.retailPrice * i.qty; }, 0);
   const cartQty   = cart.reduce(function(s,i){ return s + i.qty; }, 0);
-
-  // ── Orders (in-memory / demo) ──
-  const [orders, setOrders]         = useState(MOCK_ORDERS);
-  const [orderSuccess, setOrderSuccess]     = useState(null);
-  const handleOrderSuccess = function(orderData){
-    setOrders(function(prev){ return [{ id: orderData.id, customer: orderData.name + (orderData.vessel ? " — " + orderData.vessel : ""), email: orderData.email, date: today(), status: "pending", total: orderData.total, items: orderData.items, vessel: orderData.vessel || "Unknown", location: "Self-reported" }, ...prev]; });
-    setCart([]); setShowCheckout(false); setShowCartPanel(false);
-    setOrderSuccess(orderData.id);
-    setTimeout(function(){ setOrderSuccess(null); }, 4000);
-  };
-  const updateOrderStatus = function(id, s){ setOrders(function(prev){ return prev.map(function(o){ return o.id === id ? { ...o, status: s } : o; }); }); };
 
   // ── Vessels (Supabase) ──
   const [vessels, setVessels]               = useState([]);
@@ -985,7 +994,7 @@ export default function App() {
 
       <div style={s.main}>
         {/* ── ADMIN VIEW ── */}
-        {view === "admin" && <AdminDashboard orders={orders} onUpdateStatus={updateOrderStatus} />}
+        {view === "admin" && <AdminDashboard />}
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "equipment" && (<>
@@ -1509,7 +1518,7 @@ export default function App() {
             {cart.length > 0 && (
               <div style={{ padding: 20, borderTop: "1px solid #e8eaed" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 800, marginBottom: 14 }}><span>Total</span><span>${cartTotal.toFixed(2)}</span></div>
-                <button onClick={function(){ setShowCartPanel(false); setShowCheckout(true); }} style={{ width: "100%", background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: 13, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Checkout →</button>
+                <button onClick={function(){ setShowCartPanel(false); }} style={{ width: "100%", background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: 13, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Checkout →</button>
                 <div style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 8 }}>🔒 Secure checkout via Stripe</div>
               </div>
             )}
@@ -1517,7 +1526,6 @@ export default function App() {
         </div>
       )}
 
-      {showCheckout && <StripeCheckout cart={cart} onSuccess={handleOrderSuccess} onClose={function(){ setShowCheckout(false); }} />}
     </div>
   );
 }
