@@ -489,6 +489,8 @@ export default function App() {
   const [repairSectionFilter, setRepairSectionFilter] = useState("All");
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine" });
+  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
+  const [confirmAction, setConfirmAction]     = useState(null);
 
   // ─── LOAD ALL DATA FROM SUPABASE ────────────────────────────────────────────
   useEffect(function(){
@@ -916,9 +918,6 @@ export default function App() {
       setTasks(function(prev){ return prev.filter(function(t){ return t.id !== id; }); });
     } catch(err){ setDbError(err.message); }
   };
-
-  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
-  const [confirmAction, setConfirmAction]     = useState(null);
 
     // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
