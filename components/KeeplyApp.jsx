@@ -456,6 +456,9 @@ export default function App() {
   const [expandedDoc, setExpandedDoc]       = useState(null);
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
   const [showCartOnly, setShowCartOnly]     = useState(false);
+  const [aiSuggestions, setAiSuggestions]   = useState([]);
+  const [aiLoading, setAiLoading]           = useState(false);
+  const [aiLoaded, setAiLoaded]             = useState(false);
 
   // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
@@ -774,6 +777,56 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
+  const getAISuggestions = async function(){
+    if (!repairs.length && !maintTasks.length) return;
+    setAiLoading(true);
+    setAiSuggestions([]);
+    try {
+      const openR = repairs.filter(function(r){ return r.status === "open"; });
+      const criticalT = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue"; }).slice(0, 10);
+      const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category, sku: p.sku }; }));
+      const repairsText = openR.map(function(r){ return r.section + ": " + r.description; }).join("
+");
+      const tasksText = criticalT.map(function(t){ return t.section + ": " + t.task; }).join("
+");
+
+      const prompt = "You are a marine maintenance assistant. Based on these open repairs and overdue tasks, suggest which parts from the catalog are most relevant to purchase. Return ONLY a JSON array of part IDs with a brief reason, like: [{"id":"p5","reason":"Engine oil needed for overdue service"}]. Max 6 suggestions. Only suggest parts that are genuinely relevant.\n\nOPEN REPAIRS:\n" + repairsText + "\n\nOVERDUE TASKS:\n" + tasksText + "\n\nPARTS CATALOG:\n" + partsJson;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 500,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content && data.content[0] ? data.content[0].text : "[]";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const suggestions = JSON.parse(clean);
+      const enriched = suggestions.map(function(s){
+        const part = PARTS_CATALOG.find(function(p){ return p.id === s.id; });
+        return part ? Object.assign({}, part, { reason: s.reason }) : null;
+      }).filter(Boolean);
+      setAiSuggestions(enriched);
+    } catch(e) {
+      console.error("AI suggestions failed:", e);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(function(){
+    if (showCartPanel && !aiLoaded && !aiLoading) {
+      setAiLoaded(true);
+      getAISuggestions();
+    }
+    if (!showCartPanel) {
+      setAiLoaded(false);
+    }
+  }, [showCartPanel]);
+
   const deleteEquipment = async function(id){
     try {
       await supa("equipment", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
@@ -976,7 +1029,7 @@ export default function App() {
             </button>
           )}
           <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "#fff" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: cartQty > 0 ? "#0f4c8a" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            🛒 {cartQty > 0 ? cartQty : ""}
+            🛒 {cartQty > 0 ? "List (" + cartQty + ")" : "List"}
           </button>
           <div style={{ display: "flex", background: "rgba(255,255,255,0.12)", borderRadius: 8, padding: 3 }}>
             <button onClick={function(){ setView("customer"); }} style={s.vBtn(view==="customer")}>My Boat</button>
@@ -1089,7 +1142,7 @@ export default function App() {
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               <span style={{ fontWeight: 700, fontSize: 14 }}>${part.retailPrice}</span>
                               <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>
-                              <button onClick={function(){ addToCart(part); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Cart</button>
+                              <button onClick={function(){ addToCart(part); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ List</button>
                             </div>
                           </div>
                         ); })}
@@ -1502,26 +1555,118 @@ export default function App() {
         </div>
       )}
 
-      {/* ── CART PANEL ── */}
+      {/* ── SHOPPING LIST PANEL ── */}
       {showCartPanel && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 200 }} onClick={function(){ setShowCartPanel(false); }}>
-          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 340, background: "#fff", boxShadow: "-4px 0 32px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #e8eaed", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>Your Cart ({cartQty})</span>
-              <button onClick={function(){ setShowCartPanel(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}>✕</button>
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 400, background: "#f4f6f9", boxShadow: "-4px 0 32px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
+
+            {/* Header */}
+            <div style={{ padding: "18px 20px 16px", background: "#0f4c8a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>🛒 Shopping List {cartQty > 0 ? "(" + cartQty + ")" : ""}</span>
+              <button onClick={function(){ setShowCartPanel(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
             </div>
-            <div style={{ flex: 1, overflowY: "auto" }}>
-              {cart.length === 0
-                ? <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>🛒</div><div style={{ marginTop: 8, fontSize: 14 }}>Cart is empty</div></div>
-                : cart.map(function(item){ return (<div key={item.id} style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</div><div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Qty: {item.qty} · ${(item.retailPrice * item.qty).toFixed(2)}</div></div><button onClick={function(){ removeFromCart(item.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button></div>); })}
-            </div>
-            {cart.length > 0 && (
-              <div style={{ padding: 20, borderTop: "1px solid #e8eaed" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 800, marginBottom: 14 }}><span>Total</span><span>${cartTotal.toFixed(2)}</span></div>
-                <button onClick={function(){ setShowCartPanel(false); }} style={{ width: "100%", background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: 13, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Checkout →</button>
-                <div style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 8 }}>🔒 Secure checkout via Stripe</div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
+
+              {/* ── SECTION 1: MY LIST ── */}
+              <div style={{ background: "#fff", borderBottom: "3px solid #f4f6f9" }}>
+                <div style={{ padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "#0f4c8a", letterSpacing: "0.5px" }}>MY LIST</div>
+                  {cart.length > 0 && <button onClick={function(){ setCart([]); }} style={{ background: "none", border: "none", fontSize: 11, color: "#9ca3af", cursor: "pointer", fontWeight: 600 }}>Clear</button>}
+                </div>
+
+                {cart.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "20px 24px 24px", color: "#9ca3af" }}>
+                    <div style={{ fontSize: 28 }}>🛒</div>
+                    <div style={{ marginTop: 6, fontSize: 12 }}>Add parts from equipment cards</div>
+                  </div>
+                ) : (
+                  <div style={{ padding: "0 20px 14px" }}>
+                    {Object.entries(cart.reduce(function(acc, item){
+                      const v = item.vendor || "custom";
+                      if (!acc[v]) acc[v] = [];
+                      acc[v].push(item);
+                      return acc;
+                    }, {})).map(function(entry){
+                      const vendor = entry[0];
+                      const items = entry[1];
+                      const vLabel = VENDOR_LABELS[vendor] || "Custom";
+                      const vColor = VENDOR_COLORS[vendor] || "#6b7280";
+                      const vUrl = vendor === "westmarine" ? "https://www.westmarine.com" : vendor === "defender" ? "https://www.defender.com" : vendor === "fishery" ? "https://www.fisherysupply.com" : "#";
+                      return (
+                        <div key={vendor} style={{ marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <span style={{ background: vColor, color: "#fff", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{vLabel}</span>
+                            <a href={vUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: vColor, fontWeight: 600, textDecoration: "none" }}>Visit store ↗</a>
+                          </div>
+                          {items.map(function(item){ return (
+                            <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid #f3f4f6" }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600 }}>{item.name}</div>
+                                <div style={{ fontSize: 11, color: "#9ca3af" }}>SKU: {item.sku} · ${item.retailPrice}</div>
+                              </div>
+                              <button onClick={function(){ if (item.qty <= 1) { removeFromCart(item.id); } else { setCart(function(prev){ return prev.map(function(i){ return i.id === item.id ? Object.assign({}, i, { qty: i.qty - 1 }) : i; }); }); } }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
+                              <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
+                              <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
+                              <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>
+                              <button onClick={function(){ removeFromCart(item.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                            </div>
+                          ); })}
+                        </div>
+                      );
+                    })}
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
+                      <span>Estimated total</span>
+                      <span style={{ color: "#0f4c8a" }}>${cartTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* ── SECTION 2: CLAUDE SUGGESTIONS ── */}
+              <div style={{ background: "#fff", flex: 1 }}>
+                <div style={{ padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "#7c3aed", letterSpacing: "0.5px" }}>✨ CLAUDE SUGGESTS</div>
+                  <button onClick={getAISuggestions} disabled={aiLoading} style={{ background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: aiLoading ? "default" : "pointer", fontWeight: 600 }}>
+                    {aiLoading ? "Analyzing…" : "↺ Refresh"}
+                  </button>
+                </div>
+
+                {aiLoading && (
+                  <div style={{ textAlign: "center", padding: "24px", color: "#9ca3af" }}>
+                    <div style={{ fontSize: 12 }}>🤖 Analyzing your repairs and tasks…</div>
+                  </div>
+                )}
+
+                {!aiLoading && aiSuggestions.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "20px 24px 24px", color: "#9ca3af" }}>
+                    <div style={{ fontSize: 28 }}>🤖</div>
+                    <div style={{ marginTop: 6, fontSize: 12 }}>No suggestions yet. Add some repairs to get started.</div>
+                  </div>
+                )}
+
+                {!aiLoading && aiSuggestions.length > 0 && (
+                  <div style={{ padding: "0 20px 14px" }}>
+                    {aiSuggestions.map(function(part){
+                      const inList = cart.find(function(i){ return i.id === part.id; });
+                      return (
+                        <div key={part.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 0", borderBottom: "1px solid #f3f4f6" }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{part.name}</div>
+                            <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2 }}>💡 {part.reason}</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{part.category} · ${part.retailPrice}</div>
+                          </div>
+                          <button onClick={function(){ if (!inList) addToCart(part); }}
+                            style={{ flexShrink: 0, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer", marginTop: 2 }}>
+                            {inList ? "✓ Added" : "+ Add"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
