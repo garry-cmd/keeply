@@ -149,6 +149,7 @@ const PRIORITY_CFG = {
 };
 const SECTIONS = {
   Anchor: "⚓", Bilge: "🪣", Deck: "🛥", Dink: "⛵", Electrical: "⚡",
+  Electronics: "📡",
   Engine: "🔧", General: "🚢", Hydrovane: "🧭", Navigation: "🗺",
   Paperwork: "📄", Plumbing: "🔩", Rigging: "🪢", Safety: "🛟", Watermaker: "💧",
 };
