@@ -485,9 +485,25 @@ export default function App() {
   useEffect(function(){
     supabase.auth.getSession().then(function(res){
       setSession(res.data.session);
+      // Claim any pending invites for this email
+      if (res.data.session) {
+        var user = res.data.session.user;
+        supabase.from("vessel_members")
+          .update({ user_id: user.id })
+          .eq("email", user.email)
+          .is("user_id", null)
+          .then(function(){});
+      }
     });
     const { data: listener } = supabase.auth.onAuthStateChange(function(event, sess){
       setSession(sess);
+      if (sess && event === "SIGNED_IN") {
+        supabase.from("vessel_members")
+          .update({ user_id: sess.user.id })
+          .eq("email", sess.user.email)
+          .is("user_id", null)
+          .then(function(){});
+      }
     });
     return function(){ listener.subscription.unsubscribe(); };
   }, []);
@@ -889,15 +905,17 @@ export default function App() {
     if (!shareEmail.trim()) return;
     setShareLoading(true); setShareMsg(null);
     try {
-      // Look up user by email via a custom approach — insert with email, user_id filled later by trigger
+      // Check if this email already has an account
+      const trimmed = shareEmail.trim().toLowerCase();
+      // Insert pending invite — user_id is null until they sign in
       const { error } = await supabase.from("vessel_members").insert({
         vessel_id: activeVesselId,
-        email:     shareEmail.trim(),
+        email:     trimmed,
         role:      "member",
-        user_id:   "00000000-0000-0000-0000-000000000000", // placeholder until they sign in
+        user_id:   null,
       });
       if (error) throw error;
-      setShareMsg("Invite sent to " + shareEmail.trim());
+      setShareMsg("Invite recorded for " + trimmed);
       setShareEmail("");
     } catch(e) {
       setShareMsg("Error: " + e.message);
