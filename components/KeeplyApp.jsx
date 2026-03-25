@@ -8,24 +8,24 @@ import VesselSetup from "./VesselSetup";
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
 
-const HEADERS = {
-  "apikey": SUPA_KEY,
-  "Authorization": "Bearer " + SUPA_KEY,
-  "Content-Type": "application/json",
-  "Prefer": "return=representation",
-};
-
 function db(table) { return SUPA_URL + "/rest/v1/" + table; }
 
 async function supa(table, opts) {
   const { method = "GET", query = "", body, prefer } = opts || {};
-  const headers = Object.assign({}, HEADERS);
-  if (prefer) headers["Prefer"] = prefer;
+  // Use the current session token if available, fall back to anon key
+  const sess = await supabase.auth.getSession();
+  const token = (sess.data.session && sess.data.session.access_token) ? sess.data.session.access_token : SUPA_KEY;
+  const headers = {
+    "apikey": SUPA_KEY,
+    "Authorization": "Bearer " + token,
+    "Content-Type": "application/json",
+    "Prefer": prefer || "return=representation",
+  };
   const res = await fetch(db(table) + (query ? "?" + query : ""), {
     method, headers, body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
+    const err = await res.json().catch(function(){ return {}; });
     throw new Error((err.message || err.code || res.status) + " on " + table);
   }
   if (res.status === 204) return null;
@@ -36,13 +36,15 @@ async function supa(table, opts) {
 async function uploadToStorage(file, eqId) {
   const ext = file.name.split(".").pop();
   const path = eqId + "/" + Date.now() + "-" + file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const sess = await supabase.auth.getSession();
+  const token = (sess.data.session && sess.data.session.access_token) ? sess.data.session.access_token : SUPA_KEY;
   const res = await fetch(
     "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/vessel-docs/" + path,
     {
       method: "POST",
       headers: {
         "apikey": SUPA_KEY,
-        "Authorization": "Bearer " + SUPA_KEY,
+        "Authorization": "Bearer " + token,
         "Content-Type": file.type || "application/octet-stream",
       },
       body: file,
