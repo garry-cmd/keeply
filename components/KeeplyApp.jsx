@@ -410,6 +410,8 @@ export default function App() {
 
   // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
+  const [repairSectionFilter, setRepairSectionFilter] = useState("All");
+  const [repairStatusFilter, setRepairStatusFilter]   = useState("All");
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine", status: "open" });
 
@@ -1067,7 +1069,30 @@ export default function App() {
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs" && (<>
           {tabHeader("Repair Log", "Track open and closed repair items.", true, function(){ setShowAddRepair(true); })}
-          {repairs.length === 0 && !showAddRepair && (
+
+          {/* Section filter pills */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+            {["All", ...MAINT_SECTIONS].map(function(sec){ return (
+              <button key={sec} onClick={function(){ setRepairSectionFilter(sec); }} style={s.pill(repairSectionFilter===sec)}>
+                {sec === "All" ? "All Sections" : (SECTIONS[sec] || "") + " " + sec}
+              </button>
+            ); })}
+          </div>
+
+          {/* Status filter pills */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+            {["All","open","closed"].map(function(st){ return (
+              <button key={st} onClick={function(){ setRepairStatusFilter(st); }} style={s.pill(repairStatusFilter===st, st==="open" ? "#dc2626" : st==="closed" ? "#16a34a" : undefined)}>
+                {st === "All" ? "All Status" : st.charAt(0).toUpperCase() + st.slice(1)}
+              </button>
+            ); })}
+          </div>
+
+          {repairs.filter(function(r){
+            if (repairSectionFilter !== "All" && r.section !== repairSectionFilter) return false;
+            if (repairStatusFilter  !== "All" && r.status  !== repairStatusFilter)  return false;
+            return true;
+          }).length === 0 && !showAddRepair && (
             <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}>
               <div style={{ fontSize: 36 }}>🔧</div>
               <div style={{ marginTop: 8 }}>No repairs logged yet.</div>
@@ -1078,7 +1103,11 @@ export default function App() {
               )}
             </div>
           )}
-          {repairs.map(function(r){ return (
+          {repairs.filter(function(r){
+            if (repairSectionFilter !== "All" && r.section !== repairSectionFilter) return false;
+            if (repairStatusFilter  !== "All" && r.status  !== repairStatusFilter)  return false;
+            return true;
+          }).map(function(r){ return (
             <div key={r.id} style={s.card}>
               <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div style={{ flex: 1 }}>
