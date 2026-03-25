@@ -146,6 +146,8 @@ const DOC_TYPE_CFG = {
   "Other":       { color: "#374151", bg: "#f3f4f6", icon: "📄" },
 };
 
+const VENDOR_COLORS = { westmarine: "#0057a8", defender: "#b91c1c", fishery: "#15803d" };
+const VENDOR_LABELS = { westmarine: "West Marine", defender: "Defender", fishery: "Fishery Supply" };
 const STATUS_CFG = {
   "good":          { label: "Good",          color: "#16a34a", bg: "#f0fdf4", dot: "#16a34a" },
   "watch":         { label: "Watch",         color: "#d97706", bg: "#fffbeb", dot: "#d97706" },
