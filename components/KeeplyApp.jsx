@@ -938,7 +938,7 @@ export default function App() {
     }
     return true;
   });
-  const sortedTasks = [...visibleTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; });
+  const sortedTasks = [...visibleTasks].sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; });
 
   const sectionStats = MAINT_SECTIONS.map(function(sec){
     const st = maintTasks.filter(function(t){ return t.section === sec; });
@@ -1400,7 +1400,7 @@ export default function App() {
             ); })}
           </div>
           <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-            {["All","critical","high","medium","low"].map(function(p){ return <button key={p} onClick={function(){ setFilterPriority(p); }} style={s.pill(filterPriority===p, p !== "All" ? PRIORITY_CFG[p].color : undefined)}>{p === "All" ? "All Priority" : p.charAt(0).toUpperCase() + p.slice(1)}</button>; })}
+            {["All","critical","high","medium","low"].map(function(p){ return <button key={p} onClick={function(){ setFilterPriority(p); }} style={s.pill(filterPriority===p, p !== "All" && PRIORITY_CFG[p] ? PRIORITY_CFG[p].color : undefined)}>{p === "All" ? "All Priority" : p.charAt(0).toUpperCase() + p.slice(1)}</button>; })}
           </div>
 
           <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>{sortedTasks.length} tasks{filterSection !== "All" ? " in " + filterSection : ""}</div>
@@ -1443,7 +1443,7 @@ export default function App() {
             <UrgencyCard label="Due Soon" sub="Within 3 days" val={docUrgencyCounts.dueSoon} color="#ca8a04" bg="#fefce8" active={false} onClick={null} />
           </div>
           {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>📄</div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
-          {[...docTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; }).map(function(t){
+          {[...docTasks].sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; }).map(function(t){
             const badge = getDueBadge(t.dueDate);
             const isExpanded = expandedDoc === t.id;
             const atts = t.attachments || [];
