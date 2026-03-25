@@ -456,9 +456,10 @@ export default function App() {
   const [expandedDoc, setExpandedDoc]       = useState(null);
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
   const [showCartOnly, setShowCartOnly]     = useState(false);
-  const [aiSuggestions, setAiSuggestions]   = useState([]);
+  const [aiSuggestions, setAiSuggestions]   = useState({});
   const [aiLoading, setAiLoading]           = useState(false);
   const [aiLoaded, setAiLoaded]             = useState(false);
+  const [equipSuggestions, setEquipSuggestions] = useState({});
 
   // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
@@ -756,9 +757,11 @@ export default function App() {
     try {
       const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open" };
       const created = await supa("repairs", { method: "POST", body: payload });
-      setRepairs(function(prev){ return [created[0], ...prev]; });
+      const newR = created[0];
+      setRepairs(function(prev){ return [newR, ...prev]; });
       setNewRepair({ description: "", section: "Engine" });
       setShowAddRepair(false);
+      getSuggestionsForRepair(newR);
     } catch(err){
       // Repairs table missing — fall back to in-memory
       setRepairs(function(prev){ return [{ id: "local-" + Date.now(), date: today(), section: newRepair.section, description: newRepair.description, status: "open", vessel_id: activeVesselId }, ...prev]; });
@@ -777,34 +780,24 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
-  const getAISuggestions = async function(){
-    if (!repairs.length && !maintTasks.length) return;
-    setAiLoading(true);
-    setAiSuggestions([]);
+  const getSuggestionsForRepair = async function(repair){
+    const repairId = repair.id;
+    setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = "loading"; return n; });
     try {
-      const openR = repairs.filter(function(r){ return r.status === "open"; });
-      const criticalT = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue"; }).slice(0, 10);
-      const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category, sku: p.sku }; }));
-      const repairsText = openR.map(function(r){ return r.section + ": " + r.description; }).join(", ");
-      const tasksText = criticalT.map(function(t){ return t.section + ": " + t.task; }).join(", ");
-
+      const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category }; }));
       const prompt = [
-        "You are a marine maintenance assistant. Based on these open repairs and overdue tasks,",
-        "suggest which parts from the catalog are most relevant to purchase.",
-        'Return ONLY a JSON array like: [{"id":"p5","reason":"Engine oil needed"}].',
-        "Max 6 suggestions. Only suggest genuinely relevant parts.",
-        "",
-        "OPEN REPAIRS: " + repairsText,
-        "OVERDUE TASKS: " + tasksText,
-        "PARTS CATALOG: " + partsJson
+        "You are a marine maintenance assistant. A boat owner has logged this repair:",
+        repair.section + ": " + repair.description,
+        "Suggest up to 4 parts from the catalog that would be needed for this specific repair.",
+        'Return ONLY a JSON array like: [{"id":"p5","reason":"why this part is needed"}].',
+        "Only suggest parts directly relevant to this repair. Parts catalog: " + partsJson
       ].join(" ");
-
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 500,
+          max_tokens: 400,
           messages: [{ role: "user", content: prompt }]
         })
       });
@@ -816,19 +809,51 @@ export default function App() {
         const part = PARTS_CATALOG.find(function(p){ return p.id === s.id; });
         return part ? Object.assign({}, part, { reason: s.reason }) : null;
       }).filter(Boolean);
-      setAiSuggestions(enriched);
+      setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = enriched; return n; });
     } catch(e) {
-      console.error("AI suggestions failed:", e);
-    } finally {
-      setAiLoading(false);
+      setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = []; return n; });
+    }
+  };
+
+  const getAISuggestions = function(){};
+
+  const getSuggestionsForEquipment = async function(eq){
+    const eqId = eq.id;
+    setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "loading"; return n; });
+    try {
+      const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category }; }));
+      const prompt = [
+        "You are a marine maintenance assistant. A boat has this equipment:",
+        eq.name + " (" + eq.category + ")",
+        eq.notes ? "Notes: " + eq.notes : "",
+        "Suggest up to 4 parts from the catalog most relevant for maintaining or servicing this specific equipment.",
+        'Return ONLY a JSON array like: [{"id":"p5","reason":"why this part is needed"}].',
+        "Only suggest parts directly relevant to this equipment. Parts catalog: " + partsJson
+      ].filter(Boolean).join(" ");
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 400,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content && data.content[0] ? data.content[0].text : "[]";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const suggestions = JSON.parse(clean);
+      const enriched = suggestions.map(function(s){
+        const part = PARTS_CATALOG.find(function(p){ return p.id === s.id; });
+        return part ? Object.assign({}, part, { reason: s.reason }) : null;
+      }).filter(Boolean);
+      setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = enriched; return n; });
+    } catch(e) {
+      setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = []; return n; });
     }
   };
 
   useEffect(function(){
-    if (showCartPanel && !aiLoaded && !aiLoading) {
-      setAiLoaded(true);
-      getAISuggestions();
-    }
     if (!showCartPanel) {
       setAiLoaded(false);
     }
@@ -1096,11 +1121,10 @@ export default function App() {
           {filteredEquip.map(function(eq){
             const isExpanded = expandedEquip === eq.id;
             const activeTab  = equipTab[eq.id] || "parts";
-            const suggestedParts = (EQUIPMENT_PARTS[eq.category] || []).map(function(pid){ return PARTS_CATALOG.find(function(p){ return p.id === pid; }); }).filter(Boolean);
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
             return (
               <div key={eq.id} style={s.card}>
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ setExpandedEquip(isExpanded ? null : eq.id); }}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next && !equipSuggestions[eq.id]) getSuggestionsForEquipment(eq); }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: (STATUS_CFG[eq.status] || STATUS_CFG["good"]).dot, flexShrink: 0 }} />
                     <div>
@@ -1138,12 +1162,19 @@ export default function App() {
 
                     {/* parts tab */}
                     {activeTab === "parts" && (<>
-                      {suggestedParts.length > 0 && (<>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>SUGGESTED PARTS</div>
-                        {suggestedParts.map(function(part){ return (
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 8 }}>✨ AI SUGGESTED PARTS</div>
+                      {equipSuggestions[eq.id] === "loading" && (
+                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>🤖 Finding parts for {eq.name}…</div>
+                      )}
+                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id].length === 0 && (
+                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>No catalog matches found.</div>
+                      )}
+                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id].length > 0 && (<>
+                        {equipSuggestions[eq.id].map(function(part){ return (
                           <div key={part.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 13, fontWeight: 600 }}>{part.name}</div>
+                              <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
                               <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>SKU: {part.sku} · <span style={{ color: VENDOR_COLORS[part.vendor] }}>{VENDOR_LABELS[part.vendor]}</span></div>
                             </div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -1630,48 +1661,51 @@ export default function App() {
                 )}
               </div>
 
-              {/* ── SECTION 2: CLAUDE SUGGESTIONS ── */}
+              {/* ── SECTION 2: CLAUDE SUGGESTS (per repair) ── */}
               <div style={{ background: "#fff", flex: 1 }}>
-                <div style={{ padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ padding: "14px 20px 10px" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: "#7c3aed", letterSpacing: "0.5px" }}>✨ CLAUDE SUGGESTS</div>
-                  <button onClick={getAISuggestions} disabled={aiLoading} style={{ background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: aiLoading ? "default" : "pointer", fontWeight: 600 }}>
-                    {aiLoading ? "Analyzing…" : "↺ Refresh"}
-                  </button>
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>Auto-generated when you log a repair</div>
                 </div>
 
-                {aiLoading && (
-                  <div style={{ textAlign: "center", padding: "24px", color: "#9ca3af" }}>
-                    <div style={{ fontSize: 12 }}>🤖 Analyzing your repairs and tasks…</div>
-                  </div>
-                )}
-
-                {!aiLoading && aiSuggestions.length === 0 && (
+                {repairs.length === 0 && (
                   <div style={{ textAlign: "center", padding: "20px 24px 24px", color: "#9ca3af" }}>
                     <div style={{ fontSize: 28 }}>🤖</div>
-                    <div style={{ marginTop: 6, fontSize: 12 }}>No suggestions yet. Add some repairs to get started.</div>
+                    <div style={{ marginTop: 6, fontSize: 12 }}>Log a repair and Claude will suggest parts automatically.</div>
                   </div>
                 )}
 
-                {!aiLoading && aiSuggestions.length > 0 && (
-                  <div style={{ padding: "0 20px 14px" }}>
-                    {aiSuggestions.map(function(part){
-                      const inList = cart.find(function(i){ return i.id === part.id; });
-                      return (
-                        <div key={part.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 0", borderBottom: "1px solid #f3f4f6" }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{part.name}</div>
-                            <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2 }}>💡 {part.reason}</div>
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{part.category} · ${part.retailPrice}</div>
+                {repairs.map(function(r){
+                  const sugg = aiSuggestions[r.id];
+                  if (!sugg) return null;
+                  return (
+                    <div key={r.id} style={{ padding: "12px 20px", borderTop: "1px solid #f3f4f6" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
+                        {r.section}: {r.description && r.description.length > 45 ? r.description.slice(0, 45) + "…" : r.description}
+                      </div>
+                      {sugg === "loading" ? (
+                        <div style={{ fontSize: 11, color: "#9ca3af" }}>🤖 Finding parts…</div>
+                      ) : sugg.length === 0 ? (
+                        <div style={{ fontSize: 11, color: "#9ca3af" }}>No catalog matches found.</div>
+                      ) : sugg.map(function(part){
+                        const inList = cart.find(function(i){ return i.id === part.id; });
+                        return (
+                          <div key={part.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600 }}>{part.name}</div>
+                              <div style={{ fontSize: 11, color: "#7c3aed" }}>💡 {part.reason}</div>
+                              <div style={{ fontSize: 11, color: "#9ca3af" }}>${part.retailPrice}</div>
+                            </div>
+                            <button onClick={function(){ if (!inList) addToCart(part); }}
+                              style={{ flexShrink: 0, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                              {inList ? "✓" : "+ Add"}
+                            </button>
                           </div>
-                          <button onClick={function(){ if (!inList) addToCart(part); }}
-                            style={{ flexShrink: 0, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer", marginTop: 2 }}>
-                            {inList ? "✓ Added" : "+ Add"}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
