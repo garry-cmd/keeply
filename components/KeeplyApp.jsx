@@ -756,14 +756,14 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
-  const addDocAttachment = async function(taskId, file){
+  const addDocAttachment = async function(taskId, file, docType){
     const task = tasks.find(function(t){ return t.id === taskId; });
     if (!task) return;
     setSaving(true);
     setUploadingDoc(true);
     try {
       const url = await uploadToStorage(file, "doc-" + taskId);
-      const att = { id: "att-" + Date.now(), fileName: file.name, url, type: file.type };
+      const att = { id: "att-" + Date.now(), fileName: file.name, url, type: file.type, docType: docType || "Other" };
       const updated = [...(task.attachments || []), att];
       await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + taskId, body: { attachments: updated }, prefer: "return=minimal" });
       setTasks(function(prev){ return prev.map(function(t){ return t.id === taskId ? { ...t, attachments: updated } : t; }); });
@@ -807,6 +807,7 @@ export default function App() {
       if (filterUrgency === "overdue"  && u !== "overdue")  return false;
       if (filterUrgency === "due-soon" && u !== "due-soon") return false;
     }
+    if (searchQuery && t.task.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0 && t.section.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0) return false;
     return true;
   });
   const sortedTasks = [...visibleTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; });
@@ -831,6 +832,7 @@ export default function App() {
   const filteredEquip = equipment.filter(function(e){
     if (equipFilter !== "All" && e.status !== equipFilter) return false;
     if (equipSectionFilter !== "All" && e.category !== equipSectionFilter) return false;
+    if (searchQuery && e.name.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0 && e.category.toLowerCase().indexOf(searchQuery.toLowerCase()) < 0) return false;
     return true;
   });
 
@@ -838,6 +840,7 @@ export default function App() {
   const criticalMaint  = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).length;
   const totalAlerts    = openRepairs + criticalMaint;
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
+  const [searchQuery, setSearchQuery]         = useState("");
 
   const settings  = vessels.find(function(v){ return v.id === activeVesselId; }) || vessels[0] || {};
   const prefix    = settings.vesselType === "motor" ? "M/V" : "S/V";
@@ -940,6 +943,19 @@ export default function App() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+        {/* Search bar */}
+        <div style={{ flex: 1, maxWidth: 320, margin: "0 16px" }}>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: 0.6 }}>🔍</span>
+            <input
+              value={searchQuery}
+              onChange={function(e){ setSearchQuery(e.target.value); }}
+              placeholder="Search equipment, tasks, repairs…"
+              style={{ width: "100%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 12px 6px 32px", color: "#fff", fontSize: 12, outline: "none", boxSizing: "border-box" }}
+            />
+            {searchQuery && <button onClick={function(){ setSearchQuery(""); }} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1318,17 +1334,25 @@ export default function App() {
                     {atts.length === 0 && <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 10 }}>No files attached yet.</div>}
                     {atts.map(function(att){ return (
                       <div key={att.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid #f3f4f6" }}>
-                        <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 16 }}>{att.type && att.type.indexOf("pdf") >= 0 ? "📄" : att.type && att.type.indexOf("image") >= 0 ? "🖼" : "📎"}</span>
-                          {att.fileName} ↗
-                        </a>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                          {att.docType && DOC_TYPE_CFG[att.docType] && <span style={{ background: DOC_TYPE_CFG[att.docType].bg, color: DOC_TYPE_CFG[att.docType].color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{DOC_TYPE_CFG[att.docType].icon} {att.docType}</span>}
+                          <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none" }}>{att.fileName} ↗</a>
+                        </div>
                         <button onClick={function(){ removeDocAttachment(t.id, att.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                       </div>
                     ); })}
-                    <label style={{ display: "block", marginTop: 10, padding: "8px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, color: uploadingDoc ? "#9ca3af" : "#6b7280", textAlign: "center", background: "#fff" }}>
-                      {uploadingDoc ? "Uploading…" : "📎 Attach a file (PDF, JPG, PNG…)"}
-                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" disabled={uploadingDoc} style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (file) addDocAttachment(t.id, file); }} />
-                    </label>
+                    <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
+                      <select
+                        value={t._pendingDocType || "Other"}
+                        onChange={function(e){ setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? { ...tk, _pendingDocType: e.target.value } : tk; }); }); }}
+                        style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 12, background: "#fff", color: "#374151", flexShrink: 0 }}>
+                        {Object.keys(DOC_TYPE_CFG).map(function(dt){ return <option key={dt} value={dt}>{DOC_TYPE_CFG[dt].icon} {dt}</option>; })}
+                      </select>
+                      <label style={{ flex: 1, display: "block", padding: "8px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, color: uploadingDoc ? "#9ca3af" : "#6b7280", textAlign: "center", background: "#fff" }}>
+                        {uploadingDoc ? "Uploading…" : "📎 Attach a file (PDF, JPG, PNG…)"}
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" disabled={uploadingDoc} style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (file) addDocAttachment(t.id, file, t._pendingDocType || "Other"); }} />
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>
