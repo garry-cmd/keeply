@@ -945,20 +945,18 @@ export default function App() {
             )}
           </div>
         </div>
-        {/* Search bar */}
-        <div style={{ flex: 1, maxWidth: 320, margin: "0 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Search bar */}
           <div style={{ position: "relative" }}>
             <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: 0.6 }}>🔍</span>
             <input
               value={searchQuery}
               onChange={function(e){ setSearchQuery(e.target.value); }}
-              placeholder="Search equipment, tasks, repairs…"
-              style={{ width: "100%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 12px 6px 32px", color: "#fff", fontSize: 12, outline: "none", boxSizing: "border-box" }}
+              placeholder="Search…"
+              style={{ width: 200, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 12px 6px 32px", color: "#fff", fontSize: 12, outline: "none", boxSizing: "border-box" }}
             />
             {searchQuery && <button onClick={function(){ setSearchQuery(""); }} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>}
           </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Saving…</span>}
           {totalAlerts > 0 && (
             <button onClick={function(){ setShowUrgentPanel(true); }} style={{ background: "#dc2626", border: "none", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
