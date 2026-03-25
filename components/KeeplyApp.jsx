@@ -841,11 +841,12 @@ export default function App() {
     try {
       const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category }; }));
       const prompt = [
-        "You are a marine maintenance assistant. A boat owner has logged this repair:",
-        repair.section + ": " + repair.description,
-        "Suggest up to 4 parts from the catalog that would be needed for this specific repair.",
-        'Return ONLY a JSON array like: [{"id":"p5","reason":"why this part is needed"}].',
-        "Only suggest parts directly relevant to this repair. Parts catalog: " + partsJson
+        "You are a JSON API. Respond with ONLY a valid JSON array, no other text, no explanation, no preamble.",
+        "A boat owner logged this repair: " + repair.section + ": " + repair.description,
+        "From the parts catalog below, return up to 4 relevant parts as a JSON array.",
+        'Format: [{"id":"p5","reason":"brief reason"}]',
+        "If no parts match, return []. ONLY output the JSON array, nothing else.",
+        "Parts catalog: " + partsJson
       ].join(" ");
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
@@ -856,7 +857,8 @@ export default function App() {
       if (data.error) throw new Error(data.error);
       const text = data.content && data.content[0] ? data.content[0].text : "[]";
       const clean = text.replace(/```json|```/g, "").trim();
-      const suggestions = JSON.parse(clean);
+      const match = clean.match(/\[[\s\S]*\]/);
+      const suggestions = JSON.parse(match ? match[0] : "[]");
       const enriched = suggestions.map(function(s){
         const part = PARTS_CATALOG.find(function(p){ return p.id === s.id; });
         return part ? Object.assign({}, part, { reason: s.reason }) : null;
@@ -876,13 +878,13 @@ export default function App() {
     try {
       const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category }; }));
       const prompt = [
-        "You are a marine maintenance assistant. A boat has this equipment:",
-        eq.name + " (" + eq.category + ")",
-        eq.notes ? "Notes: " + eq.notes : "",
-        "Suggest up to 4 parts from the catalog most relevant for maintaining or servicing this specific equipment.",
-        'Return ONLY a JSON array like: [{"id":"p5","reason":"why this part is needed"}].',
-        "Only suggest parts directly relevant to this equipment. Parts catalog: " + partsJson
-      ].filter(Boolean).join(" ");
+        "You are a JSON API. Respond with ONLY a valid JSON array, no other text, no explanation, no preamble.",
+        "A boat has this equipment: " + eq.name + " (" + eq.category + ")" + (eq.notes ? ", Notes: " + eq.notes : ""),
+        "From the parts catalog below, return up to 4 relevant maintenance parts as a JSON array.",
+        'Format: [{"id":"p5","reason":"brief reason"}]',
+        "If no parts match, return []. ONLY output the JSON array, nothing else.",
+        "Parts catalog: " + partsJson
+      ].join(" ");
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -892,7 +894,8 @@ export default function App() {
       if (data.error) throw new Error(data.error);
       const text = data.content && data.content[0] ? data.content[0].text : "[]";
       const clean = text.replace(/```json|```/g, "").trim();
-      const suggestions = JSON.parse(clean);
+      const match = clean.match(/\[[\s\S]*\]/);
+      const suggestions = JSON.parse(match ? match[0] : "[]");
       const enriched = suggestions.map(function(s){
         const part = PARTS_CATALOG.find(function(p){ return p.id === s.id; });
         return part ? Object.assign({}, part, { reason: s.reason }) : null;
