@@ -457,6 +457,7 @@ export default function App() {
   const [repairSectionFilter, setRepairSectionFilter] = useState("All");
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine" });
+  const [expandedRepair, setExpandedRepair] = useState(null);
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
   const [confirmAction, setConfirmAction]     = useState(null);
 
@@ -578,6 +579,7 @@ export default function App() {
     setEquipSuggestions({});
     setAiSuggestions({});
     setExpandedEquip(null);
+    setExpandedRepair(null);
     try {
       const eq = await supa("equipment", { query: "vessel_id=eq." + vid + "&order=created_at" });
       setEquipment((eq || []).map(function(e){
@@ -1375,20 +1377,75 @@ export default function App() {
           )}
           {repairs.filter(function(r){
             return repairSectionFilter === "All" || r.section === repairSectionFilter;
-          }).map(function(r){ return (
-            <div key={r.id} style={{ ...s.card, display: "flex", alignItems: "center", padding: "14px 20px", gap: 14 }}>
-              <input type="checkbox" onChange={function(){ showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }}
-                style={{ width: 18, height: 18, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
-                  <SectionBadge section={r.section} />
-                  <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</span>
+          }).map(function(r){
+            const isExpanded = expandedRepair === r.id;
+            const sugg = aiSuggestions[r.id];
+            return (
+              <div key={r.id} style={s.card}>
+                {/* Card header */}
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                  onClick={function(){
+                    const next = isExpanded ? null : r.id;
+                    setExpandedRepair(next);
+                    if (next && !sugg) getSuggestionsForRepair(r);
+                  }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
+                      <SectionBadge section={r.section} />
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</span>
+                      {sugg && sugg !== "loading" && sugg.length > 0 && (
+                        <span style={{ background: "#f5f3ff", color: "#7c3aed", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{r.description}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
+                    <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: "#1a1d23" }}>{r.description}</div>
+
+                {/* Expanded panel */}
+                {isExpanded && (
+                  <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 10 }}>✨ AI SUGGESTED PARTS</div>
+                    {sugg === "loading" && (
+                      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>🤖 Finding parts for this repair…</div>
+                    )}
+                    {sugg && sugg !== "loading" && sugg.length === 0 && (
+                      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>No specific parts found for this repair.</div>
+                    )}
+                    {sugg && sugg !== "loading" && sugg.length > 0 && sugg.map(function(part){
+                      const inList = cart.find(function(i){ return i.id === part.id; });
+                      return (
+                        <div key={part.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{part.name}</div>
+                            <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{part.vendor || ""}{part.price ? " · $" + part.price : ""}</div>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>}
+                            <button onClick={function(){ if (!inList) addToCart(part); }}
+                              style={{ background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                              {inList ? "✓ Added" : "+ List"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Refresh suggestions */}
+                    {sugg && sugg !== "loading" && (
+                      <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
+                        style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, padding: 0 }}>
+                        ↺ Refresh suggestions
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-              <button onClick={function(){ showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
-            </div>
-          ); })}
+            );
+          })}
           {showAddRepair && (
             <div style={s.modalBg} onClick={function(){ setShowAddRepair(false); }}>
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
