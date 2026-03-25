@@ -179,7 +179,7 @@ function SectionBadge({ section }) {
   return <span style={{ fontSize: 10, fontWeight: 700, background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px" }}>{SECTIONS[section] || ""} {section}</span>;
 }
 function StatusBadge({ status }) {
-  const c = STATUS_CFG[status];
+  const c = STATUS_CFG[status] || STATUS_CFG["good"];
   return <span style={{ fontSize: 10, fontWeight: 700, background: c.bg, color: c.color, borderRadius: 6, padding: "2px 8px" }}>{c.label}</span>;
 }
 function UrgencyCard({ label, sub, val, color, bg, active, onClick }) {
@@ -1040,7 +1040,7 @@ export default function App() {
               <div key={eq.id} style={s.card}>
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ setExpandedEquip(isExpanded ? null : eq.id); }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_CFG[eq.status].dot, flexShrink: 0 }} />
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: (STATUS_CFG[eq.status] || STATUS_CFG["good"]).dot, flexShrink: 0 }} />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{eq.name}</div>
                       <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
@@ -1050,8 +1050,8 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {(eq.docs||[]).length > 0 && <span style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }} title={eq.docs.length + " document(s)"}>📎 {eq.docs.length}</span>}
-                    {(eq.customParts||[]).length > 0 && <span style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }} title={eq.customParts.length + " custom part(s)"}>🔩 {eq.customParts.length}</span>}
+                    {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
+                    {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
                     <StatusBadge status={eq.status} />
                     <button onClick={function(e){ e.stopPropagation(); deleteEquipment(eq.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
