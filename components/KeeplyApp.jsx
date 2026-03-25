@@ -89,28 +89,7 @@ function getDueBadge(dueDate) {
 }
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const PARTS_CATALOG = [
-  { id: "p1",  name: "Harken Roller Furling Bearing Kit",  category: "Rigging",    retailPrice: 89,  sku: "HRK-440",    vendor: "defender",   url: "https://www.defender.com/search?q=harken+furling+bearing" },
-  { id: "p2",  name: "McLube Sailkote Lubricant Spray",    category: "Rigging",    retailPrice: 18,  sku: "MCL-SLK",    vendor: "westmarine", url: "https://www.westmarine.com/search?query=sailkote" },
-  { id: "p3",  name: "Lewmar Windlass Gypsy 10mm",         category: "Deck",       retailPrice: 145, sku: "LEW-GYP10",  vendor: "defender",   url: "https://www.defender.com/search?q=lewmar+gypsy+10mm" },
-  { id: "p4",  name: "Lewmar Windlass Shaft Seal Kit",     category: "Deck",       retailPrice: 42,  sku: "LEW-SK44",   vendor: "defender",   url: "https://www.defender.com/search?q=lewmar+seal+kit" },
-  { id: "p5",  name: "Beta Marine 15W-40 Engine Oil 4L",   category: "Engine",     retailPrice: 28,  sku: "BET-OIL4",   vendor: "fishery",    url: "https://www.fisherysupply.com/search?q=beta+marine+oil" },
-  { id: "p6",  name: "Beta Marine Fuel Filter",            category: "Engine",     retailPrice: 22,  sku: "BET-FF35",   vendor: "westmarine", url: "https://www.westmarine.com/search?query=beta+fuel+filter" },
-  { id: "p7",  name: "Beta Marine Oil Filter",             category: "Engine",     retailPrice: 16,  sku: "BET-OF35",   vendor: "westmarine", url: "https://www.westmarine.com/search?query=beta+oil+filter" },
-  { id: "p8",  name: "Engine Zinc Anode Set",              category: "Engine",     retailPrice: 24,  sku: "ZNC-ENG3",   vendor: "fishery",    url: "https://www.fisherysupply.com/search?q=engine+zinc+anode" },
-  { id: "p9",  name: "Raw Water Impeller — Beta 35",       category: "Engine",     retailPrice: 35,  sku: "IMP-B35",    vendor: "westmarine", url: "https://www.westmarine.com/search?query=beta+35+impeller" },
-  { id: "p10", name: "Whale Gusher Diaphragm Repair Kit",  category: "Bilge",      retailPrice: 28,  sku: "WHL-DPH",    vendor: "defender",   url: "https://www.defender.com/search?q=whale+gusher+diaphragm" },
-  { id: "p11", name: "Victron Battery Monitor BMV-712",    category: "Electrical", retailPrice: 179, sku: "VIC-BMV712", vendor: "defender",   url: "https://www.defender.com/search?q=victron+bmv-712" },
-  { id: "p12", name: "Ancor Marine Wire 10 AWG 50ft",      category: "Electrical", retailPrice: 54,  sku: "ANC-10-50",  vendor: "westmarine", url: "https://www.westmarine.com/search?query=ancor+10+awg+wire" },
-  { id: "p13", name: "Garmin Transducer Thru-Hull",        category: "Navigation", retailPrice: 139, sku: "GRM-TH50",   vendor: "fishery",    url: "https://www.fisherysupply.com/search?q=garmin+transducer" },
-  { id: "p14", name: "Spinlock PXR Cam Cleat",             category: "Rigging",    retailPrice: 48,  sku: "SPL-PXR",    vendor: "defender",   url: "https://www.defender.com/search?q=spinlock+pxr" },
-  { id: "p15", name: "3M 5200 Marine Adhesive Sealant",    category: "Deck",       retailPrice: 19,  sku: "3M-5200",    vendor: "westmarine", url: "https://www.westmarine.com/search?query=3m+5200" },
-  { id: "p16", name: "Watermaker Pre-filter Cartridge",    category: "Watermaker", retailPrice: 22,  sku: "WM-PF10",    vendor: "defender",   url: "https://www.defender.com/search?q=watermaker+prefilter" },
-  { id: "p17", name: "Watermaker Charcoal Filter",         category: "Watermaker", retailPrice: 38,  sku: "WM-CF10",    vendor: "defender",   url: "https://www.defender.com/search?q=watermaker+charcoal+filter" },
-  { id: "p18", name: "Hydrovane Hardware Kit",             category: "Hydrovane",  retailPrice: 65,  sku: "HV-HW01",    vendor: "defender",   url: "https://www.defender.com/search?q=hydrovane+hardware" },
-  { id: "p19", name: "Shaft Zinc Anode",                   category: "Engine",     retailPrice: 18,  sku: "ZNC-SHF",    vendor: "fishery",    url: "https://www.fisherysupply.com/search?q=shaft+zinc+anode" },
-  { id: "p20", name: "Racor Fuel Filter Element",          category: "Engine",     retailPrice: 14,  sku: "RAC-500",    vendor: "westmarine", url: "https://www.westmarine.com/search?query=racor+500+filter" },
-];
+
 
 const EQUIPMENT_PARTS = {
   Engine: ["p5","p6","p7","p8","p9","p19","p20"], Rigging: ["p1","p2","p14"],
@@ -151,8 +130,6 @@ const DOC_TYPE_CFG = {
   "Other":       { color: "#374151", bg: "#f3f4f6", icon: "📄" },
 };
 
-const VENDOR_COLORS = { westmarine: "#0057a8", defender: "#b91c1c", fishery: "#15803d" };
-const VENDOR_LABELS = { westmarine: "West Marine", defender: "Defender", fishery: "Fishery Supply" };
 const STATUS_CFG = {
   "good":          { label: "Good",          color: "#16a34a", bg: "#f0fdf4", dot: "#16a34a" },
   "watch":         { label: "Watch",         color: "#d97706", bg: "#fffbeb", dot: "#d97706" },
@@ -431,7 +408,7 @@ export default function App() {
   const [showCartPanel, setShowCartPanel]   = useState(false);
   const addToCart    = function(part){ setCart(function(prev){ const ex = prev.find(function(i){ return i.id === part.id; }); if (ex) return prev.map(function(i){ return i.id === part.id ? { ...i, qty: i.qty + 1 } : i; }); return [...prev, { ...part, qty: 1 }]; }); };
   const removeFromCart = function(id){ setCart(function(prev){ return prev.filter(function(i){ return i.id !== id; }); }); };
-  const cartTotal = cart.reduce(function(s,i){ return s + i.retailPrice * i.qty; }, 0);
+  const cartTotal = cart.reduce(function(s,i){ return s + (i.price ? parseFloat(i.price) : 0) * i.qty; }, 0);
   const cartQty   = cart.reduce(function(s,i){ return s + i.qty; }, 0);
 
   // ── Vessels (Supabase) ──
@@ -839,31 +816,14 @@ export default function App() {
     const repairId = repair.id;
     setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = "loading"; return n; });
     try {
-      const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category }; }));
-      const prompt = [
-        "You are a JSON API. Respond with ONLY a valid JSON array, no other text, no explanation, no preamble.",
-        "A boat owner logged this repair: " + repair.section + ": " + repair.description,
-        "From the parts catalog below, return up to 4 relevant parts as a JSON array.",
-        'Format: [{"id":"p5","reason":"brief reason"}]',
-        "If no parts match, return []. ONLY output the JSON array, nothing else.",
-        "Parts catalog: " + partsJson
-      ].join(" ");
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ context: repair.section + ": " + repair.description, type: "repair" })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      const text = data.content && data.content[0] ? data.content[0].text : "[]";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const match = clean.match(/\[[\s\S]*\]/);
-      const suggestions = JSON.parse(match ? match[0] : "[]");
-      const enriched = suggestions.map(function(s){
-        const part = PARTS_CATALOG.find(function(p){ return p.id === s.id; });
-        return part ? Object.assign({}, part, { reason: s.reason }) : null;
-      }).filter(Boolean);
-      setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = enriched; return n; });
+      setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = data.suggestions || []; return n; });
     } catch(e) {
       console.error("Repair suggestion error:", e.message);
       setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = []; return n; });
@@ -876,31 +836,14 @@ export default function App() {
     const eqId = eq.id;
     setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "loading"; return n; });
     try {
-      const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category }; }));
-      const prompt = [
-        "You are a JSON API. Respond with ONLY a valid JSON array, no other text, no explanation, no preamble.",
-        "A boat has this equipment: " + eq.name + " (" + eq.category + ")" + (eq.notes ? ", Notes: " + eq.notes : ""),
-        "From the parts catalog below, return up to 4 relevant maintenance parts as a JSON array.",
-        'Format: [{"id":"p5","reason":"brief reason"}]',
-        "If no parts match, return []. ONLY output the JSON array, nothing else.",
-        "Parts catalog: " + partsJson
-      ].join(" ");
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ context: eq.name + " " + eq.category + (eq.notes ? " " + eq.notes : ""), type: "equipment" })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      const text = data.content && data.content[0] ? data.content[0].text : "[]";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const match = clean.match(/\[[\s\S]*\]/);
-      const suggestions = JSON.parse(match ? match[0] : "[]");
-      const enriched = suggestions.map(function(s){
-        const part = PARTS_CATALOG.find(function(p){ return p.id === s.id; });
-        return part ? Object.assign({}, part, { reason: s.reason }) : null;
-      }).filter(Boolean);
-      setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = enriched; return n; });
+      setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = data.suggestions || []; return n; });
     } catch(e) {
       console.error("Equipment suggestion error:", e.message);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = []; return n; });
@@ -1280,11 +1223,10 @@ export default function App() {
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 13, fontWeight: 600 }}>{part.name}</div>
                               <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
-                              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>SKU: {part.sku} · <span style={{ color: VENDOR_COLORS[part.vendor] }}>{VENDOR_LABELS[part.vendor]}</span></div>
+                              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{part.vendor || ""}{part.price ? " · $" + part.price : ""}</div>
                             </div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                              <span style={{ fontWeight: 700, fontSize: 14 }}>${part.retailPrice}</span>
-                              <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>
+                              {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>}
                               <button onClick={function(){ addToCart(part); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ List</button>
                             </div>
                           </div>
@@ -1725,39 +1667,19 @@ export default function App() {
                   </div>
                 ) : (
                   <div style={{ padding: "0 20px 14px" }}>
-                    {Object.entries(cart.reduce(function(acc, item){
-                      const v = item.vendor || "custom";
-                      if (!acc[v]) acc[v] = [];
-                      acc[v].push(item);
-                      return acc;
-                    }, {})).map(function(entry){
-                      const vendor = entry[0];
-                      const items = entry[1];
-                      const vLabel = VENDOR_LABELS[vendor] || "Custom";
-                      const vColor = VENDOR_COLORS[vendor] || "#6b7280";
-                      const vUrl = vendor === "westmarine" ? "https://www.westmarine.com" : vendor === "defender" ? "https://www.defender.com" : vendor === "fishery" ? "https://www.fisherysupply.com" : "#";
-                      return (
-                        <div key={vendor} style={{ marginBottom: 12 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <span style={{ background: vColor, color: "#fff", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{vLabel}</span>
-                            <a href={vUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: vColor, fontWeight: 600, textDecoration: "none" }}>Visit store ↗</a>
-                          </div>
-                          {items.map(function(item){ return (
-                            <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid #f3f4f6" }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 12, fontWeight: 600 }}>{item.name}</div>
-                                <div style={{ fontSize: 11, color: "#9ca3af" }}>SKU: {item.sku} · ${item.retailPrice}</div>
-                              </div>
-                              <button onClick={function(){ if (item.qty <= 1) { removeFromCart(item.id); } else { setCart(function(prev){ return prev.map(function(i){ return i.id === item.id ? Object.assign({}, i, { qty: i.qty - 1 }) : i; }); }); } }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
-                              <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
-                              <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
-                              <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>
-                              <button onClick={function(){ showConfirm("Remove " + item.name + " from list?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
-                            </div>
-                          ); })}
+                    {cart.map(function(item){ return (
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid #f3f4f6" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600 }}>{item.name}</div>
+                          <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.vendor || ""}{item.price ? " · $" + item.price : ""}</div>
                         </div>
-                      );
-                    })}
+                        <button onClick={function(){ if (item.qty <= 1) { removeFromCart(item.id); } else { setCart(function(prev){ return prev.map(function(i){ return i.id === item.id ? Object.assign({}, i, { qty: i.qty - 1 }) : i; }); }); } }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
+                        <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
+                        <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
+                        {item.url && <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>}
+                        <button onClick={function(){ showConfirm("Remove " + item.name + " from list?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                      </div>
+                    ); })}
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
                       <span>Estimated total</span>
                       <span style={{ color: "#0f4c8a" }}>${cartTotal.toFixed(2)}</span>
@@ -1795,16 +1717,19 @@ export default function App() {
                       ) : sugg.map(function(part){
                         const inList = cart.find(function(i){ return i.id === part.id; });
                         return (
-                          <div key={part.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
+                          <div key={part.name + part.reason} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 12, fontWeight: 600 }}>{part.name}</div>
                               <div style={{ fontSize: 11, color: "#7c3aed" }}>💡 {part.reason}</div>
-                              <div style={{ fontSize: 11, color: "#9ca3af" }}>${part.retailPrice}</div>
+                              <div style={{ fontSize: 11, color: "#9ca3af" }}>{part.vendor || ""}{part.price ? " · $" + part.price : ""}</div>
                             </div>
-                            <button onClick={function(){ if (!inList) addToCart(part); }}
-                              style={{ flexShrink: 0, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                              {inList ? "✓" : "+ Add"}
-                            </button>
+                            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                              {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>}
+                              <button onClick={function(){ if (!inList) addToCart(part); }}
+                                style={{ flexShrink: 0, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                {inList ? "✓" : "+ Add"}
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
