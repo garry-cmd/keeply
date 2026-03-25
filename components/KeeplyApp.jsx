@@ -29,6 +29,29 @@ async function supa(table, opts) {
   return res.json();
 }
 
+// ─── STORAGE UPLOAD ──────────────────────────────────────────────────────────
+async function uploadToStorage(file, eqId) {
+  const ext = file.name.split(".").pop();
+  const path = eqId + "/" + Date.now() + "-" + file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const res = await fetch(
+    "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/vessel-docs/" + path,
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPA_KEY,
+        "Authorization": "Bearer " + SUPA_KEY,
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: file,
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(function(){ return {}; });
+    throw new Error(err.message || "Upload failed");
+  }
+  return "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/public/vessel-docs/" + path;
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function today() { return new Date().toISOString().split("T")[0]; }
 
@@ -406,7 +429,8 @@ export default function App() {
   const [addingPartFor, setAddingPartFor]   = useState(null);
   const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "" });
   const [addingDocFor, setAddingDocFor]     = useState(null);
-  const [newDocForm, setNewDocForm]         = useState({ label: "", url: "", type: "Manual", source: "url", fileData: null, fileName: "" });
+  const [newDocForm, setNewDocForm]         = useState({ label: "", url: "", type: "Manual", source: "url", fileObj: null, fileName: "" });
+  const [uploadingDoc, setUploadingDoc]     = useState(false);
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
   // ── Maintenance Tasks (Supabase) ──
@@ -418,6 +442,7 @@ export default function App() {
   const [showAddTask, setShowAddTask]       = useState(false);
   const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium" });
   const [showAddDoc, setShowAddDoc]         = useState(false);
+  const [expandedDoc, setExpandedDoc]       = useState(null);
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high" });
   const [showCartOnly, setShowCartOnly]     = useState(false);
 
@@ -482,6 +507,7 @@ export default function App() {
             lastService:    t.last_service,
             dueDate:        t.due_date,
             serviceLogs:    t.service_logs || [],
+            attachments:    t.attachments || [],
             pendingComment: "",
             _vesselId:      t.vessel_id,
           };
@@ -606,17 +632,24 @@ export default function App() {
   const addCustomDoc = async function(eqId){
     if (!newDocForm.label.trim()) return;
     if (newDocForm.source === "url" && !newDocForm.url.trim()) return;
-    if (newDocForm.source === "file" && !newDocForm.fileData) return;
+    if (newDocForm.source === "file" && !newDocForm.fileObj) return;
     const eq = equipment.find(function(e){ return e.id === eqId; });
     if (!eq) return;
-    const doc = { id: "doc-" + Date.now(), label: newDocForm.label, type: newDocForm.type, url: newDocForm.source === "url" ? newDocForm.url : newDocForm.fileData, fileName: newDocForm.fileName || "", isFile: newDocForm.source === "file" };
-    const updatedDocs = [...(eq.docs || []), doc];
+    setSaving(true);
+    setUploadingDoc(true);
     try {
+      let fileUrl = newDocForm.url;
+      if (newDocForm.source === "file") {
+        fileUrl = await uploadToStorage(newDocForm.fileObj, eqId);
+      }
+      const doc = { id: "doc-" + Date.now(), label: newDocForm.label, type: newDocForm.type, url: fileUrl, fileName: newDocForm.fileName || "", isFile: newDocForm.source === "file" };
+      const updatedDocs = [...(eq.docs || []), doc];
       await supa("equipment", { method: "PATCH", query: "id=eq." + eqId, body: { docs: updatedDocs }, prefer: "return=minimal" });
       setEquipment(function(prev){ return prev.map(function(e){ return e.id === eqId ? { ...e, docs: updatedDocs } : e; }); });
-      setNewDocForm({ label: "", url: "", type: "Manual", source: "url", fileData: null, fileName: "" });
+      setNewDocForm({ label: "", url: "", type: "Manual", source: "url", fileObj: null, fileName: "" });
       setAddingDocFor(null);
     } catch(err){ setDbError(err.message); }
+    finally { setSaving(false); setUploadingDoc(false); }
   };
 
   const removeDoc = async function(eqId, docId){
@@ -723,7 +756,32 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
-  const deleteTask = async function(id){
+  const addDocAttachment = async function(taskId, file){
+    const task = tasks.find(function(t){ return t.id === taskId; });
+    if (!task) return;
+    setSaving(true);
+    setUploadingDoc(true);
+    try {
+      const url = await uploadToStorage(file, "doc-" + taskId);
+      const att = { id: "att-" + Date.now(), fileName: file.name, url, type: file.type };
+      const updated = [...(task.attachments || []), att];
+      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + taskId, body: { attachments: updated }, prefer: "return=minimal" });
+      setTasks(function(prev){ return prev.map(function(t){ return t.id === taskId ? { ...t, attachments: updated } : t; }); });
+    } catch(err){ setDbError(err.message); }
+    finally { setSaving(false); setUploadingDoc(false); }
+  };
+
+  const removeDocAttachment = async function(taskId, attId){
+    const task = tasks.find(function(t){ return t.id === taskId; });
+    if (!task) return;
+    const updated = (task.attachments || []).filter(function(a){ return a.id !== attId; });
+    try {
+      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + taskId, body: { attachments: updated }, prefer: "return=minimal" });
+      setTasks(function(prev){ return prev.map(function(t){ return t.id === taskId ? { ...t, attachments: updated } : t; }); });
+    } catch(err){ setDbError(err.message); }
+  };
+
+    const deleteTask = async function(id){
     try {
       await supa("maintenance_tasks", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
       setTasks(function(prev){ return prev.filter(function(t){ return t.id !== id; }); });
@@ -1071,18 +1129,18 @@ export default function App() {
                           <input placeholder="Document name / label" value={newDocForm.label} onChange={function(e){ setNewDocForm(function(f){ return { ...f, label: e.target.value }; }); }} style={s.inp} />
                           {newDocForm.source === "url"
                             ? <input placeholder="https://…" value={newDocForm.url} onChange={function(e){ setNewDocForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
-                            : <div style={{ marginBottom: 10 }}><label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: "pointer", fontSize: 12, color: "#6b7280", textAlign: "center" }}>{newDocForm.fileName || "Choose file…"}<input type="file" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(ev){ setNewDocForm(function(f){ return { ...f, fileData: ev.target.result, fileName: file.name }; }); }; reader.readAsDataURL(file); }} /></label></div>
+                            : <div style={{ marginBottom: 10 }}><label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "#16a34a" : "#6b7280", textAlign: "center", background: newDocForm.fileName ? "#f0fdf4" : "#fff" }}>{newDocForm.fileName ? "📎 " + newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} /></label></div>
                           }
                           <select value={newDocForm.type} onChange={function(e){ setNewDocForm(function(f){ return { ...f, type: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 10 }}>
                             {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
                           </select>
                           <div style={{ display: "flex", gap: 8 }}>
-                            <button onClick={function(){ setAddingDocFor(null); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileData:null, fileName:"" }); }} style={{ flex: 1, padding: "7px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
-                            <button onClick={function(){ addCustomDoc(eq.id); }} style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: "#7c3aed", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Add Document</button>
+                            <button onClick={function(){ setAddingDocFor(null); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileObj:null, fileName:"" }); }} style={{ flex: 1, padding: "7px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                            <button onClick={function(){ addCustomDoc(eq.id); }} disabled={uploadingDoc} style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: uploadingDoc ? "#a78bfa" : "#7c3aed", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, fontWeight: 700 }}>{uploadingDoc ? "Uploading…" : "Add Document"}</button>
                           </div>
                         </div>
                       ) : (
-                        <button onClick={function(){ setAddingDocFor(eq.id); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileData:null, fileName:"" }); }} style={{ marginTop: 8, background: "none", border: "1.5px dashed #ddd6fe", borderRadius: 8, padding: "6px 16px", fontSize: 12, fontWeight: 600, color: "#7c3aed", cursor: "pointer", width: "100%" }}>+ Add Document</button>
+                        <button onClick={function(){ setAddingDocFor(eq.id); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileObj:null, fileName:"" }); }} style={{ marginTop: 8, background: "none", border: "1.5px dashed #ddd6fe", borderRadius: 8, padding: "6px 16px", fontSize: 12, fontWeight: 600, color: "#7c3aed", cursor: "pointer", width: "100%" }}>+ Add Document</button>
                       )}
                     </>)}
                   </div>
@@ -1229,9 +1287,53 @@ export default function App() {
             <UrgencyCard label="Due Soon" sub="Within 3 days" val={docUrgencyCounts.dueSoon} color="#ca8a04" bg="#fefce8" active={false} onClick={null} />
           </div>
           {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>📄</div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
-          <div style={s.card}>
-            {[...docTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; }).map(function(t, i, arr){ return <TaskRow key={t.id} task={t} idx={i} total={arr.length} onToggle={toggleTask} onComment={updateComment} onDelete={deleteTask} showSection={false} />; })}
-          </div>
+          {[...docTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; }).map(function(t){
+            const badge = getDueBadge(t.dueDate);
+            const isExpanded = expandedDoc === t.id;
+            const atts = t.attachments || [];
+            return (
+              <div key={t.id} style={s.card}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={function(){ setExpandedDoc(isExpanded ? null : t.id); }}>
+                  <input type="checkbox" checked={false} onChange={function(e){ e.stopPropagation(); toggleTask(t.id); }} onClick={function(e){ e.stopPropagation(); }} style={{ width: 16, height: 16, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</span>
+                      <span style={{ background: PRIORITY_CFG[t.priority].bg, color: PRIORITY_CFG[t.priority].color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{t.priority}</span>
+                      {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
+                      {atts.length > 0 && <span style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>📎 {atts.length}</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                      {t.dueDate && <span>Due: {fmt(t.dueDate)}</span>}
+                      {t.lastService && <span> · Last renewed: {fmt(t.lastService)}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button onClick={function(e){ e.stopPropagation(); deleteTask(t.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
+                    <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div style={{ borderTop: "1px solid #f3f4f6", padding: "14px 20px", background: "#fafafa" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>ATTACHED FILES</div>
+                    {atts.length === 0 && <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 10 }}>No files attached yet.</div>}
+                    {atts.map(function(att){ return (
+                      <div key={att.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid #f3f4f6" }}>
+                        <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 16 }}>{att.type && att.type.indexOf("pdf") >= 0 ? "📄" : att.type && att.type.indexOf("image") >= 0 ? "🖼" : "📎"}</span>
+                          {att.fileName} ↗
+                        </a>
+                        <button onClick={function(){ removeDocAttachment(t.id, att.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                      </div>
+                    ); })}
+                    <label style={{ display: "block", marginTop: 10, padding: "8px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, color: uploadingDoc ? "#9ca3af" : "#6b7280", textAlign: "center", background: "#fff" }}>
+                      {uploadingDoc ? "Uploading…" : "📎 Attach a file (PDF, JPG, PNG…)"}
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" disabled={uploadingDoc} style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (file) addDocAttachment(t.id, file); }} />
+                    </label>
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {showAddDoc && (
             <div style={s.modalBg} onClick={function(){ setShowAddDoc(false); }}>
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
