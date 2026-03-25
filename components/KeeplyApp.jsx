@@ -1,5 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "./supabase-client";
+import AuthScreen from "./AuthScreen";
+import VesselSetup from "./VesselSetup";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
@@ -191,6 +194,49 @@ function UrgencyCard({ label, sub, val, color, bg, active, onClick }) {
       <div style={{ fontSize: 12, fontWeight: 700, color, marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{sub}</div>}
       {active && <div style={{ fontSize: 9, color, fontWeight: 700, marginTop: 4 }}>FILTERED ✕</div>}
+      {/* ── SHARE VESSEL PANEL ── */}
+      {showShare && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>👥 Share {boatName}</div>
+            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>Invite someone to access this vessel</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL ADDRESS</div>
+            <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
+              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
+            {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "#fef2f2" : "#f0fdf4", color: shareMsg.startsWith("Error") ? "#dc2626" : "#16a34a", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>{shareMsg}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+              <button onClick={shareVessel} disabled={shareLoading} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM DIALOG ── */}
+      {confirmAction && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={function(){ setConfirmAction(null); }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 340, boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>🗑</div>
+            <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 8 }}>Are you sure?</div>
+            <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginBottom: 24 }}>{confirmAction.message}</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={function(){ setConfirmAction(null); }}
+                style={{ flex: 1, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
+                Cancel
+              </button>
+              <button onClick={function(){ confirmAction.onConfirm(); setConfirmAction(null); }}
+                style={{ flex: 1, padding: 12, border: "none", borderRadius: 10, background: "#dc2626", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -366,12 +412,12 @@ function TaskRow({ task, idx, total, onToggle, onComment, onDelete, showSection 
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{task.task}</span>
-            <span style={{ background: PRIORITY_CFG[task.priority].bg, color: PRIORITY_CFG[task.priority].color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{task.priority}</span>
+            <span style={{ background: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).bg, color: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{task.priority}</span>
             {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
             {showSection && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 600 }}>{SECTIONS[task.section]} {task.section}</span>}
           </div>
           <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-            Every {task.interval || (task.interval_days + " days")}
+            Every {task.interval || (task.interval_days ? task.interval_days + " days" : "?")}
             {lastService && <span> · Last: {fmt(lastService)}</span>}
             {dueDate && <span style={{ color: badge ? badge.color : "#9ca3af", fontWeight: badge ? 700 : 400 }}> · Next due: {fmt(dueDate)}</span>}
           </div>
@@ -404,6 +450,14 @@ function TaskRow({ task, idx, total, onToggle, onComment, onDelete, showSection 
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
+  // ── Auth state ──
+  const [session, setSession]     = useState(undefined); // undefined = loading, null = not logged in
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareMsg, setShareMsg]   = useState(null);
+
   const [view, setView] = useState("customer");
   const [tab, setTab]   = useState("equipment");
 
@@ -466,15 +520,33 @@ export default function App() {
   const [repairSectionFilter, setRepairSectionFilter] = useState("All");
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine" });
+  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
+  const [confirmAction, setConfirmAction]     = useState(null);
+
+  // ─── AUTH SESSION ────────────────────────────────────────────────────────────
+  useEffect(function(){
+    supabase.auth.getSession().then(function(res){
+      setSession(res.data.session);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange(function(event, sess){
+      setSession(sess);
+    });
+    return function(){ listener.subscription.unsubscribe(); };
+  }, []);
 
   // ─── LOAD ALL DATA FROM SUPABASE ────────────────────────────────────────────
   useEffect(function(){
     async function loadAll() {
+      if (!session) return;
       try {
         setLoading(true);
-        // Load vessels
+        // Load vessels — filter by membership
         const vs = await supa("vessels", { query: "order=created_at" });
-        if (!vs || vs.length === 0) { setLoading(false); return; }
+        if (!vs || vs.length === 0) {
+          setNeedsSetup(true);
+          setLoading(false);
+          return;
+        }
 
         // Normalize vessel fields
         const normalizedVessels = vs.map(function(v){
@@ -544,7 +616,7 @@ export default function App() {
       }
     }
     loadAll();
-  }, []);
+  }, [session]);
 
   // ─── SWITCH VESSEL — reload equipment + tasks ────────────────────────────────
   const switchVessel = useCallback(async function(vid) {
@@ -581,7 +653,8 @@ export default function App() {
     if (!settingsForm.vesselName.trim()) return;
     setSaving(true);
     try {
-      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: settingsForm.make, model: settingsForm.model, year: settingsForm.year };
+      const userId = session && session.user ? session.user.id : null;
+      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: settingsForm.make, model: settingsForm.model, year: settingsForm.year, user_id: userId };
       if (editingVesselId) {
         await supa("vessels", { method: "PATCH", query: "id=eq." + editingVesselId, body: payload, prefer: "return=minimal" });
         setVessels(function(vs){ return vs.map(function(v){ return v.id === editingVesselId ? { ...settingsForm, id: editingVesselId } : v; }); });
@@ -854,6 +927,27 @@ export default function App() {
     }
   }, [showCartPanel]);
 
+  const shareVessel = async function(){
+    if (!shareEmail.trim()) return;
+    setShareLoading(true); setShareMsg(null);
+    try {
+      // Look up user by email via a custom approach — insert with email, user_id filled later by trigger
+      const { error } = await supabase.from("vessel_members").insert({
+        vessel_id: activeVesselId,
+        email:     shareEmail.trim(),
+        role:      "member",
+        user_id:   "00000000-0000-0000-0000-000000000000", // placeholder until they sign in
+      });
+      if (error) throw error;
+      setShareMsg("Invite sent to " + shareEmail.trim());
+      setShareEmail("");
+    } catch(e) {
+      setShareMsg("Error: " + e.message);
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
   const deleteEquipment = async function(id){
     try {
       await supa("equipment", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
@@ -915,7 +1009,7 @@ export default function App() {
     }
     return true;
   });
-  const sortedTasks = [...visibleTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; });
+  const sortedTasks = [...visibleTasks].sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; });
 
   const sectionStats = MAINT_SECTIONS.map(function(sec){
     const st = maintTasks.filter(function(t){ return t.section === sec; });
@@ -943,7 +1037,6 @@ export default function App() {
   const openRepairs    = repairs.filter(function(r){ return r.status === "open"; }).length;
   const criticalMaint  = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).length;
   const totalAlerts    = openRepairs + criticalMaint;
-  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
 
   const settings  = vessels.find(function(v){ return v.id === activeVesselId; }) || vessels[0] || {};
   const prefix    = settings.vesselType === "motor" ? "M/V" : "S/V";
@@ -966,6 +1059,8 @@ export default function App() {
     sel: { width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, marginBottom: 10, boxSizing: "border-box", background: "#fff" },
   };
 
+  const showConfirm = function(message, onConfirm){ setConfirmAction({ message, onConfirm }); };
+
   const tabHeader = function(title, subtitle, showPlus, onPlus){ return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
       <div>
@@ -977,6 +1072,27 @@ export default function App() {
   ); };
 
   // ─── RENDER ──────────────────────────────────────────────────────────────────
+  // Auth loading
+  if (session === undefined) return (
+    <div style={{ minHeight: "100vh", background: "#f4f6f9", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" }}>
+      <div style={{ textAlign: "center", color: "#9ca3af" }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>⚓</div>
+        <div>Loading Keeply…</div>
+      </div>
+    </div>
+  );
+
+  // Not signed in
+  if (!session) return <AuthScreen />;
+
+  // Signed in but no vessel yet
+  if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
+    setNeedsSetup(false);
+    const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "" };
+    setVessels([normalized]);
+    setActiveVesselId(vessel.id);
+  }} />;
+
   if (loading) return (
     <div style={s.app}>
       <div style={s.topBar}>
@@ -1058,10 +1174,16 @@ export default function App() {
           <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "#fff" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: cartQty > 0 ? "#0f4c8a" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🛒 {cartQty > 0 ? "List (" + cartQty + ")" : "List"}
           </button>
+          <button onClick={function(){ setShowShare(true); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            👥 Share
+          </button>
           <div style={{ display: "flex", background: "rgba(255,255,255,0.12)", borderRadius: 8, padding: 3 }}>
             <button onClick={function(){ setView("customer"); }} style={s.vBtn(view==="customer")}>My Boat</button>
             <button onClick={function(){ setView("admin"); }} style={s.vBtn(view==="admin")}>Admin</button>
           </div>
+          <button onClick={function(){ supabase.auth.signOut(); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            Sign Out
+          </button>
         </div>
       </div>
 
@@ -1134,7 +1256,7 @@ export default function App() {
                     {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
                     {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
                     <StatusBadge status={eq.status} />
-                    <button onClick={function(e){ e.stopPropagation(); deleteEquipment(eq.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
@@ -1217,7 +1339,7 @@ export default function App() {
                               <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
                               {doc.isFile ? <span style={{ fontSize: 13 }}>{doc.label}</span> : <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none" }}>{doc.label} ↗</a>}
                             </div>
-                            <button onClick={function(){ removeDoc(eq.id, doc.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove document"><TrashIcon /></button>
+                            <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(eq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove document"><TrashIcon /></button>
                           </div>
                         ); })}
                       </>)}
@@ -1325,7 +1447,7 @@ export default function App() {
             return repairSectionFilter === "All" || r.section === repairSectionFilter;
           }).map(function(r){ return (
             <div key={r.id} style={{ ...s.card, display: "flex", alignItems: "center", padding: "14px 20px", gap: 14 }}>
-              <input type="checkbox" onChange={function(){ deleteRepair(r.id); }}
+              <input type="checkbox" onChange={function(){ showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }}
                 style={{ width: 18, height: 18, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
@@ -1334,7 +1456,7 @@ export default function App() {
                 </div>
                 <div style={{ fontSize: 13, color: "#1a1d23" }}>{r.description}</div>
               </div>
-              <button onClick={function(){ deleteRepair(r.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
+              <button onClick={function(){ showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
             </div>
           ); })}
           {showAddRepair && (
@@ -1374,7 +1496,7 @@ export default function App() {
             ); })}
           </div>
           <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-            {["All","critical","high","medium","low"].map(function(p){ return <button key={p} onClick={function(){ setFilterPriority(p); }} style={s.pill(filterPriority===p, p !== "All" ? PRIORITY_CFG[p].color : undefined)}>{p === "All" ? "All Priority" : p.charAt(0).toUpperCase() + p.slice(1)}</button>; })}
+            {["All","critical","high","medium","low"].map(function(p){ return <button key={p} onClick={function(){ setFilterPriority(p); }} style={s.pill(filterPriority===p, p !== "All" && PRIORITY_CFG[p] ? PRIORITY_CFG[p].color : undefined)}>{p === "All" ? "All Priority" : p.charAt(0).toUpperCase() + p.slice(1)}</button>; })}
           </div>
 
           <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>{sortedTasks.length} tasks{filterSection !== "All" ? " in " + filterSection : ""}</div>
@@ -1382,7 +1504,7 @@ export default function App() {
           {sortedTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>✅</div><div style={{ marginTop: 8 }}>All clear!</div></div>}
 
           <div style={s.card}>
-            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={deleteTask} showSection={filterSection==="All"} />; })}
+            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var found = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (found ? found.task : "task") + "?", function(){ deleteTask(id); }); }} showSection={filterSection==="All"} />; })}
           </div>
 
           {showAddTask && (
@@ -1417,7 +1539,7 @@ export default function App() {
             <UrgencyCard label="Due Soon" sub="Within 3 days" val={docUrgencyCounts.dueSoon} color="#ca8a04" bg="#fefce8" active={false} onClick={null} />
           </div>
           {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>📄</div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
-          {[...docTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; }).map(function(t){
+          {[...docTasks].sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; }).map(function(t){
             const badge = getDueBadge(t.dueDate);
             const isExpanded = expandedDoc === t.id;
             const atts = t.attachments || [];
@@ -1428,7 +1550,7 @@ export default function App() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</span>
-                      <span style={{ background: PRIORITY_CFG[t.priority].bg, color: PRIORITY_CFG[t.priority].color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{t.priority}</span>
+                      <span style={{ background: (PRIORITY_CFG[t.priority]||PRIORITY_CFG["medium"]).bg, color: (PRIORITY_CFG[t.priority]||PRIORITY_CFG["medium"]).color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{t.priority}</span>
                       {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
                       {atts.length > 0 && <span style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>📎 {atts.length}</span>}
                     </div>
@@ -1438,7 +1560,7 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <button onClick={function(e){ e.stopPropagation(); deleteTask(t.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
@@ -1452,7 +1574,7 @@ export default function App() {
                           {att.docType && DOC_TYPE_CFG[att.docType] && <span style={{ background: DOC_TYPE_CFG[att.docType].bg, color: DOC_TYPE_CFG[att.docType].color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{DOC_TYPE_CFG[att.docType].icon} {att.docType}</span>}
                           <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none" }}>{att.fileName} ↗</a>
                         </div>
-                        <button onClick={function(){ removeDocAttachment(t.id, att.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                        <button onClick={function(){ showConfirm("Remove " + att.fileName + "?", function(){ removeDocAttachment(t.id, att.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                       </div>
                     ); })}
                     <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
@@ -1642,7 +1764,7 @@ export default function App() {
                               <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
                               <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
                               <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>
-                              <button onClick={function(){ removeFromCart(item.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                              <button onClick={function(){ showConfirm("Remove " + item.name + " from list?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                             </div>
                           ); })}
                         </div>
