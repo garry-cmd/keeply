@@ -917,6 +917,9 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
+  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
+  const [confirmAction, setConfirmAction]     = useState(null);
+
     // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
     const b = getDueBadge(t.dueDate || t.due_date);
@@ -966,8 +969,6 @@ export default function App() {
   const openRepairs    = repairs.filter(function(r){ return r.status === "open"; }).length;
   const criticalMaint  = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).length;
   const totalAlerts    = openRepairs + criticalMaint;
-  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
-  const [confirmAction, setConfirmAction]     = useState(null);
 
   const settings  = vessels.find(function(v){ return v.id === activeVesselId; }) || vessels[0] || {};
   const prefix    = settings.vesselType === "motor" ? "M/V" : "S/V";
