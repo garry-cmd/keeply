@@ -183,6 +183,18 @@ function UrgencyCard({ label, sub, val, color, bg, active, onClick }) {
   );
 }
 
+// ─── TRASH ICON ──────────────────────────────────────────────────────────────
+function TrashIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6M14 11v6"/>
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    </svg>
+  );
+}
+
 // ─── LOADING SPINNER ─────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
@@ -295,7 +307,7 @@ function AdminDashboard({ orders, onUpdateStatus }) {
 }
 
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
-function TaskRow({ task, idx, total, onToggle, onComment, showSection }) {
+function TaskRow({ task, idx, total, onToggle, onComment, onDelete, showSection }) {
   const [logsOpen, setLogsOpen] = useState(false);
   const badge = getDueBadge(task.dueDate || task.due_date);
   const dueDate = task.dueDate || task.due_date;
@@ -338,6 +350,7 @@ function TaskRow({ task, idx, total, onToggle, onComment, showSection }) {
             </div>
           )}
         </div>
+        <button onClick={function(){ onDelete(task.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "flex-start", marginTop: 2, flexShrink: 0 }} title="Delete task"><TrashIcon /></button>
       </div>
     </div>
   );
@@ -702,7 +715,22 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
-  // ─── DERIVED STATE ────────────────────────────────────────────────────────────
+  const deleteEquipment = async function(id){
+    try {
+      await supa("equipment", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
+      setEquipment(function(prev){ return prev.filter(function(e){ return e.id !== id; }); });
+      if (expandedEquip === id) setExpandedEquip(null);
+    } catch(err){ setDbError(err.message); }
+  };
+
+  const deleteTask = async function(id){
+    try {
+      await supa("maintenance_tasks", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
+      setTasks(function(prev){ return prev.filter(function(t){ return t.id !== id; }); });
+    } catch(err){ setDbError(err.message); }
+  };
+
+    // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
     const b = getDueBadge(t.dueDate || t.due_date);
     if (!b) return null;
@@ -941,6 +969,7 @@ export default function App() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <StatusBadge status={eq.status} />
+                    <button onClick={function(e){ e.stopPropagation(); deleteEquipment(eq.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
@@ -1016,7 +1045,7 @@ export default function App() {
                               <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
                               {doc.isFile ? <span style={{ fontSize: 13 }}>{doc.label}</span> : <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none" }}>{doc.label} ↗</a>}
                             </div>
-                            <button onClick={function(){ removeDoc(eq.id, doc.id); }} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14 }}>✕</button>
+                            <button onClick={function(){ removeDoc(eq.id, doc.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove document"><TrashIcon /></button>
                           </div>
                         ); })}
                       </>)}
@@ -1117,8 +1146,7 @@ export default function App() {
                 </div>
                 <div style={{ fontSize: 13, color: "#1a1d23" }}>{r.description}</div>
               </div>
-              <button onClick={function(){ deleteRepair(r.id); }}
-                style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 18, flexShrink: 0, padding: "0 4px" }} title="Delete">✕</button>
+              <button onClick={function(){ deleteRepair(r.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
             </div>
           ); })}
           {showAddRepair && (
@@ -1166,7 +1194,7 @@ export default function App() {
           {sortedTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>✅</div><div style={{ marginTop: 8 }}>All clear!</div></div>}
 
           <div style={s.card}>
-            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} showSection={filterSection==="All"} />; })}
+            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={deleteTask} showSection={filterSection==="All"} />; })}
           </div>
 
           {showAddTask && (
@@ -1202,7 +1230,7 @@ export default function App() {
           </div>
           {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>📄</div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
           <div style={s.card}>
-            {[...docTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; }).map(function(t, i, arr){ return <TaskRow key={t.id} task={t} idx={i} total={arr.length} onToggle={toggleTask} onComment={updateComment} showSection={false} />; })}
+            {[...docTasks].sort(function(a,b){ return PRIORITY_CFG[a.priority].order - PRIORITY_CFG[b.priority].order; }).map(function(t, i, arr){ return <TaskRow key={t.id} task={t} idx={i} total={arr.length} onToggle={toggleTask} onComment={updateComment} onDelete={deleteTask} showSection={false} />; })}
           </div>
           {showAddDoc && (
             <div style={s.modalBg} onClick={function(){ setShowAddDoc(false); }}>
@@ -1321,7 +1349,7 @@ export default function App() {
             <div style={{ flex: 1, overflowY: "auto" }}>
               {cart.length === 0
                 ? <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>🛒</div><div style={{ marginTop: 8, fontSize: 14 }}>Cart is empty</div></div>
-                : cart.map(function(item){ return (<div key={item.id} style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</div><div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Qty: {item.qty} · ${(item.retailPrice * item.qty).toFixed(2)}</div></div><button onClick={function(){ removeFromCart(item.id); }} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 16 }}>✕</button></div>); })}
+                : cart.map(function(item){ return (<div key={item.id} style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</div><div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Qty: {item.qty} · ${(item.retailPrice * item.qty).toFixed(2)}</div></div><button onClick={function(){ removeFromCart(item.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button></div>); })}
             </div>
             {cart.length > 0 && (
               <div style={{ padding: 20, borderTop: "1px solid #e8eaed" }}>
