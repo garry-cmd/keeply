@@ -785,12 +785,19 @@ export default function App() {
       const openR = repairs.filter(function(r){ return r.status === "open"; });
       const criticalT = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue"; }).slice(0, 10);
       const partsJson = JSON.stringify(PARTS_CATALOG.map(function(p){ return { id: p.id, name: p.name, category: p.category, sku: p.sku }; }));
-      const repairsText = openR.map(function(r){ return r.section + ": " + r.description; }).join("
-");
-      const tasksText = criticalT.map(function(t){ return t.section + ": " + t.task; }).join("
-");
+      const repairsText = openR.map(function(r){ return r.section + ": " + r.description; }).join(", ");
+      const tasksText = criticalT.map(function(t){ return t.section + ": " + t.task; }).join(", ");
 
-      const prompt = "You are a marine maintenance assistant. Based on these open repairs and overdue tasks, suggest which parts from the catalog are most relevant to purchase. Return ONLY a JSON array of part IDs with a brief reason, like: [{"id":"p5","reason":"Engine oil needed for overdue service"}]. Max 6 suggestions. Only suggest parts that are genuinely relevant.\n\nOPEN REPAIRS:\n" + repairsText + "\n\nOVERDUE TASKS:\n" + tasksText + "\n\nPARTS CATALOG:\n" + partsJson;
+      const prompt = [
+        "You are a marine maintenance assistant. Based on these open repairs and overdue tasks,",
+        "suggest which parts from the catalog are most relevant to purchase.",
+        'Return ONLY a JSON array like: [{"id":"p5","reason":"Engine oil needed"}].',
+        "Max 6 suggestions. Only suggest genuinely relevant parts.",
+        "",
+        "OPEN REPAIRS: " + repairsText,
+        "OVERDUE TASKS: " + tasksText,
+        "PARTS CATALOG: " + partsJson
+      ].join(" ");
 
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
