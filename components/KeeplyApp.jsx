@@ -1033,7 +1033,11 @@ export default function App() {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_CFG[eq.status].dot, flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{eq.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
+                        {eq.name}
+                        {(eq.docs||[]).length > 0 && <span style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }} title={eq.docs.length + " document(s)"}>📎 {eq.docs.length}</span>}
+                        {(eq.customParts||[]).length > 0 && <span style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }} title={eq.customParts.length + " custom part(s)"}>🔩 {eq.customParts.length}</span>}
+                      </div>
                       <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
                         {(SECTIONS[eq.category] || "")} {eq.category}
                         {eq.lastService && <span> · Serviced {fmt(eq.lastService)}</span>}
