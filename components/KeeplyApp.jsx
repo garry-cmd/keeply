@@ -894,6 +894,27 @@ export default function App() {
         {view === "customer" && tab === "equipment" && (<>
           {tabHeader("Equipment", boatName + " · " + equipment.length + " items", true, function(){ setShowAddEquip(true); })}
 
+          {/* Status summary cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
+            {[
+              { key: "good",          label: "Good",         sub: "No issues",         color: "#16a34a", bg: "#f0fdf4" },
+              { key: "watch",         label: "Watch",        sub: "Monitor closely",   color: "#d97706", bg: "#fffbeb" },
+              { key: "needs-service", label: "Needs Service",sub: "Action required",   color: "#dc2626", bg: "#fef2f2" },
+            ].map(function(card){
+              const count = equipment.filter(function(e){ return e.status === card.key; }).length;
+              const active = equipFilter === card.key;
+              return (
+                <div key={card.key} onClick={function(){ setEquipFilter(active ? "All" : card.key); }}
+                  style={{ background: card.bg, border: active ? "2px solid " + card.color : "1px solid " + card.color + "25", borderRadius: 12, padding: "12px 14px", cursor: "pointer", boxShadow: active ? "0 0 0 3px " + card.color + "20" : "none", userSelect: "none" }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{count}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
+                  <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{card.sub}</div>
+                  {active && <div style={{ fontSize: 9, color: card.color, fontWeight: 700, marginTop: 4 }}>FILTERED ✕</div>}
+                </div>
+              );
+            })}
+          </div>
+
           {/* filters */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
