@@ -177,8 +177,9 @@ function Badge({ label, color, bg, border }) {
   return <span style={{ background: bg, color, border: border ? "1px solid " + border : "none", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{label}</span>;
 }
 function PriorityBadge({ priority }) {
-  const c = PRIORITY_CFG[priority];
-  return <Badge label={priority.toUpperCase()} color={c.color} bg={c.bg} />;
+  const c = PRIORITY_CFG[priority] || PRIORITY_CFG["medium"];
+  const label = priority ? priority.toUpperCase() : "MEDIUM";
+  return <Badge label={label} color={c.color} bg={c.bg} />;
 }
 function SectionBadge({ section }) {
   return <span style={{ fontSize: 10, fontWeight: 700, background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px" }}>{SECTIONS[section] || ""} {section}</span>;
@@ -194,49 +195,6 @@ function UrgencyCard({ label, sub, val, color, bg, active, onClick }) {
       <div style={{ fontSize: 12, fontWeight: 700, color, marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{sub}</div>}
       {active && <div style={{ fontSize: 9, color, fontWeight: 700, marginTop: 4 }}>FILTERED ✕</div>}
-      {/* ── SHARE VESSEL PANEL ── */}
-      {showShare && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>👥 Share {boatName}</div>
-            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>Invite someone to access this vessel</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL ADDRESS</div>
-            <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
-              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
-            {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "#fef2f2" : "#f0fdf4", color: shareMsg.startsWith("Error") ? "#dc2626" : "#16a34a", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>{shareMsg}</div>}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-              <button onClick={shareVessel} disabled={shareLoading} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── CONFIRM DIALOG ── */}
-      {confirmAction && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-          onClick={function(){ setConfirmAction(null); }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 340, boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>🗑</div>
-            <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 8 }}>Are you sure?</div>
-            <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginBottom: 24 }}>{confirmAction.message}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={function(){ setConfirmAction(null); }}
-                style={{ flex: 1, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
-                Cancel
-              </button>
-              <button onClick={function(){ confirmAction.onConfirm(); setConfirmAction(null); }}
-                style={{ flex: 1, padding: 12, border: "none", borderRadius: 10, background: "#dc2626", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
@@ -1824,6 +1782,43 @@ export default function App() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SHARE VESSEL PANEL ── */}
+      {showShare && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>👥 Share {boatName}</div>
+            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>Invite someone to access this vessel</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL ADDRESS</div>
+            <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
+              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
+            {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "#fef2f2" : "#f0fdf4", color: shareMsg.startsWith("Error") ? "#dc2626" : "#16a34a", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>{shareMsg}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+              <button onClick={shareVessel} disabled={shareLoading} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM DIALOG ── */}
+      {confirmAction && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={function(){ setConfirmAction(null); }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 340, boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>🗑</div>
+            <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 8 }}>Are you sure?</div>
+            <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginBottom: 24 }}>{confirmAction.message}</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={function(){ setConfirmAction(null); }} style={{ flex: 1, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>Cancel</button>
+              <button onClick={function(){ confirmAction.onConfirm(); setConfirmAction(null); }} style={{ flex: 1, padding: 12, border: "none", borderRadius: 10, background: "#dc2626", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>Delete</button>
             </div>
           </div>
         </div>
