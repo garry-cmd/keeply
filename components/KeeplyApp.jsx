@@ -1811,7 +1811,10 @@ export default function App() {
           onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
           <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
             onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>👥 Share {boatName}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>👥 Share {boatName}</div>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280", lineHeight: 1 }}>✕</button>
+            </div>
             <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>Invite someone to access this vessel</div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL ADDRESS</div>
             <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
