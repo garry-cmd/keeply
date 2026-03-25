@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "./supabase-client";
 
 export default function AuthScreen() {
-  const [mode, setMode]         = useState("login"); // login | signup | reset
+  const [mode, setMode]         = useState("login");
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading]   = useState(false);
@@ -17,26 +17,40 @@ export default function AuthScreen() {
     btn:   { width: "100%", border: "none", borderRadius: 10, padding: 13, fontSize: 15, fontWeight: 700, cursor: "pointer" },
     link:  { background: "none", border: "none", color: "#0f4c8a", fontSize: 13, cursor: "pointer", fontWeight: 600, padding: 0 },
     err:   { background: "#fef2f2", color: "#dc2626", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 12 },
-    msg:   { background: "#f0fdf4", color: "#16a34a", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 12 },
+    msg:   { background: "#f0fdf4", color: "#166534", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 12 },
   };
 
   const handleEmail = async function() {
     if (!email || !password) { setError("Please enter email and password."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true); setError(null); setMessage(null);
     try {
-      let result;
       if (mode === "login") {
-        result = await supabase.auth.signInWithPassword({ email, password });
+        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+        if (err) {
+          if (err.message.includes("Email not confirmed")) {
+            setError("Please check your email and click the confirmation link first.");
+          } else if (err.message.includes("Invalid login")) {
+            setError("Incorrect email or password.");
+          } else {
+            setError(err.message);
+          }
+        }
+        // If no error, onAuthStateChange in the parent will update session automatically
       } else {
-        result = await supabase.auth.signUp({ email, password });
-        if (!result.error) {
-          setMessage("Check your email to confirm your account, then sign in.");
+        const { data, error: err } = await supabase.auth.signUp({ email, password });
+        if (err) {
+          setError(err.message);
+        } else if (data.session) {
+          // Email confirmation disabled — user is signed in immediately, nothing to do
+          // onAuthStateChange will fire and update parent
+        } else {
+          // Email confirmation required
+          setMessage("Account created! Check your email for a confirmation link, then sign in.");
           setMode("login");
-          setLoading(false);
-          return;
+          setPassword("");
         }
       }
-      if (result.error) setError(result.error.message);
     } catch(e) {
       setError(e.message);
     } finally {
@@ -57,7 +71,7 @@ export default function AuthScreen() {
     if (!email) { setError("Enter your email address first."); return; }
     setLoading(true); setError(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + "/reset"
+      redirectTo: window.location.origin
     });
     if (error) setError(error.message);
     else setMessage("Password reset email sent — check your inbox.");
@@ -98,15 +112,20 @@ export default function AuthScreen() {
           </>
         )}
 
-        {/* Email / Password */}
-        <input type="email" placeholder="Email address" value={email} onChange={function(e){ setEmail(e.target.value); }} style={s.inp} />
+        <input type="email" placeholder="Email address" value={email}
+          onChange={function(e){ setEmail(e.target.value); }} style={s.inp} />
+
         {mode !== "reset" && (
-          <input type="password" placeholder="Password" value={password} onChange={function(e){ setPassword(e.target.value); }} onKeyDown={function(e){ if (e.key === "Enter") handleEmail(); }} style={{ ...s.inp, marginBottom: 16 }} />
+          <input type="password" placeholder="Password (min 6 characters)" value={password}
+            onChange={function(e){ setPassword(e.target.value); }}
+            onKeyDown={function(e){ if (e.key === "Enter") handleEmail(); }}
+            style={{ ...s.inp, marginBottom: 16 }} />
         )}
 
         {mode === "login" && (
           <>
-            <button onClick={handleEmail} disabled={loading} style={{ ...s.btn, background: loading ? "#6b9fd4" : "#0f4c8a", color: "#fff", marginBottom: 14 }}>
+            <button onClick={handleEmail} disabled={loading}
+              style={{ ...s.btn, background: loading ? "#6b9fd4" : "#0f4c8a", color: "#fff", marginBottom: 14 }}>
               {loading ? "Signing in…" : "Sign In"}
             </button>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -118,18 +137,22 @@ export default function AuthScreen() {
 
         {mode === "signup" && (
           <>
-            <button onClick={handleEmail} disabled={loading} style={{ ...s.btn, background: loading ? "#6b9fd4" : "#0f4c8a", color: "#fff", marginBottom: 14 }}>
+            <button onClick={handleEmail} disabled={loading}
+              style={{ ...s.btn, background: loading ? "#6b9fd4" : "#0f4c8a", color: "#fff", marginBottom: 14 }}>
               {loading ? "Creating account…" : "Create Account"}
             </button>
             <div style={{ textAlign: "center" }}>
-              <button onClick={function(){ setMode("login"); setError(null); setMessage(null); }} style={s.link}>Already have an account? Sign in</button>
+              <button onClick={function(){ setMode("login"); setError(null); setMessage(null); }} style={s.link}>
+                Already have an account? Sign in
+              </button>
             </div>
           </>
         )}
 
         {mode === "reset" && (
           <>
-            <button onClick={handleReset} disabled={loading} style={{ ...s.btn, background: loading ? "#6b9fd4" : "#0f4c8a", color: "#fff", marginBottom: 14 }}>
+            <button onClick={handleReset} disabled={loading}
+              style={{ ...s.btn, background: loading ? "#6b9fd4" : "#0f4c8a", color: "#fff", marginBottom: 14 }}>
               {loading ? "Sending…" : "Send Reset Email"}
             </button>
             <div style={{ textAlign: "center" }}>
