@@ -411,9 +411,8 @@ export default function App() {
   // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
   const [repairSectionFilter, setRepairSectionFilter] = useState("All");
-  const [repairStatusFilter, setRepairStatusFilter]   = useState("All");
   const [showAddRepair, setShowAddRepair]   = useState(false);
-  const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine", status: "open" });
+  const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine" });
 
   // ─── LOAD ALL DATA FROM SUPABASE ────────────────────────────────────────────
   useEffect(function(){
@@ -680,29 +679,26 @@ export default function App() {
     if (!newRepair.description.trim()) return;
     setSaving(true);
     try {
-      const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: newRepair.status };
+      const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open" };
       const created = await supa("repairs", { method: "POST", body: payload });
       setRepairs(function(prev){ return [created[0], ...prev]; });
-      setNewRepair({ description: "", section: "Engine", status: "open" });
+      setNewRepair({ description: "", section: "Engine" });
       setShowAddRepair(false);
     } catch(err){
       // Repairs table missing — fall back to in-memory
-      setRepairs(function(prev){ return [{ id: "local-" + Date.now(), date: today(), section: newRepair.section, description: newRepair.description, status: newRepair.status, vessel_id: activeVesselId }, ...prev]; });
-      setNewRepair({ description: "", section: "Engine", status: "open" });
+      setRepairs(function(prev){ return [{ id: "local-" + Date.now(), date: today(), section: newRepair.section, description: newRepair.description, status: "open", vessel_id: activeVesselId }, ...prev]; });
+      setNewRepair({ description: "", section: "Engine" });
       setShowAddRepair(false);
     }
     finally { setSaving(false); }
   };
 
-  const toggleRepairStatus = async function(id){
-    const r = repairs.find(function(rp){ return rp.id === id; });
-    if (!r) return;
-    const newStatus = r.status === "open" ? "closed" : "open";
+  const deleteRepair = async function(id){
     try {
       if (String(id).indexOf("local-") !== 0) {
-        await supa("repairs", { method: "PATCH", query: "id=eq." + id, body: { status: newStatus }, prefer: "return=minimal" });
+        await supa("repairs", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
       }
-      setRepairs(function(prev){ return prev.map(function(rp){ return rp.id === id ? { ...rp, status: newStatus } : rp; }); });
+      setRepairs(function(prev){ return prev.filter(function(rp){ return rp.id !== id; }); });
     } catch(err){ setDbError(err.message); }
   };
 
@@ -1089,10 +1085,10 @@ export default function App() {
 
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs" && (<>
-          {tabHeader("Repair Log", "Track open and closed repair items.", true, function(){ setShowAddRepair(true); })}
+          {tabHeader("Repair Log", boatName + " · " + repairs.filter(function(r){ return repairSectionFilter === "All" || r.section === repairSectionFilter; }).length + " items", true, function(){ setShowAddRepair(true); })}
 
           {/* Section filter pills */}
-          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
             {["All", ...MAINT_SECTIONS].map(function(sec){ return (
               <button key={sec} onClick={function(){ setRepairSectionFilter(sec); }} style={s.pill(repairSectionFilter===sec)}>
                 {sec === "All" ? "All Sections" : (SECTIONS[sec] || "") + " " + sec}
@@ -1100,49 +1096,29 @@ export default function App() {
             ); })}
           </div>
 
-          {/* Status filter pills */}
-          <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-            {["All","open","closed"].map(function(st){ return (
-              <button key={st} onClick={function(){ setRepairStatusFilter(st); }} style={s.pill(repairStatusFilter===st, st==="open" ? "#dc2626" : st==="closed" ? "#16a34a" : undefined)}>
-                {st === "All" ? "All Status" : st.charAt(0).toUpperCase() + st.slice(1)}
-              </button>
-            ); })}
-          </div>
-
           {repairs.filter(function(r){
-            if (repairSectionFilter !== "All" && r.section !== repairSectionFilter) return false;
-            if (repairStatusFilter  !== "All" && r.status  !== repairStatusFilter)  return false;
-            return true;
+            return repairSectionFilter === "All" || r.section === repairSectionFilter;
           }).length === 0 && !showAddRepair && (
             <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}>
-              <div style={{ fontSize: 36 }}>🔧</div>
-              <div style={{ marginTop: 8 }}>No repairs logged yet.</div>
-              {repairs.length === 0 && tasks.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 16px", display: "inline-block" }}>
-                  ⚠️ Run the SQL migration to enable the repairs table
-                </div>
-              )}
+              <div style={{ fontSize: 36 }}>✅</div>
+              <div style={{ marginTop: 8 }}>No repairs on the list.</div>
             </div>
           )}
           {repairs.filter(function(r){
-            if (repairSectionFilter !== "All" && r.section !== repairSectionFilter) return false;
-            if (repairStatusFilter  !== "All" && r.status  !== repairStatusFilter)  return false;
-            return true;
+            return repairSectionFilter === "All" || r.section === repairSectionFilter;
           }).map(function(r){ return (
-            <div key={r.id} style={s.card}>
-              <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                    <SectionBadge section={r.section} />
-                    <span style={{ background: r.status==="open" ? "#fee2e2" : "#f0fdf4", color: r.status==="open" ? "#dc2626" : "#16a34a", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{r.status.toUpperCase()}</span>
-                    <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</span>
-                  </div>
-                  <div style={{ fontSize: 13, color: "#1a1d23" }}>{r.description}</div>
+            <div key={r.id} style={{ ...s.card, display: "flex", alignItems: "center", padding: "14px 20px", gap: 14 }}>
+              <input type="checkbox" onChange={function(){ deleteRepair(r.id); }}
+                style={{ width: 18, height: 18, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
+                  <SectionBadge section={r.section} />
+                  <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</span>
                 </div>
-                <button onClick={function(){ toggleRepairStatus(r.id); }} style={{ marginLeft: 12, padding: "5px 12px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", color: r.status==="open" ? "#16a34a" : "#dc2626", flexShrink: 0 }}>
-                  {r.status === "open" ? "✓ Close" : "↺ Reopen"}
-                </button>
+                <div style={{ fontSize: 13, color: "#1a1d23" }}>{r.description}</div>
               </div>
+              <button onClick={function(){ deleteRepair(r.id); }}
+                style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 18, flexShrink: 0, padding: "0 4px" }} title="Delete">✕</button>
             </div>
           ); })}
           {showAddRepair && (
@@ -1150,16 +1126,12 @@ export default function App() {
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
                 <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
-                <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
+                <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
-                </select>
-                <select value={newRepair.status} onChange={function(e){ setNewRepair(function(r){ return { ...r, status: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
-                  <option value="open">Open</option>
-                  <option value="closed">Closed</option>
                 </select>
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={function(){ setShowAddRepair(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={addRepair} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Save Repair</button>
+                  <button onClick={addRepair} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add to List</button>
                 </div>
               </div>
             </div>
