@@ -419,7 +419,7 @@ function TaskRow({ task, idx, total, onToggle, onComment, onDelete, showSection 
             </div>
           )}
         </div>
-        <button onClick={function(){ onDelete(task.id, task.task); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "flex-start", marginTop: 2, flexShrink: 0 }} title="Delete task"><TrashIcon /></button>
+        <button onClick={function(){ onDelete(task.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "flex-start", marginTop: 2, flexShrink: 0 }} title="Delete task"><TrashIcon /></button>
       </div>
     </div>
   );
@@ -990,7 +990,7 @@ export default function App() {
     sel: { width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, marginBottom: 10, boxSizing: "border-box", background: "#fff" },
   };
 
-  const confirm = function(message, onConfirm){ setConfirmAction({ message, onConfirm }); };
+  const showConfirm = function(message, onConfirm){ setConfirmAction({ message, onConfirm }); };
 
   const tabHeader = function(title, subtitle, showPlus, onPlus){ return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -1160,7 +1160,7 @@ export default function App() {
                     {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
                     {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
                     <StatusBadge status={eq.status} />
-                    <button onClick={function(e){ e.stopPropagation(); confirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
@@ -1243,7 +1243,7 @@ export default function App() {
                               <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
                               {doc.isFile ? <span style={{ fontSize: 13 }}>{doc.label}</span> : <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none" }}>{doc.label} ↗</a>}
                             </div>
-                            <button onClick={function(){ confirm("Remove " + doc.label + "?", function(){ removeDoc(eq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove document"><TrashIcon /></button>
+                            <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(eq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove document"><TrashIcon /></button>
                           </div>
                         ); })}
                       </>)}
@@ -1351,7 +1351,7 @@ export default function App() {
             return repairSectionFilter === "All" || r.section === repairSectionFilter;
           }).map(function(r){ return (
             <div key={r.id} style={{ ...s.card, display: "flex", alignItems: "center", padding: "14px 20px", gap: 14 }}>
-              <input type="checkbox" onChange={function(){ confirm("Delete this repair?", function(){ deleteRepair(r.id); }); }}
+              <input type="checkbox" onChange={function(){ showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }}
                 style={{ width: 18, height: 18, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
@@ -1360,7 +1360,7 @@ export default function App() {
                 </div>
                 <div style={{ fontSize: 13, color: "#1a1d23" }}>{r.description}</div>
               </div>
-              <button onClick={function(){ confirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
+              <button onClick={function(){ showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
             </div>
           ); })}
           {showAddRepair && (
@@ -1408,7 +1408,7 @@ export default function App() {
           {sortedTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>✅</div><div style={{ marginTop: 8 }}>All clear!</div></div>}
 
           <div style={s.card}>
-            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={deleteTask} showSection={filterSection==="All"} />; })}
+            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var t = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (t ? t.task : "task") + "?", function(){ deleteTask(id); }); }} showSection={filterSection==="All"} />; })}
           </div>
 
           {showAddTask && (
@@ -1464,7 +1464,7 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <button onClick={function(e){ e.stopPropagation(); confirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
@@ -1478,7 +1478,7 @@ export default function App() {
                           {att.docType && DOC_TYPE_CFG[att.docType] && <span style={{ background: DOC_TYPE_CFG[att.docType].bg, color: DOC_TYPE_CFG[att.docType].color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{DOC_TYPE_CFG[att.docType].icon} {att.docType}</span>}
                           <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0f4c8a", textDecoration: "none" }}>{att.fileName} ↗</a>
                         </div>
-                        <button onClick={function(){ confirm("Remove " + att.fileName + "?", function(){ removeDocAttachment(t.id, att.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                        <button onClick={function(){ showConfirm("Remove " + att.fileName + "?", function(){ removeDocAttachment(t.id, att.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                       </div>
                     ); })}
                     <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
@@ -1668,7 +1668,7 @@ export default function App() {
                               <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
                               <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
                               <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>
-                              <button onClick={function(){ confirm("Remove " + item.name + " from list?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                              <button onClick={function(){ showConfirm("Remove " + item.name + " from list?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                             </div>
                           ); })}
                         </div>
