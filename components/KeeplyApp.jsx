@@ -389,12 +389,12 @@ function TaskRow({ task, idx, total, onToggle, onComment, onDelete, showSection 
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{task.task}</span>
-            <span style={{ background: PRIORITY_CFG[task.priority].bg, color: PRIORITY_CFG[task.priority].color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{task.priority}</span>
+            <span style={{ background: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).bg, color: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{task.priority}</span>
             {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
             {showSection && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 600 }}>{SECTIONS[task.section]} {task.section}</span>}
           </div>
           <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-            Every {task.interval || (task.interval_days + " days")}
+            Every {task.interval || (task.interval_days ? task.interval_days + " days" : "?")}
             {lastService && <span> · Last: {fmt(lastService)}</span>}
             {dueDate && <span style={{ color: badge ? badge.color : "#9ca3af", fontWeight: badge ? 700 : 400 }}> · Next due: {fmt(dueDate)}</span>}
           </div>
@@ -1408,7 +1408,7 @@ export default function App() {
           {sortedTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>✅</div><div style={{ marginTop: 8 }}>All clear!</div></div>}
 
           <div style={s.card}>
-            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var t = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (t ? t.task : "task") + "?", function(){ deleteTask(id); }); }} showSection={filterSection==="All"} />; })}
+            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var found = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (found ? found.task : "task") + "?", function(){ deleteTask(id); }); }} showSection={filterSection==="All"} />; })}
           </div>
 
           {showAddTask && (
