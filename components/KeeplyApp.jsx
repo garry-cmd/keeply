@@ -425,7 +425,7 @@ export default function App() {
   const [equipFilter, setEquipFilter]       = useState("All");
   const [equipSectionFilter, setEquipSectionFilter] = useState("All");
   const [showAddEquip, setShowAddEquip]     = useState(false);
-  const [newEquip, setNewEquip]             = useState({ name: "", category: "Engine", status: "good", notes: "" });
+  const [newEquip, setNewEquip]             = useState({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" });
   const [addingPartFor, setAddingPartFor]   = useState(null);
   const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "" });
   const [addingDocFor, setAddingDocFor]     = useState(null);
@@ -443,7 +443,7 @@ export default function App() {
   const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium" });
   const [showAddDoc, setShowAddDoc]         = useState(false);
   const [expandedDoc, setExpandedDoc]       = useState(null);
-  const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high" });
+  const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
   const [showCartOnly, setShowCartOnly]     = useState(false);
 
   // ── Repairs (Supabase) ──
@@ -597,15 +597,23 @@ export default function App() {
     if (!newEquip.name.trim()) return;
     const autoSuggested = getAutoSuggestedDocs(newEquip.name);
     setSaving(true);
+    if (newEquip.fileObj) setUploadingDoc(true);
     try {
-      const payload = { vessel_id: activeVesselId, name: newEquip.name, category: newEquip.category, status: newEquip.status, notes: newEquip.notes, last_service: today(), custom_parts: [], docs: autoSuggested };
+      const initialDocs = [...autoSuggested];
+      if (newEquip.fileObj) {
+        const tempId = "eq-new-" + Date.now();
+        const fileUrl = await uploadToStorage(newEquip.fileObj, tempId);
+        initialDocs.push({ id: "doc-" + Date.now(), label: newEquip.fileName, type: newEquip.fileType, url: fileUrl, fileName: newEquip.fileName, isFile: true });
+      }
+      const notes = [newEquip.notes, newEquip.model ? "Model: " + newEquip.model : "", newEquip.serial ? "S/N: " + newEquip.serial : ""].filter(Boolean).join(" | ");
+      const payload = { vessel_id: activeVesselId, name: newEquip.name, category: newEquip.category, status: newEquip.status, notes: notes, last_service: today(), custom_parts: [], docs: initialDocs };
       const created = await supa("equipment", { method: "POST", body: payload });
       const e = created[0];
       setEquipment(function(eq){ return [...eq, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: e.custom_parts || [], docs: e.docs || [], _vesselId: e.vessel_id }]; });
-      setNewEquip({ name: "", category: "Engine", status: "good", notes: "" });
+      setNewEquip({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" });
       setShowAddEquip(false);
     } catch(err){ setDbError(err.message); }
-    finally { setSaving(false); }
+    finally { setSaving(false); setUploadingDoc(false); }
   };
 
   const updateEquipStatus = async function(id, status){
@@ -709,15 +717,22 @@ export default function App() {
   const addDoc = async function(){
     if (!newDoc.task.trim()) return;
     setSaving(true);
+    if (newDoc.fileObj) setUploadingDoc(true);
     try {
-      const payload = { vessel_id: activeVesselId, task: newDoc.task, section: "Paperwork", interval_days: 365, priority: newDoc.priority, last_service: today(), due_date: newDoc.dueDate || "", service_logs: [] };
+      const initialAtts = [];
+      if (newDoc.fileObj) {
+        const tempId = "doc-new-" + Date.now();
+        const fileUrl = await uploadToStorage(newDoc.fileObj, tempId);
+        initialAtts.push({ id: "att-" + Date.now(), fileName: newDoc.fileName, url: fileUrl, type: newDoc.fileObj.type, docType: newDoc.fileType });
+      }
+      const payload = { vessel_id: activeVesselId, task: newDoc.task, section: "Paperwork", interval_days: 365, priority: newDoc.priority, last_service: today(), due_date: newDoc.dueDate || "", service_logs: [], attachments: initialAtts };
       const created = await supa("maintenance_tasks", { method: "POST", body: payload });
       const t = created[0];
-      setTasks(function(prev){ return [...prev, { id: t.id, section: "Paperwork", task: t.task, interval: "annual", interval_days: 365, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id }]; });
-      setNewDoc({ task: "", dueDate: "", priority: "high" });
+      setTasks(function(prev){ return [...prev, { id: t.id, section: "Paperwork", task: t.task, interval: "annual", interval_days: 365, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], attachments: initialAtts, pendingComment: "", _vesselId: t.vessel_id }]; });
+      setNewDoc({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
       setShowAddDoc(false);
     } catch(err){ setDbError(err.message); }
-    finally { setSaving(false); }
+    finally { setSaving(false); setUploadingDoc(false); }
   };
 
   // ─── REPAIRS CRUD ────────────────────────────────────────────────────────────
@@ -1151,7 +1166,7 @@ export default function App() {
 
           {showAddEquip && (
             <div style={s.modalBg} onClick={function(){ setShowAddEquip(false); }}>
-              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
+              <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", padding: 24 }} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Equipment</div>
                 <input placeholder="Equipment name" value={newEquip.name} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, name: e.target.value }; }); }} style={s.inp} />
                 <select value={newEquip.category} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, category: e.target.value }; }); }} style={s.sel}>
@@ -1160,10 +1175,26 @@ export default function App() {
                 <select value={newEquip.status} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, status: e.target.value }; }); }} style={s.sel}>
                   {Object.keys(STATUS_CFG).map(function(st){ return <option key={st} value={st}>{STATUS_CFG[st].label}</option>; })}
                 </select>
-                <input placeholder="Notes (optional)" value={newEquip.notes} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, notes: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <button onClick={function(){ setShowAddEquip(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={addEquipment} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add Equipment</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input placeholder="Model (optional)" value={newEquip.model} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                  <input placeholder="Serial No. (optional)" value={newEquip.serial} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                </div>
+                <input placeholder="Notes (optional)" value={newEquip.notes} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, notes: e.target.value }; }); }} style={s.inp} />
+                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 10 }}>ATTACH A FILE (optional)</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <select value={newEquip.fileType} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, fileType: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0, flex: 1 }}>
+                      {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                    </select>
+                  </div>
+                  <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newEquip.fileName ? "#16a34a" : "#6b7280", textAlign: "center", background: newEquip.fileName ? "#f0fdf4" : "#fff" }}>
+                    {newEquip.fileName ? "📎 " + newEquip.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewEquip(function(eq){ return { ...eq, fileObj: file, fileName: file.name }; }); }} />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={function(){ setShowAddEquip(false); setNewEquip({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" }); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={addEquipment} disabled={uploadingDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingDoc ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontWeight: 700 }}>{uploadingDoc ? "Uploading…" : "Add Equipment"}</button>
                 </div>
               </div>
             </div>
@@ -1344,16 +1375,26 @@ export default function App() {
           })}
           {showAddDoc && (
             <div style={s.modalBg} onClick={function(){ setShowAddDoc(false); }}>
-              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
+              <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", padding: 24 }} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Document / Renewal</div>
                 <input placeholder="e.g. Boat insurance renewal" value={newDoc.task} onChange={function(e){ setNewDoc(function(d){ return { ...d, task: e.target.value }; }); }} style={s.inp} />
                 <input type="date" value={newDoc.dueDate} onChange={function(e){ setNewDoc(function(d){ return { ...d, dueDate: e.target.value }; }); }} style={s.inp} />
-                <select value={newDoc.priority} onChange={function(e){ setNewDoc(function(d){ return { ...d, priority: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
+                <select value={newDoc.priority} onChange={function(e){ setNewDoc(function(d){ return { ...d, priority: e.target.value }; }); }} style={s.sel}>
                   {["critical","high","medium","low"].map(function(p){ return <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>; })}
                 </select>
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <button onClick={function(){ setShowAddDoc(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={addDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add Item</button>
+                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 10 }}>ATTACH A FILE (optional)</div>
+                  <select value={newDoc.fileType} onChange={function(e){ setNewDoc(function(d){ return { ...d, fileType: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 8 }}>
+                    {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                  </select>
+                  <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDoc.fileName ? "#16a34a" : "#6b7280", textAlign: "center", background: newDoc.fileName ? "#f0fdf4" : "#fff" }}>
+                    {newDoc.fileName ? "📎 " + newDoc.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDoc(function(d){ return { ...d, fileObj: file, fileName: file.name }; }); }} />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={function(){ setShowAddDoc(false); setNewDoc({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" }); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={addDoc} disabled={uploadingDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingDoc ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontWeight: 700 }}>{uploadingDoc ? "Uploading…" : "Add Item"}</button>
                 </div>
               </div>
             </div>
