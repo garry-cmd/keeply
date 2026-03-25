@@ -177,8 +177,9 @@ function Badge({ label, color, bg, border }) {
   return <span style={{ background: bg, color, border: border ? "1px solid " + border : "none", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{label}</span>;
 }
 function PriorityBadge({ priority }) {
-  const c = PRIORITY_CFG[priority];
-  return <Badge label={priority.toUpperCase()} color={c.color} bg={c.bg} />;
+  const c = PRIORITY_CFG[priority] || PRIORITY_CFG["medium"];
+  const label = priority ? priority.toUpperCase() : "MEDIUM";
+  return <Badge label={label} color={c.color} bg={c.bg} />;
 }
 function SectionBadge({ section }) {
   return <span style={{ fontSize: 10, fontWeight: 700, background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px" }}>{SECTIONS[section] || ""} {section}</span>;
@@ -194,49 +195,6 @@ function UrgencyCard({ label, sub, val, color, bg, active, onClick }) {
       <div style={{ fontSize: 12, fontWeight: 700, color, marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{sub}</div>}
       {active && <div style={{ fontSize: 9, color, fontWeight: 700, marginTop: 4 }}>FILTERED ✕</div>}
-      {/* ── SHARE VESSEL PANEL ── */}
-      {showShare && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>👥 Share {boatName}</div>
-            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>Invite someone to access this vessel</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL ADDRESS</div>
-            <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
-              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
-            {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "#fef2f2" : "#f0fdf4", color: shareMsg.startsWith("Error") ? "#dc2626" : "#16a34a", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>{shareMsg}</div>}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-              <button onClick={shareVessel} disabled={shareLoading} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── CONFIRM DIALOG ── */}
-      {confirmAction && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-          onClick={function(){ setConfirmAction(null); }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 340, boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>🗑</div>
-            <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 8 }}>Are you sure?</div>
-            <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginBottom: 24 }}>{confirmAction.message}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={function(){ setConfirmAction(null); }}
-                style={{ flex: 1, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
-                Cancel
-              </button>
-              <button onClick={function(){ confirmAction.onConfirm(); setConfirmAction(null); }}
-                style={{ flex: 1, padding: 12, border: "none", borderRadius: 10, background: "#dc2626", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
@@ -527,9 +485,25 @@ export default function App() {
   useEffect(function(){
     supabase.auth.getSession().then(function(res){
       setSession(res.data.session);
+      // Claim any pending invites for this email
+      if (res.data.session) {
+        var user = res.data.session.user;
+        supabase.from("vessel_members")
+          .update({ user_id: user.id })
+          .eq("email", user.email)
+          .is("user_id", null)
+          .then(function(){});
+      }
     });
     const { data: listener } = supabase.auth.onAuthStateChange(function(event, sess){
       setSession(sess);
+      if (sess && event === "SIGNED_IN") {
+        supabase.from("vessel_members")
+          .update({ user_id: sess.user.id })
+          .eq("email", sess.user.email)
+          .is("user_id", null)
+          .then(function(){});
+      }
     });
     return function(){ listener.subscription.unsubscribe(); };
   }, []);
@@ -874,6 +848,7 @@ export default function App() {
         body: JSON.stringify({ prompt })
       });
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
       const text = data.content && data.content[0] ? data.content[0].text : "[]";
       const clean = text.replace(/```json|```/g, "").trim();
       const suggestions = JSON.parse(clean);
@@ -883,6 +858,7 @@ export default function App() {
       }).filter(Boolean);
       setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = enriched; return n; });
     } catch(e) {
+      console.error("Repair suggestion error:", e.message);
       setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = []; return n; });
     }
   };
@@ -908,6 +884,7 @@ export default function App() {
         body: JSON.stringify({ prompt })
       });
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
       const text = data.content && data.content[0] ? data.content[0].text : "[]";
       const clean = text.replace(/```json|```/g, "").trim();
       const suggestions = JSON.parse(clean);
@@ -917,6 +894,7 @@ export default function App() {
       }).filter(Boolean);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = enriched; return n; });
     } catch(e) {
+      console.error("Equipment suggestion error:", e.message);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = []; return n; });
     }
   };
@@ -931,15 +909,17 @@ export default function App() {
     if (!shareEmail.trim()) return;
     setShareLoading(true); setShareMsg(null);
     try {
-      // Look up user by email via a custom approach — insert with email, user_id filled later by trigger
+      // Check if this email already has an account
+      const trimmed = shareEmail.trim().toLowerCase();
+      // Insert pending invite — user_id is null until they sign in
       const { error } = await supabase.from("vessel_members").insert({
         vessel_id: activeVesselId,
-        email:     shareEmail.trim(),
+        email:     trimmed,
         role:      "member",
-        user_id:   "00000000-0000-0000-0000-000000000000", // placeholder until they sign in
+        user_id:   null,
       });
       if (error) throw error;
-      setShareMsg("Invite sent to " + shareEmail.trim());
+      setShareMsg("Invite recorded for " + trimmed);
       setShareEmail("");
     } catch(e) {
       setShareMsg("Error: " + e.message);
@@ -1824,6 +1804,46 @@ export default function App() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SHARE VESSEL PANEL ── */}
+      {showShare && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>👥 Share {boatName}</div>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280", lineHeight: 1 }}>✕</button>
+            </div>
+            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>Invite someone to access this vessel</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL ADDRESS</div>
+            <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
+              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
+            {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "#fef2f2" : "#f0fdf4", color: shareMsg.startsWith("Error") ? "#dc2626" : "#16a34a", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>{shareMsg}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+              <button onClick={shareVessel} disabled={shareLoading} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM DIALOG ── */}
+      {confirmAction && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={function(){ setConfirmAction(null); }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 340, boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>🗑</div>
+            <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 8 }}>Are you sure?</div>
+            <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginBottom: 24 }}>{confirmAction.message}</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={function(){ setConfirmAction(null); }} style={{ flex: 1, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>Cancel</button>
+              <button onClick={function(){ confirmAction.onConfirm(); setConfirmAction(null); }} style={{ flex: 1, padding: 12, border: "none", borderRadius: 10, background: "#dc2626", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>Delete</button>
             </div>
           </div>
         </div>
