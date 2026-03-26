@@ -844,7 +844,6 @@ export default function App() {
       if (data.error) throw new Error(data.error);
       setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = data.suggestions || []; return n; });
     } catch(e) {
-      console.error("Repair suggestion error:", e.message);
       setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = []; return n; });
     }
   };
@@ -853,7 +852,6 @@ export default function App() {
 
   const getSuggestionsForEquipment = async function(eq){
     const eqId = eq.id;
-    console.log("[equip AI] triggered for:", eq.name, eq.id);
     setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "loading"; return n; });
     try {
       const res = await fetch("/api/suggest-parts", {
@@ -865,7 +863,6 @@ export default function App() {
       if (data.error) throw new Error(data.error);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = data.suggestions || []; return n; });
     } catch(e) {
-      console.error("Equipment suggestion error:", e.message);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = []; return n; });
     }
   };
@@ -1197,6 +1194,14 @@ export default function App() {
             </div>
           </div>
 
+          {filteredEquip.length === 0 && !showAddEquip && (
+            <div style={{ textAlign: "center", padding: "56px 24px", color: "#9ca3af" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>⚙️</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#374151", marginBottom: 6 }}>No equipment yet</div>
+              <div style={{ fontSize: 13, marginBottom: 20 }}>Add your engine, sails, electronics and more to track service history and get AI part suggestions.</div>
+              <button onClick={function(){ setShowAddEquip(true); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Add First Equipment</button>
+            </div>
+          )}
           {filteredEquip.map(function(eq){
             const isExpanded = expandedEquip === eq.id;
             const activeTab  = equipTab[eq.id] || "parts";
