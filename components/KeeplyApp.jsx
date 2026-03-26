@@ -460,6 +460,7 @@ export default function App() {
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine" });
   const [expandedRepair, setExpandedRepair] = useState(null);
+  const [completingRepair, setCompletingRepair] = useState(null); // id being animated
   const [editingRepair, setEditingRepair]   = useState(null); // repair id being edited
   const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine" });
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
@@ -803,6 +804,14 @@ export default function App() {
       setShowAddRepair(false);
     }
     finally { setSaving(false); }
+  };
+
+  const completeRepair = async function(id){
+    setCompletingRepair(id);
+    setTimeout(async function(){
+      await deleteRepair(id);
+      setCompletingRepair(null);
+    }, 600);
   };
 
   const updateRepair = async function(id, patch){
@@ -1430,13 +1439,15 @@ export default function App() {
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
-              <div key={r.id} style={s.card}>
+              <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 {/* Card header */}
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                   {/* Circle checkbox to clear repair */}
-                  <button onClick={function(e){ e.stopPropagation(); showConfirm("Mark repair as done and remove?", function(){ deleteRepair(r.id); }); }}
-                    style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid #d1d5db", background: "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
-                    title="Mark complete" />
+                  <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
+                    style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#16a34a" : "#d1d5db"), background: completingRepair === r.id ? "#16a34a" : "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease", flexShrink: 0 }}
+                    title="Mark complete">
+                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                  </button>
                   {/* Main content - clickable to expand */}
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
                     const next = isExpanded ? null : r.id;
