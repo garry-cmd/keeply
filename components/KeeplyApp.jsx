@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
 import VesselSetup from "./VesselSetup";
@@ -403,6 +403,11 @@ export default function App() {
   const [tab, setTab]   = useState("equipment");
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
+  const [importRows, setImportRows]     = useState([]);
+  const [importType, setImportType]     = useState("equipment"); // "equipment" | "maintenance"
+  const [importFile, setImportFile]     = useState(null);
+  const [importSaving, setImportSaving] = useState(false);
+  const [importDone, setImportDone]     = useState(0);
 
   // ── Loading state ──
   const [loading, setLoading]   = useState(true);
@@ -424,7 +429,7 @@ export default function App() {
   const [showSettings, setShowSettings]     = useState(false);
   const [settingsForm, setSettingsForm]     = useState({});
   const [editingVesselId, setEditingVesselId] = useState(null);
-  const BLANK_VESSEL = { vesselType: "sail", vesselName: "", ownerName: "", address: "", make: "", model: "", year: "" };
+  const BLANK_VESSEL = { vesselType: "sail", vesselName: "", ownerName: "", address: "", make: "", model: "", year: "", photoUrl: "" };
 
   // ── Equipment (Supabase) ──
   const [equipment, setEquipment]           = useState([]);
@@ -442,6 +447,8 @@ export default function App() {
   const [addingDocFor, setAddingDocFor]     = useState(null);
   const [newDocForm, setNewDocForm]         = useState({ label: "", url: "", type: "Manual", source: "url", fileObj: null, fileName: "" });
   const [uploadingDoc, setUploadingDoc]     = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
   // ── Maintenance Tasks (Supabase) ──
@@ -616,21 +623,21 @@ export default function App() {
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
   const openAddVessel = function(){ setEditingVesselId(null); setSettingsForm({ ...BLANK_VESSEL }); setShowVesselDropdown(false); setShowSettings(true); };
-  const openEditVessel = function(vessel){ setEditingVesselId(vessel.id); setSettingsForm({ ...vessel }); setShowVesselDropdown(false); setShowSettings(true); };
+  const openEditVessel = function(vessel){ setEditingVesselId(vessel.id); setSettingsForm({ ...vessel, photoUrl: vessel.photoUrl || "" }); setShowVesselDropdown(false); setShowSettings(true); };
 
   const saveVessel = async function(){
     if (!settingsForm.vesselName.trim()) return;
     setSaving(true);
     try {
       const userId = session && session.user ? session.user.id : null;
-      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: settingsForm.make, model: settingsForm.model, year: settingsForm.year, user_id: userId };
+      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: settingsForm.make, model: settingsForm.model, year: settingsForm.year, user_id: userId, photo_url: settingsForm.photoUrl || null };
       if (editingVesselId) {
         await supa("vessels", { method: "PATCH", query: "id=eq." + editingVesselId, body: payload, prefer: "return=minimal" });
         setVessels(function(vs){ return vs.map(function(v){ return v.id === editingVesselId ? { ...settingsForm, id: editingVesselId } : v; }); });
       } else {
         const created = await supa("vessels", { method: "POST", body: payload });
         const nv = created[0];
-        const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "" };
+        const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: nv.photo_url || "" };
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
       }
@@ -913,6 +920,99 @@ export default function App() {
     }
   };
 
+  const parseCSV = function(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(",").map(function(h){ return h.trim().replace(/^"|"$/g,"").toLowerCase(); });
+    return lines.slice(1).filter(function(l){ return l.trim(); }).map(function(line){
+      // Handle quoted fields with commas inside
+      const fields = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQuotes = !inQuotes; }
+        else if (ch === "," && !inQuotes) { fields.push(current.trim()); current = ""; }
+        else { current += ch; }
+      }
+      fields.push(current.trim());
+      const row = {};
+      headers.forEach(function(h, i){ row[h] = (fields[i] || "").replace(/^"|"$/g, "").trim(); });
+      return row;
+    });
+  };
+
+  const normalizeEquipRow = function(row) {
+    // Accept flexible column names
+    const name = row.name || row["equipment name"] || row["item"] || row["equipment"] || "";
+    const category = row.category || row["type"] || row["section"] || "General";
+    const status = row.status || "good";
+    const notes = row.notes || row["description"] || row["note"] || "";
+    // Normalize category to known values
+    const cats = ["Engine","Rigging","Deck","Electrical","Electronics","Navigation","Bilge","Plumbing","Safety","Galley","Watermaker","Hydrovane","General","Anchor","Dink"];
+    const matchedCat = cats.find(function(c){ return c.toLowerCase() === category.toLowerCase(); }) || "General";
+    const statuses = ["good","watch","needs-service"];
+    const matchedStatus = statuses.find(function(s){ return s.toLowerCase() === status.toLowerCase().replace(" ","-"); }) || "good";
+    return { name: name.slice(0,100), category: matchedCat, status: matchedStatus, notes: notes.slice(0,500) };
+  };
+
+  const normalizeTaskRow = function(row) {
+    const task = row.task || row["description"] || row["maintenance"] || row["item"] || row["name"] || "";
+    const section = row.section || row["category"] || row["type"] || "General";
+    const interval = row.interval || row["frequency"] || row["interval_days"] || "30 days";
+    const priority = row.priority || "medium";
+    const sections = ["Engine","Rigging","Deck","Electrical","Electronics","Navigation","Bilge","Plumbing","Safety","Galley","Watermaker","Hydrovane","General","Anchor","Dink","Paperwork"];
+    const matchedSection = sections.find(function(s){ return s.toLowerCase() === section.toLowerCase(); }) || "General";
+    const priorities = ["critical","high","medium","low"];
+    const matchedPriority = priorities.find(function(p){ return p.toLowerCase() === priority.toLowerCase(); }) || "medium";
+    // Normalize interval
+    const intervalStr = String(interval).trim();
+    const knownIntervals = ["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"];
+    let matchedInterval = "30 days";
+    if (knownIntervals.includes(intervalStr)) matchedInterval = intervalStr;
+    else if (/^\d+$/.test(intervalStr)) matchedInterval = intervalStr + " days";
+    else { const found = knownIntervals.find(function(i){ return i.toLowerCase() === intervalStr.toLowerCase(); }); if (found) matchedInterval = found; }
+    return { task: task.slice(0,200), section: matchedSection, interval: matchedInterval, priority: matchedPriority };
+  };
+
+  const importBulk = async function() {
+    if (!importRows.length || !activeVesselId) return;
+    setImportSaving(true);
+    setImportDone(0);
+    let done = 0;
+    try {
+      if (importType === "equipment") {
+        const payloads = importRows.filter(function(r){ return r.name.trim(); }).map(function(r){
+          return { vessel_id: activeVesselId, name: r.name, category: r.category, status: r.status, notes: r.notes, last_service: today(), custom_parts: [], docs: [], logs: [] };
+        });
+        for (let i = 0; i < payloads.length; i++) {
+          const created = await supa("equipment", { method: "POST", body: payloads[i] });
+          const e = created[0];
+          setEquipment(function(prev){ return [...prev, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: [], docs: [], logs: [], _vesselId: e.vessel_id }]; });
+          done++;
+          setImportDone(done);
+        }
+      } else {
+        const payloads = importRows.filter(function(r){ return r.task.trim(); }).map(function(r){
+          const days = parseInt(r.interval) || 30;
+          const due = addDays(today(), days);
+          return { vessel_id: activeVesselId, task: r.task, section: r.section, interval_days: days, priority: r.priority, last_service: null, due_date: due, service_logs: [], attachments: [] };
+        });
+        for (let i = 0; i < payloads.length; i++) {
+          const created = await supa("maintenance_tasks", { method: "POST", body: payloads[i] });
+          const t = created[0];
+          setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id }]; });
+          done++;
+          setImportDone(done);
+        }
+      }
+      // Success — reset
+      setImportRows([]);
+      setImportFile(null);
+    } catch(err){ setDbError(err.message); }
+    finally { setImportSaving(false); }
+  };
+
   const loadFleetData = async function(){
     setFleetLoading(true);
     try {
@@ -1167,6 +1267,7 @@ export default function App() {
           {/* Vessel switcher */}
           <div style={{ position: "relative" }} onClick={function(e){ e.stopPropagation(); }}>
             <button onClick={function(){ setShowVesselDropdown(function(v){ return !v; }); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+              {settings.photoUrl && <img src={settings.photoUrl} alt={boatName} style={{ width: 24, height: 24, borderRadius: 5, objectFit: "cover", border: "1px solid rgba(255,255,255,0.3)" }} />}
               {boatName} <span style={{ opacity: 0.7 }}>▾</span>
             </button>
             {showVesselDropdown && (
@@ -1176,9 +1277,12 @@ export default function App() {
                   return (
                     <div key={v.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", cursor: "pointer", background: v.id === activeVesselId ? "#f0f7ff" : "#fff", borderBottom: "1px solid #f3f4f6" }}
                       onClick={function(){ switchVessel(v.id); setShowVesselDropdown(false); }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: v.id === activeVesselId ? "#0f4c8a" : "#1a1d23" }}>{pf} {v.vesselName}</div>
-                        {v.make && <div style={{ fontSize: 11, color: "#9ca3af" }}>{v.year} {v.make}</div>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        {v.photoUrl ? <img src={v.photoUrl} alt={v.vesselName} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: "#e8edf2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{v.vesselType === "motor" ? "🚤" : "⛵"}</div>}
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: v.id === activeVesselId ? "#0f4c8a" : "#1a1d23" }}>{pf} {v.vesselName}</div>
+                          {v.make && <div style={{ fontSize: 11, color: "#9ca3af" }}>{v.year} {v.make}</div>}
+                        </div>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
                         {v.id === activeVesselId && <span style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 700 }}>✓</span>}
@@ -1210,6 +1314,7 @@ export default function App() {
           <div style={{ display: "flex", background: "rgba(255,255,255,0.12)", borderRadius: 8, padding: 3 }}>
             <button onClick={function(){ setView("customer"); }} style={s.vBtn(view==="customer")}>My Boat</button>
             <button onClick={function(){ setView("fleet"); loadFleetData(); }} style={s.vBtn(view==="fleet")}>Fleet</button>
+            <button onClick={function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }} style={s.vBtn(view==="import")}>Import</button>
             <button onClick={function(){ setView("admin"); }} style={s.vBtn(view==="admin")}>Admin</button>
           </div>
           <button onClick={function(){ supabase.auth.signOut(); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
@@ -1274,6 +1379,11 @@ export default function App() {
                   onClick={function(){ switchVessel(vessel.id); setView("customer"); }}>
 
                   {/* Vessel header */}
+                  {vessel.photoUrl && (
+                    <div style={{ width: "100%", height: 140, overflow: "hidden" }}>
+                      <img src={vessel.photoUrl} alt={vessel.vesselName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  )}
                   <div style={{ padding: "16px 20px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 17, fontWeight: 800 }}>{vessel.vesselType === "motor" ? "M/V" : "S/V"} {vessel.vesselName}</span>
@@ -1328,6 +1438,130 @@ export default function App() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {view === "import" && (
+          <div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>📥 Import Data</div>
+              <div style={{ fontSize: 13, color: "#6b7280" }}>Upload a CSV or Excel file to bulk-add equipment or maintenance tasks to {boatName}.</div>
+            </div>
+
+            {/* Type selector */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+              {[["equipment","⚙️ Equipment"],["maintenance","📋 Maintenance Tasks"]].map(function(t){ return (
+                <button key={t[0]} onClick={function(){ setImportType(t[0]); setImportRows([]); setImportFile(null); }}
+                  style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "2px solid " + (importType===t[0] ? "#0f4c8a" : "#e2e8f0"), background: importType===t[0] ? "#eff6ff" : "#fff", color: importType===t[0] ? "#0f4c8a" : "#6b7280", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                  {t[1]}
+                </button>
+              ); })}
+            </div>
+
+            {/* Template hint */}
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 12, color: "#374151" }}>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: "#0f4c8a" }}>📋 Expected columns</div>
+              {importType === "equipment"
+                ? <div><span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>name</span> (required) · <span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>category</span> · <span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>status</span> · <span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>notes</span></div>
+                : <div><span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>task</span> (required) · <span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>section</span> · <span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>interval</span> · <span style={{ fontFamily: "monospace", background: "#e2e8f0", padding: "1px 5px", borderRadius: 4 }}>priority</span></div>
+              }
+              <div style={{ marginTop: 6, color: "#9ca3af" }}>Column names are flexible — we'll match common variations. Missing values get sensible defaults.</div>
+            </div>
+
+            {/* File upload */}
+            {!importRows.length && (
+              <label style={{ display: "block", padding: "32px", border: "2px dashed #e2e8f0", borderRadius: 12, cursor: "pointer", textAlign: "center", background: "#fafafa", marginBottom: 20 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📂</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 4 }}>{importFile ? "✅ " + importFile : "Choose CSV or Excel file"}</div>
+                <div style={{ fontSize: 12, color: "#9ca3af" }}>CSV (.csv) or Excel (.xlsx, .xls)</div>
+                <input type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }}
+                  onChange={async function(e){
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    setImportFile(file.name);
+                    const ext = file.name.split(".").pop().toLowerCase();
+                    try {
+                      let rows = [];
+                      if (ext === "csv") {
+                        const text = await file.text();
+                        const parsed = parseCSV(text);
+                        rows = parsed.map(importType === "equipment" ? normalizeEquipRow : normalizeTaskRow);
+                      } else {
+                        // Excel — use SheetJS loaded from CDN
+                        const XLSX = window.XLSX;
+                        if (!XLSX) { setDbError("Excel support loading — please try again in a moment"); return; }
+                        const buf = await file.arrayBuffer();
+                        const wb = XLSX.read(buf, { type: "array" });
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
+                        // Normalize keys to lowercase
+                        rows = json.map(function(r){
+                          const lower = {};
+                          Object.keys(r).forEach(function(k){ lower[k.toLowerCase().trim()] = String(r[k]); });
+                          return (importType === "equipment" ? normalizeEquipRow : normalizeTaskRow)(lower);
+                        });
+                      }
+                      setImportRows(rows.filter(function(r){ return importType === "equipment" ? r.name : r.task; }));
+                    } catch(err){ setDbError("Could not read file: " + err.message); }
+                  }} />
+              </label>
+            )}
+
+            {/* Preview table */}
+            {importRows.length > 0 && !importDone && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{importRows.length} rows ready to import</div>
+                  <button onClick={function(){ setImportRows([]); setImportFile(null); }} style={{ background: "none", border: "none", fontSize: 12, color: "#9ca3af", cursor: "pointer" }}>✕ Clear</button>
+                </div>
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", maxHeight: 340, overflowY: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: "#f1f5f9" }}>
+                        {importType === "equipment"
+                          ? ["Name","Category","Status","Notes"].map(function(h){ return <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#6b7280", fontSize: 11, letterSpacing: "0.3px" }}>{h}</th>; })
+                          : ["Task","Section","Interval","Priority"].map(function(h){ return <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#6b7280", fontSize: 11, letterSpacing: "0.3px" }}>{h}</th>; })
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importRows.slice(0,50).map(function(row, i){ return (
+                        <tr key={i} style={{ borderTop: "1px solid #f3f4f6", background: i%2===0 ? "#fff" : "#fafafa" }}>
+                          {importType === "equipment"
+                            ? [row.name, row.category, row.status, row.notes].map(function(v,j){ return <td key={j} style={{ padding: "7px 12px", color: "#374151", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v}</td>; })
+                            : [row.task, row.section, row.interval, row.priority].map(function(v,j){ return <td key={j} style={{ padding: "7px 12px", color: "#374151", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v}</td>; })
+                          }
+                        </tr>
+                      ); })}
+                    </tbody>
+                  </table>
+                  {importRows.length > 50 && <div style={{ padding: "8px 12px", fontSize: 11, color: "#9ca3af", background: "#f8fafc", textAlign: "center" }}>Showing 50 of {importRows.length} rows</div>}
+                </div>
+                <button onClick={importBulk} disabled={importSaving}
+                  style={{ width: "100%", marginTop: 14, padding: 14, border: "none", borderRadius: 10, background: importSaving ? "#6b9fd4" : "#0f4c8a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: importSaving ? "default" : "pointer" }}>
+                  {importSaving ? "Importing… " + importDone + "/" + importRows.length : "Import " + importRows.length + " " + (importType === "equipment" ? "Equipment Items" : "Maintenance Tasks") + " →"}
+                </button>
+              </div>
+            )}
+
+            {/* Success state */}
+            {importDone > 0 && !importSaving && (
+              <div style={{ textAlign: "center", padding: "40px 24px" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#16a34a", marginBottom: 6 }}>{importDone} items imported!</div>
+                <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 24 }}>They've been added to {boatName}.</div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                  <button onClick={function(){ setView("customer"); setTab(importType === "equipment" ? "equipment" : "maintenance"); setImportDone(0); }}
+                    style={{ padding: "10px 24px", border: "none", borderRadius: 10, background: "#0f4c8a", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+                    View {importType === "equipment" ? "Equipment" : "Maintenance"} →
+                  </button>
+                  <button onClick={function(){ setImportDone(0); setImportRows([]); setImportFile(null); }}
+                    style={{ padding: "10px 24px", border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+                    Import More
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1458,10 +1692,16 @@ export default function App() {
                       {equipSuggestions[eq.id] === "loading" && (
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>🤖 Finding parts for {eq.name}…</div>
                       )}
-                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id].length === 0 && (
-                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>No catalog matches found.</div>
+                      {equipSuggestions[eq.id] === "error" && (
+                        <div style={{ fontSize: 12, color: "#ea580c", marginBottom: 10 }}>
+                          Couldn't load suggestions right now.
+                          <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ marginLeft: 8, background: "none", border: "none", color: "#0f4c8a", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button>
+                        </div>
                       )}
-                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id].length > 0 && (<>
+                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id] !== "error" && equipSuggestions[eq.id].length === 0 && (
+                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>No parts found. Try refreshing.</div>
+                      )}
+                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id] !== "error" && equipSuggestions[eq.id].length > 0 && (<>
                         {equipSuggestions[eq.id].map(function(part){ return (
                           <div key={part.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
                             <div style={{ flex: 1 }}>
@@ -1476,6 +1716,9 @@ export default function App() {
                           </div>
                         ); })}
                       </>)}
+                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id] !== "error" && (
+                        <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ marginTop: 6, background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh suggestions</button>
+                      )}
                       {(eq.customParts||[]).length > 0 && (<>
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginTop: 14, marginBottom: 8 }}>CUSTOM PARTS</div>
                         {eq.customParts.map(function(part){ return (
@@ -1700,10 +1943,16 @@ export default function App() {
                     {sugg === "loading" && (
                       <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>🤖 Finding parts for this repair…</div>
                     )}
-                    {sugg && sugg !== "loading" && sugg.length === 0 && (
+                    {sugg === "error" && (
+                      <div style={{ fontSize: 12, color: "#ea580c", marginBottom: 10 }}>
+                        Couldn't load suggestions right now.
+                        <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginLeft: 8, background: "none", border: "none", color: "#0f4c8a", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button>
+                      </div>
+                    )}
+                    {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && (
                       <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>No specific parts found for this repair.</div>
                     )}
-                    {sugg && sugg !== "loading" && sugg.length > 0 && sugg.map(function(part){
+                    {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.map(function(part){
                       const inList = cart.find(function(i){ return i.id === part.id; });
                       return (
                         <div key={part.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
@@ -2000,7 +2249,41 @@ export default function App() {
               <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 6 }}>MODEL</div>
               <input placeholder="e.g. 35, 42, 40" value={settingsForm.model || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, model: e.target.value }; }); }} style={s.inp} />
               <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 6 }}>YEAR</div>
-              <input placeholder="e.g. 1980" value={settingsForm.year || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, year: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
+              <input placeholder="e.g. 1980" value={settingsForm.year || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, year: e.target.value }; }); }} style={s.inp} />
+              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>VESSEL PHOTO</div>
+                {/* Hidden file input controlled by ref */}
+                <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }}
+                  onChange={async function(e){
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    setUploadingPhoto(true);
+                    try {
+                      const url = await uploadToStorage(file, "vessel-photo-" + (editingVesselId || "new") + "-" + Date.now());
+                      setSettingsForm(function(f){ return { ...f, photoUrl: url }; });
+                    } catch(err){ setDbError("Photo upload failed: " + err.message); }
+                    finally {
+                      setUploadingPhoto(false);
+                      if (photoInputRef.current) photoInputRef.current.value = "";
+                    }
+                  }} />
+
+                {settingsForm.photoUrl ? (
+                  <div style={{ position: "relative", marginBottom: 8 }}>
+                    <img src={settingsForm.photoUrl} alt="Vessel" style={{ width: "100%", height: 160, objectFit: "cover", borderRadius: 10, border: "1px solid #e2e8f0" }} />
+                    <button onClick={function(){ setSettingsForm(function(f){ return { ...f, photoUrl: "" }; }); }}
+                      style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: 6, color: "#fff", fontSize: 11, padding: "3px 8px", cursor: "pointer" }}>
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={function(){ if (photoInputRef.current) photoInputRef.current.click(); }}
+                    disabled={uploadingPhoto}
+                    style={{ width: "100%", padding: "14px", border: "1.5px dashed #e2e8f0", borderRadius: 10, cursor: uploadingPhoto ? "default" : "pointer", textAlign: "center", fontSize: 12, color: "#6b7280", background: "#fafafa", display: "block" }}>
+                    {uploadingPhoto ? "⏳ Uploading…" : "📷 Upload a photo of your boat"}
+                  </button>
+                )}
+              </div>
               {(settingsForm.vesselName || settingsForm.make || settingsForm.model || settingsForm.year) && (
                 <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", marginTop: 16 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.6px", marginBottom: 6 }}>PREVIEW</div>
