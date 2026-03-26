@@ -438,6 +438,7 @@ export default function App() {
   const [equipLogInput, setEquipLogInput]   = useState({}); // { eqId: string }
   const [editingEquip, setEditingEquip]     = useState(null);
   const [editEquipForm, setEditEquipForm]   = useState({});
+  const [uploadingEditDoc, setUploadingEditDoc] = useState(false);
   const [equipFilter, setEquipFilter]       = useState("All");
   const [equipSectionFilter, setEquipSectionFilter] = useState("All");
   const [showAddEquip, setShowAddEquip]     = useState(false);
@@ -1632,7 +1633,13 @@ export default function App() {
                     {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
                     {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
                     <StatusBadge status={eq.status} />
-                    <button onClick={function(e){ e.stopPropagation(); setEditingEquip(eq.id); setEditEquipForm({ name: eq.name, category: eq.category, status: eq.status, notes: eq.notes || "" }); setExpandedEquip(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>
+                    <button onClick={function(e){ e.stopPropagation(); setEditingEquip(eq.id);
+                      const rawNotes = eq.notes || "";
+                      const modelMatch = rawNotes.match(/Model: ([^|]+)/);
+                      const serialMatch = rawNotes.match(/S\/N: ([^|]+)/);
+                      const cleanNotes = rawNotes.replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim();
+                      setEditEquipForm({ name: eq.name, category: eq.category, status: eq.status, notes: cleanNotes, model: modelMatch ? modelMatch[1].trim() : "", serial: serialMatch ? serialMatch[1].trim() : "" });
+                      setExpandedEquip(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
@@ -1814,10 +1821,42 @@ export default function App() {
                 <select value={editEquipForm.status || "good"} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, status: e.target.value }; }); }} style={s.sel}>
                   {Object.keys(STATUS_CFG).map(function(st){ return <option key={st} value={st}>{STATUS_CFG[st].label}</option>; })}
                 </select>
-                <input placeholder="Notes (optional)" value={editEquipForm.notes || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input placeholder="Model (optional)" value={editEquipForm.model || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                  <input placeholder="Serial No. (optional)" value={editEquipForm.serial || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                </div>
+                <input placeholder="Notes (optional)" value={editEquipForm.notes || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={s.inp} />
+                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>ATTACH A FILE (optional)</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <select value={editEquipForm.fileType || "Manual"} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, fileType: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0, flex: 1 }}>
+                      {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                    </select>
+                  </div>
+                  <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed #e2e8f0", borderRadius: 8, cursor: "pointer", fontSize: 12, color: editEquipForm.fileName ? "#16a34a" : "#6b7280", textAlign: "center", background: editEquipForm.fileName ? "#f0fdf4" : "#fff" }}>
+                    {uploadingEditDoc ? "⏳ Uploading…" : editEquipForm.fileName ? "📎 " + editEquipForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={async function(e){
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setUploadingEditDoc(true);
+                      try {
+                        const url = await uploadToStorage(file, editingEquip);
+                        setEditEquipForm(function(f){ return { ...f, fileObj: file, fileName: file.name, fileUrl: url }; });
+                      } catch(err){ setDbError(err.message); }
+                      finally { setUploadingEditDoc(false); }
+                    }} />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={function(){ setEditingEquip(null); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={function(){ updateEquipment(editingEquip, { name: editEquipForm.name, category: editEquipForm.category, status: editEquipForm.status, notes: editEquipForm.notes }); }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Save Changes</button>
+                  <button onClick={function(){
+                    const notes = [editEquipForm.notes, editEquipForm.model ? "Model: " + editEquipForm.model : "", editEquipForm.serial ? "S/N: " + editEquipForm.serial : ""].filter(Boolean).join(" | ");
+                    const eq = equipment.find(function(e){ return e.id === editingEquip; });
+                    const newDocs = editEquipForm.fileUrl ? [...(eq ? eq.docs || [] : []), { id: "doc-" + Date.now(), label: editEquipForm.fileName, type: editEquipForm.fileType || "Manual", url: editEquipForm.fileUrl, fileName: editEquipForm.fileName, isFile: true }] : undefined;
+                    const patch = { name: editEquipForm.name, category: editEquipForm.category, status: editEquipForm.status, notes };
+                    if (newDocs) patch.docs = newDocs;
+                    updateEquipment(editingEquip, patch);
+                  }} disabled={uploadingEditDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingEditDoc ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: uploadingEditDoc ? "default" : "pointer", fontWeight: 700 }}>Save Changes</button>
                 </div>
               </div>
             </div>
