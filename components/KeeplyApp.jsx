@@ -127,6 +127,7 @@ const DOC_TYPE_CFG = {
   "Build Sheet": { color: "#7c3aed", bg: "#f5f3ff", icon: "📋" },
   "Warranty":    { color: "#92400e", bg: "#fef3c7", icon: "📜" },
   "Photo":       { color: "#0e7490", bg: "#cffafe", icon: "📷" },
+  "License":     { color: "#92400e", bg: "#fef3c7", icon: "🪪" },
   "Other":       { color: "#374151", bg: "#f3f4f6", icon: "📄" },
 };
 
@@ -144,7 +145,7 @@ const PRIORITY_CFG = {
 const SECTIONS = {
   Anchor: "⚓", Bilge: "🪣", Deck: "🛥", Dink: "⛵", Electrical: "⚡",
   Electronics: "📡",
-  Engine: "🔧", General: "🚢", Hydrovane: "🧭", Navigation: "🗺",
+  Engine: "🔧", Galley: "🍳", General: "🚢", Hydrovane: "🧭", Navigation: "🗺",
   Paperwork: "📄", Plumbing: "🔩", Rigging: "🪢", Safety: "🛟", Watermaker: "💧",
 };
 const ALL_SECTIONS   = Object.keys(SECTIONS);
@@ -424,6 +425,7 @@ export default function App() {
   const [equipment, setEquipment]           = useState([]);
   const [expandedEquip, setExpandedEquip]   = useState(null);
   const [equipTab, setEquipTab]             = useState({});
+  const [equipLogInput, setEquipLogInput]   = useState({}); // { eqId: string }
   const [equipFilter, setEquipFilter]       = useState("All");
   const [equipSectionFilter, setEquipSectionFilter] = useState("All");
   const [showAddEquip, setShowAddEquip]     = useState(false);
@@ -458,6 +460,8 @@ export default function App() {
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine" });
   const [expandedRepair, setExpandedRepair] = useState(null);
+  const [editingRepair, setEditingRepair]   = useState(null); // repair id being edited
+  const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine" });
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
   const [confirmAction, setConfirmAction]     = useState(null);
 
@@ -583,7 +587,7 @@ export default function App() {
     try {
       const eq = await supa("equipment", { query: "vessel_id=eq." + vid + "&order=created_at" });
       setEquipment((eq || []).map(function(e){
-        return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: e.custom_parts || [], docs: e.docs || [], _vesselId: e.vessel_id };
+        return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: e.custom_parts || [], docs: e.docs || [], logs: e.logs || [], _vesselId: e.vessel_id };
       }));
       const ts = await supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&order=section,priority" });
       setTasks((ts || []).map(function(t){
@@ -801,6 +805,14 @@ export default function App() {
     finally { setSaving(false); }
   };
 
+  const updateRepair = async function(id, patch){
+    try {
+      await supa("repairs", { method: "PATCH", query: "id=eq." + id, body: patch, prefer: "return=minimal" });
+      setRepairs(function(prev){ return prev.map(function(r){ return r.id === id ? Object.assign({}, r, patch) : r; }); });
+      setEditingRepair(null);
+    } catch(err){ setDbError(err.message); }
+  };
+
   const deleteRepair = async function(id){
     try {
       if (String(id).indexOf("local-") !== 0) {
@@ -814,26 +826,11 @@ export default function App() {
     const repairId = repair.id;
     setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = "loading"; return n; });
     try {
-      // Small delay to avoid rate limiting when multiple cards open at once
-      await new Promise(function(resolve){ setTimeout(resolve, 500); });
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ context: repair.section + ": " + repair.description, type: "repair" })
       });
-      if (res.status === 429) {
-        // Rate limited — retry after 3 seconds
-        await new Promise(function(resolve){ setTimeout(resolve, 3000); });
-        const retry = await fetch("/api/suggest-parts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ context: repair.section + ": " + repair.description, type: "repair" })
-        });
-        const retryData = await retry.json();
-        if (retryData.error) throw new Error(retryData.error);
-        setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = retryData.suggestions || []; return n; });
-        return;
-      }
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = data.suggestions || []; return n; });
@@ -849,26 +846,11 @@ export default function App() {
     const eqId = eq.id;
     setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "loading"; return n; });
     try {
-      // Small delay to avoid rate limiting when multiple cards open at once
-      await new Promise(function(resolve){ setTimeout(resolve, 500); });
       const res = await fetch("/api/suggest-parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ context: eq.name + " " + eq.category + (eq.notes ? " " + eq.notes : ""), type: "equipment" })
       });
-      if (res.status === 429) {
-        // Rate limited — retry after 3 seconds
-        await new Promise(function(resolve){ setTimeout(resolve, 3000); });
-        const retry = await fetch("/api/suggest-parts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ context: eq.name + " " + eq.category + (eq.notes ? " " + eq.notes : ""), type: "equipment" })
-        });
-        const retryData = await retry.json();
-        if (retryData.error) throw new Error(retryData.error);
-        setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = retryData.suggestions || []; return n; });
-        return;
-      }
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = data.suggestions || []; return n; });
@@ -905,6 +887,17 @@ export default function App() {
     } finally {
       setShareLoading(false);
     }
+  };
+
+  const addEquipLog = async function(eqId, text){
+    const eq = equipment.find(function(e){ return e.id === eqId; });
+    if (!eq) return;
+    const newEntry = { date: today(), text: text.trim() };
+    const updatedLogs = [...(eq.logs || []), newEntry];
+    try {
+      await supa("equipment", { method: "PATCH", query: "id=eq." + eqId, body: { logs: updatedLogs }, prefer: "return=minimal" });
+      setEquipment(function(prev){ return prev.map(function(e){ return e.id === eqId ? Object.assign({}, e, { logs: updatedLogs }) : e; }); });
+    } catch(err){ setDbError(err.message); }
   };
 
   const deleteEquipment = async function(id){
@@ -1229,6 +1222,36 @@ export default function App() {
                     </div>
                     {eq.notes && <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#374151", marginBottom: 12 }}>📝 {eq.notes}</div>}
 
+                    {/* Equipment log */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>LOG</div>
+                      {(eq.logs || []).length > 0 && (
+                        <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", marginBottom: 8 }}>
+                          {(eq.logs || []).slice(-5).reverse().map(function(entry, i){
+                            return (
+                              <div key={i} style={{ fontSize: 12, color: "#374151", padding: "3px 0", borderBottom: i < Math.min((eq.logs||[]).length, 5) - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                <span style={{ fontSize: 10, color: "#9ca3af", marginRight: 8 }}>{entry.date}</span>
+                                {entry.text}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <input
+                        placeholder="Add log entry… (press Enter)"
+                        value={equipLogInput[eq.id] || ""}
+                        onChange={function(e){ setEquipLogInput(function(prev){ const n = Object.assign({}, prev); n[eq.id] = e.target.value; return n; }); }}
+                        onKeyDown={function(e){
+                          if (e.key === "Enter" && (equipLogInput[eq.id] || "").trim()) {
+                            e.preventDefault();
+                            addEquipLog(eq.id, equipLogInput[eq.id]);
+                            setEquipLogInput(function(prev){ const n = Object.assign({}, prev); n[eq.id] = ""; return n; });
+                          }
+                        }}
+                        style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "6px 10px", fontSize: 12, color: "#374151", outline: "none", boxSizing: "border-box" }}
+                      />
+                    </div>
+
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
                       {["parts","docs"].map(function(t){ return (
@@ -1409,13 +1432,17 @@ export default function App() {
             return (
               <div key={r.id} style={s.card}>
                 {/* Card header */}
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-                  onClick={function(){
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                  {/* Circle checkbox to clear repair */}
+                  <button onClick={function(e){ e.stopPropagation(); showConfirm("Mark repair as done and remove?", function(){ deleteRepair(r.id); }); }}
+                    style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid #d1d5db", background: "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    title="Mark complete" />
+                  {/* Main content - clickable to expand */}
+                  <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
                     const next = isExpanded ? null : r.id;
                     setExpandedRepair(next);
                     if (next && !sugg) getSuggestionsForRepair(r);
                   }}>
-                  <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
                       <SectionBadge section={r.section} />
                       <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</span>
@@ -1423,11 +1450,31 @@ export default function App() {
                         <span style={{ background: "#f5f3ff", color: "#7c3aed", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
                       )}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{r.description}</div>
+                    {editingRepair === r.id ? (
+                      <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <textarea value={editRepairForm.description}
+                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, description: e.target.value }; }); }}
+                          style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 6, padding: "5px 8px", fontSize: 12, resize: "none", height: 56, boxSizing: "border-box" }} />
+                        <select value={editRepairForm.section}
+                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, section: e.target.value }; }); }}
+                          style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
+                        </select>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
+                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section }); }}
+                            style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{r.description}</div>
+                    )}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
+                    <span style={{ color: "#9ca3af", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
 
