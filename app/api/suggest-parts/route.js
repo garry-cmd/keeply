@@ -11,12 +11,12 @@ export async function POST(request) {
     }
 
     const systemPrompt = type === "repair"
-      ? "You are a marine parts assistant. A boat owner needs parts for a repair. Search the web for specific marine products needed. Return ONLY a JSON array of up to 4 products. Each product must have: name (specific product name), reason (one short sentence why it's needed), price (number, approximate USD retail price), vendor (store name like 'West Marine' or 'Defender'), url (direct product or search URL). Example: [{\"name\":\"3M Teak Sealer\",\"reason\":\"Needed to reseal teak after cleaning\",\"price\":28,\"vendor\":\"West Marine\",\"url\":\"https://www.westmarine.com/search?query=3m+teak+sealer\"}]. Return ONLY the JSON array, no other text."
-      : "You are a marine parts assistant. Search the web for maintenance parts for specific marine equipment. Return ONLY a JSON array of up to 4 parts. Each part must have: name (specific product name), reason (one short sentence why it's a key maintenance item), price (number, approximate USD retail price), vendor (store name like 'West Marine' or 'Defender'), url (direct product or search URL). Return ONLY the JSON array, no other text.";
+      ? "You are a marine parts assistant. Return ONLY a JSON array of up to 4 products needed for this boat repair. Each item: {\"name\":\"product name\",\"reason\":\"one sentence why\",\"price\":29,\"vendor\":\"West Marine\",\"url\":\"https://www.westmarine.com/search?query=...\"}. Use real product names and realistic prices. Return ONLY the JSON array."
+      : "You are a marine parts assistant. Return ONLY a JSON array of up to 4 maintenance parts for this marine equipment. Each item: {\"name\":\"product name\",\"reason\":\"one sentence why\",\"price\":29,\"vendor\":\"West Marine\",\"url\":\"https://www.westmarine.com/search?query=...\"}. Use real product names and realistic prices. Return ONLY the JSON array.";
 
     const userPrompt = type === "repair"
-      ? "Find marine parts/products needed for this boat repair: " + context
-      : "Find key maintenance parts for this marine equipment: " + context;
+      ? "Parts needed for this boat repair: " + context
+      : "Key maintenance parts for: " + context;
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -26,52 +26,59 @@ export async function POST(request) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
         system: systemPrompt,
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
         messages: [{ role: "user", content: userPrompt }]
       })
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      return Response.json({ error: err }, { status: res.status });
+    const rawBody = await res.text();
+
+    if (res.status === 429) {
+      return Response.json({ error: "Rate limited — please wait a moment", suggestions: [] }, { status: 429 });
     }
 
-    const data = await res.json();
+    if (!res.ok) {
+      // Return the full error body so we can see what's wrong
+      return Response.json({ error: "API error: " + rawBody, suggestions: [], status: res.status }, { status: 500 });
+    }
 
-    // Extract text from response (may come after tool use blocks)
+    let data;
+    try {
+      data = JSON.parse(rawBody);
+    } catch(e) {
+      return Response.json({ error: "Invalid JSON from API: " + rawBody.slice(0, 200), suggestions: [] }, { status: 500 });
+    }
+
     const textBlock = data.content && data.content.find(function(b) { return b.type === "text"; });
     const text = textBlock ? textBlock.text : "[]";
     const clean = text.replace(/```json|```/g, "").trim();
-
-    // Extract JSON array robustly
     const match = clean.match(/\[[\s\S]*\]/);
+
     let suggestions = [];
     try {
       suggestions = JSON.parse(match ? match[0] : "[]");
     } catch(e) {
-      suggestions = [];
+      return Response.json({ error: "JSON parse failed: " + text.slice(0, 200), suggestions: [] }, { status: 500 });
     }
 
-    // Normalize and validate each suggestion
-    suggestions = suggestions.filter(function(s) {
-      return s && s.name && s.reason;
-    }).map(function(s, i) {
-      return {
-        id: "ai-" + Date.now() + "-" + i,
-        name: s.name,
-        reason: s.reason,
-        price: s.price || null,
-        vendor: s.vendor || null,
-        url: s.url || null,
-        qty: 1,
-      };
-    });
+    suggestions = suggestions
+      .filter(function(s){ return s && s.name && s.reason; })
+      .map(function(s, i){
+        return {
+          id: "ai-" + Date.now() + "-" + i,
+          name: s.name,
+          reason: s.reason,
+          price: s.price || null,
+          vendor: s.vendor || null,
+          url: s.url || null,
+          qty: 1,
+        };
+      });
 
-    return Response.json({ suggestions });
+    return Response.json({ suggestions, debug: { model: "claude-haiku-4-5-20251001", rawLength: rawBody.length } });
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json({ error: "Exception: " + err.message, suggestions: [] }, { status: 500 });
   }
 }
