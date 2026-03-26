@@ -1935,9 +1935,17 @@ export default function App() {
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>OPEN REPAIRS ({openRepairs})</div>
                   {repairs.filter(function(r){ return r.status === "open"; }).map(function(r){ return (
-                    <div key={r.id} style={{ padding: "8px 12px", background: "#fef2f2", borderRadius: 8, marginBottom: 6 }}>
+                    <div key={r.id}
+                      onClick={function(){
+                        setTab("repairs");
+                        setView("customer");
+                        setExpandedRepair(r.id);
+                        setShowUrgentPanel(false);
+                      }}
+                      style={{ padding: "8px 12px", background: "#fef2f2", borderRadius: 8, marginBottom: 6, cursor: "pointer", borderLeft: "3px solid #dc2626" }}>
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{r.section}</div>
                       <div style={{ fontSize: 12, color: "#374151" }}>{r.description}</div>
+                      <div style={{ fontSize: 10, color: "#dc2626", marginTop: 3, fontWeight: 600 }}>tap to view →</div>
                     </div>
                   ); })}
                 </div>
@@ -1946,9 +1954,18 @@ export default function App() {
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>CRITICAL MAINTENANCE ({criticalMaint})</div>
                   {maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).map(function(t){ return (
-                    <div key={t.id} style={{ padding: "8px 12px", background: "#fff7ed", borderRadius: 8, marginBottom: 6 }}>
+                    <div key={t.id}
+                      onClick={function(){
+                        setTab("maintenance");
+                        setView("customer");
+                        setFilterSection(t.section);
+                        setFilterUrgency("critical");
+                        setShowUrgentPanel(false);
+                      }}
+                      style={{ padding: "8px 12px", background: "#fff7ed", borderRadius: 8, marginBottom: 6, cursor: "pointer", borderLeft: "3px solid #ea580c" }}>
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{t.section} — {t.task}</div>
                       <div style={{ fontSize: 11, color: "#9ca3af" }}>Due: {fmt(t.dueDate || t.due_date)}</div>
+                      <div style={{ fontSize: 10, color: "#ea580c", marginTop: 3, fontWeight: 600 }}>tap to view →</div>
                     </div>
                   ); })}
                 </div>
