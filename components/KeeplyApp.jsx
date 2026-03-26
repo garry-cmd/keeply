@@ -630,7 +630,7 @@ export default function App() {
         const nv = created[0];
         const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "" };
         setVessels(function(vs){ return [...vs, normalized]; });
-        setActiveVesselId(nv.id);
+        switchVessel(nv.id);
       }
       setShowSettings(false);
     } catch(err){ setDbError(err.message); }
