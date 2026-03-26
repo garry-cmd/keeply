@@ -853,6 +853,7 @@ export default function App() {
 
   const getSuggestionsForEquipment = async function(eq){
     const eqId = eq.id;
+    console.log("[equip AI] triggered for:", eq.name, eq.id);
     setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "loading"; return n; });
     try {
       const res = await fetch("/api/suggest-parts", {
@@ -1270,7 +1271,10 @@ export default function App() {
 
                     {/* parts tab */}
                     {activeTab === "parts" && (<>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 8 }}>✨ AI SUGGESTED PARTS</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px" }}>✨ AI SUGGESTED PARTS</div>
+                        <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh</button>
+                      </div>
                       {equipSuggestions[eq.id] === "loading" && (
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>🤖 Finding parts for {eq.name}…</div>
                       )}
@@ -1617,7 +1621,7 @@ export default function App() {
             return (
               <div key={t.id} style={s.card}>
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={function(){ setExpandedDoc(isExpanded ? null : t.id); }}>
-                  <input type="checkbox" checked={false} onChange={function(e){ e.stopPropagation(); toggleTask(t.id); }} onClick={function(e){ e.stopPropagation(); }} style={{ width: 16, height: 16, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
+                  
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</span>
