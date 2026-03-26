@@ -337,7 +337,7 @@ function AdminDashboard() {
 }
 
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
-function TaskRow({ task, idx, total, onToggle, onComment, onDelete, showSection }) {
+function TaskRow({ task, idx, total, onToggle, onComment, onDelete, onEdit, showSection }) {
   const [logsOpen, setLogsOpen] = useState(false);
   const badge = getDueBadge(task.dueDate || task.due_date);
   const dueDate = task.dueDate || task.due_date;
@@ -380,7 +380,10 @@ function TaskRow({ task, idx, total, onToggle, onComment, onDelete, showSection 
             </div>
           )}
         </div>
-        <button onClick={function(){ onDelete(task.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "flex-start", marginTop: 2, flexShrink: 0 }} title="Delete task"><TrashIcon /></button>
+        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+          {onEdit && <button onClick={function(){ onEdit(task); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>}
+          <button onClick={function(){ onDelete(task.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "flex-start", marginTop: 2 }} title="Delete task"><TrashIcon /></button>
+        </div>
       </div>
     </div>
   );
@@ -426,6 +429,8 @@ export default function App() {
   const [expandedEquip, setExpandedEquip]   = useState(null);
   const [equipTab, setEquipTab]             = useState({});
   const [equipLogInput, setEquipLogInput]   = useState({}); // { eqId: string }
+  const [editingEquip, setEditingEquip]     = useState(null);
+  const [editEquipForm, setEditEquipForm]   = useState({});
   const [equipFilter, setEquipFilter]       = useState("All");
   const [equipSectionFilter, setEquipSectionFilter] = useState("All");
   const [showAddEquip, setShowAddEquip]     = useState(false);
@@ -444,6 +449,8 @@ export default function App() {
   const [filterPriority, setFilterPriority] = useState("All");
   const [filterUrgency, setFilterUrgency]   = useState("All");
   const [showAddTask, setShowAddTask]       = useState(false);
+  const [editingTask, setEditingTask]       = useState(null);
+  const [editTaskForm, setEditTaskForm]     = useState({});
   const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium" });
   const [showAddDoc, setShowAddDoc]         = useState(false);
   const [expandedDoc, setExpandedDoc]       = useState(null);
@@ -749,6 +756,14 @@ export default function App() {
 
   const updateComment = function(id, val){ setTasks(function(prev){ return prev.map(function(t){ return t.id === id ? { ...t, pendingComment: val } : t; }); }); };
 
+  const updateTask = async function(id, patch){
+    try {
+      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + id, body: patch, prefer: "return=minimal" });
+      setTasks(function(prev){ return prev.map(function(t){ return t.id === id ? Object.assign({}, t, patch) : t; }); });
+      setEditingTask(null);
+    } catch(err){ setDbError(err.message); }
+  };
+
   const addTask = async function(){
     if (!newTask.task.trim()) return;
     const days = intervalToDays(newTask.interval);
@@ -894,6 +909,14 @@ export default function App() {
     } finally {
       setShareLoading(false);
     }
+  };
+
+  const updateEquipment = async function(id, patch){
+    try {
+      await supa("equipment", { method: "PATCH", query: "id=eq." + id, body: patch, prefer: "return=minimal" });
+      setEquipment(function(prev){ return prev.map(function(e){ return e.id === id ? Object.assign({}, e, patch) : e; }); });
+      setEditingEquip(null);
+    } catch(err){ setDbError(err.message); }
   };
 
   const addEquipLog = async function(eqId, text){
@@ -1223,6 +1246,7 @@ export default function App() {
                     {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
                     {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
                     <StatusBadge status={eq.status} />
+                    <button onClick={function(e){ e.stopPropagation(); setEditingEquip(eq.id); setEditEquipForm({ name: eq.name, category: eq.category, status: eq.status, notes: eq.notes || "" }); setExpandedEquip(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
@@ -1383,6 +1407,26 @@ export default function App() {
               </div>
             );
           })}
+
+          {editingEquip && (
+            <div style={s.modalBg} onClick={function(){ setEditingEquip(null); }}>
+              <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", padding: 24 }} onClick={function(e){ e.stopPropagation(); }}>
+                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Edit Equipment</div>
+                <input placeholder="Equipment name" value={editEquipForm.name || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, name: e.target.value }; }); }} style={s.inp} />
+                <select value={editEquipForm.category || "Engine"} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, category: e.target.value }; }); }} style={s.sel}>
+                  {EQ_CATEGORIES.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
+                </select>
+                <select value={editEquipForm.status || "good"} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, status: e.target.value }; }); }} style={s.sel}>
+                  {Object.keys(STATUS_CFG).map(function(st){ return <option key={st} value={st}>{STATUS_CFG[st].label}</option>; })}
+                </select>
+                <input placeholder="Notes (optional)" value={editEquipForm.notes || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
+                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                  <button onClick={function(){ setEditingEquip(null); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={function(){ updateEquipment(editingEquip, { name: editEquipForm.name, category: editEquipForm.category, status: editEquipForm.status, notes: editEquipForm.notes }); }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Save Changes</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showAddEquip && (
             <div style={s.modalBg} onClick={function(){ setShowAddEquip(false); }}>
@@ -1584,8 +1628,30 @@ export default function App() {
           {sortedTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>✅</div><div style={{ marginTop: 8 }}>All clear!</div></div>}
 
           <div style={s.card}>
-            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var found = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (found ? found.task : "task") + "?", function(){ deleteTask(id); }); }} showSection={filterSection==="All"} />; })}
+            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var found = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (found ? found.task : "task") + "?", function(){ deleteTask(id); }); }} onEdit={function(t){ setEditingTask(t.id); setEditTaskForm({ task: t.task, section: t.section, interval: t.interval || "30 days", priority: t.priority }); }} showSection={filterSection==="All"} />; })}
           </div>
+
+          {editingTask && (
+            <div style={s.modalBg} onClick={function(){ setEditingTask(null); }}>
+              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
+                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Edit Task</div>
+                <input placeholder="Task description" value={editTaskForm.task || ""} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, task: e.target.value }; }); }} style={s.inp} />
+                <select value={editTaskForm.section || "General"} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, section: e.target.value }; }); }} style={s.sel}>
+                  {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
+                </select>
+                <select value={editTaskForm.interval || "30 days"} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, interval: e.target.value }; }); }} style={s.sel}>
+                  {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
+                </select>
+                <select value={editTaskForm.priority || "medium"} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, priority: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
+                  {["critical","high","medium","low"].map(function(p){ return <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>; })}
+                </select>
+                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                  <button onClick={function(){ setEditingTask(null); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={function(){ updateTask(editingTask, { task: editTaskForm.task, section: editTaskForm.section, interval: editTaskForm.interval, priority: editTaskForm.priority }); }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Save Changes</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showAddTask && (
             <div style={s.modalBg} onClick={function(){ setShowAddTask(false); }}>
