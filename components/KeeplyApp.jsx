@@ -534,6 +534,7 @@ export default function App() {
             make:       v.make        || "",
             model:      v.model       || "",
             year:       v.year        || "",
+            photoUrl:   v.photo_url   || "",
           };
         });
         setVessels(normalizedVessels);
@@ -1218,7 +1219,7 @@ export default function App() {
   // Signed in but no vessel yet
   if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
     setNeedsSetup(false);
-    const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "" };
+    const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "" };
     setVessels([normalized]);
     setActiveVesselId(vessel.id);
   }} />;
