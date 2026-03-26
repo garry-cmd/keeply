@@ -7,7 +7,7 @@ export async function POST(request) {
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return Response.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
+      return Response.json({ error: "API key not configured" }, { status: 500 });
     }
 
     const systemPrompt = type === "repair"
@@ -33,24 +33,21 @@ export async function POST(request) {
       })
     });
 
-    const rawBody = await res.text();
-
+    // Handle rate limiting gracefully
     if (res.status === 429) {
-      return Response.json({ error: "Rate limited — please wait a moment", suggestions: [] }, { status: 429 });
+      return Response.json({ 
+        error: "Rate limited — please wait a moment and try again",
+        rateLimited: true,
+        suggestions: [] 
+      }, { status: 429 });
     }
 
     if (!res.ok) {
-      // Return the full error body so we can see what's wrong
-      return Response.json({ error: "API error: " + rawBody, suggestions: [], status: res.status }, { status: 500 });
+      const err = await res.text();
+      return Response.json({ error: "AI service error — please try again", suggestions: [] }, { status: res.status });
     }
 
-    let data;
-    try {
-      data = JSON.parse(rawBody);
-    } catch(e) {
-      return Response.json({ error: "Invalid JSON from API: " + rawBody.slice(0, 200), suggestions: [] }, { status: 500 });
-    }
-
+    const data = await res.json();
     const textBlock = data.content && data.content.find(function(b) { return b.type === "text"; });
     const text = textBlock ? textBlock.text : "[]";
     const clean = text.replace(/```json|```/g, "").trim();
@@ -60,7 +57,7 @@ export async function POST(request) {
     try {
       suggestions = JSON.parse(match ? match[0] : "[]");
     } catch(e) {
-      return Response.json({ error: "JSON parse failed: " + text.slice(0, 200), suggestions: [] }, { status: 500 });
+      suggestions = [];
     }
 
     suggestions = suggestions
@@ -77,8 +74,8 @@ export async function POST(request) {
         };
       });
 
-    return Response.json({ suggestions, debug: { model: "claude-haiku-4-5-20251001", rawLength: rawBody.length } });
+    return Response.json({ suggestions });
   } catch (err) {
-    return Response.json({ error: "Exception: " + err.message, suggestions: [] }, { status: 500 });
+    return Response.json({ error: "Something went wrong — please try again", suggestions: [] }, { status: 500 });
   }
 }
