@@ -888,7 +888,7 @@ export default function App() {
       if (data.error) throw new Error(data.error);
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = data.suggestions || []; return n; });
     } catch(e) {
-      setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = []; return n; });
+      setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "error"; return n; });
     }
   };
 
@@ -1617,7 +1617,7 @@ export default function App() {
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
             return (
               <div key={eq.id} style={s.card}>
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next && !equipSuggestions[eq.id]) getSuggestionsForEquipment(eq); }}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); } }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: (STATUS_CFG[eq.status] || STATUS_CFG["good"]).dot, flexShrink: 0 }} />
                     <div>
