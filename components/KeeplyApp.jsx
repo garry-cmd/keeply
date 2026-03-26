@@ -401,6 +401,8 @@ export default function App() {
 
   const [view, setView] = useState("customer");
   const [tab, setTab]   = useState("equipment");
+  const [fleetData, setFleetData] = useState(null);
+  const [fleetLoading, setFleetLoading] = useState(false);
 
   // ── Loading state ──
   const [loading, setLoading]   = useState(true);
@@ -911,6 +913,52 @@ export default function App() {
     }
   };
 
+  const loadFleetData = async function(){
+    setFleetLoading(true);
+    try {
+      const allVesselIds = vessels.map(function(v){ return v.id; });
+      const data = {};
+      await Promise.all(allVesselIds.map(async function(vid){
+        const [eq, tasks, repairs, docs] = await Promise.all([
+          supa("equipment", { query: "vessel_id=eq." + vid + "&select=id,status" }).catch(function(){ return []; }),
+          supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&select=id,priority,due_date,section&section=neq.Paperwork" }).catch(function(){ return []; }),
+          supa("repairs", { query: "vessel_id=eq." + vid + "&select=id,status,section,description&status=eq.open" }).catch(function(){ return []; }),
+          supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&select=id,task,due_date,priority&section=eq.Paperwork" }).catch(function(){ return []; }),
+        ]);
+        const now = new Date(); now.setHours(0,0,0,0);
+        const overdue = (tasks || []).filter(function(t){ return t.due_date && new Date(t.due_date) < now; });
+        const dueSoon = (tasks || []).filter(function(t){
+          if (!t.due_date) return false;
+          const d = new Date(t.due_date);
+          const diff = (d - now) / (1000 * 60 * 60 * 24);
+          return diff >= 0 && diff <= 30;
+        });
+        const expiringDocs = (docs || []).filter(function(t){
+          if (!t.due_date) return false;
+          const d = new Date(t.due_date);
+          const diff = (d - now) / (1000 * 60 * 60 * 24);
+          return diff <= 60;
+        });
+        data[vid] = {
+          equipment: eq || [],
+          good: (eq || []).filter(function(e){ return e.status === "good"; }).length,
+          watch: (eq || []).filter(function(e){ return e.status === "watch"; }).length,
+          needsService: (eq || []).filter(function(e){ return e.status === "needs-service"; }).length,
+          openRepairs: (repairs || []).length,
+          repairs: (repairs || []).slice(0, 3),
+          overdueCount: overdue.length,
+          dueSoonCount: dueSoon.length,
+          expiringDocs: expiringDocs.slice(0, 3),
+        };
+      }));
+      setFleetData(data);
+    } catch(e) {
+      console.error("Fleet load error:", e);
+    } finally {
+      setFleetLoading(false);
+    }
+  };
+
   const updateEquipment = async function(id, patch){
     try {
       await supa("equipment", { method: "PATCH", query: "id=eq." + id, body: patch, prefer: "return=minimal" });
@@ -1161,6 +1209,7 @@ export default function App() {
           </button>
           <div style={{ display: "flex", background: "rgba(255,255,255,0.12)", borderRadius: 8, padding: 3 }}>
             <button onClick={function(){ setView("customer"); }} style={s.vBtn(view==="customer")}>My Boat</button>
+            <button onClick={function(){ setView("fleet"); loadFleetData(); }} style={s.vBtn(view==="fleet")}>Fleet</button>
             <button onClick={function(){ setView("admin"); }} style={s.vBtn(view==="admin")}>Admin</button>
           </div>
           <button onClick={function(){ supabase.auth.signOut(); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
@@ -1180,6 +1229,108 @@ export default function App() {
 
       <div style={s.main}>
         {/* ── ADMIN VIEW ── */}
+        {view === "fleet" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>⚓ Fleet Overview</div>
+                <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{vessels.length} vessel{vessels.length !== 1 ? "s" : ""}</div>
+              </div>
+              <button onClick={loadFleetData} disabled={fleetLoading} style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>
+                {fleetLoading ? "Loading…" : "↺ Refresh"}
+              </button>
+            </div>
+
+            {fleetLoading && !fleetData && (
+              <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>⚓</div>
+                <div>Loading fleet data…</div>
+              </div>
+            )}
+
+            {!fleetLoading && !fleetData && (
+              <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>⚓</div>
+                <div>Click Refresh to load fleet status</div>
+              </div>
+            )}
+
+            {fleetData && vessels.map(function(vessel){
+              const d = fleetData[vessel.id] || { good: 0, watch: 0, needsService: 0, openRepairs: 0, overdueCount: 0, dueSoonCount: 0, repairs: [], expiringDocs: [], equipment: [] };
+              const totalEq = d.good + d.watch + d.needsService;
+              const healthPct = totalEq > 0 ? Math.round((d.good / totalEq) * 100) : 100;
+              const isActive = vessel.id === activeVesselId;
+
+              // Overall vessel status
+              const hasIssues = d.needsService > 0 || d.openRepairs > 0 || d.overdueCount > 0;
+              const hasWarnings = d.watch > 0 || d.dueSoonCount > 0;
+              const statusColor = hasIssues ? "#dc2626" : hasWarnings ? "#d97706" : "#16a34a";
+              const statusBg = hasIssues ? "#fef2f2" : hasWarnings ? "#fffbeb" : "#f0fdf4";
+              const statusLabel = hasIssues ? "Needs Attention" : hasWarnings ? "Watch Items" : "All Good";
+              const statusIcon = hasIssues ? "🔴" : hasWarnings ? "🟡" : "🟢";
+
+              return (
+                <div key={vessel.id} style={{ ...s.card, marginBottom: 16, border: isActive ? "2px solid #0f4c8a" : "1px solid #e8eaed", cursor: "pointer" }}
+                  onClick={function(){ switchVessel(vessel.id); setView("customer"); }}>
+
+                  {/* Vessel header */}
+                  <div style={{ padding: "16px 20px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 17, fontWeight: 800 }}>{vessel.vesselType === "motor" ? "M/V" : "S/V"} {vessel.vesselName}</span>
+                      {isActive && <span style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>ACTIVE</span>}
+                    </div>
+                    <div style={{ background: statusBg, color: statusColor, borderRadius: 8, padding: "4px 10px", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                      {statusIcon} {statusLabel}
+                    </div>
+                  </div>
+
+                  {/* Stats row — each box deep-links to that tab */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 0, borderTop: "1px solid #f3f4f6" }}>
+                    {[
+                      { label: "Open Repairs", val: d.openRepairs, color: d.openRepairs > 0 ? "#dc2626" : "#9ca3af", bg: d.openRepairs > 0 ? "#fef2f2" : "#fafafa", tab: "repairs" },
+                      { label: "Overdue Tasks", val: d.overdueCount, color: d.overdueCount > 0 ? "#ea580c" : "#9ca3af", bg: d.overdueCount > 0 ? "#fff7ed" : "#fafafa", tab: "maintenance" },
+                      { label: "Due in 30d", val: d.dueSoonCount, color: d.dueSoonCount > 0 ? "#ca8a04" : "#9ca3af", bg: d.dueSoonCount > 0 ? "#fefce8" : "#fafafa", tab: "maintenance" },
+                      { label: "Expiring Docs", val: d.expiringDocs.length, color: d.expiringDocs.length > 0 ? "#7c3aed" : "#9ca3af", bg: d.expiringDocs.length > 0 ? "#f5f3ff" : "#fafafa", tab: "documentation" },
+                    ].map(function(stat){ return (
+                      <div key={stat.label}
+                        onClick={function(e){
+                          e.stopPropagation();
+                          switchVessel(vessel.id);
+                          setTab(stat.tab);
+                          setView("customer");
+                        }}
+                        style={{ background: stat.bg, padding: "10px 8px", textAlign: "center", borderRight: "1px solid #f3f4f6", cursor: stat.val > 0 ? "pointer" : "default" }}
+                        title={stat.val > 0 ? "Go to " + stat.tab : ""}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.val}</div>
+                        <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 3, fontWeight: 600 }}>{stat.label}</div>
+                        {stat.val > 0 && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap to view →</div>}
+                      </div>
+                    ); })}
+                  </div>
+
+                  {/* Priority items */}
+                  {d.expiringDocs.length > 0 && (
+                    <div style={{ padding: "12px 20px", borderTop: "1px solid #f3f4f6", background: "#fafafa" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>EXPIRING SOON</div>
+                      {d.expiringDocs.map(function(doc){ return (
+                        <div key={doc.id} style={{ fontSize: 12, color: "#374151", padding: "2px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#7c3aed", flexShrink: 0, display: "inline-block" }} />
+                          {doc.task} {doc.due_date && <span style={{ color: "#9ca3af" }}>· {doc.due_date}</span>}
+                        </div>
+                      ); })}
+                    </div>
+                  )}
+
+                  {/* Click hint */}
+                  <div style={{ padding: "8px 20px", borderTop: "1px solid #f3f4f6", textAlign: "right", fontSize: 11, color: "#9ca3af" }}>
+                    {isActive ? "Currently viewing" : "Tap to switch →"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {view === "admin" && <AdminDashboard />}
 
         {/* ── EQUIPMENT TAB ── */}
