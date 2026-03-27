@@ -590,6 +590,7 @@ export default function App() {
             notes:        e.notes || "",
             customParts:  e.custom_parts || [],
             docs:         e.docs || [],
+            logs:         e.logs || [],
             _vesselId:    e.vessel_id,
           };
         }));
