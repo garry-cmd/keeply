@@ -337,8 +337,10 @@ function AdminDashboard() {
 }
 
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
-function TaskRow({ task, idx, total, onToggle, onComment, onDelete, onEdit, showSection }) {
+function TaskRow({ task, idx, total, onToggle, onComment, onDelete, onEdit, showSection, onSave }) {
   const [logsOpen, setLogsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [editForm, setEditForm] = useState(null); // null = not editing
   const badge = getDueBadge(task.dueDate || task.due_date);
   const dueDate = task.dueDate || task.due_date;
   const lastService = task.lastService || task.last_service;
@@ -347,8 +349,8 @@ function TaskRow({ task, idx, total, onToggle, onComment, onDelete, onEdit, show
     <div style={{ borderBottom: idx < total - 1 ? "1px solid #f8fafc" : "none", background: "#fff" }}>
       <div style={{ padding: "12px 20px", display: "flex", gap: 12, alignItems: "flex-start" }}>
         <input type="checkbox" checked={false} onChange={function(){ onToggle(task.id); }} style={{ marginTop: 3, width: 16, height: 16, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: 1 }} onClick={function(){ setIsExpanded(function(v){ return !v; }); if (!editForm) setEditForm({ task: task.task, section: task.section, interval: task.interval || (task.interval_days ? task.interval_days + " days" : "30 days"), priority: task.priority }); }} >
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", cursor: "pointer" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{task.task}</span>
             <span style={{ background: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).bg, color: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{task.priority}</span>
             {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
@@ -381,10 +383,38 @@ function TaskRow({ task, idx, total, onToggle, onComment, onDelete, onEdit, show
           )}
         </div>
         <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-          {onEdit && <button onClick={function(){ onEdit(task); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>}
           <button onClick={function(){ onDelete(task.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "flex-start", marginTop: 2 }} title="Delete task"><TrashIcon /></button>
         </div>
       </div>
+      {isExpanded && editForm && (
+        <div style={{ padding: "0 20px 14px 48px" }} onClick={function(e){ e.stopPropagation(); }}>
+          <input value={editForm.task} onChange={function(e){ setEditForm(function(f){ return { ...f, task: e.target.value }; }); }}
+            style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, marginBottom: 8, boxSizing: "border-box", outline: "none" }} />
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <select value={editForm.section} onChange={function(e){ setEditForm(function(f){ return { ...f, section: e.target.value }; }); }}
+              style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, background: "#fff" }}>
+              {Object.keys(SECTIONS).map(function(s){ return <option key={s} value={s}>{s}</option>; })}
+            </select>
+            <select value={editForm.priority} onChange={function(e){ setEditForm(function(f){ return { ...f, priority: e.target.value }; }); }}
+              style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, background: "#fff" }}>
+              {["critical","high","medium","low"].map(function(p){ return <option key={p} value={p}>{p}</option>; })}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <select value={editForm.interval} onChange={function(e){ setEditForm(function(f){ return { ...f, interval: e.target.value }; }); }}
+              style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, background: "#fff" }}>
+              {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(iv){ return <option key={iv} value={iv}>{iv}</option>; })}
+            </select>
+            <button onClick={function(){
+              const days = { "7 days":7,"14 days":14,"30 days":30,"60 days":60,"90 days":90,"6 months":180,"annual":365,"2 years":730 }[editForm.interval] || 30;
+              onSave(task.id, { task: editForm.task, section: editForm.section, priority: editForm.priority, interval_days: days, interval: editForm.interval });
+              setIsExpanded(false);
+            }} style={{ flex: 1, padding: "7px 14px", border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1687,17 +1717,14 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {(eq.logs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "log"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View log">📋 {eq.logs.length}</span>}
+                    <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "log"; return n; }); }}
+                      style={{ background: (eq.logs||[]).length > 0 ? "#f0fdf4" : "#f8fafc", color: (eq.logs||[]).length > 0 ? "#16a34a" : "#9ca3af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View log">
+                      📋{(eq.logs||[]).length > 0 ? " " + eq.logs.length : ""}
+                    </span>
                     {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
                     {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
                     <StatusBadge status={eq.status} />
-                    <button onClick={function(e){ e.stopPropagation(); setEditingEquip(eq.id);
-                      const rawNotes = eq.notes || "";
-                      const modelMatch = rawNotes.match(/Model: ([^|]+)/);
-                      const serialMatch = rawNotes.match(/S\/N: ([^|]+)/);
-                      const cleanNotes = rawNotes.replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim();
-                      setEditEquipForm({ name: eq.name, category: eq.category, status: eq.status, notes: cleanNotes, model: modelMatch ? modelMatch[1].trim() : "", serial: serialMatch ? serialMatch[1].trim() : "" });
-                      setExpandedEquip(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>
+
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
                     <span style={{ color: "#9ca3af", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
@@ -1745,10 +1772,42 @@ export default function App() {
                       </div>
                     )}
 
+                    {/* Edit tab */}
+                    {activeTab === "edit" && (
+                      <div>
+                        <input placeholder="Equipment name" value={editEquipForm.name || eq.name} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, name: e.target.value }; }); }} style={s.inp} />
+                        <select value={editEquipForm.category || eq.category} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, category: e.target.value }; }); }} style={s.sel}>
+                          {EQ_CATEGORIES.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
+                        </select>
+                        <select value={editEquipForm.status || eq.status} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, status: e.target.value }; }); }} style={s.sel}>
+                          {Object.keys(STATUS_CFG).map(function(st){ return <option key={st} value={st}>{STATUS_CFG[st].label}</option>; })}
+                        </select>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input placeholder="Model (optional)" value={editEquipForm.model !== undefined ? editEquipForm.model : (eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                          <input placeholder="Serial No." value={editEquipForm.serial !== undefined ? editEquipForm.serial : (eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                        </div>
+                        <input placeholder="Notes (optional)" value={editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim()} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={s.inp} />
+                        <button onClick={function(){
+                          const name = editEquipForm.name || eq.name;
+                          const category = editEquipForm.category || eq.category;
+                          const status = editEquipForm.status || eq.status;
+                          const model = editEquipForm.model !== undefined ? editEquipForm.model : ((eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||"");
+                          const serial = editEquipForm.serial !== undefined ? editEquipForm.serial : ((eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||"");
+                          const baseNotes = editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim();
+                          const notes = [baseNotes, model ? "Model: "+model : "", serial ? "S/N: "+serial : ""].filter(Boolean).join(" | ");
+                          updateEquipment(eq.id, { name, category, status, notes });
+                          setEditEquipForm({});
+                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; });
+                        }} style={{ width: "100%", padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                          Save Changes
+                        </button>
+                      </div>
+                    )}
+
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["parts","docs","log"].map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: activeTab===t ? "#0f4c8a" : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Documents" : "📋 Log"}</button>
+                      {["parts","docs","log","edit"].map(function(t){ return (
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "#7c3aed" : "#0f4c8a") : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Documents" : t === "log" ? "📋 Log" : "✏️ Edit"}</button>
                       ); })}
                     </div>
 
@@ -2135,30 +2194,10 @@ export default function App() {
           {sortedTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>✅</div><div style={{ marginTop: 8 }}>All clear!</div></div>}
 
           <div style={s.card}>
-            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var found = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (found ? found.task : "task") + "?", function(){ deleteTask(id); }); }} onEdit={function(t){ setEditingTask(t.id); setEditTaskForm({ task: t.task, section: t.section, interval: t.interval || "30 days", priority: t.priority }); }} showSection={filterSection==="All"} />; })}
+            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onComment={updateComment} onDelete={function(id){ var found = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (found ? found.task : "task") + "?", function(){ deleteTask(id); }); }} onSave={function(id, patch){ updateTask(id, patch); }} showSection={filterSection==="All"} />; })}
           </div>
 
-          {editingTask && (
-            <div style={s.modalBg} onClick={function(){ setEditingTask(null); }}>
-              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
-                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Edit Task</div>
-                <input placeholder="Task description" value={editTaskForm.task || ""} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, task: e.target.value }; }); }} style={s.inp} />
-                <select value={editTaskForm.section || "General"} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, section: e.target.value }; }); }} style={s.sel}>
-                  {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
-                </select>
-                <select value={editTaskForm.interval || "30 days"} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, interval: e.target.value }; }); }} style={s.sel}>
-                  {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
-                </select>
-                <select value={editTaskForm.priority || "medium"} onChange={function(e){ setEditTaskForm(function(f){ return { ...f, priority: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
-                  {["critical","high","medium","low"].map(function(p){ return <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>; })}
-                </select>
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <button onClick={function(){ setEditingTask(null); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={function(){ updateTask(editingTask, { task: editTaskForm.task, section: editTaskForm.section, interval: editTaskForm.interval, priority: editTaskForm.priority }); }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Save Changes</button>
-                </div>
-              </div>
-            </div>
-          )}
+          
 
           {showAddTask && (
             <div style={s.modalBg} onClick={function(){ setShowAddTask(false); }}>
