@@ -1687,6 +1687,7 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {(eq.logs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "log"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View log">📋 {eq.logs.length}</span>}
                     {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
                     {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
                     <StatusBadge status={eq.status} />
@@ -1711,40 +1712,43 @@ export default function App() {
                     </div>
                     {eq.notes && <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#374151", marginBottom: 12 }}>📝 {eq.notes}</div>}
 
-                    {/* Equipment log */}
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>LOG</div>
-                      {(eq.logs || []).length > 0 && (
-                        <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", marginBottom: 8 }}>
-                          {(eq.logs || []).slice(-5).reverse().map(function(entry, i){
-                            return (
-                              <div key={i} style={{ fontSize: 12, color: "#374151", padding: "3px 0", borderBottom: i < Math.min((eq.logs||[]).length, 5) - 1 ? "1px solid #f3f4f6" : "none" }}>
-                                <span style={{ fontSize: 10, color: "#9ca3af", marginRight: 8 }}>{entry.date}</span>
-                                {entry.text}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <input
-                        placeholder="Add log entry… (press Enter)"
-                        value={equipLogInput[eq.id] || ""}
-                        onChange={function(e){ setEquipLogInput(function(prev){ const n = Object.assign({}, prev); n[eq.id] = e.target.value; return n; }); }}
-                        onKeyDown={function(e){
-                          if (e.key === "Enter" && (equipLogInput[eq.id] || "").trim()) {
-                            e.preventDefault();
-                            addEquipLog(eq.id, equipLogInput[eq.id]);
-                            setEquipLogInput(function(prev){ const n = Object.assign({}, prev); n[eq.id] = ""; return n; });
-                          }
-                        }}
-                        style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "6px 10px", fontSize: 12, color: "#374151", outline: "none", boxSizing: "border-box" }}
-                      />
-                    </div>
+                                        {/* Log tab */}
+                    {activeTab === "log" && (
+                      <div>
+                        <input
+                          placeholder="Add log entry… (press Enter)"
+                          value={equipLogInput[eq.id] || ""}
+                          onChange={function(e){ setEquipLogInput(function(prev){ const n = Object.assign({}, prev); n[eq.id] = e.target.value; return n; }); }}
+                          onKeyDown={function(e){
+                            if (e.key === "Enter" && (equipLogInput[eq.id] || "").trim()) {
+                              addEquipLog(eq.id, equipLogInput[eq.id].trim());
+                              setEquipLogInput(function(prev){ const n = Object.assign({}, prev); n[eq.id] = ""; return n; });
+                            }
+                          }}
+                          style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", fontSize: 12, boxSizing: "border-box", outline: "none", marginBottom: 10 }}
+                        />
+                        {(eq.logs || []).length === 0 && (
+                          <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "16px 0" }}>No log entries yet. Type above and press Enter.</div>
+                        )}
+                        {(eq.logs || []).length > 0 && (
+                          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px" }}>
+                            {(eq.logs || []).slice().reverse().map(function(entry, i){
+                              return (
+                                <div key={i} style={{ fontSize: 12, color: "#374151", padding: "5px 0", borderBottom: i < (eq.logs||[]).length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                  <span style={{ fontSize: 10, color: "#9ca3af", marginRight: 8 }}>{entry.date}</span>
+                                  {entry.text}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["parts","docs"].map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: activeTab===t ? "#0f4c8a" : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t === "parts" ? "🔩 Parts" : "📄 Documents"}</button>
+                      {["parts","docs","log"].map(function(t){ return (
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: activeTab===t ? "#0f4c8a" : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Documents" : "📋 Log"}</button>
                       ); })}
                     </div>
 
