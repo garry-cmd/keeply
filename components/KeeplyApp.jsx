@@ -404,6 +404,10 @@ export default function App() {
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showCopyDialog, setShowCopyDialog]   = useState(false);
+  const [newVesselId, setNewVesselId]         = useState(null);
+  const [copyingItems, setCopyingItems]       = useState(false);
+  const [copySelections, setCopySelections]   = useState({ equipment: true, maintenance: true, sourceVesselId: null });
   const [importRows, setImportRows]     = useState([]);
   const [importType, setImportType]     = useState("equipment"); // "equipment" | "maintenance"
   const [importFile, setImportFile]     = useState(null);
@@ -629,7 +633,37 @@ export default function App() {
   const openAddVessel = function(){ setEditingVesselId(null); setSettingsForm({ ...BLANK_VESSEL }); setShowVesselDropdown(false); setShowSettings(true); };
   const openEditVessel = function(vessel){ setEditingVesselId(vessel.id); setSettingsForm({ ...vessel, photoUrl: vessel.photoUrl || "" }); setShowVesselDropdown(false); setShowSettings(true); };
 
-  const saveVessel = async function(){
+  const copyItemsToVessel = async function(sourceId, targetId, copyEquip, copyMaint) {
+    setCopyingItems(true);
+    try {
+      if (copyEquip) {
+        const sourceEquip = await supa("equipment", { query: "vessel_id=eq." + sourceId + "&select=name,category,status,notes,custom_parts,docs" });
+        for (const eq of (sourceEquip || [])) {
+          await supa("equipment", { method: "POST", body: {
+            vessel_id: targetId, name: eq.name, category: eq.category,
+            status: "good", notes: eq.notes || "", last_service: today(),
+            custom_parts: eq.custom_parts || [], docs: eq.docs || [], logs: []
+          }});
+        }
+      }
+      if (copyMaint) {
+        const sourceTasks = await supa("maintenance_tasks", { query: "vessel_id=eq." + sourceId + "&select=task,section,interval_days,priority" });
+        for (const t of (sourceTasks || [])) {
+          const due = addDays(today(), t.interval_days || 30);
+          await supa("maintenance_tasks", { method: "POST", body: {
+            vessel_id: targetId, task: t.task, section: t.section,
+            interval_days: t.interval_days, priority: t.priority,
+            last_service: null, due_date: due, service_logs: [], attachments: []
+          }});
+        }
+      }
+      // Reload data for the new vessel
+      await switchVessel(targetId);
+    } catch(err) { setDbError(err.message); }
+    finally { setCopyingItems(false); setShowCopyDialog(false); setNewVesselId(null); }
+  };
+
+    const saveVessel = async function(){
     if (!settingsForm.vesselName.trim()) return;
     setSaving(true);
     try {
@@ -644,6 +678,14 @@ export default function App() {
         const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: nv.photo_url || "" };
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
+        // If user has other vessels, offer to copy items
+        if (vessels.length > 0) {
+          setNewVesselId(nv.id);
+          setCopySelections({ equipment: true, maintenance: true, sourceVesselId: vessels[0].id });
+          setShowSettings(false);
+          setShowCopyDialog(true);
+          return;
+        }
       }
       setShowSettings(false);
     } catch(err){ setDbError(err.message); }
@@ -2286,6 +2328,62 @@ export default function App() {
       )}
 
       {/* ── VESSEL SETTINGS ── */}
+      {showCopyDialog && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 400, padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize: 28, textAlign: "center", marginBottom: 8 }}>⚓</div>
+            <div style={{ fontWeight: 800, fontSize: 17, textAlign: "center", marginBottom: 6 }}>Copy from existing vessel?</div>
+            <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginBottom: 20 }}>Save time by copying equipment and maintenance tasks from one of your other vessels.</div>
+
+            {/* Source vessel selector */}
+            {vessels.filter(function(v){ return v.id !== newVesselId; }).length > 1 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>COPY FROM</div>
+                <select value={copySelections.sourceVesselId || ""} onChange={function(e){ setCopySelections(function(s){ return { ...s, sourceVesselId: e.target.value }; }); }}
+                  style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "#fff" }}>
+                  {vessels.filter(function(v){ return v.id !== newVesselId; }).map(function(v){ return (
+                    <option key={v.id} value={v.id}>{v.vesselType === "motor" ? "M/V" : "S/V"} {v.vesselName}</option>
+                  ); })}
+                </select>
+              </div>
+            )}
+
+            {/* What to copy */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 10 }}>WHAT TO COPY</div>
+              {[
+                { key: "equipment", label: "⚙️ Equipment", sub: "Names, categories, and notes" },
+                { key: "maintenance", label: "📋 Maintenance Tasks", sub: "All scheduled tasks and intervals" },
+              ].map(function(opt){ return (
+                <div key={opt.key} onClick={function(){ setCopySelections(function(s){ return { ...s, [opt.key]: !s[opt.key] }; }); }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: "2px solid " + (copySelections[opt.key] ? "#0f4c8a" : "#e2e8f0"), borderRadius: 10, marginBottom: 8, cursor: "pointer", background: copySelections[opt.key] ? "#eff6ff" : "#fff" }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, border: "2px solid " + (copySelections[opt.key] ? "#0f4c8a" : "#d1d5db"), background: copySelections[opt.key] ? "#0f4c8a" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {copySelections[opt.key] && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: copySelections[opt.key] ? "#0f4c8a" : "#374151" }}>{opt.label}</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>{opt.sub}</div>
+                  </div>
+                </div>
+              ); })}
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={function(){ setShowCopyDialog(false); setNewVesselId(null); }}
+                style={{ flex: 1, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                Skip
+              </button>
+              <button
+                disabled={copyingItems || (!copySelections.equipment && !copySelections.maintenance)}
+                onClick={function(){ copyItemsToVessel(copySelections.sourceVesselId || vessels.find(function(v){ return v.id !== newVesselId; }).id, newVesselId, copySelections.equipment, copySelections.maintenance); }}
+                style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: copyingItems || (!copySelections.equipment && !copySelections.maintenance) ? "#93c5fd" : "#0f4c8a", color: "#fff", fontWeight: 700, fontSize: 13, cursor: copyingItems ? "default" : "pointer" }}>
+                {copyingItems ? "Copying…" : "Copy Items →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showSettings && (
         <div style={s.modalBg} onClick={function(){ setShowSettings(false); }}>
           <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 440, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }} onClick={function(e){ e.stopPropagation(); }}>
