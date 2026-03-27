@@ -2226,14 +2226,18 @@ export default function App() {
             <UrgencyCard label="Due Soon" sub="Within 3 days" val={urgencyCounts.dueSoon} color="#ca8a04" bg="#fefce8" active={filterUrgency==="due-soon"} onClick={function(){ setFilterUrgency(filterUrgency==="due-soon"?"All":"due-soon"); }} />
           </div>
 
-          {/* Section + Priority filters */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            {MAINT_SECTIONS.map(function(sec){ const stat = sectionStats.find(function(s){ return s.sec === sec; }); return (
-              <button key={sec} onClick={function(){ setFilterSection(filterSection===sec?"All":sec); setExpandedSection(filterSection===sec?null:sec); }} style={{ ...s.pill(filterSection===sec), display: "flex", alignItems: "center", gap: 4 }}>
-                {SECTIONS[sec]} {sec}
-                {stat && stat.total > 0 && <span style={{ background: stat.critical > 0 ? "#fee2e2" : "#f1f5f9", color: stat.critical > 0 ? "#dc2626" : "#6b7280", borderRadius: 10, padding: "0 5px", fontSize: 10, fontWeight: 800 }}>{stat.total}</span>}
-              </button>
-            ); })}
+          {/* Section filter dropdown */}
+          <div style={{ marginBottom: 14 }}>
+            <select value={filterSection} onChange={function(e){ setFilterSection(e.target.value); setExpandedSection(e.target.value === "All" ? null : e.target.value); }}
+              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "#fff", color: "#1a1d23", cursor: "pointer" }}>
+              <option value="All">All Sections ({sortedTasks.length} tasks)</option>
+              {MAINT_SECTIONS.map(function(sec){
+                const stat = sectionStats.find(function(s){ return s.sec === sec; });
+                const count = stat ? stat.total : 0;
+                if (count === 0) return null;
+                return <option key={sec} value={sec}>{SECTIONS[sec]} {sec} ({count})</option>;
+              })}
+            </select>
           </div>
 
 
