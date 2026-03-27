@@ -359,7 +359,6 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
         }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{task.task}</span>
-            <span style={{ background: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).bg, color: (PRIORITY_CFG[task.priority] || PRIORITY_CFG["medium"]).color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{task.priority}</span>
             {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
             {showSection && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 600 }}>{SECTIONS[task.section]} {task.section}</span>}
           </div>
@@ -434,10 +433,6 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
                 <select value={editForm.section} onChange={function(e){ setEditForm(function(f){ return { ...f, section: e.target.value }; }); }}
                   style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, background: "#fff" }}>
                   {Object.keys(SECTIONS).map(function(s){ return <option key={s} value={s}>{s}</option>; })}
-                </select>
-                <select value={editForm.priority} onChange={function(e){ setEditForm(function(f){ return { ...f, priority: e.target.value }; }); }}
-                  style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, background: "#fff" }}>
-                  {["critical","high","medium","low"].map(function(p){ return <option key={p} value={p}>{p}</option>; })}
                 </select>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
