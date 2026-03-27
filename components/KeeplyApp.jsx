@@ -2235,9 +2235,7 @@ export default function App() {
               </button>
             ); })}
           </div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-            {["All","critical","high","medium","low"].map(function(p){ return <button key={p} onClick={function(){ setFilterPriority(p); }} style={s.pill(filterPriority===p, p !== "All" && PRIORITY_CFG[p] ? PRIORITY_CFG[p].color : undefined)}>{p === "All" ? "All Priority" : p.charAt(0).toUpperCase() + p.slice(1)}</button>; })}
-          </div>
+
 
           <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>{sortedTasks.length} tasks{filterSection !== "All" ? " in " + filterSection : ""}</div>
 
@@ -2257,11 +2255,8 @@ export default function App() {
                 <select value={newTask.section} onChange={function(e){ setNewTask(function(t){ return { ...t, section: e.target.value }; }); }} style={s.sel}>
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                 </select>
-                <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={s.sel}>
+                <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
                   {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
-                </select>
-                <select value={newTask.priority} onChange={function(e){ setNewTask(function(t){ return { ...t, priority: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
-                  {["critical","high","medium","low"].map(function(p){ return <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>; })}
                 </select>
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={function(){ setShowAddTask(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
