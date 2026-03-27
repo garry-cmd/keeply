@@ -1733,11 +1733,21 @@ export default function App() {
 
           {/* filters */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {["All","good","watch","needs-service"].map(function(f){ return <button key={f} onClick={function(){ setEquipFilter(f); }} style={s.pill(equipFilter===f)}>{f==="All"?"All Status":STATUS_CFG[f]?STATUS_CFG[f].label:f}</button>; })}
-            </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {["All",...EQ_CATEGORIES].map(function(c){ return <button key={c} onClick={function(){ setEquipSectionFilter(c); }} style={s.pill(equipSectionFilter===c,"#7c3aed")}>{c === "All" ? "All Categories" : (SECTIONS[c] || "") + " " + c}</button>; })}
+            <div style={{ display: "flex", gap: 8 }}>
+              <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
+                style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "#fff", color: "#1a1d23", cursor: "pointer" }}>
+                <option value="All">All Categories</option>
+                {EQ_CATEGORIES.map(function(c){
+                  const count = equipment.filter(function(e){ return e.category === c; }).length;
+                  if (count === 0) return null;
+                  return <option key={c} value={c}>{(SECTIONS[c] || "") + " " + c + " (" + count + ")"}</option>;
+                })}
+              </select>
+              <select value={equipFilter} onChange={function(e){ setEquipFilter(e.target.value); }}
+                style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "#fff", color: "#1a1d23", cursor: "pointer" }}>
+                <option value="All">All Status</option>
+                {["good","watch","needs-service"].map(function(f){ return <option key={f} value={f}>{STATUS_CFG[f] ? STATUS_CFG[f].label : f}</option>; })}
+              </select>
             </div>
           </div>
 
