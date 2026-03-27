@@ -403,6 +403,7 @@ export default function App() {
   const [tab, setTab]   = useState("equipment");
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [importRows, setImportRows]     = useState([]);
   const [importType, setImportType]     = useState("equipment"); // "equipment" | "maintenance"
   const [importFile, setImportFile]     = useState(null);
@@ -444,7 +445,7 @@ export default function App() {
   const [showAddEquip, setShowAddEquip]     = useState(false);
   const [newEquip, setNewEquip]             = useState({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" });
   const [addingPartFor, setAddingPartFor]   = useState(null);
-  const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "" });
+  const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "", sku: "" });
   const [addingDocFor, setAddingDocFor]     = useState(null);
   const [newDocForm, setNewDocForm]         = useState({ label: "", url: "", type: "Manual", source: "url", fileObj: null, fileName: "" });
   const [uploadingDoc, setUploadingDoc]     = useState(false);
@@ -463,6 +464,7 @@ export default function App() {
   const [editTaskForm, setEditTaskForm]     = useState({});
   const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium" });
   const [showAddDoc, setShowAddDoc]         = useState(false);
+  const [filterDocUrgency, setFilterDocUrgency] = useState("All");
   const [expandedDoc, setExpandedDoc]       = useState(null);
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
   const [showCartOnly, setShowCartOnly]     = useState(false);
@@ -696,12 +698,12 @@ export default function App() {
     if (!newPartForm.name.trim()) return;
     const eq = equipment.find(function(e){ return e.id === eqId; });
     if (!eq) return;
-    const newPart = { id: "cp-" + Date.now(), name: newPartForm.name, url: newPartForm.url, price: newPartForm.price, vendor: "custom" };
+    const newPart = { id: "cp-" + Date.now(), name: newPartForm.name, url: newPartForm.url, price: newPartForm.price, sku: newPartForm.sku, vendor: "custom" };
     const updatedParts = [...(eq.customParts || []), newPart];
     try {
       await supa("equipment", { method: "PATCH", query: "id=eq." + eqId, body: { custom_parts: updatedParts }, prefer: "return=minimal" });
       setEquipment(function(prev){ return prev.map(function(e){ return e.id === eqId ? { ...e, customParts: updatedParts } : e; }); });
-      setNewPartForm({ name: "", url: "", price: "" });
+      setNewPartForm({ name: "", url: "", price: "", sku: "" });
       setAddingPartFor(null);
     } catch(err){ setDbError(err.message); }
   };
@@ -1177,11 +1179,11 @@ export default function App() {
   // ─── STYLES ──────────────────────────────────────────────────────────────────
   const s = {
     app:    { fontFamily: "'DM Sans','Helvetica Neue',sans-serif", background: "#f4f6f9", minHeight: "100vh", color: "#1a1d23" },
-    topBar: { background: "#0f4c8a", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 },
+    topBar: { background: "#0f4c8a", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 },
     vBtn:   function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "#fff" : "transparent", color: a ? "#0f4c8a" : "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:    { background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn: function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "#0f4c8a" : "#6b7280", background: "none", border: "none", borderBottom: a ? "2px solid #0f4c8a" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
-    main:   { maxWidth: 960, margin: "0 auto", padding: "24px 16px" },
+    main:   { maxWidth: 960, margin: "0 auto", padding: "16px 12px" },
     card:   { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
     pill:   function(a,c){ return { padding: "4px 11px", borderRadius: 20, border: a ? "1.5px solid " + (c||"#0f4c8a") : "1.5px solid #e2e8f0", background: a ? (c||"#0f4c8a") + "15" : "#fff", color: a ? (c||"#0f4c8a") : "#6b7280", fontSize: 11, fontWeight: 700, cursor: "pointer" }; },
     plusBtn: { background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 22, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -1301,27 +1303,40 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Saving…</span>}
+          {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
           {totalAlerts > 0 && (
-            <button onClick={function(){ setShowUrgentPanel(true); }} style={{ background: "#dc2626", border: "none", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-              🚨 {totalAlerts} Alert{totalAlerts !== 1 ? "s" : ""}
+            <button onClick={function(){ setShowUrgentPanel(true); }} style={{ background: "#dc2626", border: "none", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              🚨 {totalAlerts}
             </button>
           )}
-          <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "#fff" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: cartQty > 0 ? "#0f4c8a" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            🛒 {cartQty > 0 ? "List (" + cartQty + ")" : "List"}
+          <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "#fff" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: cartQty > 0 ? "#0f4c8a" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            🛒{cartQty > 0 ? " " + cartQty : ""}
           </button>
-          <button onClick={function(){ setShowShare(true); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-            👥 Share
+          <button onClick={function(){ setShowMobileMenu(function(v){ return !v; }); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>
+            ☰
           </button>
-          <div style={{ display: "flex", background: "rgba(255,255,255,0.12)", borderRadius: 8, padding: 3 }}>
-            <button onClick={function(){ setView("customer"); }} style={s.vBtn(view==="customer")}>My Boat</button>
-            <button onClick={function(){ setView("fleet"); loadFleetData(); }} style={s.vBtn(view==="fleet")}>Fleet</button>
-            <button onClick={function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }} style={s.vBtn(view==="import")}>Import</button>
-            <button onClick={function(){ setView("admin"); }} style={s.vBtn(view==="admin")}>Admin</button>
-          </div>
-          <button onClick={function(){ supabase.auth.signOut(); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-            Sign Out
-          </button>
+          {showMobileMenu && (
+            <div style={{ position: "fixed", inset: 0, zIndex: 500 }} onClick={function(){ setShowMobileMenu(false); }}>
+              <div style={{ position: "absolute", top: 56, right: 0, background: "#fff", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
+                {[
+                  { label: "⛵ My Boat", action: function(){ setView("customer"); setShowMobileMenu(false); }, active: view==="customer" },
+                  { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
+                  { label: "📥 Import", action: function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); setShowMobileMenu(false); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }, active: view==="import" },
+                  { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); }, active: false },
+                  { label: "⚙️ Admin", action: function(){ setView("admin"); setShowMobileMenu(false); }, active: view==="admin" },
+                ].map(function(item){ return (
+                  <div key={item.label} onClick={item.action}
+                    style={{ padding: "13px 20px", fontSize: 14, fontWeight: item.active ? 700 : 500, color: item.active ? "#0f4c8a" : "#374151", background: item.active ? "#eff6ff" : "#fff", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
+                    {item.label}
+                  </div>
+                ); })}
+                <div onClick={function(){ supabase.auth.signOut(); setShowMobileMenu(false); }}
+                  style={{ padding: "13px 20px", fontSize: 14, fontWeight: 500, color: "#dc2626", background: "#fff", cursor: "pointer" }}>
+                  🚪 Sign Out
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1731,10 +1746,13 @@ export default function App() {
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginTop: 14, marginBottom: 8 }}>CUSTOM PARTS</div>
                         {eq.customParts.map(function(part){ return (
                           <div key={part.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f3f4f6" }}>
-                            <span style={{ fontSize: 13 }}>{part.name}</span>
+                            <div>
+                              <span style={{ fontSize: 13, fontWeight: 600 }}>{part.name}</span>
+                              {part.sku && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>SKU: {part.sku}</span>}
+                            </div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                              {part.price && <span style={{ fontSize: 13, fontWeight: 600 }}>${part.price}</span>}
-                              {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a" }}>↗</a>}
+                              {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "#0f4c8a" }}>${part.price}</span>}
+                              {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 700 }}>↗ Buy</a>}
                             </div>
                           </div>
                         ); })}
@@ -1742,10 +1760,13 @@ export default function App() {
                       {addingPartFor === eq.id ? (
                         <div style={{ marginTop: 12, background: "#f8fafc", borderRadius: 10, padding: 14 }}>
                           <input placeholder="Part name" value={newPartForm.name} onChange={function(e){ setNewPartForm(function(f){ return { ...f, name: e.target.value }; }); }} style={s.inp} />
-                          <input placeholder="URL (optional)" value={newPartForm.url} onChange={function(e){ setNewPartForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
-                          <input placeholder="Price (optional)" value={newPartForm.price} onChange={function(e){ setNewPartForm(function(f){ return { ...f, price: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 12 }} />
                           <div style={{ display: "flex", gap: 8 }}>
-                            <button onClick={function(){ setAddingPartFor(null); setNewPartForm({ name: "", url: "", price: "" }); }} style={{ flex: 1, padding: "7px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                            <input placeholder="SKU (optional)" value={newPartForm.sku} onChange={function(e){ setNewPartForm(function(f){ return { ...f, sku: e.target.value }; }); }} style={{ ...s.inp, flex: 1, marginBottom: 0 }} />
+                            <input placeholder="Price" value={newPartForm.price} onChange={function(e){ setNewPartForm(function(f){ return { ...f, price: e.target.value }; }); }} style={{ ...s.inp, flex: 1, marginBottom: 0 }} />
+                          </div>
+                          <input placeholder="URL (optional)" value={newPartForm.url} onChange={function(e){ setNewPartForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
+                                          <div style={{ display: "flex", gap: 8 }}>
+                            <button onClick={function(){ setAddingPartFor(null); setNewPartForm({ name: "", url: "", price: "", sku: "" }); }} style={{ flex: 1, padding: "7px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                             <button onClick={function(){ addCustomPart(eq.id); }} style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Add Part</button>
                           </div>
                         </div>
@@ -2120,12 +2141,12 @@ export default function App() {
         {view === "customer" && tab === "documentation" && (<>
           {tabHeader("Documentation", "Paperwork & renewals", true, function(){ setShowAddDoc(true); })}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
-            <UrgencyCard label="Critical" sub="10+ days overdue" val={docUrgencyCounts.critical} color="#dc2626" bg="#fef2f2" active={false} onClick={null} />
-            <UrgencyCard label="Overdue" sub="5–10 days overdue" val={docUrgencyCounts.overdue} color="#ea580c" bg="#fff7ed" active={false} onClick={null} />
-            <UrgencyCard label="Due Soon" sub="Within 3 days" val={docUrgencyCounts.dueSoon} color="#ca8a04" bg="#fefce8" active={false} onClick={null} />
+            <UrgencyCard label="Critical" sub="10+ days overdue" val={docUrgencyCounts.critical} color="#dc2626" bg="#fef2f2" active={filterDocUrgency==="critical"} onClick={function(){ setFilterDocUrgency(filterDocUrgency==="critical"?"All":"critical"); }} />
+            <UrgencyCard label="Overdue" sub="5–10 days overdue" val={docUrgencyCounts.overdue} color="#ea580c" bg="#fff7ed" active={filterDocUrgency==="overdue"} onClick={function(){ setFilterDocUrgency(filterDocUrgency==="overdue"?"All":"overdue"); }} />
+            <UrgencyCard label="Due Soon" sub="Within 3 days" val={docUrgencyCounts.dueSoon} color="#ca8a04" bg="#fefce8" active={filterDocUrgency==="due-soon"} onClick={function(){ setFilterDocUrgency(filterDocUrgency==="due-soon"?"All":"due-soon"); }} />
           </div>
           {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}><div style={{ fontSize: 36 }}>📄</div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
-          {[...docTasks].sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; }).map(function(t){
+          {[...docTasks].filter(function(t){ if (filterDocUrgency === "All") return true; return getTaskUrgency(t) === filterDocUrgency; }).sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; }).map(function(t){
             const badge = getDueBadge(t.dueDate);
             const isExpanded = expandedDoc === t.id;
             const atts = t.attachments || [];
