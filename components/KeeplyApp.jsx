@@ -468,7 +468,7 @@ export default function App() {
   const [shareMsg, setShareMsg]   = useState(null);
 
   const [view, setView] = useState("customer");
-  const [tab, setTab]   = useState("equipment");
+  const [tab, setTab]   = useState("boat");
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -508,6 +508,7 @@ export default function App() {
   const [equipment, setEquipment]           = useState([]);
   const [expandedEquip, setExpandedEquip]   = useState(null);
   const [equipTab, setEquipTab]             = useState({});
+  const [equipActiveTab, setEquipActiveTab]   = useState({}); // track which tab is open per eq card
   const [equipLogInput, setEquipLogInput]   = useState({}); // { eqId: string }
   const [editingEquip, setEditingEquip]     = useState(null);
   const [editEquipForm, setEditEquipForm]   = useState({});
@@ -655,7 +656,7 @@ export default function App() {
         // Load repairs for first vessel
         try {
           const rp = await supa("repairs", { query: "vessel_id=eq." + firstId + "&order=date.desc" });
-          setRepairs(rp || []);
+          setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
         } catch(e) {
           // repairs table may not exist yet — use empty array, show migration notice
           setRepairs([]);
@@ -685,11 +686,11 @@ export default function App() {
       }));
       const ts = await supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&order=section,priority" });
       setTasks((ts || []).map(function(t){
-        return { id: t.id, section: t.section, task: t.task, interval: t.interval_days ? t.interval_days + " days" : "30 days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: t.service_logs || [], pendingComment: "", _vesselId: t.vessel_id };
+        return { id: t.id, section: t.section, task: t.task, interval: t.interval_days ? t.interval_days + " days" : "30 days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: t.service_logs || [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null };
       }));
       try {
         const rp = await supa("repairs", { query: "vessel_id=eq." + vid + "&order=date.desc" });
-        setRepairs(rp || []);
+        setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
       } catch(e) { setRepairs([]); }
     } catch(err) {
       setDbError(err.message);
@@ -873,6 +874,16 @@ export default function App() {
     const log = { date: serviceDate, comment: (t.pendingComment || "").trim() || "Service completed" };
     const updatedLogs = [...(t.serviceLogs || []), log];
     try {
+      // Auto-add log entry to linked equipment
+      if (t.equipment_id) {
+        const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
+        if (eq) {
+          const eqLogEntry = { date: serviceDate, text: "Service: " + t.task, type: "service" };
+          const updatedEqLogs = [...(eq.logs || []), eqLogEntry];
+          await supa("equipment", { method: "PATCH", query: "id=eq." + t.equipment_id, body: { logs: updatedEqLogs }, prefer: "return=minimal" });
+          setEquipment(function(prev){ return prev.map(function(e){ return e.id === t.equipment_id ? { ...e, logs: updatedEqLogs } : e; }); });
+        }
+      }
       await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + id, body: { last_service: serviceDate, due_date: newDue, service_logs: updatedLogs }, prefer: "return=minimal" });
       setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? { ...tk, lastService: serviceDate, dueDate: newDue, serviceLogs: updatedLogs, pendingComment: "" } : tk; }); });
     } catch(err){ setDbError(err.message); }
@@ -894,11 +905,11 @@ export default function App() {
     const due  = days > 0 ? addDays(today(), days) : "";
     setSaving(true);
     try {
-      const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [] };
+      const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null };
       const created = await supa("maintenance_tasks", { method: "POST", body: payload });
       const t = created[0];
       setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id }]; });
-      setNewTask({ task: "", section: "General", interval: "30 days", priority: "medium" });
+      setNewTask({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
       setShowAddTask(false);
     } catch(err){ setDbError(err.message); }
     finally { setSaving(false); }
@@ -930,11 +941,11 @@ export default function App() {
     if (!newRepair.description.trim()) return;
     setSaving(true);
     try {
-      const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open" };
+      const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open", equipment_id: newRepair._equipmentId || null };
       const created = await supa("repairs", { method: "POST", body: payload });
       const newR = created[0];
-      setRepairs(function(prev){ return [newR, ...prev]; });
-      setNewRepair({ description: "", section: "Engine" });
+      setRepairs(function(prev){ return [{ id: newR.id, date: newR.date, section: newR.section, description: newR.description, status: newR.status, _vesselId: newR.vessel_id, equipment_id: newR.equipment_id || null }, ...prev]; });
+      setNewRepair({ description: "", section: "Engine", _equipmentId: null });
       setShowAddRepair(false);
       getSuggestionsForRepair(newR);
     } catch(err){
@@ -968,6 +979,26 @@ export default function App() {
       }
       setRepairs(function(prev){ return prev.filter(function(rp){ return rp.id !== id; }); });
     } catch(err){ setDbError(err.message); }
+  };
+
+  const startCompletingRepair = async function(id){
+    setCompletingRepair(id);
+    const r = repairs.find(function(rp){ return rp.id === id; });
+    if (r && r.equipment_id) {
+      const eq = equipment.find(function(e){ return e.id === r.equipment_id; });
+      if (eq) {
+        const eqLogEntry = { date: today(), text: "Repair completed: " + r.description, type: "repair" };
+        const updatedEqLogs = [...(eq.logs || []), eqLogEntry];
+        try {
+          await supa("equipment", { method: "PATCH", query: "id=eq." + r.equipment_id, body: { logs: updatedEqLogs }, prefer: "return=minimal" });
+          setEquipment(function(prev){ return prev.map(function(e){ return e.id === r.equipment_id ? { ...e, logs: updatedEqLogs } : e; }); });
+        } catch(e) {}
+      }
+    }
+    setTimeout(function(){
+      deleteRepair(id);
+      setCompletingRepair(null);
+    }, 600);
   };
 
   const getSuggestionsForRepair = async function(repair){
@@ -1465,7 +1496,7 @@ export default function App() {
       {/* ── NAV TABS ── */}
       {view === "customer" && (
         <div style={s.nav}>
-          {[["equipment","⚙️ Equipment"],["repairs","🔧 Repairs"],["maintenance","📋 Maintenance"],["documentation","📄 Documentation"]].map(function(item){
+          {[["boat","⛵ My Boat"],["documentation","📄 Docs"]].map(function(item){
             return <button key={item[0]} onClick={function(){ setTab(item[0]); }} style={s.navBtn(tab===item[0])}>{item[1]}</button>;
           })}
         </div>
@@ -1545,7 +1576,7 @@ export default function App() {
                         onClick={function(e){
                           e.stopPropagation();
                           switchVessel(vessel.id);
-                          setTab(stat.tab);
+                          setTab(stat.tab === "equipment" || stat.tab === "repairs" || stat.tab === "maintenance" ? "boat" : stat.tab);
                           setView("customer");
                         }}
                         style={{ background: stat.bg, padding: "10px 8px", textAlign: "center", borderRight: "1px solid #f3f4f6", cursor: stat.val > 0 ? "pointer" : "default" }}
@@ -1690,7 +1721,7 @@ export default function App() {
                 <div style={{ fontSize: 18, fontWeight: 800, color: "#16a34a", marginBottom: 6 }}>{importDone} items imported!</div>
                 <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 24 }}>They've been added to {boatName}.</div>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                  <button onClick={function(){ setView("customer"); setTab(importType === "equipment" ? "equipment" : "maintenance"); setImportDone(0); }}
+                  <button onClick={function(){ setView("customer"); setTab("boat"); setImportDone(0); }}
                     style={{ padding: "10px 24px", border: "none", borderRadius: 10, background: "#0f4c8a", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
                     View {importType === "equipment" ? "Equipment" : "Maintenance"} →
                   </button>
@@ -1707,8 +1738,8 @@ export default function App() {
         {view === "admin" && <AdminDashboard />}
 
         {/* ── EQUIPMENT TAB ── */}
-        {view === "customer" && tab === "equipment" && (<>
-          {tabHeader("Equipment", boatName + " · " + equipment.length + " items", true, function(){ setShowAddEquip(true); })}
+        {view === "customer" && tab === "boat" && (<>
+          {tabHeader("My Boat", boatName + " · " + equipment.length + " items", true, function(){ setShowAddEquip(true); })}
 
           {/* Status summary cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
@@ -1760,7 +1791,7 @@ export default function App() {
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
             return (
               <div key={eq.id} style={s.card}>
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); } }}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: (STATUS_CFG[eq.status] || STATUS_CFG["good"]).dot, flexShrink: 0 }} />
                     <div>
@@ -1772,9 +1803,19 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "maintenance"; return n; }); }}
+                      style={{ background: tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id && getTaskUrgency(t) !== "ok"; }).length > 0 ? "#fee2e2" : "#f8fafc", color: tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id && getTaskUrgency(t) !== "ok"; }).length > 0 ? "#dc2626" : "#9ca3af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="Maintenance">
+                      📋{tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id; }).length > 0 ? " " + tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id; }).length : ""}
+                    </span>
+                    {repairs.filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id; }).length > 0 && (
+                      <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "repairs"; return n; }); }}
+                        style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="Repairs">
+                        🔧 {repairs.filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id; }).length}
+                      </span>
+                    )}
                     <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "log"; return n; }); }}
                       style={{ background: (eq.logs||[]).length > 0 ? "#f0fdf4" : "#f8fafc", color: (eq.logs||[]).length > 0 ? "#16a34a" : "#9ca3af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View log">
-                      📋{(eq.logs||[]).length > 0 ? " " + eq.logs.length : ""}
+                      📓{(eq.logs||[]).length > 0 ? " " + eq.logs.length : ""}
                     </span>
                     {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "#eff6ff", color: "#1e40af", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
                     {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "#f0fdf4", color: "#16a34a", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
@@ -1812,18 +1853,40 @@ export default function App() {
                         {(eq.logs || []).length === 0 && (
                           <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "16px 0" }}>No log entries yet. Type above and press Enter.</div>
                         )}
-                        {(eq.logs || []).length > 0 && (
-                          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px" }}>
-                            {(eq.logs || []).slice().reverse().map(function(entry, i){
-                              return (
-                                <div key={i} style={{ fontSize: 12, color: "#374151", padding: "5px 0", borderBottom: i < (eq.logs||[]).length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                                  <span style={{ fontSize: 10, color: "#9ca3af", marginRight: 8 }}>{entry.date}</span>
-                                  {entry.text}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                        {(eq.logs || []).length > 0 && (() => {
+                          const sorted = (eq.logs || []).slice().reverse();
+                          const grouped = {};
+                          sorted.forEach(function(entry){
+                            const d = new Date(entry.date);
+                            const key = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+                            if (!grouped[key]) grouped[key] = [];
+                            grouped[key].push(entry);
+                          });
+                          return Object.keys(grouped).map(function(month){
+                            return (
+                              <div key={month} style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 6 }}>{month.toUpperCase()}</div>
+                                {grouped[month].map(function(entry, i){
+                                  const typeColor = entry.type === "service" ? "#16a34a" : entry.type === "repair" ? "#dc2626" : "#6b7280";
+                                  const typeBg = entry.type === "service" ? "#f0fdf4" : entry.type === "repair" ? "#fee2e2" : "#f1f5f9";
+                                  const typeLabel = entry.type === "service" ? "Service" : entry.type === "repair" ? "Repair" : "Note";
+                                  return (
+                                    <div key={i} style={{ display: "flex", gap: 8, padding: "7px 0", borderBottom: i < grouped[month].length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: typeColor, flexShrink: 0, marginTop: 4 }}></div>
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                                          <div style={{ fontSize: 12, color: "#374151", flex: 1 }}>{entry.text}</div>
+                                          <div style={{ fontSize: 10, color: "#9ca3af", whiteSpace: "nowrap", flexShrink: 0 }}>{fmt(entry.date)}</div>
+                                        </div>
+                                        <span style={{ display: "inline-block", fontSize: 10, fontWeight: 600, background: typeBg, color: typeColor, borderRadius: 4, padding: "1px 6px", marginTop: 2 }}>{typeLabel}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     )}
 
@@ -1861,10 +1924,93 @@ export default function App() {
 
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["parts","docs","log","edit"].map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "#7c3aed" : "#0f4c8a") : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Documents" : t === "log" ? "📋 Log" : "✏️ Edit"}</button>
+                      {["maintenance","repairs","parts","docs","log","edit"].map(function(t){ return (
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "#7c3aed" : t==="repairs" ? "#dc2626" : "#0f4c8a") : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{t === "maintenance" ? "📋 Maint" : t === "repairs" ? "🔧 Repairs" : t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Docs" : t === "log" ? "📓 Log" : "✏️ Edit"}</button>
                       ); })}
                     </div>
+
+                    {/* maintenance tab */}
+                    {activeTab === "maintenance" && (
+                      <div>
+                        {(tasks.filter(function(t){ return t._vesselId === activeVesselId && (t.equipment_id === eq.id || (!t.equipment_id && eq.id === "general")); })).length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: 12 }}>
+                            No maintenance tasks yet.
+                            <button onClick={function(){
+                              setNewTask(function(nt){ return { ...nt, section: eq.category, _equipmentId: eq.id }; });
+                              setShowAddTask(true);
+                            }} style={{ display: "block", margin: "8px auto 0", background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer" }}>+ Add Task</button>
+                          </div>
+                        ) : (
+                          <div>
+                            {tasks.filter(function(t){ return t._vesselId === activeVesselId && (t.equipment_id === eq.id || (!t.equipment_id && eq.id === "general")); })
+                              .sort(function(a,b){
+                                const ua = getTaskUrgency(a); const ub = getTaskUrgency(b);
+                                const order = {"critical":0,"overdue":1,"due-soon":2,"ok":3};
+                                return (order[ua]||3) - (order[ub]||3);
+                              })
+                              .map(function(t){
+                                const badge = getDueBadge(t.dueDate);
+                                return (
+                                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
+                                    <input type="checkbox" checked={false} onChange={function(){ toggleTask(t.id); }} style={{ width: 15, height: 15, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</div>
+                                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                        Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}
+                                        {t.dueDate && <span style={{ color: badge ? badge.color : "#9ca3af", fontWeight: badge ? 700 : 400 }}> · Due: {fmt(t.dueDate)}</span>}
+                                      </div>
+                                    </div>
+                                    {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
+                                  </div>
+                                );
+                              })}
+                            <button onClick={function(){
+                              setNewTask(function(nt){ return { ...nt, section: eq.category, _equipmentId: eq.id }; });
+                              setShowAddTask(true);
+                            }} style={{ marginTop: 8, background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer", width: "100%" }}>+ Add Task</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* repairs tab */}
+                    {activeTab === "repairs" && (
+                      <div>
+                        {repairs.filter(function(r){ return r._vesselId === activeVesselId && (r.equipment_id === eq.id || (!r.equipment_id && eq.id === "general")); }).length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: 12 }}>
+                            No repairs logged.
+                            <button onClick={function(){
+                              setNewRepair(function(nr){ return { ...nr, section: eq.category, _equipmentId: eq.id }; });
+                              setShowAddRepair(true);
+                            }} style={{ display: "block", margin: "8px auto 0", background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer" }}>+ Add Repair</button>
+                          </div>
+                        ) : (
+                          <div>
+                            {repairs.filter(function(r){ return r._vesselId === activeVesselId && (r.equipment_id === eq.id || (!r.equipment_id && eq.id === "general")); })
+                              .map(function(r){
+                                const isCompleting = completingRepair === r.id;
+                                return (
+                                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f3f4f6", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.5s" }}>
+                                    <div onClick={function(){ startCompletingRepair(r.id); }}
+                                      style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (isCompleting ? "#16a34a" : "#d1d5db"), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, background: isCompleting ? "#f0fdf4" : "transparent", transition: "all 0.3s" }}>
+                                      {isCompleting && <span style={{ color: "#16a34a", fontSize: 12, fontWeight: 700 }}>✓</span>}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{r.description}</div>
+                                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{r.section} · {fmt(r.date)}</div>
+                                    </div>
+                                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}><TrashIcon /></button>
+                                  </div>
+                                );
+                              })}
+                            <button onClick={function(){
+                              setNewRepair(function(nr){ return { ...nr, section: eq.category, _equipmentId: eq.id }; });
+                              setShowAddRepair(true);
+                            }} style={{ marginTop: 8, background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer", width: "100%" }}>+ Add Repair</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* parts tab */}
                     {activeTab === "parts" && (<>
@@ -2081,7 +2227,7 @@ export default function App() {
         </>)}
 
         {/* ── REPAIRS TAB ── */}
-        {view === "customer" && tab === "repairs" && (<>
+        {view === "customer" && tab === "repairs-standalone" && (<>
           {tabHeader("Repair Log", boatName + " · " + repairs.filter(function(r){ return repairSectionFilter === "All" || r.section === repairSectionFilter; }).length + " items", true, function(){ setShowAddRepair(true); })}
 
           {/* Section filter pills */}
@@ -2222,7 +2368,7 @@ export default function App() {
         </>)}
 
         {/* ── MAINTENANCE TAB ── */}
-        {view === "customer" && tab === "maintenance" && (<>
+        {view === "customer" && tab === "maintenance-standalone" && (<>
           {tabHeader("Maintenance", boatName, true, function(){ setShowAddTask(true); })}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
@@ -2386,7 +2532,7 @@ export default function App() {
                   {repairs.filter(function(r){ return r.status === "open"; }).map(function(r){ return (
                     <div key={r.id}
                       onClick={function(){
-                        setTab("repairs");
+                        setTab("boat");
                         setView("customer");
                         setExpandedRepair(r.id);
                         setShowUrgentPanel(false);
@@ -2405,7 +2551,7 @@ export default function App() {
                   {maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).map(function(t){ return (
                     <div key={t.id}
                       onClick={function(){
-                        setTab("maintenance");
+                        setTab("boat");
                         setView("customer");
                         setFilterSection(t.section);
                         setFilterUrgency("critical");
