@@ -650,6 +650,7 @@ export default function App() {
             attachments:    t.attachments || [],
             pendingComment: "",
             _vesselId:      t.vessel_id,
+            equipment_id:   t.equipment_id || null,
           };
         }));
 
