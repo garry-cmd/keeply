@@ -552,7 +552,8 @@ export default function App() {
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine", _equipmentId: null });
   const [expandedRepair, setExpandedRepair] = useState(null);
-  const [completingRepair, setCompletingRepair] = useState(null); // id being animated
+  const [completingRepair, setCompletingRepair] = useState(null);
+  const [completingTask, setCompletingTask]     = useState(null); // id being animated
   const [editingRepair, setEditingRepair]   = useState(null); // repair id being edited
   const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine", _equipmentId: null });
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
@@ -1942,9 +1943,18 @@ export default function App() {
                               .map(function(t){
                                 const badge = getDueBadge(t.dueDate);
                                 return (
-                                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
-                                    <div onClick={function(e){ e.stopPropagation(); toggleTask(t.id); }}
-                                      style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, background: "transparent" }}>
+                                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f3f4f6", opacity: completingTask === t.id ? 0 : 1, transform: completingTask === t.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                                    <div onClick={function(e){
+                                        e.stopPropagation();
+                                        if (completingTask === t.id) return;
+                                        setCompletingTask(t.id);
+                                        setTimeout(function(){
+                                          toggleTask(t.id);
+                                          setCompletingTask(null);
+                                        }, 600);
+                                      }}
+                                      style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingTask === t.id ? "#16a34a" : "#d1d5db"), background: completingTask === t.id ? "#16a34a" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease", flexShrink: 0 }}>
+                                      {completingTask === t.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                                     </div>
                                     <div style={{ flex: 1 }}>
                                       <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</div>
