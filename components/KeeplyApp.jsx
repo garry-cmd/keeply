@@ -203,19 +203,21 @@ function LoadingScreen() {
 }
 
 // ─── ADMIN DASHBOARD ─────────────────────────────────────────────────────────
-function AdminDashboard() {
+function AdminDashboard({ onClose }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deployInfo, setDeployInfo] = useState(null);
 
   useEffect(function(){
     async function loadMetrics() {
       try {
-        const [vessels, equipment, tasks, repairs, storage] = await Promise.all([
-          supa("vessels", { query: "order=created_at.desc" }),
-          supa("equipment", { query: "select=id,vessel_id,status,category,docs" }),
-          supa("maintenance_tasks", { query: "select=id,vessel_id,section,priority,due_date,last_service" }),
-          supa("repairs", { query: "select=id,vessel_id,section,date,status" }).catch(function(){ return []; }),
-          fetch("https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/list/vessel-docs", {
+        const [vessels, equipment, tasks, repairs, members, storage] = await Promise.all([
+          supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,created_at,user_id&order=created_at.desc" }),
+          supa("equipment", { query: "select=id,vessel_id,category,docs,logs" }),
+          supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
+          supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
+          supa("vessel_members", { query: "select=id,vessel_id,user_id,role,email" }).catch(function(){ return []; }),
+          fetch(SUPA_URL + "/storage/v1/object/list/vessel-docs", {
             method: "POST",
             headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
             body: JSON.stringify({ prefix: "", limit: 500 })
@@ -223,114 +225,136 @@ function AdminDashboard() {
         ]);
 
         const now = new Date(); now.setHours(0,0,0,0);
-        const overdue = (tasks || []).filter(function(t){ return t.due_date && new Date(t.due_date) < now; });
         const files = (storage || []).filter(function(f){ return f.id; });
         const totalSize = files.reduce(function(s, f){ return s + (f.metadata && f.metadata.size ? f.metadata.size : 0); }, 0);
+
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+
+        // Unique users
+        const uniqueUsers = new Set((vessels || []).map(function(v){ return v.user_id; })).size;
+        const newVesselsWeek = (vessels || []).filter(function(v){ return new Date(v.created_at) > weekAgo; }).length;
+        const newVesselsMonth = (vessels || []).filter(function(v){ return new Date(v.created_at) > monthAgo; }).length;
+
+        // Task health
+        const overdueTasks = (tasks || []).filter(function(t){ return t.due_date && new Date(t.due_date) < now; }).length;
+        const linkedTasks = (tasks || []).filter(function(t){ return t.equipment_id; }).length;
+        const linkedRepairs = (repairs || []).filter(function(r){ return r.equipment_id; }).length;
+
+        // Log entries across all equipment
+        const totalLogs = (equipment || []).reduce(function(s, e){ return s + ((e.logs || []).length); }, 0);
         const totalDocs = (equipment || []).reduce(function(s, e){ return s + ((e.docs || []).length); }, 0);
 
-        // Recent vessels (last 7 days)
-        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-        const recentVessels = (vessels || []).filter(function(v){ return new Date(v.created_at) > weekAgo; });
-
         setMetrics({
-          vessels: vessels || [],
-          totalVessels: (vessels || []).length,
-          recentVessels: recentVessels.length,
+          // Users & vessels
+          uniqueUsers, totalVessels: (vessels || []).length,
+          newVesselsWeek, newVesselsMonth,
           sailboats: (vessels || []).filter(function(v){ return v.vessel_type === "sail"; }).length,
           motorboats: (vessels || []).filter(function(v){ return v.vessel_type === "motor"; }).length,
+          sharedVessels: (members || []).length,
+          vessels: vessels || [],
+          // Equipment
           totalEquipment: (equipment || []).length,
-          equipGood: (equipment || []).filter(function(e){ return e.status === "good"; }).length,
-          equipWatch: (equipment || []).filter(function(e){ return e.status === "watch"; }).length,
-          equipNeeds: (equipment || []).filter(function(e){ return e.status === "needs-service"; }).length,
-          totalTasks: (tasks || []).length,
-          overdueTasks: overdue.length,
+          avgEquipPerVessel: (vessels || []).length > 0 ? ((equipment || []).length / (vessels || []).length).toFixed(1) : 0,
+          // Tasks & repairs
+          totalTasks: (tasks || []).length, overdueTasks,
+          linkedTasks, linkedRepairs,
+          openRepairs: (repairs || []).filter(function(r){ return r.status !== "closed"; }).length,
           totalRepairs: (repairs || []).length,
-          openRepairs: (repairs || []).filter(function(r){ return r.status === "open"; }).length,
+          // Engagement
+          totalLogs, totalDocs,
+          // Storage
           totalFiles: files.length,
-          totalDocsAttached: totalDocs,
-          storageSizeMB: (totalSize / 1048576).toFixed(2),
-          repairs: repairs || [],
+          storageMB: (totalSize / 1048576).toFixed(1),
         });
       } catch(e) {
         console.error(e);
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     }
     loadMetrics();
   }, []);
 
-  if (loading) return <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>Loading metrics…</div>;
-  if (!metrics) return <div style={{ textAlign: "center", padding: 48, color: "#dc2626" }}>Failed to load metrics.</div>;
+  if (loading) return <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>Loading…</div>;
+  if (!metrics) return <div style={{ textAlign: "center", padding: 48, color: "#dc2626" }}>Failed to load.</div>;
 
   const m = metrics;
-  const card = function(val, label, sub, color, bg) {
+  const stat = function(val, label, sub, color) {
     return (
-      <div style={{ background: bg, border: "1px solid " + color + "25", borderRadius: 12, padding: "16px 18px" }}>
-        <div style={{ fontSize: 32, fontWeight: 800, color: color, lineHeight: 1 }}>{val}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: color, marginTop: 4 }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{sub}</div>}
+      <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px" }}>
+        <div style={{ fontSize: 28, fontWeight: 800, color: color || "#0f4c8a", lineHeight: 1 }}>{val}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginTop: 3 }}>{label}</div>
+        {sub && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{sub}</div>}
       </div>
     );
   };
 
   return (
     <div>
-      <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>Admin Dashboard</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>⚙️ Keeply Admin</div>
+          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>Internal use only · keeply.boats</div>
+        </div>
+        <button onClick={onClose} style={{ background: "#f1f5f9", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#6b7280" }}>✕ Close</button>
+      </div>
 
-      {/* Vessels & Users */}
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 10 }}>VESSELS & USERS</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 24 }}>
-        {card(m.totalVessels, "Total Vessels", m.sailboats + " sail · " + m.motorboats + " motor", "#1e40af", "#eff6ff")}
-        {card(m.recentVessels, "New This Week", "registered in last 7 days", "#7c3aed", "#f5f3ff")}
-        {card(m.totalEquipment, "Equipment Items", m.equipGood + " good · " + m.equipWatch + " watch · " + m.equipNeeds + " needs service", "#0e7490", "#ecfeff")}
+      {/* Users & Growth */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>USERS & GROWTH</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
+        {stat(m.uniqueUsers, "Unique Users", "accounts with vessels", "#0f4c8a")}
+        {stat(m.totalVessels, "Total Vessels", m.sailboats + " sail · " + m.motorboats + " motor")}
+        {stat(m.newVesselsWeek, "New This Week", "vessels created last 7 days", m.newVesselsWeek > 0 ? "#16a34a" : "#9ca3af")}
+        {stat(m.newVesselsMonth, "New This Month", "vessels created last 30 days", m.newVesselsMonth > 0 ? "#16a34a" : "#9ca3af")}
+      </div>
+
+      {/* App Health */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>APP HEALTH</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
+        {stat(m.totalEquipment, "Equipment Items", m.avgEquipPerVessel + " avg per vessel")}
+        {stat(m.totalTasks, "Maintenance Tasks", m.linkedTasks + " linked to equipment")}
+        {stat(m.overdueTasks, "Overdue Tasks", "across all vessels", m.overdueTasks > 0 ? "#dc2626" : "#16a34a")}
+        {stat(m.openRepairs, "Open Repairs", m.totalRepairs + " total logged", m.openRepairs > 0 ? "#ea580c" : "#16a34a")}
+      </div>
+
+      {/* Engagement */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>ENGAGEMENT</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
+        {stat(m.totalLogs, "Log Entries", "across all equipment")}
+        {stat(m.totalDocs, "Docs Attached", "manuals, parts lists, etc.")}
+        {stat(m.totalFiles, "Files in Storage", m.storageMB + " MB used")}
+        {stat(m.sharedVessels, "Shared Access", "vessel member records")}
       </div>
 
       {/* Vessel list */}
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", fontWeight: 700, fontSize: 14 }}>All Vessels</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>ALL VESSELS</div>
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
+        {m.vessels.length === 0 && <div style={{ padding: "20px", fontSize: 13, color: "#9ca3af" }}>No vessels yet.</div>}
         {m.vessels.map(function(v, i){ return (
-          <div key={v.id} style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < m.vessels.length - 1 ? "1px solid #f8fafc" : "none" }}>
+          <div key={v.id} style={{ padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < m.vessels.length - 1 ? "1px solid #f8fafc" : "none" }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{v.vessel_type === "motor" ? "M/V" : "S/V"} {v.vessel_name}</div>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
-                {v.owner_name || "No owner name"} {v.home_port ? "· " + v.home_port : ""}
-              </div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{v.vessel_type === "motor" ? "M/V" : "S/V"} {v.vessel_name}</div>
+              <div style={{ fontSize: 11, color: "#9ca3af" }}>{v.owner_name || "—"}{v.home_port ? " · " + v.home_port : ""}</div>
             </div>
-            <div style={{ fontSize: 11, color: "#9ca3af" }}>Joined {fmt(v.created_at.split("T")[0])}</div>
+            <div style={{ fontSize: 11, color: "#9ca3af", textAlign: "right" }}>
+              <div>{fmt(v.created_at ? v.created_at.split("T")[0] : "")}</div>
+            </div>
           </div>
         ); })}
       </div>
 
-      {/* Maintenance & Repairs */}
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 10 }}>MAINTENANCE & REPAIRS</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 24 }}>
-        {card(m.totalTasks, "Total Tasks", "across all vessels", "#374151", "#f9fafb")}
-        {card(m.overdueTasks, "Overdue Tasks", "past due date", "#dc2626", "#fef2f2")}
-        {card(m.openRepairs, "Open Repairs", m.totalRepairs + " total logged", "#d97706", "#fffbeb")}
-      </div>
-
-      {/* Repairs list */}
-      {m.repairs.length > 0 && (
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", fontWeight: 700, fontSize: 14 }}>All Repairs</div>
-          {m.repairs.map(function(r, i){ return (
-            <div key={r.id} style={{ padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < m.repairs.length - 1 ? "1px solid #f8fafc" : "none" }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ background: r.status === "open" ? "#fee2e2" : "#f0fdf4", color: r.status === "open" ? "#dc2626" : "#16a34a", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{r.status.toUpperCase()}</span>
-                <span style={{ fontSize: 11, fontWeight: 600, background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px" }}>{r.section}</span>
-              </div>
-              <div style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</div>
-            </div>
-          ); })}
-        </div>
-      )}
-
-      {/* Storage */}
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 10 }}>FILES & STORAGE</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 24 }}>
-        {card(m.totalFiles, "Files Uploaded", m.storageSizeMB + " MB used", "#7c3aed", "#f5f3ff")}
-        {card(m.totalDocsAttached, "Docs on Equipment", "manuals, parts lists, etc.", "#0e7490", "#ecfeff")}
+      {/* System links */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>SYSTEM LINKS</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {[
+          { label: "Supabase Dashboard", url: "https://console.supabase.com/project/waapqyshmqaaamiiitso" },
+          { label: "Vercel Dashboard", url: "https://vercel.com/garry-cmds-projects/keeply" },
+          { label: "Anthropic Console", url: "https://console.anthropic.com" },
+        ].map(function(link){ return (
+          <a key={link.url} href={link.url} target="_blank" rel="noreferrer"
+            style={{ display: "block", padding: "10px 14px", background: "#f8fafc", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#0f4c8a", textDecoration: "none" }}>
+            {link.label} ↗
+          </a>
+        ); })}
       </div>
     </div>
   );
@@ -472,6 +496,8 @@ export default function App() {
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [logoTaps, setLogoTaps]               = useState(0);
+  const [logoTapTimer, setLogoTapTimer]       = useState(null);
   const [showCopyDialog, setShowCopyDialog]   = useState(false);
   const [newVesselId, setNewVesselId]         = useState(null);
   const [copyingItems, setCopyingItems]       = useState(false);
@@ -1401,7 +1427,18 @@ export default function App() {
   if (loading) return (
     <div style={s.app}>
       <div style={s.topBar}>
-        <svg width="130" height="36" viewBox="0 0 130 36" fill="none"><defs><linearGradient id="ksg" x1="4" y1="2" x2="32" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#5bbcf8"/><stop offset="100%" stopColor="#0e5cc7"/></linearGradient></defs><path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="url(#ksg)"/><circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/><line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><text x="40" y="24" fontFamily="DM Sans,Helvetica Neue,sans-serif" fontWeight="800" fontSize="18" fill="white">Keeply</text></svg>
+        <svg width="130" height="36" viewBox="0 0 130 36" fill="none" style={{ cursor: "pointer" }} onClick={function(){
+              const newCount = logoTaps + 1;
+              setLogoTaps(newCount);
+              if (logoTapTimer) clearTimeout(logoTapTimer);
+              const t = setTimeout(function(){ setLogoTaps(0); }, 1500);
+              setLogoTapTimer(t);
+              if (newCount >= 5) {
+                setLogoTaps(0);
+                setView("admin");
+                setShowMobileMenu(false);
+              }
+            }}><defs><linearGradient id="ksg" x1="4" y1="2" x2="32" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#5bbcf8"/><stop offset="100%" stopColor="#0e5cc7"/></linearGradient></defs><path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="url(#ksg)"/><circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/><line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><text x="40" y="24" fontFamily="DM Sans,Helvetica Neue,sans-serif" fontWeight="800" fontSize="18" fill="white">Keeply</text></svg>
       </div>
       <LoadingScreen />
     </div>
@@ -1495,7 +1532,6 @@ export default function App() {
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "📥 Import", action: function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); setShowMobileMenu(false); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }, active: view==="import" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); }, active: false },
-                  { label: "⚙️ Admin", action: function(){ setView("admin"); setShowMobileMenu(false); }, active: view==="admin" },
                 ].map(function(item){ return (
                   <div key={item.label} onClick={item.action}
                     style={{ padding: "13px 20px", fontSize: 14, fontWeight: item.active ? 700 : 500, color: item.active ? "#0f4c8a" : "#374151", background: item.active ? "#eff6ff" : "#fff", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
@@ -1748,7 +1784,7 @@ export default function App() {
           </div>
         )}
 
-        {view === "admin" && <AdminDashboard />}
+        {view === "admin" && <AdminDashboard onClose={function(){ setView("customer"); }} />}
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
