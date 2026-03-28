@@ -1826,7 +1826,7 @@ export default function App() {
                   </div>
                 </div>
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }}>
+                  <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }} onClick={function(e){ e.stopPropagation(); }}>
                     {/* status toggle */}
                     <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                       {Object.keys(STATUS_CFG).map(function(st){ return (
@@ -1938,6 +1938,7 @@ export default function App() {
                             <button onClick={function(){
                               setNewTask(function(nt){ return { ...nt, section: eq.category, _equipmentId: eq.id }; });
                               setShowAddTask(true);
+                              
                             }} style={{ display: "block", margin: "8px auto 0", background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer" }}>+ Add Task</button>
                           </div>
                         ) : (
@@ -1967,6 +1968,7 @@ export default function App() {
                             <button onClick={function(){
                               setNewTask(function(nt){ return { ...nt, section: eq.category, _equipmentId: eq.id }; });
                               setShowAddTask(true);
+                              
                             }} style={{ marginTop: 8, background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer", width: "100%" }}>+ Add Task</button>
                           </div>
                         )}
@@ -2305,7 +2307,7 @@ export default function App() {
 
                 {/* Expanded panel */}
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }}>
+                  <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }} onClick={function(e){ e.stopPropagation(); }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 10 }}>✨ AI SUGGESTED PARTS</div>
                     {sugg === "loading" && (
                       <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>🤖 Finding parts for this repair…</div>
