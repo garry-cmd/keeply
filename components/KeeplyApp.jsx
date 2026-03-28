@@ -1280,7 +1280,7 @@ export default function App() {
     // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
     const b = getDueBadge(t.dueDate || t.due_date);
-    if (!b) return null;
+    if (!b) return "ok";
     return b.label.indexOf("Critical") >= 0 ? "critical" : b.label.indexOf("Overdue") >= 0 ? "overdue" : "due-soon";
   };
 
@@ -2557,8 +2557,13 @@ export default function App() {
                       onClick={function(){
                         setTab("boat");
                         setView("customer");
-                        setExpandedRepair(r.id);
                         setShowUrgentPanel(false);
+                        if (r.equipment_id) {
+                          setExpandedEquip(r.equipment_id);
+                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[r.equipment_id] = "repairs"; return n; });
+                        } else {
+                          setFilterUrgency("Open Repairs");
+                        }
                       }}
                       style={{ padding: "8px 12px", background: "#fef2f2", borderRadius: 8, marginBottom: 6, cursor: "pointer", borderLeft: "3px solid #dc2626" }}>
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{r.section}</div>
@@ -2576,9 +2581,14 @@ export default function App() {
                       onClick={function(){
                         setTab("boat");
                         setView("customer");
-                        setFilterSection(t.section);
-                        setFilterUrgency("critical");
                         setShowUrgentPanel(false);
+                        // Open the equipment card for this task
+                        if (t.equipment_id) {
+                          setExpandedEquip(t.equipment_id);
+                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[t.equipment_id] = "maintenance"; return n; });
+                        } else {
+                          setFilterUrgency("Critical");
+                        }
                       }}
                       style={{ padding: "8px 12px", background: "#fff7ed", borderRadius: 8, marginBottom: 6, cursor: "pointer", borderLeft: "3px solid #ea580c" }}>
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{t.section} — {t.task}</div>
