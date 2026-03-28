@@ -535,7 +535,7 @@ export default function App() {
   const [showAddTask, setShowAddTask]       = useState(false);
   const [editingTask, setEditingTask]       = useState(null);
   const [editTaskForm, setEditTaskForm]     = useState({});
-  const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium" });
+  const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
   const [showAddDoc, setShowAddDoc]         = useState(false);
   const [filterDocUrgency, setFilterDocUrgency] = useState("All");
   const [expandedDoc, setExpandedDoc]       = useState(null);
@@ -550,11 +550,11 @@ export default function App() {
   const [repairs, setRepairs]               = useState([]);
   const [repairSectionFilter, setRepairSectionFilter] = useState("All");
   const [showAddRepair, setShowAddRepair]   = useState(false);
-  const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine" });
+  const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine", _equipmentId: null });
   const [expandedRepair, setExpandedRepair] = useState(null);
   const [completingRepair, setCompletingRepair] = useState(null); // id being animated
   const [editingRepair, setEditingRepair]   = useState(null); // repair id being edited
-  const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine" });
+  const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine", _equipmentId: null });
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
   const [confirmAction, setConfirmAction]     = useState(null);
 
@@ -908,7 +908,7 @@ export default function App() {
       const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null };
       const created = await supa("maintenance_tasks", { method: "POST", body: payload });
       const t = created[0];
-      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id }]; });
+      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
       setNewTask({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
       setShowAddTask(false);
     } catch(err){ setDbError(err.message); }
@@ -1147,7 +1147,7 @@ export default function App() {
         for (let i = 0; i < payloads.length; i++) {
           const created = await supa("maintenance_tasks", { method: "POST", body: payloads[i] });
           const t = created[0];
-          setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id }]; });
+          setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
           done++;
           setImportDone(done);
         }
