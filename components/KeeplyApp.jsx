@@ -871,7 +871,7 @@ export default function App() {
     const t = tasks.find(function(tk){ return tk.id === id; });
     if (!t) return;
     const serviceDate = today();
-    const days = t.interval_days || intervalToDays(t.interval);
+    const days = (t.interval_days && t.interval_days > 0) ? t.interval_days : intervalToDays(t.interval || "30 days");
     const newDue = days > 0 ? addDays(serviceDate, days) : t.dueDate;
     const log = { date: serviceDate, comment: (t.pendingComment || "").trim() || "Service completed" };
     const updatedLogs = [...(t.serviceLogs || []), log];
@@ -904,7 +904,7 @@ export default function App() {
   const addTask = async function(){
     if (!newTask.task.trim()) return;
     const days = intervalToDays(newTask.interval);
-    const due  = days > 0 ? addDays(today(), days) : "";
+    const due  = newTask.dueDate || (days > 0 ? addDays(today(), days) : "");
     setSaving(true);
     try {
       const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null };
@@ -943,11 +943,11 @@ export default function App() {
     if (!newRepair.description.trim()) return;
     setSaving(true);
     try {
-      const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open", equipment_id: newRepair._equipmentId || null };
+      const payload = { vessel_id: activeVesselId, date: today(), section: newRepair.section, description: newRepair.description, status: "open", equipment_id: newRepair._equipmentId || null, due_date: newRepair.dueDate || null };
       const created = await supa("repairs", { method: "POST", body: payload });
       const newR = created[0];
       setRepairs(function(prev){ return [{ id: newR.id, date: newR.date, section: newR.section, description: newR.description, status: newR.status, _vesselId: newR.vessel_id, equipment_id: newR.equipment_id || null }, ...prev]; });
-      setNewRepair({ description: "", section: "Engine", _equipmentId: null });
+      setNewRepair({ description: "", section: "Engine", _equipmentId: null, dueDate: "" });
       setShowAddRepair(false);
       getSuggestionsForRepair(newR);
     } catch(err){
@@ -2203,6 +2203,8 @@ export default function App() {
                 <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
                   {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
                 </select>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6, marginTop: 4 }}>DUE DATE (optional — overrides interval)</div>
+                <input type="date" value={newTask.dueDate || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, dueDate: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={function(){ setShowAddTask(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
                   <button onClick={addTask} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add Task</button>
@@ -2216,9 +2218,11 @@ export default function App() {
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
                 <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
-                <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
+                <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                 </select>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>TARGET DATE (optional)</div>
+                <input type="date" value={newRepair.dueDate || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, dueDate: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={function(){ setShowAddRepair(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
                   <button onClick={addRepair} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add to List</button>
