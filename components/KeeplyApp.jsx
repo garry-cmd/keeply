@@ -491,7 +491,7 @@ export default function App() {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareMsg, setShareMsg]   = useState(null);
 
-  const [view, setView] = useState("customer");
+  const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
   const [tab, setTab]   = useState("boat");
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
