@@ -1319,12 +1319,26 @@ export default function App() {
 
   const filteredEquip = equipment.filter(function(e){
     if (equipSectionFilter !== "All" && e.category !== equipSectionFilter) return false;
+    // Filter by urgency card
+    if (filterUrgency !== "All") {
+      if (filterUrgency === "Critical") {
+        const hasCritical = tasks.some(function(t){ return t.equipment_id === e.id && getTaskUrgency(t) === "critical"; });
+        if (!hasCritical) return false;
+      } else if (filterUrgency === "Due Soon") {
+        const hasDueSoon = tasks.some(function(t){ return t.equipment_id === e.id && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
+        if (!hasDueSoon) return false;
+      } else if (filterUrgency === "Open Repairs") {
+        const hasRepairs = repairs.some(function(r){ return r.equipment_id === e.id && r.status !== "closed"; });
+        if (!hasRepairs) return false;
+      }
+    }
     return true;
   });
 
-  const openRepairs    = repairs.filter(function(r){ return r.status === "open"; }).length;
-  const criticalMaint  = maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).length;
-  const totalAlerts    = openRepairs + criticalMaint;
+  const openRepairs    = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+  const criticalMaint  = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
+  const dueSoonMaint   = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
+  const totalAlerts    = criticalMaint + dueSoonMaint + openRepairs;
 
   const settings  = vessels.find(function(v){ return v.id === activeVesselId; }) || vessels[0] || {};
   const prefix    = settings.vesselType === "motor" ? "M/V" : "S/V";
@@ -1459,7 +1473,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
           {totalAlerts > 0 && (
-            <button onClick={function(){ setShowUrgentPanel(true); }} style={{ background: "#dc2626", border: "none", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            <button onClick={function(){ setShowUrgentPanel(true); }} style={{ background: criticalMaint > 0 ? "#dc2626" : dueSoonMaint > 0 ? "#ea580c" : "#ca8a04", border: "none", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               🚨 {totalAlerts}
             </button>
           )}
