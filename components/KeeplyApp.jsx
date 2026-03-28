@@ -2191,7 +2191,42 @@ export default function App() {
             </div>
           )}
 
-          {showAddEquip && (
+          {showAddTask && (
+            <div style={s.modalBg} onClick={function(){ setShowAddTask(false); }}>
+              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
+                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Task</div>
+                <input placeholder="Task description" value={newTask.task} onChange={function(e){ setNewTask(function(t){ return { ...t, task: e.target.value }; }); }} style={s.inp} />
+                <select value={newTask.section} onChange={function(e){ setNewTask(function(t){ return { ...t, section: e.target.value }; }); }} style={s.sel}>
+                  {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
+                </select>
+                <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
+                  {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
+                </select>
+                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                  <button onClick={function(){ setShowAddTask(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={addTask} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add Task</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {showAddRepair && (
+            <div style={s.modalBg} onClick={function(){ setShowAddRepair(false); }}>
+              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
+                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
+                <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
+                <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
+                  {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
+                </select>
+                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                  <button onClick={function(){ setShowAddRepair(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={addRepair} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add to List</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {showAddEquip && (
             <div style={s.modalBg} onClick={function(){ setShowAddEquip(false); }}>
               <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", padding: 24 }} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Equipment</div>
@@ -2352,21 +2387,7 @@ export default function App() {
               </div>
             );
           })}
-          {showAddRepair && (
-            <div style={s.modalBg} onClick={function(){ setShowAddRepair(false); }}>
-              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
-                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
-                <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
-                <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
-                  {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
-                </select>
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <button onClick={function(){ setShowAddRepair(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={addRepair} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add to List</button>
-                </div>
-              </div>
-            </div>
-          )}
+          
         </>)}
 
         {/* ── MAINTENANCE TAB ── */}
@@ -2404,24 +2425,7 @@ export default function App() {
 
           
 
-          {showAddTask && (
-            <div style={s.modalBg} onClick={function(){ setShowAddTask(false); }}>
-              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
-                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Task</div>
-                <input placeholder="Task description" value={newTask.task} onChange={function(e){ setNewTask(function(t){ return { ...t, task: e.target.value }; }); }} style={s.inp} />
-                <select value={newTask.section} onChange={function(e){ setNewTask(function(t){ return { ...t, section: e.target.value }; }); }} style={s.sel}>
-                  {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
-                </select>
-                <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
-                  {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
-                </select>
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <button onClick={function(){ setShowAddTask(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={addTask} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Add Task</button>
-                </div>
-              </div>
-            </div>
-          )}
+          
         </>)}
 
         {/* ── DOCUMENTATION TAB ── */}
