@@ -1472,7 +1472,8 @@ export default function App() {
             <div style={{ position: "fixed", inset: 0, zIndex: 500 }} onClick={function(){ setShowMobileMenu(false); }}>
               <div style={{ position: "absolute", top: 56, right: 0, background: "#fff", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
                 {[
-                  { label: "⛵ My Boat", action: function(){ setView("customer"); setShowMobileMenu(false); }, active: view==="customer" },
+                  { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
+                  { label: "📄 Docs", action: function(){ setView("customer"); setTab("documentation"); setShowMobileMenu(false); }, active: view==="customer" && tab==="documentation" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "📥 Import", action: function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); setShowMobileMenu(false); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }, active: view==="import" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); }, active: false },
@@ -1494,13 +1495,7 @@ export default function App() {
       </div>
 
       {/* ── NAV TABS ── */}
-      {view === "customer" && (
-        <div style={s.nav}>
-          {[["boat","⛵ My Boat"],["documentation","📄 Docs"]].map(function(item){
-            return <button key={item[0]} onClick={function(){ setTab(item[0]); }} style={s.navBtn(tab===item[0])}>{item[1]}</button>;
-          })}
-        </div>
-      )}
+
 
       <div style={s.main}>
         {/* ── ADMIN VIEW ── */}
@@ -1741,25 +1736,24 @@ export default function App() {
         {view === "customer" && tab === "boat" && (<>
           {tabHeader("My Boat", boatName + " · " + equipment.length + " items", true, function(){ setShowAddEquip(true); })}
 
-          {/* Status summary cards */}
+          {/* Urgency summary cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
-            {[
-              { key: "good",          label: "Good",         sub: "No issues",         color: "#16a34a", bg: "#f0fdf4" },
-              { key: "watch",         label: "Watch",        sub: "Monitor closely",   color: "#d97706", bg: "#fffbeb" },
-              { key: "needs-service", label: "Needs Service",sub: "Action required",   color: "#dc2626", bg: "#fef2f2" },
-            ].map(function(card){
-              const count = equipment.filter(function(e){ return e.status === card.key; }).length;
-              const active = equipFilter === card.key;
-              return (
-                <div key={card.key} onClick={function(){ setEquipFilter(active ? "All" : card.key); }}
-                  style={{ background: card.bg, border: active ? "2px solid " + card.color : "1px solid " + card.color + "25", borderRadius: 12, padding: "12px 14px", cursor: "pointer", boxShadow: active ? "0 0 0 3px " + card.color + "20" : "none", userSelect: "none" }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{count}</div>
+            {(() => {
+              const overdueCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
+              const dueSoonCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
+              const openRepairs  = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+              return [
+                { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "#dc2626", bg: "#fef2f2", border: "#fca5a5" },
+                { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "#ea580c", bg: "#fff7ed", border: "#fdba74" },
+                { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "#ca8a04", bg: "#fefce8", border: "#fde68a" },
+              ].map(function(card){ return (
+                <div key={card.label} style={{ background: card.bg, border: "1px solid " + card.border, borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
                   <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{card.sub}</div>
-                  {active && <div style={{ fontSize: 9, color: card.color, fontWeight: 700, marginTop: 4 }}>FILTERED ✕</div>}
                 </div>
-              );
-            })}
+              ); });
+            })()}
           </div>
 
           {/* filters */}
