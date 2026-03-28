@@ -1319,17 +1319,20 @@ export default function App() {
 
   const filteredEquip = equipment.filter(function(e){
     if (equipSectionFilter !== "All" && e.category !== equipSectionFilter) return false;
-    // Filter by urgency card
+    // Filter by urgency card — match by equipment_id if linked, else by section/category
     if (filterUrgency !== "All") {
       if (filterUrgency === "Critical") {
-        const hasCritical = tasks.some(function(t){ return t.equipment_id === e.id && getTaskUrgency(t) === "critical"; });
-        if (!hasCritical) return false;
+        const hasLinked = tasks.some(function(t){ return t.equipment_id === e.id && getTaskUrgency(t) === "critical"; });
+        const hasBySection = !hasLinked && tasks.some(function(t){ return !t.equipment_id && t._vesselId === activeVesselId && t.section === e.category && getTaskUrgency(t) === "critical"; });
+        if (!hasLinked && !hasBySection) return false;
       } else if (filterUrgency === "Due Soon") {
-        const hasDueSoon = tasks.some(function(t){ return t.equipment_id === e.id && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
-        if (!hasDueSoon) return false;
+        const hasLinked = tasks.some(function(t){ return t.equipment_id === e.id && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
+        const hasBySection = !hasLinked && tasks.some(function(t){ return !t.equipment_id && t._vesselId === activeVesselId && t.section === e.category && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
+        if (!hasLinked && !hasBySection) return false;
       } else if (filterUrgency === "Open Repairs") {
-        const hasRepairs = repairs.some(function(r){ return r.equipment_id === e.id && r.status !== "closed"; });
-        if (!hasRepairs) return false;
+        const hasLinked = repairs.some(function(r){ return r.equipment_id === e.id && r.status !== "closed"; });
+        const hasBySection = !hasLinked && repairs.some(function(r){ return !r.equipment_id && r._vesselId === activeVesselId && r.section === e.category && r.status !== "closed"; });
+        if (!hasLinked && !hasBySection) return false;
       }
     }
     return true;
