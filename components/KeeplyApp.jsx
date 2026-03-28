@@ -496,8 +496,8 @@ export default function App() {
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const logoTapCount = React.useRef(0);
-  const logoTapTimer  = React.useRef(null);
+  const logoTapCount = useRef(0);
+  const logoTapTimer  = useRef(null);
   const [showCopyDialog, setShowCopyDialog]   = useState(false);
   const [newVesselId, setNewVesselId]         = useState(null);
   const [copyingItems, setCopyingItems]       = useState(false);
