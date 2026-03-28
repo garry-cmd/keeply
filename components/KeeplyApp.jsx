@@ -211,12 +211,13 @@ function AdminDashboard({ onClose }) {
   useEffect(function(){
     async function loadMetrics() {
       try {
-        const [vessels, equipment, tasks, repairs, members, storage] = await Promise.all([
+        const [vessels, equipment, tasks, repairs, members, authCount, storage] = await Promise.all([
           supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,created_at,user_id&order=created_at.desc" }),
           supa("equipment", { query: "select=id,vessel_id,category,docs,logs" }),
           supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
           supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
           supa("vessel_members", { query: "select=id,vessel_id,user_id,role,email" }).catch(function(){ return []; }),
+          fetch(SUPA_URL + "/rest/v1/rpc/get_auth_user_count", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
           fetch(SUPA_URL + "/storage/v1/object/list/vessel-docs", {
             method: "POST",
             headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
@@ -231,8 +232,12 @@ function AdminDashboard({ onClose }) {
         const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
         const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
 
-        // Unique users
-        const uniqueUsers = new Set((vessels || []).map(function(v){ return v.user_id; })).size;
+        // Unique users — combine vessel owners + shared members
+        const allUserIds = new Set([
+          ...(vessels || []).map(function(v){ return v.user_id; }).filter(Boolean),
+          ...(members || []).map(function(m){ return m.user_id; }).filter(Boolean),
+        ]);
+        const uniqueUsers = (typeof authCount === "number" && authCount > 0) ? authCount : allUserIds.size;
         const newVesselsWeek = (vessels || []).filter(function(v){ return new Date(v.created_at) > weekAgo; }).length;
         const newVesselsMonth = (vessels || []).filter(function(v){ return new Date(v.created_at) > monthAgo; }).length;
 
@@ -301,7 +306,7 @@ function AdminDashboard({ onClose }) {
       {/* Users & Growth */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>USERS & GROWTH</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
-        {stat(m.uniqueUsers, "Unique Users", "accounts with vessels", "#0f4c8a")}
+        {stat(m.uniqueUsers, "Unique Users", "signed up accounts", "#0f4c8a")}
         {stat(m.totalVessels, "Total Vessels", m.sailboats + " sail · " + m.motorboats + " motor")}
         {stat(m.newVesselsWeek, "New This Week", "vessels created last 7 days", m.newVesselsWeek > 0 ? "#16a34a" : "#9ca3af")}
         {stat(m.newVesselsMonth, "New This Month", "vessels created last 30 days", m.newVesselsMonth > 0 ? "#16a34a" : "#9ca3af")}
