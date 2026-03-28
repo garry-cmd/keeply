@@ -84,7 +84,7 @@ function getDueBadge(dueDate) {
   const diff = Math.round((due - now) / 86400000);
   if (diff <= -10) return { label: "🔴 Critical",  color: "#dc2626", bg: "#fee2e2", border: "#fca5a5" };
   if (diff <= -5)  return { label: "🟠 Overdue",   color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" };
-  if (diff <= 3)   return { label: "🟡 Due Soon",  color: "#ca8a04", bg: "#fefce8", border: "#fde68a" };
+  if (diff <= 10)  return { label: "🟡 Due Soon",  color: "#ca8a04", bg: "#fefce8", border: "#fde68a" };
   return null;
 }
 
