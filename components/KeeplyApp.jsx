@@ -1317,7 +1317,6 @@ export default function App() {
   };
 
   const filteredEquip = equipment.filter(function(e){
-    if (equipFilter !== "All" && e.status !== equipFilter) return false;
     if (equipSectionFilter !== "All" && e.category !== equipSectionFilter) return false;
     return true;
   });
@@ -1747,11 +1746,14 @@ export default function App() {
                 { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "#dc2626", bg: "#fef2f2", border: "#fca5a5" },
                 { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "#ea580c", bg: "#fff7ed", border: "#fdba74" },
                 { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "#ca8a04", bg: "#fefce8", border: "#fde68a" },
-              ].map(function(card){ return (
-                <div key={card.label} style={{ background: card.bg, border: "1px solid " + card.border, borderRadius: 12, padding: "12px 14px" }}>
+              ].map(function(card){ 
+                const active = filterUrgency === card.label;
+                return (
+                <div key={card.label} onClick={function(){ setFilterUrgency(active ? "All" : card.label); }}
+                  style={{ background: card.bg, border: active ? "2px solid " + card.color : "1px solid " + card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
                   <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
-                  <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{card.sub}</div>
+                  <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{active ? "tap to clear ✕" : card.sub}</div>
                 </div>
               ); });
             })()}
@@ -1788,7 +1790,7 @@ export default function App() {
               <div key={eq.id} style={s.card}>
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: (STATUS_CFG[eq.status] || STATUS_CFG["good"]).dot, flexShrink: 0 }} />
+                    
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{eq.name}</div>
                       <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
@@ -1822,12 +1824,7 @@ export default function App() {
                 </div>
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }} onClick={function(e){ e.stopPropagation(); }}>
-                    {/* status toggle */}
-                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                      {Object.keys(STATUS_CFG).map(function(st){ return (
-                        <button key={st} onClick={function(){ updateEquipStatus(eq.id, st); }} style={{ padding: "5px 12px", borderRadius: 8, border: "1.5px solid " + (eq.status===st ? STATUS_CFG[st].color : "#e2e8f0"), background: eq.status===st ? STATUS_CFG[st].bg : "#fff", color: eq.status===st ? STATUS_CFG[st].color : "#6b7280", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{STATUS_CFG[st].label}</button>
-                      ); })}
-                    </div>
+
                     {eq.notes && <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#374151", marginBottom: 12 }}>📝 {eq.notes}</div>}
 
                                         {/* Log tab */}
@@ -1892,9 +1889,7 @@ export default function App() {
                         <select value={editEquipForm.category || eq.category} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, category: e.target.value }; }); }} style={s.sel}>
                           {EQ_CATEGORIES.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
                         </select>
-                        <select value={editEquipForm.status || eq.status} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, status: e.target.value }; }); }} style={s.sel}>
-                          {Object.keys(STATUS_CFG).map(function(st){ return <option key={st} value={st}>{STATUS_CFG[st].label}</option>; })}
-                        </select>
+
                         <div style={{ display: "flex", gap: 8 }}>
                           <input placeholder="Model (optional)" value={editEquipForm.model !== undefined ? editEquipForm.model : (eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                           <input placeholder="Serial No." value={editEquipForm.serial !== undefined ? editEquipForm.serial : (eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
@@ -1948,7 +1943,9 @@ export default function App() {
                                 const badge = getDueBadge(t.dueDate);
                                 return (
                                   <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
-                                    <input type="checkbox" checked={false} onChange={function(){ toggleTask(t.id); }} style={{ width: 15, height: 15, accentColor: "#0f4c8a", cursor: "pointer", flexShrink: 0 }} />
+                                    <div onClick={function(e){ e.stopPropagation(); toggleTask(t.id); }}
+                                      style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, background: "transparent" }}>
+                                    </div>
                                     <div style={{ flex: 1 }}>
                                       <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</div>
                                       <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
@@ -1957,6 +1954,7 @@ export default function App() {
                                       </div>
                                     </div>
                                     {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
+                                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }}><TrashIcon /></button>
                                   </div>
                                 );
                               })}
@@ -2142,9 +2140,7 @@ export default function App() {
                 <select value={editEquipForm.category || "Engine"} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, category: e.target.value }; }); }} style={s.sel}>
                   {EQ_CATEGORIES.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
                 </select>
-                <select value={editEquipForm.status || "good"} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, status: e.target.value }; }); }} style={s.sel}>
-                  {Object.keys(STATUS_CFG).map(function(st){ return <option key={st} value={st}>{STATUS_CFG[st].label}</option>; })}
-                </select>
+
                 <div style={{ display: "flex", gap: 8 }}>
                   <input placeholder="Model (optional)" value={editEquipForm.model || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                   <input placeholder="Serial No. (optional)" value={editEquipForm.serial || ""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
@@ -2229,9 +2225,7 @@ export default function App() {
                 <select value={newEquip.category} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, category: e.target.value }; }); }} style={s.sel}>
                   {EQ_CATEGORIES.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
                 </select>
-                <select value={newEquip.status} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, status: e.target.value }; }); }} style={s.sel}>
-                  {Object.keys(STATUS_CFG).map(function(st){ return <option key={st} value={st}>{STATUS_CFG[st].label}</option>; })}
-                </select>
+
                 <div style={{ display: "flex", gap: 8 }}>
                   <input placeholder="Model (optional)" value={newEquip.model} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                   <input placeholder="Serial No. (optional)" value={newEquip.serial} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
