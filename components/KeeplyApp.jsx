@@ -496,8 +496,8 @@ export default function App() {
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [logoTaps, setLogoTaps]               = useState(0);
-  const [logoTapTimer, setLogoTapTimer]       = useState(null);
+  const logoTapCount = React.useRef(0);
+  const logoTapTimer  = React.useRef(null);
   const [showCopyDialog, setShowCopyDialog]   = useState(false);
   const [newVesselId, setNewVesselId]         = useState(null);
   const [copyingItems, setCopyingItems]       = useState(false);
@@ -1428,13 +1428,11 @@ export default function App() {
     <div style={s.app}>
       <div style={s.topBar}>
         <svg width="130" height="36" viewBox="0 0 130 36" fill="none" style={{ cursor: "pointer" }} onClick={function(){
-              const newCount = logoTaps + 1;
-              setLogoTaps(newCount);
-              if (logoTapTimer) clearTimeout(logoTapTimer);
-              const t = setTimeout(function(){ setLogoTaps(0); }, 1500);
-              setLogoTapTimer(t);
-              if (newCount >= 5) {
-                setLogoTaps(0);
+              logoTapCount.current += 1;
+              if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
+              logoTapTimer.current = setTimeout(function(){ logoTapCount.current = 0; }, 1500);
+              if (logoTapCount.current >= 5) {
+                logoTapCount.current = 0;
                 setView("admin");
                 setShowMobileMenu(false);
               }
