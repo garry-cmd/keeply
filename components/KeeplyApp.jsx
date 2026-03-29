@@ -518,6 +518,11 @@ export default function App() {
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showFab, setShowFab]                 = useState(false);
+  const [equipAiMode, setEquipAiMode]         = useState(false);
+  const [equipAiDesc, setEquipAiDesc]         = useState("");
+  const [equipAiResult, setEquipAiResult]     = useState(null);
+  const [equipAiLoading, setEquipAiLoading]   = useState(false);
+  const [equipAiError, setEquipAiError]       = useState(null);
   const [showAddVesselAI, setShowAddVesselAI] = useState(false);
   const [avStep, setAvStep]                   = useState(1);
   const [avName, setAvName]                   = useState("");
@@ -1825,7 +1830,7 @@ export default function App() {
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
-          {tabHeader("My Boat", boatName + " · " + equipment.length + " items", true, function(){ setShowAddEquip(true); })}
+          {tabHeader("My Boat", boatName + " · " + equipment.length + " items", true, function(){ setEquipAiMode(false); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); })}
 
           {/* Urgency summary cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
@@ -1892,7 +1897,7 @@ export default function App() {
               <div style={{ fontSize: 48, marginBottom: 12 }}>⚙️</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "#374151", marginBottom: 6 }}>No equipment yet</div>
               <div style={{ fontSize: 13, marginBottom: 20 }}>Add your engine, sails, electronics and more to track service history and get AI part suggestions.</div>
-              <button onClick={function(){ setShowAddEquip(true); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Add First Equipment</button>
+              <button onClick={function(){ setEquipAiMode(false); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Add First Equipment</button>
             </div>
           )}
           {filteredEquip.map(function(eq){
@@ -2360,7 +2365,7 @@ export default function App() {
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
               {[
-                { label: "Add Equipment", icon: "⚙️", action: function(){ setShowAddEquip(true); setShowFab(false); } },
+                { label: "Add Equipment", icon: "⚙️", action: function(){ setEquipAiMode(false); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false); } },
                 { label: "Add Repair", icon: "🔧", action: function(){ setShowAddRepair(true); setShowFab(false); } },
                 { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
               ].map(function(item){ return (
@@ -2382,7 +2387,95 @@ export default function App() {
       {showAddEquip && (
             <div style={s.modalBg} onClick={function(){ setShowAddEquip(false); }}>
               <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", padding: 24 }} onClick={function(e){ e.stopPropagation(); }}>
-                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Equipment</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <div style={{ fontWeight: 800, fontSize: 16 }}>Add Equipment</div>
+                  <div style={{ display: "flex", gap: 0, border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+                    <button onClick={function(){ setEquipAiMode(false); }} style={{ padding: "5px 12px", border: "none", background: !equipAiMode ? "#0f4c8a" : "#fff", color: !equipAiMode ? "#fff" : "#6b7280", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manual</button>
+                    <button onClick={function(){ setEquipAiMode(true); }} style={{ padding: "5px 12px", border: "none", borderLeft: "1px solid #e2e8f0", background: equipAiMode ? "#0f4c8a" : "#fff", color: equipAiMode ? "#fff" : "#6b7280", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✨ AI Identify</button>
+                  </div>
+                </div>
+
+                {equipAiMode ? (<>
+                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "#1e40af" }}>
+                    Describe the equipment and we'll create the card with maintenance tasks automatically.
+                  </div>
+                  <textarea
+                    placeholder="e.g. Volvo Penta IPS D4-300, or: Victron MultiPlus 3000, or: Maxwell RC10 windlass"
+                    value={equipAiDesc}
+                    onChange={function(e){ setEquipAiDesc(e.target.value); }}
+                    rows={3}
+                    style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", marginBottom: 8, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }}
+                  />
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 12 }}>Be specific — make, model, and size gives the best results.</div>
+
+                  {equipAiError && <div style={{ background: "#fef2f2", color: "#dc2626", borderRadius: 8, padding: "8px 12px", fontSize: 12, marginBottom: 10 }}>{equipAiError}</div>}
+
+                  {equipAiResult && (
+                    <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginBottom: 12 }}>
+                      <div style={{ padding: "8px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: 11, fontWeight: 700, color: "#6b7280", display: "flex", justifyContent: "space-between" }}>
+                        <span>{equipAiResult.name} · {equipAiResult.category}</span>
+                        <span>{(equipAiResult.tasks||[]).length} tasks</span>
+                      </div>
+                      {(equipAiResult.tasks||[]).map(function(t, i){ return (
+                        <div key={i} style={{ padding: "6px 12px", borderBottom: i < equipAiResult.tasks.length-1 ? "1px solid #f8fafc" : "none", fontSize: 12 }}>
+                          <span style={{ fontWeight: 500 }}>{t.task}</span>
+                          <span style={{ color: "#9ca3af", marginLeft: 8, fontSize: 11 }}>every {t.interval_days >= 730 ? (t.interval_days/365) + " yrs" : t.interval_days >= 365 ? "1 yr" : t.interval_days >= 180 ? "6 mo" : t.interval_days >= 90 ? "3 mo" : t.interval_days + " days"}</span>
+                        </div>
+                      ); })}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                    <button onClick={function(){ setShowAddEquip(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                    {!equipAiResult ? (
+                      <button disabled={equipAiLoading} onClick={async function(){
+                        if (!equipAiDesc.trim()) { setEquipAiError("Please describe the equipment."); return; }
+                        setEquipAiLoading(true); setEquipAiError(null);
+                        try {
+                          const res = await fetch("/api/identify-vessel", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ description: "Single piece of marine equipment — just return ONE equipment item (not a full vessel list). Equipment: " + equipAiDesc.trim() }),
+                          });
+                          const data = await res.json();
+                          if (data.error) throw new Error(data.error);
+                          const item = Array.isArray(data.equipment) ? data.equipment[0] : data.equipment;
+                          if (!item) throw new Error("No equipment returned");
+                          setEquipAiResult(item);
+                        } catch(e) { setEquipAiError("Couldn't identify equipment: " + e.message); }
+                        finally { setEquipAiLoading(false); }
+                      }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: equipAiLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: equipAiLoading ? "not-allowed" : "pointer", fontWeight: 700 }}>
+                        {equipAiLoading ? "Identifying…" : "Identify Equipment →"}
+                      </button>
+                    ) : (
+                      <button onClick={async function(){
+                        setSaving(true);
+                        try {
+                          const payload = { vessel_id: activeVesselId, name: equipAiResult.name, category: equipAiResult.category, status: "good", notes: "", custom_parts: [], docs: [], logs: [] };
+                          const created = await supa("equipment", { method: "POST", body: payload });
+                          const eq = created[0];
+                          setEquipment(function(prev){ return [...prev, { id: eq.id, name: eq.name, category: eq.category, status: eq.status, lastService: eq.last_service, notes: eq.notes || "", customParts: [], docs: [], logs: [], _vesselId: eq.vessel_id }]; });
+                          if (equipAiResult.tasks && equipAiResult.tasks.length > 0) {
+                            const today = new Date().toISOString().split("T")[0];
+                            const taskRows = equipAiResult.tasks.map(function(t){
+                              const d = new Date(); d.setDate(d.getDate() + (t.interval_days || 365));
+                              return { vessel_id: activeVesselId, equipment_id: eq.id, task: t.task, section: equipAiResult.category, interval_days: t.interval_days || 365, priority: "medium", last_service: today, due_date: d.toISOString().split("T")[0], service_logs: [] };
+                            });
+                            const createdTasks = await supa("maintenance_tasks", { method: "POST", body: taskRows });
+                            setTasks(function(prev){ return [...prev, ...(createdTasks||[]).map(function(t){ return { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }; })]; });
+                          }
+                          setShowAddEquip(false);
+                          setEquipAiDesc(""); setEquipAiResult(null);
+                          setExpandedEquip(eq.id);
+                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "maintenance"; return n; });
+                        } catch(e) { setEquipAiError(e.message); }
+                        finally { setSaving(false); }
+                      }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: saving ? "#6b9fd4" : "#16a34a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
+                        {saving ? "Adding…" : "Add to My Boat ✓"}
+                      </button>
+                    )}
+                  </div>
+                </>) : (<>
                 <input placeholder="Equipment name" value={newEquip.name} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, name: e.target.value }; }); }} style={s.inp} />
                 <select value={newEquip.category} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, category: e.target.value }; }); }} style={s.sel}>
                   {EQ_CATEGORIES.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
@@ -2409,6 +2502,7 @@ export default function App() {
                   <button onClick={function(){ setShowAddEquip(false); setNewEquip({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" }); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
                   <button onClick={addEquipment} disabled={uploadingDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingDoc ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontWeight: 700 }}>{uploadingDoc ? "Uploading…" : "Add Equipment"}</button>
                 </div>
+                </>)}
               </div>
             </div>
           )}
