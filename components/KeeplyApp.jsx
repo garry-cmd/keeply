@@ -206,7 +206,6 @@ function LoadingScreen() {
 function AdminDashboard({ onClose }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [deployInfo, setDeployInfo] = useState(null);
 
   useEffect(function(){
     async function loadMetrics() {
@@ -229,57 +228,83 @@ function AdminDashboard({ onClose }) {
         const files = (storage || []).filter(function(f){ return f.id; });
         const totalSize = files.reduce(function(s, f){ return s + (f.metadata && f.metadata.size ? f.metadata.size : 0); }, 0);
 
-        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-        const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+        // Date helpers
+        const daysAgo = function(n){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - n); return d; };
+        const yesterday = daysAgo(1);
+        const dayBefore  = daysAgo(2);
+        const weekAgo    = daysAgo(7);
+        const twoWeeksAgo = daysAgo(14);
+        const monthAgo   = daysAgo(30);
+        const twoMonthsAgo = daysAgo(60);
 
-        // Unique users — combine vessel owners + shared members
-        const allUserIds = new Set([
-          ...(vessels || []).map(function(v){ return v.user_id; }).filter(Boolean),
-          ...(members || []).map(function(m){ return m.user_id; }).filter(Boolean),
-        ]);
-        const uniqueUsers = (typeof authCount === "number" && authCount > 0) ? authCount : allUserIds.size;
-        const newVesselsWeek = (vessels || []).filter(function(v){ return new Date(v.created_at) > weekAgo; }).length;
-        const newVesselsMonth = (vessels || []).filter(function(v){ return new Date(v.created_at) > monthAgo; }).length;
+        const inRange = function(dateStr, from, to){
+          const d = new Date(dateStr);
+          return d >= from && d < to;
+        };
 
-        // Task health
-        const overdueTasks = (tasks || []).filter(function(t){ return t.due_date && new Date(t.due_date) < now; }).length;
-        const linkedTasks = (tasks || []).filter(function(t){ return t.equipment_id; }).length;
-        const linkedRepairs = (repairs || []).filter(function(r){ return r.equipment_id; }).length;
+        // User & vessel growth
+        const uniqueUsers = new Set([
+          ...(vessels||[]).map(function(v){ return v.user_id; }).filter(Boolean),
+          ...(members||[]).map(function(m){ return m.user_id; }).filter(Boolean),
+        ]).size;
+        const authUsers = (typeof authCount === "number" && authCount > 0) ? authCount : uniqueUsers;
 
-        // Log entries across all equipment
-        const totalLogs = (equipment || []).reduce(function(s, e){ return s + ((e.logs || []).length); }, 0);
-        const totalDocs = (equipment || []).reduce(function(s, e){ return s + ((e.docs || []).length); }, 0);
+        const vesselsByDay   = function(from, to){ return (vessels||[]).filter(function(v){ return inRange(v.created_at, from, to); }).length; };
 
-        // Parts / shopping list metrics
-        const allParts = (equipment || []).reduce(function(acc, e){ return acc.concat(e.custom_parts || []); }, []);
-        const totalPartsQty = allParts.length;
+        // Maintenance completed (last_service updated recently = proxy for completion)
+        const maintByDay = function(from, to){ return (tasks||[]).filter(function(t){ return t.last_service && inRange(t.last_service, from, to); }).length; };
+
+        // Repairs completed
+        const repairsByDay = function(from, to){ return (repairs||[]).filter(function(r){ return r.status === "closed" && r.date && inRange(r.date, from, to); }).length; };
+
+        // Parts
+        const allParts = (equipment||[]).reduce(function(acc, e){ return acc.concat(e.custom_parts || []); }, []);
         const totalPartsValue = allParts.reduce(function(s, p){
           const price = parseFloat((p.price || "").toString().replace(/[^0-9.]/g, ""));
           return s + (isNaN(price) ? 0 : price);
         }, 0);
 
         setMetrics({
-          // Users & vessels
-          uniqueUsers, totalVessels: (vessels || []).length,
-          newVesselsWeek, newVesselsMonth,
-          sailboats: (vessels || []).filter(function(v){ return v.vessel_type === "sail"; }).length,
-          motorboats: (vessels || []).filter(function(v){ return v.vessel_type === "motor"; }).length,
-          sharedVessels: (members || []).length,
-          vessels: vessels || [],
-          // Equipment
-          totalEquipment: (equipment || []).length,
-          avgEquipPerVessel: (vessels || []).length > 0 ? ((equipment || []).length / (vessels || []).length).toFixed(1) : 0,
-          // Tasks & repairs
-          totalTasks: (tasks || []).length, overdueTasks,
-          linkedTasks, linkedRepairs,
-          openRepairs: (repairs || []).filter(function(r){ return r.status !== "closed"; }).length,
-          totalRepairs: (repairs || []).length,
-          // Engagement
-          totalLogs, totalDocs,
-          totalPartsQty, totalPartsValue: totalPartsValue.toFixed(2),
+          authUsers,
+          totalVessels: (vessels||[]).length,
+          sailboats: (vessels||[]).filter(function(v){ return v.vessel_type === "sail"; }).length,
+          motorboats: (vessels||[]).filter(function(v){ return v.vessel_type === "motor"; }).length,
+          // Vessel growth
+          vesselsYesterday:   vesselsByDay(yesterday, now),
+          vesselsDayBefore:   vesselsByDay(dayBefore, yesterday),
+          vesselsThisWeek:    vesselsByDay(weekAgo, now),
+          vesselsLastWeek:    vesselsByDay(twoWeeksAgo, weekAgo),
+          vesselsThisMonth:   vesselsByDay(monthAgo, now),
+          vesselsLastMonth:   vesselsByDay(twoMonthsAgo, monthAgo),
+          // App health
+          totalEquipment: (equipment||[]).length,
+          totalTasks: (tasks||[]).length,
+          overdueTasks: (tasks||[]).filter(function(t){ return t.due_date && new Date(t.due_date) < now; }).length,
+          openRepairs: (repairs||[]).filter(function(r){ return r.status !== "closed"; }).length,
+          totalRepairs: (repairs||[]).length,
+          // Maintenance completions
+          maintYesterday:   maintByDay(yesterday, now),
+          maintDayBefore:   maintByDay(dayBefore, yesterday),
+          maintThisWeek:    maintByDay(weekAgo, now),
+          maintLastWeek:    maintByDay(twoWeeksAgo, weekAgo),
+          maintThisMonth:   maintByDay(monthAgo, now),
+          maintLastMonth:   maintByDay(twoMonthsAgo, monthAgo),
+          // Repair completions
+          repairsYesterday:  repairsByDay(yesterday, now),
+          repairsDayBefore:  repairsByDay(dayBefore, yesterday),
+          repairsThisWeek:   repairsByDay(weekAgo, now),
+          repairsLastWeek:   repairsByDay(twoWeeksAgo, weekAgo),
+          repairsThisMonth:  repairsByDay(monthAgo, now),
+          repairsLastMonth:  repairsByDay(twoMonthsAgo, monthAgo),
+          // Parts
+          totalPartsQty: allParts.length,
+          totalPartsValue: totalPartsValue.toFixed(2),
+          totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
+          totalLogs: (equipment||[]).reduce(function(s, e){ return s + ((e.logs||[]).length); }, 0),
           // Storage
           totalFiles: files.length,
           storageMB: (totalSize / 1048576).toFixed(1),
+          sharedVessels: (members||[]).length,
         });
       } catch(e) {
         console.error(e);
@@ -292,12 +317,33 @@ function AdminDashboard({ onClose }) {
   if (!metrics) return <div style={{ textAlign: "center", padding: 48, color: "#dc2626" }}>Failed to load.</div>;
 
   const m = metrics;
+
   const stat = function(val, label, sub, color) {
     return (
       <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px" }}>
-        <div style={{ fontSize: 28, fontWeight: 800, color: color || "#0f4c8a", lineHeight: 1 }}>{val}</div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: color || "#0f4c8a", lineHeight: 1 }}>{val}</div>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginTop: 3 }}>{label}</div>
         {sub && <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>{sub}</div>}
+      </div>
+    );
+  };
+
+  const trend = function(today, prior) {
+    if (prior === 0 && today === 0) return null;
+    const pct = prior === 0 ? 100 : Math.round(((today - prior) / prior) * 100);
+    const up = today >= prior;
+    return <span style={{ fontSize: 10, fontWeight: 700, color: up ? "#16a34a" : "#dc2626", marginLeft: 6 }}>{up ? "▲" : "▼"} {Math.abs(pct)}%</span>;
+  };
+
+  const compareRow = function(label, today, prior, todayLabel, priorLabel) {
+    return (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "0.5px solid #f3f4f6" }}>
+        <span style={{ fontSize: 12, color: "#374151" }}>{label}</span>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: "#9ca3af" }}>{priorLabel}: <strong style={{ color: "#374151" }}>{prior}</strong></span>
+          <span style={{ fontSize: 11, color: "#9ca3af" }}>{todayLabel}: <strong style={{ color: "#0f4c8a" }}>{today}</strong></span>
+          {trend(today, prior)}
+        </div>
       </div>
     );
   };
@@ -312,23 +358,71 @@ function AdminDashboard({ onClose }) {
         <button onClick={onClose} style={{ background: "#f1f5f9", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "#6b7280" }}>✕ Close</button>
       </div>
 
-      {/* Users & Growth */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>USERS & GROWTH</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
-        {stat(m.uniqueUsers, "Unique Users", "signed up accounts", "#0f4c8a")}
+      {/* Users & Vessels */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>USERS & VESSELS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
+        {stat(m.authUsers, "Total Users", "signed up accounts", "#0f4c8a")}
         {stat(m.totalVessels, "Total Vessels", m.sailboats + " sail · " + m.motorboats + " motor")}
-        {stat(m.newVesselsWeek, "New This Week", "vessels created last 7 days", m.newVesselsWeek > 0 ? "#16a34a" : "#9ca3af")}
-        {stat(m.newVesselsMonth, "New This Month", "vessels created last 30 days", m.newVesselsMonth > 0 ? "#16a34a" : "#9ca3af")}
+      </div>
+
+      {/* New Vessel Growth */}
+      <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", marginBottom: 20 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>NEW VESSELS</div>
+        {compareRow("Yesterday vs day before", m.vesselsYesterday, m.vesselsDayBefore, "Yesterday", "Day before")}
+        {compareRow("This week vs last week", m.vesselsThisWeek, m.vesselsLastWeek, "This week", "Last week")}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0" }}>
+          <span style={{ fontSize: 12, color: "#374151" }}>This month vs last month</span>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>Last month: <strong style={{ color: "#374151" }}>{m.vesselsLastMonth}</strong></span>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>This month: <strong style={{ color: "#0f4c8a" }}>{m.vesselsThisMonth}</strong></span>
+            {trend(m.vesselsThisMonth, m.vesselsLastMonth)}
+          </div>
+        </div>
       </div>
 
       {/* App Health */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>APP HEALTH</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
-        {stat(m.totalEquipment, "Equipment Items", m.avgEquipPerVessel + " avg per vessel")}
-        {stat(m.totalTasks, "Maintenance Tasks", m.linkedTasks + " linked to equipment")}
-        {stat(m.overdueTasks, "Overdue Tasks", "across all vessels", m.overdueTasks > 0 ? "#dc2626" : "#16a34a")}
+        {stat(m.totalEquipment, "Equipment Items", "across all vessels")}
+        {stat(m.totalTasks, "Maintenance Tasks", "total logged")}
+        {stat(m.overdueTasks, "Overdue Tasks", "past due date", m.overdueTasks > 0 ? "#dc2626" : "#16a34a")}
         {stat(m.openRepairs, "Open Repairs", m.totalRepairs + " total logged", m.openRepairs > 0 ? "#ea580c" : "#16a34a")}
       </div>
+
+      {/* Maintenance Completions */}
+      <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", marginBottom: 20 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 8 }}>MAINTENANCE COMPLETED</div>
+        {compareRow("Yesterday vs day before", m.maintYesterday, m.maintDayBefore, "Yesterday", "Day before")}
+        {compareRow("This week vs last week", m.maintThisWeek, m.maintLastWeek, "This week", "Last week")}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "0.5px solid #f3f4f6" }}>
+          <span style={{ fontSize: 12, color: "#374151" }}>This month vs last month</span>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>Last month: <strong style={{ color: "#374151" }}>{m.maintLastMonth}</strong></span>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>This month: <strong style={{ color: "#0f4c8a" }}>{m.maintThisMonth}</strong></span>
+            {trend(m.maintThisMonth, m.maintLastMonth)}
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0" }}>
+          <span style={{ fontSize: 12, color: "#374151" }}>Repairs closed this week vs last</span>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>Last week: <strong style={{ color: "#374151" }}>{m.repairsLastWeek}</strong></span>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>This week: <strong style={{ color: "#0f4c8a" }}>{m.repairsThisWeek}</strong></span>
+            {trend(m.repairsThisWeek, m.repairsLastWeek)}
+          </div>
+        </div>
+      </div>
+
+      {/* Parts & Shopping Lists */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
+        {stat(m.totalPartsQty, "Parts on Lists", "custom parts across all equipment")}
+        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total List Value", m.totalPartsQty === 0 ? "no priced parts yet" : "sum of all part prices", "#16a34a")}
+      </div>
+      {m.totalPartsQty === 0 && (
+        <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#92400e", marginBottom: 20 }}>
+          Parts are added via the 🔩 Parts tab on each equipment card. If parts exist but show 0 here, the custom_parts field may need a schema check in Supabase.
+        </div>
+      )}
 
       {/* Engagement */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>ENGAGEMENT</div>
@@ -337,30 +431,6 @@ function AdminDashboard({ onClose }) {
         {stat(m.totalDocs, "Docs Attached", "manuals, parts lists, etc.")}
         {stat(m.totalFiles, "Files in Storage", m.storageMB + " MB used")}
         {stat(m.sharedVessels, "Shared Access", "vessel member records")}
-      </div>
-
-      {/* Parts / Shopping Lists */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
-        {stat(m.totalPartsQty, "Parts on Lists", "across all vessels")}
-        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total List Value", "sum of all part prices", "#16a34a")}
-      </div>
-
-      {/* Vessel list */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>ALL VESSELS</div>
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
-        {m.vessels.length === 0 && <div style={{ padding: "20px", fontSize: 13, color: "#9ca3af" }}>No vessels yet.</div>}
-        {m.vessels.map(function(v, i){ return (
-          <div key={v.id} style={{ padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < m.vessels.length - 1 ? "1px solid #f8fafc" : "none" }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{v.vessel_type === "motor" ? "M/V" : "S/V"} {v.vessel_name}</div>
-              <div style={{ fontSize: 11, color: "#9ca3af" }}>{v.owner_name || "—"}{v.home_port ? " · " + v.home_port : ""}</div>
-            </div>
-            <div style={{ fontSize: 11, color: "#9ca3af", textAlign: "right" }}>
-              <div>{fmt(v.created_at ? v.created_at.split("T")[0] : "")}</div>
-            </div>
-          </div>
-        ); })}
       </div>
 
       {/* System links */}
