@@ -167,11 +167,11 @@ const SECTIONS = {
   Anchor: "⚓", Bilge: "🪣", Deck: "🛥", Dink: "⛵", Electrical: "⚡",
   Electronics: "📡",
   Engine: "🔧", Galley: "🍳", General: "🚢", Hydrovane: "🧭", Navigation: "🗺",
-  Paperwork: "📄", Plumbing: "🔩", Rigging: "🪢", Safety: "🛟", Watermaker: "💧",
+  Paperwork: "📄", Vessel: "⚓", Plumbing: "🔩", Rigging: "🪢", Safety: "🛟", Watermaker: "💧",
 };
 const ALL_SECTIONS   = Object.keys(SECTIONS);
 const MAINT_SECTIONS = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork"; });
-const EQ_CATEGORIES  = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Dink"; });
+const EQ_CATEGORIES  = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Dink" && s !== "Vessel"; });
 
 // ─── SMALL SHARED COMPONENTS ─────────────────────────────────────────────────
 function Badge({ label, color, bg, border }) {
@@ -852,20 +852,18 @@ export default function App() {
 
         // Load equipment for first vessel
         const eq = await supa("equipment", { query: "vessel_id=eq." + firstId + "&order=created_at" });
-        setEquipment((eq || []).map(function(e){
-          return {
-            id:           e.id,
-            name:         e.name,
-            category:     e.category,
-            status:       e.status,
-            lastService:  e.last_service,
-            notes:        e.notes || "",
-            customParts:  safeJsonbArray(e.custom_parts),
-            docs:         e.docs || [],
-            logs:         safeJsonbArray(e.logs),
-            _vesselId:    e.vessel_id,
-          };
-        }));
+        let eqList0 = (eq || []).map(function(e){
+          return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: safeJsonbArray(e.docs), logs: safeJsonbArray(e.logs), _vesselId: e.vessel_id };
+        });
+        if (!eqList0.some(function(e){ return e.category === "Vessel"; })) {
+          try {
+            const vname0 = normalizedVessels[0] ? normalizedVessels[0].vesselName : "My Vessel";
+            const vc0 = await supa("equipment", { method: "POST", body: { vessel_id: firstId, name: vname0, category: "Vessel", status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
+            if (vc0 && vc0[0]) eqList0 = [{ id: vc0[0].id, name: vc0[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: firstId }, ...eqList0];
+          } catch(e) { console.log("Vessel card skip:", e.message); }
+        }
+        eqList0 = [...eqList0.filter(function(e){ return e.category === "Vessel"; }), ...eqList0.filter(function(e){ return e.category !== "Vessel"; })];
+        setEquipment(eqList0);
 
         // Load tasks for first vessel
         const ts = await supa("maintenance_tasks", { query: "vessel_id=eq." + firstId + "&order=section,priority" });
@@ -917,9 +915,24 @@ export default function App() {
     try {
       loadCart(vid);
       const eq = await supa("equipment", { query: "vessel_id=eq." + vid + "&order=created_at" });
-      setEquipment((eq || []).map(function(e){
+      let eqList = (eq || []).map(function(e){
         return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: e.docs || [], logs: e.logs || [], _vesselId: e.vessel_id };
-      }));
+      });
+      // Auto-create Vessel card if it doesn't exist
+      const hasVesselCard = eqList.some(function(e){ return e.category === "Vessel"; });
+      if (!hasVesselCard) {
+        try {
+          const vs = await supa("vessels", { query: "id=eq." + vid + "&select=vessel_name" });
+          const vname = (vs && vs[0] && vs[0].vessel_name) ? vs[0].vessel_name : "My Vessel";
+          const created = await supa("equipment", { method: "POST", body: { vessel_id: vid, name: vname, category: "Vessel", status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
+          if (created && created[0]) {
+            eqList = [{ id: created[0].id, name: created[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: vid }, ...eqList];
+          }
+        } catch(e) { console.log("Vessel card auto-create skipped:", e.message); }
+      }
+      // Pin Vessel card first
+      eqList = [...eqList.filter(function(e){ return e.category === "Vessel"; }), ...eqList.filter(function(e){ return e.category !== "Vessel"; })];
+      setEquipment(eqList);
       const ts = await supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&order=section,priority" });
       setTasks((ts || []).map(function(t){
         return { id: t.id, section: t.section, task: t.task, interval: t.interval_days ? t.interval_days + " days" : "30 days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: t.service_logs || [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null };
@@ -1768,7 +1781,7 @@ export default function App() {
               <div style={{ position: "absolute", top: 56, right: 0, background: "#fff", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
                 {[
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
-                  { label: "📄 Docs", action: function(){ setView("customer"); setTab("documentation"); setShowMobileMenu(false); }, active: view==="customer" && tab==="documentation" },
+                  { label: "🔧 Repairs", action: function(){ setView("customer"); setTab("repairs-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="repairs-standalone" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "📥 Import", action: function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); setShowMobileMenu(false); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }, active: view==="import" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); }, active: false },
@@ -2100,15 +2113,16 @@ export default function App() {
           )}
           {filteredEquip.map(function(eq){
             const isExpanded = expandedEquip === eq.id;
-            const activeTab  = equipTab[eq.id] || "parts";
+            const activeTab  = equipTab[eq.id] || (eq.category === "Vessel" ? "docs" : "maintenance");
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
+            const isVesselCard = eq.category === "Vessel";
             return (
-              <div key={eq.id} style={s.card}>
+              <div key={eq.id} style={{ ...s.card, border: isVesselCard ? "1.5px solid #bfdbfe" : s.card.border, background: isVesselCard ? "#fafeff" : s.card.background }}>
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{eq.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{isVesselCard ? "⚓ " : ""}{eq.name}</div>
                       <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
                         {(SECTIONS[eq.category] || "")} {eq.category}
                         {eq.lastService && <span> · Serviced {fmt(eq.lastService)}</span>}
@@ -2229,8 +2243,8 @@ export default function App() {
 
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["maintenance","repairs","parts","docs","log","edit"].map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "#7c3aed" : t==="repairs" ? "#dc2626" : "#0f4c8a") : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{t === "maintenance" ? "📋 Maint" : t === "repairs" ? "🔧 Repairs" : t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Docs" : t === "log" ? "📓 Log" : "✏️ Edit"}</button>
+                      {["maintenance","parts","docs","log","edit"].map(function(t){ return (
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "#7c3aed" : t==="repairs" ? "#dc2626" : "#0f4c8a") : "#e8edf2", color: activeTab===t ? "#fff" : "#6b7280", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{t === "maintenance" ? "📋 Maint" : t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Docs" : t === "log" ? "📓 Log" : "✏️ Edit"}</button>
                       ); })}
                     </div>
 
@@ -2790,7 +2804,7 @@ export default function App() {
 
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs-standalone" && (<>
-          {tabHeader("Repair Log", boatName + " · " + repairs.filter(function(r){ return repairSectionFilter === "All" || r.section === repairSectionFilter; }).length + " items", true, function(){ setShowAddRepair(true); })}
+          {tabHeader("Repairs", boatName + " · " + repairs.filter(function(r){ return r.status !== "closed"; }).length + " open", true, function(){ setShowAddRepair(true); })}
 
           {/* Section filter pills */}
           <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
