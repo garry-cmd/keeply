@@ -1,17 +1,9 @@
 export async function POST(request) {
   try {
-    const text = await request.text();
-    console.log("identify-vessel body:", text);
-    
-    let description = "";
-    try {
-      const body = JSON.parse(text);
-      description = body.description || "";
-    } catch(e) {
-      description = text;
-    }
+    const body = await request.json();
+    const description = body.description || "";
 
-    if (!description || !description.trim()) {
+    if (!description.trim()) {
       return Response.json({ error: "No description provided" }, { status: 400 });
     }
 
@@ -19,7 +11,9 @@ export async function POST(request) {
 
 The user has this vessel: "${description.trim()}"
 
-Generate a complete, specific equipment list that an owner of this exact vessel would track for maintenance. Be specific to this make/model/year. Return ONLY valid JSON — no prose, no markdown, no code fences. Array of objects with schema:
+Generate a complete, specific equipment list that an owner of this exact vessel would track for maintenance. Be specific to this make/model/year — not generic. For example, if it's a 2018 Ranger Tug R-27, list the actual Volvo IPS engine, bow thruster, specific electronics typically fitted, generator, etc.
+
+Return ONLY valid JSON — no prose, no markdown, no code fences. The JSON must be an array of objects:
 [{ "name": "string", "category": "string (Engine|Electrical|Rigging|Sails|Plumbing|Safety|Navigation|Deck|Bilge|Hull|Dinghy|Generator|HVAC|Galley|General)", "tasks": [{ "task": "string", "interval_days": number }] }]
 
 Include 12-22 items, each with 2-5 tasks and realistic intervals (365=annual, 180=biannual, 90=quarterly, 730=2years).`;
@@ -41,12 +35,14 @@ Include 12-22 items, each with 2-5 tasks and realistic intervals (365=annual, 18
     const data = await res.json();
     if (data.error) return Response.json({ error: data.error.message }, { status: 500 });
 
-    const raw = data.content[0].text.trim().replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-    const equipment = JSON.parse(raw);
+    const raw = data.content[0].text.trim()
+      .replace(/^```(?:json)?\n?/, "")
+      .replace(/\n?```$/, "")
+      .trim();
 
+    const equipment = JSON.parse(raw);
     return Response.json({ equipment });
   } catch (err) {
-    console.error("identify-vessel error:", err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
