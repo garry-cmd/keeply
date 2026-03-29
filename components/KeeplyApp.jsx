@@ -238,7 +238,7 @@ function AdminDashboard({ onClose }) {
           supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
           supa("vessel_members", { query: "select=id,vessel_id,user_id,role,email" }).catch(function(){ return []; }),
           fetch(SUPA_URL + "/rest/v1/rpc/get_auth_user_count", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
-          fetch(SUPA_URL + "/rest/v1/rpc/get_parts_metrics", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+          fetch(SUPA_URL + "/rest/v1/rpc/get_cart_metrics", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
           fetch(SUPA_URL + "/storage/v1/object/list/vessel-docs", {
             method: "POST",
             headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
@@ -279,16 +279,13 @@ function AdminDashboard({ onClose }) {
         // Repairs completed
         const repairsByDay = function(from, to){ return (repairs||[]).filter(function(r){ return r.status === "closed" && r.date && inRange(r.date, from, to); }).length; };
 
-        // Parts — use RPC for accurate cross-user data
-        const allParts = (equipment||[]).reduce(function(acc, e){ return acc.concat(e.custom_parts || []); }, []);
-        const rpcPartsQty   = partsMetrics && partsMetrics.total_qty   ? partsMetrics.total_qty   : null;
-        const rpcPartsValue = partsMetrics && partsMetrics.total_value  ? partsMetrics.total_value  : null;
-        const rpcPartsList  = partsMetrics && partsMetrics.parts_list   ? partsMetrics.parts_list   : null;
-        const totalPartsValue = rpcPartsValue !== null ? rpcPartsValue :
-          allParts.reduce(function(s, p){
-            const price = parseFloat((p.price || "").toString().replace(/[^0-9.]/g, ""));
-            return s + (isNaN(price) ? 0 : price);
-          }, 0);
+        // Cart metrics from RPC (reads cart_items across all users)
+        const cm = partsMetrics || {};
+        const cartTotalQty   = cm.total_qty   || 0;
+        const cartTotalValue = parseFloat(cm.total_value  || 0);
+        const cartTotalLists = cm.total_lists  || 0;
+        const cartAOV        = parseFloat(cm.avg_order_value || 0);
+        const cartPartsList  = cm.parts_list  || [];
 
         setMetrics({
           authUsers,
@@ -322,10 +319,12 @@ function AdminDashboard({ onClose }) {
           repairsLastWeek:   repairsByDay(twoWeeksAgo, weekAgo),
           repairsThisMonth:  repairsByDay(monthAgo, now),
           repairsLastMonth:  repairsByDay(twoMonthsAgo, monthAgo),
-          // Parts
-          totalPartsQty: rpcPartsQty !== null ? rpcPartsQty : allParts.length,
-          totalPartsValue: parseFloat(totalPartsValue).toFixed(2),
-          partsList: rpcPartsList || [],
+          // Cart
+          totalPartsQty: cartTotalQty,
+          totalPartsValue: cartTotalValue.toFixed(2),
+          totalPartsLists: cartTotalLists,
+          cartAOV: cartAOV.toFixed(2),
+          partsList: cartPartsList,
           totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
           totalLogs: (equipment||[]).reduce(function(s, e){ return s + ((e.logs||[]).length); }, 0),
           // Storage
@@ -442,22 +441,29 @@ function AdminDashboard({ onClose }) {
       {/* Parts & Shopping Lists */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
-        {stat(m.totalPartsQty, "Total Parts", "items across all shopping lists")}
-        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total Value", m.totalPartsQty === 0 ? "no priced parts yet" : "sum of all priced parts", "#16a34a")}
+        {stat(m.totalPartsQty, "Total Parts", m.totalPartsLists + " active lists")}
+        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total Cart Value", m.totalPartsQty === 0 ? "no priced parts yet" : "all vessels combined", "#16a34a")}
+        {stat("$" + parseFloat(m.cartAOV).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "AOV", "avg order value per vessel", "#7c3aed")}
+        {stat(m.totalPartsLists, "Active Lists", "vessels with items in cart")}
       </div>
       {m.partsList && m.partsList.length > 0 && (
         <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "7px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
             <span>PART</span><span>PRICE</span>
           </div>
-          {m.partsList.slice(0, 20).map(function(p, i){ return (
-            <div key={i} style={{ padding: "7px 12px", borderBottom: i < Math.min(m.partsList.length, 20)-1 ? "1px solid #f8fafc" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1d23" }}>{p.part}</div>
-                <div style={{ fontSize: 10, color: "#9ca3af" }}>{p.equipment}{p.sku ? " · " + p.sku : ""}</div>
+          {m.partsList.slice(0, 30).map(function(p, i){ return (
+            <div key={i} style={{ padding: "7px 12px", borderBottom: i < Math.min(m.partsList.length, 30)-1 ? "1px solid #f8fafc" : "none", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1d23", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                <div style={{ fontSize: 10, color: "#9ca3af" }}>
+                  {p.equipment_name ? p.equipment_name + " · " : ""}
+                  {p.vendor || ""}
+                  {p.source === "ai-equipment" || p.source === "ai-repair" ? " · ✨ AI" : ""}
+                  {p.qty > 1 ? " · qty " + p.qty : ""}
+                </div>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: p.price ? "#16a34a" : "#9ca3af" }}>
-                {p.price ? "$" + parseFloat(p.price).toFixed(2) : "—"}
+              <div style={{ fontSize: 12, fontWeight: 600, color: p.price ? "#16a34a" : "#9ca3af", flexShrink: 0 }}>
+                {p.price ? "$" + (parseFloat(p.price) * (p.qty || 1)).toFixed(2) : "—"}
               </div>
             </div>
           ); })}
@@ -468,7 +474,7 @@ function AdminDashboard({ onClose }) {
       )}
       {m.totalPartsQty === 0 && (
         <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#9ca3af", marginBottom: 20 }}>
-          No parts on any shopping lists yet. Parts are added via the 🔩 tab on equipment cards.
+          No items in any shopping lists yet. Parts are added via the 🔩 Parts tab and ✨ AI suggestions on equipment cards.
         </div>
       )}
 
