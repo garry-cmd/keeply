@@ -643,7 +643,8 @@ export default function App() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
-  const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName }
+  const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
+  const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
   const [findPartResults, setFindPartResults]   = useState([]);
   const [findPartLoading, setFindPartLoading]   = useState(false);
   const [findPartError, setFindPartError]       = useState(null);
@@ -1293,7 +1294,7 @@ export default function App() {
     fetch("/api/find-part", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ partName: partName, equipmentName: confirmPart.equipName }),
+      body: JSON.stringify({ partName: partName, equipmentName: confirmPart.equipName, repairContext: confirmPart.repairContext || null }),
     }).then(function(r){ return r.json(); }).then(function(data){
       if (data.error) { setFindPartError(data.error); return; }
       setFindPartResults(data.results || []);
@@ -2797,47 +2798,90 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Expanded panel */}
+                {/* Tabbed expanded panel */}
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid #f3f4f6", padding: "16px 20px", background: "#fafafa" }} onClick={function(e){ e.stopPropagation(); }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 10 }}>✨ AI SUGGESTED PARTS</div>
-                    {sugg === "loading" && (
-                      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>🤖 Finding parts for this repair…</div>
-                    )}
-                    {sugg === "error" && (
-                      <div style={{ fontSize: 12, color: "#ea580c", marginBottom: 10 }}>
-                        Couldn't load suggestions right now.
-                        <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginLeft: 8, background: "none", border: "none", color: "#0f4c8a", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button>
+                  <div style={{ borderTop: "1px solid #f3f4f6", background: "#fafafa" }} onClick={function(e){ e.stopPropagation(); }}>
+
+                    {/* Tab bar */}
+                    <div style={{ display: "flex", borderBottom: "1px solid #f3f4f6", padding: "0 16px" }}>
+                      {["parts", "notes"].map(function(t){ return (
+                        <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
+                          style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "#7c3aed" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "#7c3aed" : "#9ca3af", letterSpacing: "0.3px" }}>
+                          {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
+                          {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
+                            <span style={{ marginLeft: 5, background: "#f5f3ff", color: "#7c3aed", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
+                          )}
+                        </button>
+                      ); })}
+                    </div>
+
+                    {/* Parts tab */}
+                    {(repairTab[r.id] || "parts") === "parts" && (
+                      <div style={{ padding: "14px 16px" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}>
+                          ✨ AI suggested parts for this repair
+                        </div>
+
+                        {sugg === "loading" && (
+                          <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>Finding parts for this repair…</div>
+                        )}
+                        {sugg === "error" && (
+                          <div style={{ fontSize: 12, color: "#ea580c", marginBottom: 10 }}>
+                            Couldn't load suggestions.
+                            <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginLeft: 8, background: "none", border: "none", color: "#0f4c8a", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button>
+                          </div>
+                        )}
+                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && (
+                          <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>No specific parts found.</div>
+                        )}
+
+                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
+                          const inList = cart.some(function(i){ return i.name === part.name; });
+                          return (
+                            <div key={part.name} style={{ padding: "10px 0", borderBottom: "1px solid #f3f4f6" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1d23" }}>{part.name}</div>
+                                  <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2, lineHeight: 1.4 }}>💡 {part.reason}</div>
+                                </div>
+                                <button onClick={function(e){ e.stopPropagation(); setRejectedParts(function(prev){ const n = Object.assign({}, prev); n["repair-" + r.id + "-" + part.id] = true; return n; }); getSuggestionsForRepair(r); }}
+                                  style={{ background: "none", border: "none", color: "#d1d5db", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Wrong part">✕</button>
+                              </div>
+                              <button onClick={function(e){ e.stopPropagation(); if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section, repairContext: r.description + " " + r.section }); }}
+                                style={{ marginTop: 8, width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                {inList ? "✓ In Shopping List" : "+ Add to List"}
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        {sugg && sugg !== "loading" && (
+                          <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
+                            style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, padding: 0 }}>
+                            ↺ Refresh suggestions
+                          </button>
+                        )}
+
+                        {!sugg && (
+                          <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
+                            style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, width: "100%" }}>
+                            ✨ Find parts for this repair
+                          </button>
+                        )}
                       </div>
                     )}
-                    {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && (
-                      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>No specific parts found for this repair.</div>
-                    )}
-                    {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.map(function(part){
-                      const inList = cart.find(function(i){ return i.id === part.id; });
-                      return (
-                        <div key={part.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f3f4f6" }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600 }}>{part.name}</div>
-                            <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
-                            
-                          </div>
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#16a34a", color: "#fff", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0 }}>↗ Buy</a>}
-                            <button onClick={function(){ if (!inList) addToCart(part, "ai-repair", eq.name); }}
-                              style={{ background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                              {inList ? "✓ Added" : "+ List"}
-                            </button>
-                          </div>
+
+                    {/* Notes tab */}
+                    {(repairTab[r.id] || "parts") === "notes" && (
+                      <div style={{ padding: "14px 16px" }}>
+                        <div style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>
+                          {r.description || "No additional notes."}
                         </div>
-                      );
-                    })}
-                    {/* Refresh suggestions */}
-                    {sugg && sugg !== "loading" && (
-                      <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
-                        style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, padding: 0 }}>
-                        ↺ Refresh suggestions
-                      </button>
+                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
+                          style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "#0f4c8a", cursor: "pointer", fontWeight: 600, padding: 0 }}>
+                          ✏️ Edit repair
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -3328,7 +3372,7 @@ export default function App() {
               <div style={{ width: 40, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 16px" }} />
               <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d23", marginBottom: 2 }}>Add to Shopping List</div>
               <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 14 }}>
-                {confirmPart.equipName ? "For: " + confirmPart.equipName : "Review part details before adding"}
+                {confirmPart.repairContext ? "Repair: " + confirmPart.repairContext.substring(0, 60) + (confirmPart.repairContext.length > 60 ? "…" : "") : confirmPart.equipName ? "For: " + confirmPart.equipName : "Review part details before adding"}
               </div>
             </div>
 
@@ -3342,7 +3386,7 @@ export default function App() {
                     findPartSearched.current = null;
                     setFindPartLoading(true); setFindPartError(null);
                     try {
-                      const res = await fetch("/api/find-part", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partName: confirmPart.part.name, equipmentName: confirmPart.equipName }) });
+                      const res = await fetch("/api/find-part", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partName: confirmPart.part.name, equipmentName: confirmPart.equipName, repairContext: confirmPart.repairContext || null }) });
                       const data = await res.json();
                       if (data.error) throw new Error(data.error);
                       setFindPartResults(data.results || []);
