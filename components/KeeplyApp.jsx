@@ -644,6 +644,9 @@ export default function App() {
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName }
+  const [findPartResults, setFindPartResults]   = useState([]);
+  const [findPartLoading, setFindPartLoading]   = useState(false);
+  const [findPartError, setFindPartError]       = useState(null);
   const [rejectedParts, setRejectedParts]     = useState({});    // { [eqId+partId]: true }
   const [equipAiDesc, setEquipAiDesc]         = useState("");
   const [equipAiResult, setEquipAiResult]     = useState(null);
@@ -1273,6 +1276,26 @@ export default function App() {
       setAiLoaded(false);
     }
   }, [showCartPanel]);
+
+  // Auto-search when confirm sheet opens
+  useEffect(function(){
+    if (!confirmPart) { setFindPartResults([]); setFindPartError(null); return; }
+    setFindPartLoading(true); setFindPartError(null); setFindPartResults([]);
+    fetch("/api/find-part", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ partName: confirmPart.part.name, equipmentName: confirmPart.equipName }),
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if (data.error) { setFindPartError(data.error); return; }
+      setFindPartResults(data.results || []);
+      // Auto-select first result if only one
+      if (data.results && data.results.length === 1) {
+        const r = data.results[0];
+        setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: r.name, vendor: r.vendor, price: r.price || prev.part.price, url: r.url }) }); });
+      }
+    }).catch(function(e){ setFindPartError(e.message); })
+    .finally(function(){ setFindPartLoading(false); });
+  }, [confirmPart && confirmPart.part && confirmPart.part.name]);
 
   const shareVessel = async function(){
     if (!shareEmail.trim()) return;
@@ -3291,55 +3314,108 @@ export default function App() {
             {/* ── Confirm Part Before Adding to List ─────────────────────────── */}
       {confirmPart && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-          onClick={function(){ setConfirmPart(null); }}>
-          <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 32px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
+          onClick={function(){ setConfirmPart(null); setFindPartResults([]); setFindPartError(null); }}>
+          <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
             onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ width: 40, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d23", marginBottom: 4 }}>Confirm before adding</div>
-            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 16 }}>Review and edit if needed — then add to your shopping list.</div>
-
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PART NAME</div>
-            <input value={confirmPart.part.name}
-              onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: e.target.value }) }); }); }}
-              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", marginBottom: 10, fontFamily: "inherit", outline: "none" }} />
-
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PRICE</div>
-                <input value={confirmPart.part.price || ""}
-                  onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { price: e.target.value }) }); }); }}
-                  placeholder="e.g. 29.99"
-                  style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>VENDOR</div>
-                <input value={confirmPart.part.vendor || ""}
-                  onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { vendor: e.target.value }) }); }); }}
-                  placeholder="e.g. Fisheries Supply"
-                  style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+            <div style={{ padding: "16px 20px 0" }}>
+              <div style={{ width: 40, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 16px" }} />
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d23", marginBottom: 2 }}>Add to Shopping List</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 14 }}>
+                {confirmPart.equipName ? "For: " + confirmPart.equipName : "Review part details before adding"}
               </div>
             </div>
 
-            {confirmPart.part.url && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>VERIFY BEFORE ADDING</div>
-                <a href={"https://www.fisheriessupply.com/search#q=" + encodeURIComponent(confirmPart.part.name)} target="_blank" rel="noreferrer"
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 12, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>
-                  <span>🔍</span>
-                  <span>Search Fisheries Supply — find the right part, then confirm below</span>
-                  <span style={{ marginLeft: "auto" }}>↗</span>
-                </a>
-              </div>
-            )}
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 16px" }}>
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={function(){ setConfirmPart(null); }}
+              {/* ── Web search results ── */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>SEARCH RESULTS</span>
+                  {!findPartLoading && <button onClick={async function(){
+                    setFindPartLoading(true); setFindPartError(null);
+                    try {
+                      const res = await fetch("/api/find-part", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partName: confirmPart.part.name, equipmentName: confirmPart.equipName }) });
+                      const data = await res.json();
+                      if (data.error) throw new Error(data.error);
+                      setFindPartResults(data.results || []);
+                    } catch(e) { setFindPartError(e.message); }
+                    finally { setFindPartLoading(false); }
+                  }} style={{ background: "none", border: "none", fontSize: 10, color: "#0f4c8a", fontWeight: 700, cursor: "pointer", padding: 0 }}>↺ Search again</button>}
+                </div>
+
+                {findPartLoading && (
+                  <div style={{ background: "#f8fafc", borderRadius: 10, padding: "20px 16px", textAlign: "center" }}>
+                    <div style={{ fontSize: 20, marginBottom: 6 }}>🔍</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>Searching across marine retailers…</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>Fisheries Supply, Defender, West Marine & more</div>
+                  </div>
+                )}
+
+                {!findPartLoading && findPartError && (
+                  <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#dc2626", marginBottom: 8 }}>
+                    Search unavailable — you can still add manually below.
+                  </div>
+                )}
+
+                {!findPartLoading && findPartResults.length > 0 && (
+                  <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 4 }}>
+                    {findPartResults.map(function(r, i){ return (
+                      <div key={i} onClick={function(){
+                        setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: r.name, vendor: r.vendor, price: r.price || prev.part.price, url: r.url }) }); });
+                      }} style={{ padding: "10px 12px", borderBottom: i < findPartResults.length-1 ? "1px solid #f3f4f6" : "none", cursor: "pointer", background: confirmPart.part.url === r.url ? "#eff6ff" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1d23", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
+                          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 1 }}>{r.vendor}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                          {r.price && <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>${parseFloat(r.price).toFixed(2)}</span>}
+                          <a href={r.url} target="_blank" rel="noreferrer" onClick={function(e){ e.stopPropagation(); }}
+                            style={{ fontSize: 10, background: "#f1f5f9", color: "#374151", borderRadius: 5, padding: "3px 7px", fontWeight: 600, textDecoration: "none" }}>↗</a>
+                        </div>
+                      </div>
+                    ); })}
+                  </div>
+                )}
+
+                {!findPartLoading && findPartResults.length === 0 && !findPartError && (
+                  <div style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#9ca3af", textAlign: "center" }}>
+                    No results yet — tap Search again or fill in manually below.
+                  </div>
+                )}
+              </div>
+
+              {/* ── Manual entry ── */}
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PART NAME</div>
+              <input value={confirmPart.part.name}
+                onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: e.target.value }) }); }); }}
+                style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", marginBottom: 10, fontFamily: "inherit", outline: "none" }} />
+
+              <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PRICE</div>
+                  <input value={confirmPart.part.price || ""}
+                    onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { price: e.target.value }) }); }); }}
+                    placeholder="e.g. 29.99"
+                    style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>VENDOR</div>
+                  <input value={confirmPart.part.vendor || ""}
+                    onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { vendor: e.target.value }) }); }); }}
+                    placeholder="e.g. Fisheries Supply"
+                    style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: "12px 20px 28px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 10 }}>
+              <button onClick={function(){ setConfirmPart(null); setFindPartResults([]); setFindPartError(null); }}
                 style={{ flex: 1, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
                 Cancel
               </button>
               <button onClick={function(){
                 addToCart(confirmPart.part, confirmPart.source, confirmPart.equipName);
-                setConfirmPart(null);
+                setConfirmPart(null); setFindPartResults([]); setFindPartError(null);
               }} style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
                 ✓ Add to Shopping List
               </button>
@@ -3348,7 +3424,7 @@ export default function App() {
         </div>
       )}
 
-      {showCartPanel && (
+            {showCartPanel && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 200 }} onClick={function(){ setShowCartPanel(false); }}>
           <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 400, background: "#f4f6f9", boxShadow: "-4px 0 32px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
 
