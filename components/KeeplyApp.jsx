@@ -2324,7 +2324,7 @@ export default function App() {
                               <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{part.vendor || ""}{part.price ? " · $" + part.price : ""}</div>
                             </div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                              {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>}
+                              {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#16a34a", color: "#fff", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0 }}>↗ Buy</a>}
                               <button onClick={function(){ addToCart(part, "ai-equipment", eq.name); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ List</button>
                             </div>
                           </div>
@@ -2780,7 +2780,7 @@ export default function App() {
                             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{part.vendor || ""}{part.price ? " · $" + part.price : ""}</div>
                           </div>
                           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>}
+                            {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#16a34a", color: "#fff", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0 }}>↗ Buy</a>}
                             <button onClick={function(){ if (!inList) addToCart(part, "ai-repair", eq.name); }}
                               style={{ background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
                               {inList ? "✓ Added" : "+ List"}
@@ -3317,6 +3317,7 @@ export default function App() {
                           <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.equipment_name ? item.equipment_name + " · " : ""}{item.vendor || ""}{item.price ? " · $" + item.price : ""}</div>
                           {item.source && item.source !== "manual" && <span style={{ fontSize: 10, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 600 }}>✨ AI</span>}
                         </div>
+                        {item.url && <a href={item.url} target="_blank" rel="noreferrer" style={{ background: "#16a34a", color: "#fff", borderRadius: 6, padding: "4px 8px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0 }}>↗ Buy</a>}
                         <button onClick={function(){ removeFromCart(item.dbId); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
                         <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
                         <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
