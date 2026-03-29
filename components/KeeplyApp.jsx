@@ -668,11 +668,48 @@ export default function App() {
   const [dbError, setDbError]   = useState(null);
   const [saving, setSaving]     = useState(false);
 
-  // ── Cart (in-memory only, intentional) ──
-  const [cart, setCart]             = useState([]);
+  // ── Cart (persisted to Supabase cart_items table) ──
+  const [cart, setCart]                     = useState([]);
   const [showCartPanel, setShowCartPanel]   = useState(false);
-  const addToCart    = function(part){ setCart(function(prev){ const ex = prev.find(function(i){ return i.id === part.id; }); if (ex) return prev.map(function(i){ return i.id === part.id ? { ...i, qty: i.qty + 1 } : i; }); return [...prev, { ...part, qty: 1 }]; }); };
-  const removeFromCart = function(id){ setCart(function(prev){ return prev.filter(function(i){ return i.id !== id; }); }); };
+  const [cartLoaded, setCartLoaded]         = useState(false);
+
+  const loadCart = async function(vesselId) {
+    try {
+      const items = await supa("cart_items", { query: "vessel_id=eq." + vesselId + "&order=created_at.asc" });
+      setCart((items || []).map(function(i){ return { id: i.id, dbId: i.id, name: i.name, vendor: i.vendor || "", price: i.price || "", sku: i.sku || "", url: i.url || "", source: i.source || "manual", equipment_name: i.equipment_name || "", qty: i.qty || 1 }; }));
+      setCartLoaded(true);
+    } catch(e) { console.error("loadCart error:", e); }
+  };
+
+  const addToCart = async function(part, source, equipmentName) {
+    if (!activeVesselId || !session) return;
+    try {
+      const payload = { vessel_id: activeVesselId, user_id: session.user.id, name: part.name, vendor: part.vendor || "", price: part.price || "", sku: part.sku || "", url: part.url || "", source: source || "manual", equipment_name: equipmentName || "", qty: 1 };
+      const created = await supa("cart_items", { method: "POST", body: payload });
+      const newItem = created[0];
+      setCart(function(prev){
+        const ex = prev.find(function(i){ return i.name === part.name && i.source === (source||"manual"); });
+        if (ex) return prev;
+        return [...prev, { id: newItem.id, dbId: newItem.id, name: newItem.name, vendor: newItem.vendor || "", price: newItem.price || "", sku: newItem.sku || "", url: newItem.url || "", source: newItem.source || "manual", equipment_name: newItem.equipment_name || "", qty: 1 }];
+      });
+    } catch(e) { console.error("addToCart error:", e); }
+  };
+
+  const removeFromCart = async function(dbId) {
+    try {
+      await supa("cart_items", { method: "DELETE", query: "id=eq." + dbId, prefer: "return=minimal" });
+      setCart(function(prev){ return prev.filter(function(i){ return i.dbId !== dbId; }); });
+    } catch(e) { console.error("removeFromCart error:", e); }
+  };
+
+  const clearCart = async function() {
+    if (!activeVesselId) return;
+    try {
+      await supa("cart_items", { method: "DELETE", query: "vessel_id=eq." + activeVesselId, prefer: "return=minimal" });
+      setCart([]);
+    } catch(e) { console.error("clearCart error:", e); }
+  };
+
   const cartTotal = cart.reduce(function(s,i){ return s + (i.price ? parseFloat(i.price) : 0) * i.qty; }, 0);
   const cartQty   = cart.reduce(function(s,i){ return s + i.qty; }, 0);
 
@@ -798,6 +835,7 @@ export default function App() {
         setVessels(normalizedVessels);
         const firstId = normalizedVessels[0].id;
         setActiveVesselId(firstId);
+        loadCart(firstId);
 
         // Load equipment for first vessel
         const eq = await supa("equipment", { query: "vessel_id=eq." + firstId + "&order=created_at" });
@@ -862,7 +900,9 @@ export default function App() {
     setAiSuggestions({});
     setExpandedEquip(null);
     setExpandedRepair(null);
+      setCart([]);
     try {
+      loadCart(vid);
       const eq = await supa("equipment", { query: "vessel_id=eq." + vid + "&order=created_at" });
       setEquipment((eq || []).map(function(e){
         return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: e.docs || [], logs: e.logs || [], _vesselId: e.vessel_id };
@@ -2279,7 +2319,7 @@ export default function App() {
                             </div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>}
-                              <button onClick={function(){ addToCart(part); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ List</button>
+                              <button onClick={function(){ addToCart(part, "ai-equipment", eq.name); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ List</button>
                             </div>
                           </div>
                         ); })}
@@ -2730,7 +2770,7 @@ export default function App() {
                           </div>
                           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                             {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#f1f5f9", color: "#374151", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>↗</a>}
-                            <button onClick={function(){ if (!inList) addToCart(part); }}
+                            <button onClick={function(){ if (!inList) addToCart(part, "ai-repair", eq.name); }}
                               style={{ background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
                               {inList ? "✓ Added" : "+ List"}
                             </button>
@@ -3240,7 +3280,16 @@ export default function App() {
               <div style={{ background: "#fff", borderBottom: "3px solid #f4f6f9" }}>
                 <div style={{ padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: "#0f4c8a", letterSpacing: "0.5px" }}>MY LIST</div>
-                  {cart.length > 0 && <button onClick={function(){ setCart([]); }} style={{ background: "none", border: "none", fontSize: 11, color: "#9ca3af", cursor: "pointer", fontWeight: 600 }}>Clear</button>}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button onClick={function(){
+                      const name = window.prompt("Part name:");
+                      if (!name || !name.trim()) return;
+                      const price = window.prompt("Price (optional, e.g. 29.99):") || "";
+                      const vendor = window.prompt("Vendor (optional, e.g. West Marine):") || "";
+                      addToCart({ name: name.trim(), price: price, vendor: vendor, sku: "", url: "" }, "manual", "");
+                    }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Add Part</button>
+                    {cart.length > 0 && <button onClick={function(){ showConfirm("Clear your entire shopping list?", clearCart); }} style={{ background: "none", border: "none", fontSize: 11, color: "#9ca3af", cursor: "pointer", fontWeight: 600 }}>Clear all</button>}
+                  </div>
                 </div>
 
                 {cart.length === 0 ? (
@@ -3254,9 +3303,10 @@ export default function App() {
                       <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid #f3f4f6" }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 12, fontWeight: 600 }}>{item.name}</div>
-                          <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.vendor || ""}{item.price ? " · $" + item.price : ""}</div>
+                          <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.equipment_name ? item.equipment_name + " · " : ""}{item.vendor || ""}{item.price ? " · $" + item.price : ""}</div>
+                          {item.source && item.source !== "manual" && <span style={{ fontSize: 10, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 600 }}>✨ AI</span>}
                         </div>
-                        <button onClick={function(){ if (item.qty <= 1) { removeFromCart(item.id); } else { setCart(function(prev){ return prev.map(function(i){ return i.id === item.id ? Object.assign({}, i, { qty: i.qty - 1 }) : i; }); }); } }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
+                        <button onClick={function(){ removeFromCart(item.dbId); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
                         <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
                         <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
                         {item.url && <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>}
@@ -3308,7 +3358,7 @@ export default function App() {
                             </div>
                             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                               {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>↗</a>}
-                              <button onClick={function(){ if (!inList) addToCart(part); }}
+                              <button onClick={function(){ if (!inList) addToCart(part, "ai-repair", r.section); }}
                                 style={{ flexShrink: 0, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
                                 {inList ? "✓" : "+ Add"}
                               </button>
