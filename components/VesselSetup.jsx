@@ -38,27 +38,9 @@ export default function VesselSetup({ userId, onComplete }) {
     if (!boatDescription.trim()) { setAiError("Please describe your vessel."); return; }
     setAiLoading(true); setAiError(null); setAiResult(null);
 
-    const prompt = `You are an expert marine surveyor and boat maintenance specialist with deep knowledge of production boats, custom builds, and all types of vessels.
-
-The user has this vessel: "${boatDescription}"
-
-Generate a complete, specific equipment list that an owner of this exact vessel would track for maintenance. Be specific to this make/model/year — not generic. For example, if it's a 2018 Ranger Tug R-27, list the actual Volvo IPS engine, the specific electronics typically fitted, bow thruster, etc.
-
-Return ONLY valid JSON — no prose, no markdown, no code fences. The JSON must be an array of objects with this exact schema:
-[
-  {
-    "name": "string (specific equipment name, e.g. 'Volvo Penta IPS D4-300')",
-    "category": "string (one of: Engine, Electrical, Rigging, Sails, Plumbing, Safety, Navigation, Deck, Bilge, Hull, Dinghy, Generator, HVAC, Galley, General)",
-    "tasks": [
-      { "task": "string", "interval_days": number }
-    ]
-  }
-]
-
-Include 12-22 equipment items covering the full vessel. Each item should have 2-5 maintenance tasks with realistic intervals in days (e.g. 365 for annual, 180 for biannual, 90 for quarterly). Be specific and practical — what would a careful owner actually track?`;
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/identify-vessel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
