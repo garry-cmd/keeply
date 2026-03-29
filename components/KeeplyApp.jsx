@@ -1824,7 +1824,29 @@ export default function App() {
               ].map(function(card){ 
                 const active = filterUrgency === card.label;
                 return (
-                <div key={card.label} onClick={function(){ setFilterUrgency(active ? "All" : card.label); }}
+                <div key={card.label} onClick={function(){
+                const next = active ? "All" : card.label;
+                setFilterUrgency(next);
+                if (next !== "All") {
+                  // Find matching equipment and expand + open correct tab
+                  const matchingIds = equipment.filter(function(e){
+                    if (next === "Critical") return tasks.some(function(t){ return (t.equipment_id === e.id || t.section === e.category) && getTaskUrgency(t) === "critical"; });
+                    if (next === "Due Soon") return tasks.some(function(t){ return (t.equipment_id === e.id || t.section === e.category) && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
+                    if (next === "Open Repairs") return repairs.some(function(r){ return (r.equipment_id === e.id || r.section === e.category) && r.status !== "closed"; });
+                    return false;
+                  }).map(function(e){ return e.id; });
+                  // Expand first matching card, set all to correct tab
+                  const targetTab = next === "Open Repairs" ? "repairs" : "maintenance";
+                  setEquipTab(function(prev){
+                    const n = Object.assign({}, prev);
+                    matchingIds.forEach(function(id){ n[id] = targetTab; });
+                    return n;
+                  });
+                  if (matchingIds.length > 0) setExpandedEquip(matchingIds[0]);
+                } else {
+                  setExpandedEquip(null);
+                }
+              }}
                   style={{ background: card.bg, border: active ? "2px solid " + card.color : "1px solid " + card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
                   <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
