@@ -1445,6 +1445,8 @@ export default function App() {
     const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "" };
     setVessels([normalized]);
     setActiveVesselId(vessel.id);
+    // Load all equipment and tasks that were just created by AI onboarding
+    switchVessel(vessel.id);
   }} />;
 
   if (loading) return (
