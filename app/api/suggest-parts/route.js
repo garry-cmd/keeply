@@ -10,11 +10,11 @@ export async function POST(request) {
       return Response.json({ error: "API key not configured" }, { status: 500 });
     }
 
-    const schema = '{"name":"string","part_number":"string or null","reason":"one sentence why this fits","price":number,"vendor":"Fisheries Supply","url":"https://www.fisheriessupply.com/search#q=ENCODED+PART+NAME","confidence":"high|medium|low"}';
+    const schema = '{"name":"product name","reason":"one sentence why this fits this specific equipment","price":number or null,"vendor":"Fisheries Supply"}';
 
     const systemPrompt = type === "repair"
-      ? "You are a marine parts expert. Return ONLY a JSON array of up to 4 parts needed for this boat repair. Schema per item: " + schema + ". Use specific part numbers where you know them with high confidence — set confidence to 'low' if guessing. Always use fisheriessupply.com search URLs. Return ONLY the JSON array, no markdown."
-      : "You are a marine parts expert. Return ONLY a JSON array of up to 4 maintenance parts for this marine equipment. Schema per item: " + schema + ". Use specific part numbers where you know them — set confidence to 'low' if guessing. Always use fisheriessupply.com search URLs. Return ONLY the JSON array, no markdown.";
+      ? "You are a marine parts expert. Return ONLY a JSON array of up to 4 parts needed for this boat repair. Schema per item: " + schema + ". Use specific product names (e.g. 'Jabsco Impeller Kit 29040-0003' or 'Racor 500FG Fuel Filter'). Return ONLY the JSON array, no markdown."
+      : "You are a marine parts expert. Return ONLY a JSON array of up to 4 maintenance parts for this marine equipment. Schema per item: " + schema + ". Use specific product names with make/model where known. Return ONLY the JSON array, no markdown.";
 
     const userPrompt = type === "repair"
       ? "Parts needed for this boat repair: " + context
@@ -29,7 +29,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 800,
+        max_tokens: 600,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }]
       })
@@ -59,18 +59,13 @@ export async function POST(request) {
     suggestions = suggestions
       .filter(function(s){ return s && s.name && s.reason; })
       .map(function(s, i){
-        // Build Fisheries Supply search URL from part name + number
-        const searchTerms = s.part_number ? s.name + " " + s.part_number : s.name;
-        const fsUrl = "https://www.fisheriessupply.com/search#q=" + encodeURIComponent(searchTerms);
         return {
           id: "ai-" + Date.now() + "-" + i,
           name: s.name,
-          part_number: s.part_number || null,
           reason: s.reason,
           price: s.price || null,
           vendor: "Fisheries Supply",
-          url: fsUrl,
-          confidence: s.confidence || "medium",
+          url: "https://www.fisheriessupply.com/search#q=" + encodeURIComponent(s.name),
           qty: 1,
         };
       });

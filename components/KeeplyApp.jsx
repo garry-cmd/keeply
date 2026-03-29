@@ -2323,12 +2323,10 @@ export default function App() {
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 13, fontWeight: 700 }}>{part.name}</div>
-                                {part.part_number && <div style={{ fontSize: 11, color: "#374151", marginTop: 1, fontFamily: "monospace" }}>Part #: {part.part_number}</div>}
-                                <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2 }}>💡 {part.reason}</div>
+                                                <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2 }}>💡 {part.reason}</div>
                                 <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
                                   <span style={{ fontSize: 10, color: "#9ca3af" }}>{part.vendor || "Fisheries Supply"}{part.price ? " · $" + part.price : ""}</span>
-                                  {part.confidence === "low" && <span style={{ fontSize: 10, background: "#fff7ed", color: "#c2410c", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>⚠ Verify part #</span>}
-                                  {part.confidence === "high" && <span style={{ fontSize: 10, background: "#f0fdf4", color: "#16a34a", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>✓ High confidence</span>}
+
                                 </div>
                               </div>
                               <button onClick={function(){
@@ -3305,12 +3303,6 @@ export default function App() {
               onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: e.target.value }) }); }); }}
               style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", marginBottom: 10, fontFamily: "inherit", outline: "none" }} />
 
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PART NUMBER (optional)</div>
-            <input value={confirmPart.part.part_number || ""}
-              onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { part_number: e.target.value }) }); }); }}
-              placeholder="e.g. JAB-836-0001-P"
-              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", marginBottom: 10, fontFamily: "monospace", outline: "none" }} />
-
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PRICE</div>
@@ -3331,10 +3323,10 @@ export default function App() {
             {confirmPart.part.url && (
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>VERIFY BEFORE ADDING</div>
-                <a href={confirmPart.part.url} target="_blank" rel="noreferrer"
+                <a href={"https://www.fisheriessupply.com/search#q=" + encodeURIComponent(confirmPart.part.name)} target="_blank" rel="noreferrer"
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 12, color: "#0f4c8a", fontWeight: 600, textDecoration: "none" }}>
                   <span>🔍</span>
-                  <span>Search Fisheries Supply to verify this part</span>
+                  <span>Search Fisheries Supply — find the right part, then confirm below</span>
                   <span style={{ marginLeft: "auto" }}>↗</span>
                 </a>
               </div>
@@ -3410,7 +3402,7 @@ export default function App() {
                       <span>Estimated total</span>
                       <span style={{ color: "#0f4c8a" }}>${cartTotal.toFixed(2)}</span>
                     </div>
-                    <a href={"https://www.fisheriessupply.com/search#q=" + encodeURIComponent(cart.map(function(i){ return i.name + (i.part_number ? " " + i.part_number : ""); }).join(" "))}
+                    <a href={"https://www.fisheriessupply.com/search#q=" + encodeURIComponent(cart.map(function(i){ return i.name; }).join(" "))}
                       target="_blank" rel="noreferrer"
                       style={{ display: "block", textAlign: "center", padding: "12px 16px", background: "#16a34a", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 800, textDecoration: "none" }}>
                       🛒 Shop All at Fisheries Supply ↗
@@ -3451,8 +3443,7 @@ export default function App() {
                           <div key={part.name + part.reason} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 12, fontWeight: 700 }}>{part.name}</div>
-                              {part.part_number && <div style={{ fontSize: 10, color: "#374151", fontFamily: "monospace", marginTop: 1 }}>Part #: {part.part_number}</div>}
-                              <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
+                                              <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
                               <div style={{ fontSize: 11, color: "#9ca3af" }}>{part.vendor || "Fisheries Supply"}{part.price ? " · $" + part.price : ""}</div>
                             </div>
                             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
