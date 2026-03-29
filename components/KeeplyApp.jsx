@@ -3378,7 +3378,7 @@ export default function App() {
                           <div style={{ fontSize: 11, color: "#6b7280", marginTop: 1 }}>{r.vendor}</div>
                         </div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                          {r.price && <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>${parseFloat(r.price).toFixed(2)}</span>}
+                          {(function(){ const p = r.price ? parseFloat(r.price) : null; return p && !isNaN(p) ? <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a", flexShrink: 0 }}>${p.toFixed(2)}</span> : <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>See site</span>; })()}
                           <a href={r.url} target="_blank" rel="noreferrer" onClick={function(e){ e.stopPropagation(); }}
                             style={{ fontSize: 10, background: "#f1f5f9", color: "#374151", borderRadius: 5, padding: "3px 7px", fontWeight: 600, textDecoration: "none" }}>↗</a>
                         </div>
@@ -3394,15 +3394,16 @@ export default function App() {
                 )}
               </div>
 
-              {/* ── Manual entry — only shown after search completes ── */}
-              {!findPartLoading && (<>
-                <div style={{ borderTop: findPartResults.length > 0 ? "1px solid #f1f5f9" : "none", paddingTop: findPartResults.length > 0 ? 14 : 0, marginTop: findPartResults.length > 0 ? 4 : 0 }}>
-                  {findPartResults.length > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>OR ENTER MANUALLY</div>}
+              {/* ── Manual entry — only shown when no results or search failed ── */}
+              {!findPartLoading && (findPartResults.length === 0 || findPartError) && (
+                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginTop: 4 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>
+                    {findPartResults.length === 0 && !findPartError ? "ADD MANUALLY" : "ADD MANUALLY"}
+                  </div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PART NAME</div>
                   <input value={confirmPart.part.name}
                     onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: e.target.value }) }); }); }}
                     style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", marginBottom: 10, fontFamily: "inherit", outline: "none" }} />
-
                   <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>PRICE</div>
@@ -3415,12 +3416,22 @@ export default function App() {
                       <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 4 }}>VENDOR</div>
                       <input value={confirmPart.part.vendor || ""}
                         onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { vendor: e.target.value }) }); }); }}
-                        placeholder="e.g. Fisheries Supply"
+                        placeholder="e.g. Defender"
                         style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                     </div>
                   </div>
                 </div>
-              </>)}
+              )}
+
+              {/* ── Selected result summary — shown when results exist ── */}
+              {!findPartLoading && findPartResults.length > 0 && confirmPart.part.url && (
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px", marginTop: 8, fontSize: 12, color: "#166534" }}>
+                  ✓ Selected: <strong>{confirmPart.part.name}</strong>
+                  {confirmPart.part.price && <span> · ${parseFloat(confirmPart.part.price).toFixed(2)}</span>}
+                  {confirmPart.part.vendor && <span> from {confirmPart.part.vendor}</span>}
+                </div>
+              )}
+
             </div>
 
             <div style={{ padding: "12px 20px 28px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 10 }}>
