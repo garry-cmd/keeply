@@ -210,13 +210,14 @@ function AdminDashboard({ onClose }) {
   useEffect(function(){
     async function loadMetrics() {
       try {
-        const [vessels, equipment, tasks, repairs, members, authCount, storage] = await Promise.all([
+        const [vessels, equipment, tasks, repairs, members, authCount, partsMetrics, storage] = await Promise.all([
           supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,created_at,user_id&order=created_at.desc" }),
           supa("equipment", { query: "select=id,vessel_id,category,docs,logs,custom_parts" }),
           supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
           supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
           supa("vessel_members", { query: "select=id,vessel_id,user_id,role,email" }).catch(function(){ return []; }),
           fetch(SUPA_URL + "/rest/v1/rpc/get_auth_user_count", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+          fetch(SUPA_URL + "/rest/v1/rpc/get_parts_metrics", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
           fetch(SUPA_URL + "/storage/v1/object/list/vessel-docs", {
             method: "POST",
             headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
@@ -257,12 +258,16 @@ function AdminDashboard({ onClose }) {
         // Repairs completed
         const repairsByDay = function(from, to){ return (repairs||[]).filter(function(r){ return r.status === "closed" && r.date && inRange(r.date, from, to); }).length; };
 
-        // Parts
+        // Parts — use RPC for accurate cross-user data
         const allParts = (equipment||[]).reduce(function(acc, e){ return acc.concat(e.custom_parts || []); }, []);
-        const totalPartsValue = allParts.reduce(function(s, p){
-          const price = parseFloat((p.price || "").toString().replace(/[^0-9.]/g, ""));
-          return s + (isNaN(price) ? 0 : price);
-        }, 0);
+        const rpcPartsQty   = partsMetrics && partsMetrics.total_qty   ? partsMetrics.total_qty   : null;
+        const rpcPartsValue = partsMetrics && partsMetrics.total_value  ? partsMetrics.total_value  : null;
+        const rpcPartsList  = partsMetrics && partsMetrics.parts_list   ? partsMetrics.parts_list   : null;
+        const totalPartsValue = rpcPartsValue !== null ? rpcPartsValue :
+          allParts.reduce(function(s, p){
+            const price = parseFloat((p.price || "").toString().replace(/[^0-9.]/g, ""));
+            return s + (isNaN(price) ? 0 : price);
+          }, 0);
 
         setMetrics({
           authUsers,
@@ -297,8 +302,9 @@ function AdminDashboard({ onClose }) {
           repairsThisMonth:  repairsByDay(monthAgo, now),
           repairsLastMonth:  repairsByDay(twoMonthsAgo, monthAgo),
           // Parts
-          totalPartsQty: allParts.length,
-          totalPartsValue: totalPartsValue.toFixed(2),
+          totalPartsQty: rpcPartsQty !== null ? rpcPartsQty : allParts.length,
+          totalPartsValue: parseFloat(totalPartsValue).toFixed(2),
+          partsList: rpcPartsList || [],
           totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
           totalLogs: (equipment||[]).reduce(function(s, e){ return s + ((e.logs||[]).length); }, 0),
           // Storage
@@ -414,13 +420,34 @@ function AdminDashboard({ onClose }) {
 
       {/* Parts & Shopping Lists */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
-        {stat(m.totalPartsQty, "Parts on Lists", "custom parts across all equipment")}
-        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total List Value", m.totalPartsQty === 0 ? "no priced parts yet" : "sum of all part prices", "#16a34a")}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
+        {stat(m.totalPartsQty, "Total Parts", "items across all shopping lists")}
+        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total Value", m.totalPartsQty === 0 ? "no priced parts yet" : "sum of all priced parts", "#16a34a")}
       </div>
+      {m.partsList && m.partsList.length > 0 && (
+        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "7px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
+            <span>PART</span><span>PRICE</span>
+          </div>
+          {m.partsList.slice(0, 20).map(function(p, i){ return (
+            <div key={i} style={{ padding: "7px 12px", borderBottom: i < Math.min(m.partsList.length, 20)-1 ? "1px solid #f8fafc" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1d23" }}>{p.part}</div>
+                <div style={{ fontSize: 10, color: "#9ca3af" }}>{p.equipment}{p.sku ? " · " + p.sku : ""}</div>
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: p.price ? "#16a34a" : "#9ca3af" }}>
+                {p.price ? "$" + parseFloat(p.price).toFixed(2) : "—"}
+              </div>
+            </div>
+          ); })}
+          {m.partsList.length > 20 && (
+            <div style={{ padding: "7px 12px", fontSize: 11, color: "#9ca3af", textAlign: "center" }}>+ {m.partsList.length - 20} more items</div>
+          )}
+        </div>
+      )}
       {m.totalPartsQty === 0 && (
-        <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#92400e", marginBottom: 20 }}>
-          Parts are added via the 🔩 Parts tab on each equipment card. If parts exist but show 0 here, the custom_parts field may need a schema check in Supabase.
+        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#9ca3af", marginBottom: 20 }}>
+          No parts on any shopping lists yet. Parts are added via the 🔩 tab on equipment cards.
         </div>
       )}
 
