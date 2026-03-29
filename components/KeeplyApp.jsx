@@ -213,7 +213,7 @@ function AdminDashboard({ onClose }) {
       try {
         const [vessels, equipment, tasks, repairs, members, authCount, storage] = await Promise.all([
           supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,created_at,user_id&order=created_at.desc" }),
-          supa("equipment", { query: "select=id,vessel_id,category,docs,logs" }),
+          supa("equipment", { query: "select=id,vessel_id,category,docs,logs,custom_parts" }),
           supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
           supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
           supa("vessel_members", { query: "select=id,vessel_id,user_id,role,email" }).catch(function(){ return []; }),
@@ -250,6 +250,14 @@ function AdminDashboard({ onClose }) {
         const totalLogs = (equipment || []).reduce(function(s, e){ return s + ((e.logs || []).length); }, 0);
         const totalDocs = (equipment || []).reduce(function(s, e){ return s + ((e.docs || []).length); }, 0);
 
+        // Parts / shopping list metrics
+        const allParts = (equipment || []).reduce(function(acc, e){ return acc.concat(e.custom_parts || []); }, []);
+        const totalPartsQty = allParts.length;
+        const totalPartsValue = allParts.reduce(function(s, p){
+          const price = parseFloat((p.price || "").toString().replace(/[^0-9.]/g, ""));
+          return s + (isNaN(price) ? 0 : price);
+        }, 0);
+
         setMetrics({
           // Users & vessels
           uniqueUsers, totalVessels: (vessels || []).length,
@@ -268,6 +276,7 @@ function AdminDashboard({ onClose }) {
           totalRepairs: (repairs || []).length,
           // Engagement
           totalLogs, totalDocs,
+          totalPartsQty, totalPartsValue: totalPartsValue.toFixed(2),
           // Storage
           totalFiles: files.length,
           storageMB: (totalSize / 1048576).toFixed(1),
@@ -328,6 +337,13 @@ function AdminDashboard({ onClose }) {
         {stat(m.totalDocs, "Docs Attached", "manuals, parts lists, etc.")}
         {stat(m.totalFiles, "Files in Storage", m.storageMB + " MB used")}
         {stat(m.sharedVessels, "Shared Access", "vessel member records")}
+      </div>
+
+      {/* Parts / Shopping Lists */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
+        {stat(m.totalPartsQty, "Parts on Lists", "across all vessels")}
+        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total List Value", "sum of all part prices", "#16a34a")}
       </div>
 
       {/* Vessel list */}
@@ -501,6 +517,7 @@ export default function App() {
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showFABMenu, setShowFABMenu]           = useState(false);
   const logoTapCount = useRef(0);
   const logoTapTimer  = useRef(null);
   const [showCopyDialog, setShowCopyDialog]   = useState(false);
@@ -2252,6 +2269,11 @@ export default function App() {
             <div style={s.modalBg} onClick={function(){ setShowAddTask(false); }}>
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Task</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
+                <select value={newTask._equipmentId || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || t.section : t.section }; }); }} style={s.sel}>
+                  <option value="">— Not linked to equipment —</option>
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
+                </select>
                 <input placeholder="Task description" value={newTask.task} onChange={function(e){ setNewTask(function(t){ return { ...t, task: e.target.value }; }); }} style={s.inp} />
                 <select value={newTask.section} onChange={function(e){ setNewTask(function(t){ return { ...t, section: e.target.value }; }); }} style={s.sel}>
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
@@ -2273,6 +2295,11 @@ export default function App() {
             <div style={s.modalBg} onClick={function(){ setShowAddRepair(false); }}>
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
+                <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
+                  <option value="">— Not linked to equipment —</option>
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
+                </select>
                 <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
                 <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
