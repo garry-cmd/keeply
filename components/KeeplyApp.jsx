@@ -1830,7 +1830,7 @@ export default function App() {
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
-          {tabHeader("My Boat", boatName + " · " + equipment.length + " items", true, function(){ setEquipAiMode(false); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); })}
+          {tabHeader("My Boat", boatName + " · " + equipment.length + " items", false, null)}
 
           {/* Urgency summary cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
@@ -1897,7 +1897,7 @@ export default function App() {
               <div style={{ fontSize: 48, marginBottom: 12 }}>⚙️</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "#374151", marginBottom: 6 }}>No equipment yet</div>
               <div style={{ fontSize: 13, marginBottom: 20 }}>Add your engine, sails, electronics and more to track service history and get AI part suggestions.</div>
-              <button onClick={function(){ setEquipAiMode(false); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Add First Equipment</button>
+              <button onClick={function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); }} style={{ background: "#0f4c8a", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Add First Equipment</button>
             </div>
           )}
           {filteredEquip.map(function(eq){
@@ -2365,7 +2365,7 @@ export default function App() {
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
               {[
-                { label: "Add Equipment", icon: "⚙️", action: function(){ setEquipAiMode(false); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false); } },
+                { label: "Add Equipment", icon: "⚙️", action: function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false); } },
                 { label: "Add Repair", icon: "🔧", action: function(){ setShowAddRepair(true); setShowFab(false); } },
                 { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
               ].map(function(item){ return (
