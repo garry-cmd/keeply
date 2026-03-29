@@ -647,6 +647,7 @@ export default function App() {
   const [findPartResults, setFindPartResults]   = useState([]);
   const [findPartLoading, setFindPartLoading]   = useState(false);
   const [findPartError, setFindPartError]       = useState(null);
+  const findPartSearched                        = useRef(null);
   const [rejectedParts, setRejectedParts]     = useState({});    // { [eqId+partId]: true }
   const [equipAiDesc, setEquipAiDesc]         = useState("");
   const [equipAiResult, setEquipAiResult]     = useState(null);
@@ -1277,25 +1278,32 @@ export default function App() {
     }
   }, [showCartPanel]);
 
-  // Auto-search when confirm sheet opens
+  // Auto-search fires once when modal opens — ref prevents re-firing on re-renders
   useEffect(function(){
-    if (!confirmPart) { setFindPartResults([]); setFindPartError(null); return; }
+    if (!confirmPart) {
+      setFindPartResults([]); setFindPartError(null);
+      findPartSearched.current = null;
+      return;
+    }
+    const partName = confirmPart.part.name;
+    if (findPartSearched.current === partName) return;
+    findPartSearched.current = partName;
+
     setFindPartLoading(true); setFindPartError(null); setFindPartResults([]);
     fetch("/api/find-part", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ partName: confirmPart.part.name, equipmentName: confirmPart.equipName }),
+      body: JSON.stringify({ partName: partName, equipmentName: confirmPart.equipName }),
     }).then(function(r){ return r.json(); }).then(function(data){
       if (data.error) { setFindPartError(data.error); return; }
       setFindPartResults(data.results || []);
-      // Auto-select first result if only one
       if (data.results && data.results.length === 1) {
         const r = data.results[0];
         setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: r.name, vendor: r.vendor, price: r.price || prev.part.price, url: r.url }) }); });
       }
     }).catch(function(e){ setFindPartError(e.message); })
     .finally(function(){ setFindPartLoading(false); });
-  }, [confirmPart && confirmPart.part && confirmPart.part.name]);
+  }, [!!confirmPart]);
 
   const shareVessel = async function(){
     if (!shareEmail.trim()) return;
@@ -2348,7 +2356,6 @@ export default function App() {
                                 <div style={{ fontSize: 13, fontWeight: 700 }}>{part.name}</div>
                                                 <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2 }}>💡 {part.reason}</div>
                                 <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
-                                  <span style={{ fontSize: 10, color: "#9ca3af" }}>{part.vendor || "Fisheries Supply"}{part.price ? " · $" + part.price : ""}</span>
 
                                 </div>
                               </div>
@@ -2813,7 +2820,7 @@ export default function App() {
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 13, fontWeight: 600 }}>{part.name}</div>
                             <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{part.vendor || ""}{part.price ? " · $" + part.price : ""}</div>
+                            
                           </div>
                           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                             {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ background: "#16a34a", color: "#fff", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0 }}>↗ Buy</a>}
@@ -3332,6 +3339,7 @@ export default function App() {
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>SEARCH RESULTS</span>
                   {!findPartLoading && <button onClick={async function(){
+                    findPartSearched.current = null;
                     setFindPartLoading(true); setFindPartError(null);
                     try {
                       const res = await fetch("/api/find-part", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partName: confirmPart.part.name, equipmentName: confirmPart.equipName }) });
@@ -3352,8 +3360,10 @@ export default function App() {
                 )}
 
                 {!findPartLoading && findPartError && (
-                  <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#dc2626", marginBottom: 8 }}>
-                    Search unavailable — you can still add manually below.
+                  <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#92400e", marginBottom: 8 }}>
+                    {findPartError === "rate_limited"
+                      ? "Too many searches — please wait 30 seconds then tap Search again."
+                      : "Search unavailable — tap Search again or add manually below."}
                   </div>
                 )}
 
@@ -3520,7 +3530,7 @@ export default function App() {
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 12, fontWeight: 700 }}>{part.name}</div>
                                               <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
-                              <div style={{ fontSize: 11, color: "#9ca3af" }}>{part.vendor || "Fisheries Supply"}{part.price ? " · $" + part.price : ""}</div>
+                              
                             </div>
                             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                               <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section }); }}
