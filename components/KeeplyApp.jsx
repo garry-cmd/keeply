@@ -518,6 +518,15 @@ export default function App() {
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showFab, setShowFab]                 = useState(false);
+  const [showAddVesselAI, setShowAddVesselAI] = useState(false);
+  const [avStep, setAvStep]                   = useState(1);
+  const [avName, setAvName]                   = useState("");
+  const [avOwner, setAvOwner]                 = useState("");
+  const [avPort, setAvPort]                   = useState("");
+  const [avDesc, setAvDesc]                   = useState("");
+  const [avResult, setAvResult]               = useState(null);
+  const [avLoading, setAvLoading]             = useState(false);
+  const [avError, setAvError]                 = useState(null);
   const [showFABMenu, setShowFABMenu]           = useState(false);
   const logoTapCount = useRef(0);
   const logoTapTimer  = useRef(null);
@@ -751,7 +760,7 @@ export default function App() {
   }, []);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
-  const openAddVessel = function(){ setEditingVesselId(null); setSettingsForm({ ...BLANK_VESSEL }); setShowVesselDropdown(false); setShowSettings(true); };
+  const openAddVessel = function(){ setShowVesselDropdown(false); setAvStep(1); setAvName(""); setAvOwner(""); setAvPort(""); setAvDesc(""); setAvResult(null); setAvError(null); setAvLoading(false); setShowAddVesselAI(true); };
   const openEditVessel = function(vessel){ setEditingVesselId(vessel.id); setSettingsForm({ ...vessel, photoUrl: vessel.photoUrl || "" }); setShowVesselDropdown(false); setShowSettings(true); };
 
   const copyItemsToVessel = async function(sourceId, targetId, copyEquip, copyMaint) {
@@ -2775,6 +2784,139 @@ export default function App() {
                 style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: copyingItems || (!copySelections.equipment && !copySelections.maintenance) ? "#93c5fd" : "#0f4c8a", color: "#fff", fontWeight: 700, fontSize: 13, cursor: copyingItems ? "default" : "pointer" }}>
                 {copyingItems ? "Copying…" : "Copy Items →"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Add Vessel Modal ─────────────────────────────────── */}
+      {showAddVesselAI && (
+        <div style={s.modalBg} onClick={function(){ setShowAddVesselAI(false); }}>
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 460, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }} onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>
+                {avStep === 1 && "Add Vessel"}
+                {avStep === 2 && "Tell us about your boat"}
+                {avStep === 3 && "Equipment preview"}
+              </div>
+              <button onClick={function(){ setShowAddVesselAI(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}>✕</button>
+            </div>
+            <div style={{ display: "flex", gap: 5, padding: "12px 20px 0" }}>
+              {[1,2,3].map(function(n){ return (
+                <div key={n} style={{ flex: 1, height: 3, borderRadius: 3, background: avStep >= n ? "#0f4c8a" : "#e2e8f0" }} />
+              ); })}
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+              {avStep === 1 && (<>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 6 }}>VESSEL NAME *</div>
+                <input placeholder="e.g. Irene, Blue Horizon" value={avName} onChange={function(e){ setAvName(e.target.value); }} style={s.inp} />
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 6 }}>YOUR NAME</div>
+                <input placeholder="Captain's name" value={avOwner} onChange={function(e){ setAvOwner(e.target.value); }} style={s.inp} />
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 6 }}>HOME PORT (optional)</div>
+                <input placeholder="e.g. Port Ludlow, La Cruz" value={avPort} onChange={function(e){ setAvPort(e.target.value); }} style={s.inp} />
+              </>)}
+              {avStep === 2 && (<>
+                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 12px", marginBottom: 12, fontSize: 13, color: "#1e40af" }}>
+                  <strong>We'll build your equipment and maintenance list automatically.</strong>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px", marginBottom: 6 }}>DESCRIBE YOUR VESSEL</div>
+                <textarea
+                  placeholder="e.g. 2018 Ranger Tug R-27 or: 1985 Hunter 36 with Yanmar diesel"
+                  value={avDesc} onChange={function(e){ setAvDesc(e.target.value); }} rows={3}
+                  style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", marginBottom: 6, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }}
+                />
+                <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 12 }}>Year, make, and model is all we need.</div>
+                {avError && <div style={{ background: "#fef2f2", color: "#dc2626", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginBottom: 12 }}>{avError}</div>}
+                {avLoading && <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13, color: "#6b7280" }}>Researching your vessel…</div>}
+              </>)}
+              {avStep === 3 && avResult && (<>
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 12, maxHeight: 280, overflowY: "auto" }}>
+                  {Object.entries((function(items){
+                    const map = {}; items.forEach(function(i){ if (!map[i.category]) map[i.category] = []; map[i.category].push(i); }); return map;
+                  })(avResult)).map(function([cat, items]){
+                    return (
+                      <div key={cat}>
+                        <div style={{ padding: "6px 12px", background: "#f8fafc", borderBottom: "1px solid #f1f5f9", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
+                          <span>{cat.toUpperCase()}</span><span>{items.length} item{items.length > 1 ? "s" : ""}</span>
+                        </div>
+                        {items.map(function(item, ii){
+                          return <div key={ii} style={{ padding: "7px 12px", borderBottom: "1px solid #f8fafc" }}>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{item.name}</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af" }}>{(item.tasks||[]).length} tasks</div>
+                          </div>;
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "9px 12px", fontSize: 12, color: "#166534", marginBottom: 12 }}>
+                  ✓ {avResult.length} equipment items · {avResult.reduce(function(s,i){ return s+(i.tasks||[]).length; }, 0)} maintenance tasks
+                </div>
+              </>)}
+            </div>
+            <div style={{ padding: "12px 20px 16px", borderTop: "1px solid #e2e8f0", display: "flex", gap: 10 }}>
+              {avStep === 1 && (<>
+                <button onClick={function(){ setShowAddVesselAI(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                <button onClick={function(){
+                  if (!avName.trim()) { setAvError("Please enter a vessel name."); return; }
+                  setAvError(null); setAvStep(2);
+                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Next →</button>
+              </>)}
+              {avStep === 2 && (<>
+                <button onClick={function(){ setAvStep(1); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>← Back</button>
+                <button disabled={avLoading} onClick={async function(){
+                  if (!avDesc.trim()) { setAvError("Please describe your vessel."); return; }
+                  setAvLoading(true); setAvError(null);
+                  try {
+                    const res = await fetch("/api/identify-vessel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ description: avDesc.trim() }) });
+                    const data = await res.json();
+                    if (data.error) throw new Error(data.error);
+                    if (!Array.isArray(data.equipment)) throw new Error("Unexpected response");
+                    setAvResult(data.equipment);
+                    setAvStep(3);
+                  } catch(e) { setAvError("Couldn't identify vessel: " + e.message); }
+                  finally { setAvLoading(false); }
+                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: avLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: avLoading ? "not-allowed" : "pointer", fontWeight: 700 }}>
+                  {avLoading ? "Researching…" : "Build My Boat →"}
+                </button>
+              </>)}
+              {avStep === 3 && (<>
+                <button onClick={function(){ setAvStep(2); setAvResult(null); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>← Redo</button>
+                <button onClick={async function(){
+                  setSaving(true);
+                  try {
+                    const hasRigging = avResult.some(function(i){ return i.category === "Rigging" || i.category === "Sails"; });
+                    const parts = avDesc.trim().split(" ");
+                    const year = parts.find(function(p){ return /^\d{4}$/.test(p); }) || "";
+                    const rest = parts.filter(function(p){ return p !== year; });
+                    const payload = { vessel_name: avName, vessel_type: hasRigging ? "sail" : "motor", owner_name: avOwner, home_port: avPort, make: rest[0] || "", model: rest.slice(1).join(" ") || "", year, user_id: session.user.id };
+                    const created = await supa("vessels", { method: "POST", body: payload });
+                    const nv = created[0];
+                    const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: "" };
+                    setVessels(function(vs){ return [...vs, normalized]; });
+                    // Add to vessel_members
+                    await supa("vessel_members", { method: "POST", body: { vessel_id: nv.id, user_id: session.user.id, role: "owner" } });
+                    // Bulk insert equipment + tasks
+                    const today = new Date().toISOString().split("T")[0];
+                    for (const item of avResult) {
+                      const eq = await supa("equipment", { method: "POST", body: { vessel_id: nv.id, name: item.name, category: item.category, status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
+                      if (eq && eq[0] && item.tasks && item.tasks.length > 0) {
+                        const taskRows = item.tasks.map(function(t){
+                          const d = new Date(); d.setDate(d.getDate() + (t.interval_days || 365));
+                          return { vessel_id: nv.id, equipment_id: eq[0].id, task: t.task, section: item.category, interval_days: t.interval_days || 365, priority: "medium", last_service: today, due_date: d.toISOString().split("T")[0], service_logs: [] };
+                        });
+                        await supa("maintenance_tasks", { method: "POST", body: taskRows });
+                      }
+                    }
+                    setShowAddVesselAI(false);
+                    switchVessel(nv.id);
+                    setView("customer");
+                  } catch(e) { setAvError(e.message); }
+                  finally { setSaving(false); }
+                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: saving ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
+                  {saving ? "Creating…" : "Launch Vessel ⚓"}
+                </button>
+              </>)}
             </div>
           </div>
         </div>
