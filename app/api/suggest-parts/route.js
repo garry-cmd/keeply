@@ -10,9 +10,11 @@ export async function POST(request) {
       return Response.json({ error: "API key not configured" }, { status: 500 });
     }
 
+    const schema = '{"name":"string","part_number":"string or null","reason":"one sentence why this fits","price":number,"vendor":"Fisheries Supply","url":"https://www.fisheriessupply.com/search#q=ENCODED+PART+NAME","confidence":"high|medium|low"}';
+
     const systemPrompt = type === "repair"
-      ? "You are a marine parts assistant. Return ONLY a JSON array of up to 4 products needed for this boat repair. Each item: {\"name\":\"product name\",\"reason\":\"one sentence why\",\"price\":29,\"vendor\":\"West Marine\",\"url\":\"https://www.westmarine.com/search?query=...\"}. Use real product names and realistic prices. Return ONLY the JSON array."
-      : "You are a marine parts assistant. Return ONLY a JSON array of up to 4 maintenance parts for this marine equipment. Each item: {\"name\":\"product name\",\"reason\":\"one sentence why\",\"price\":29,\"vendor\":\"West Marine\",\"url\":\"https://www.westmarine.com/search?query=...\"}. Use real product names and realistic prices. Return ONLY the JSON array.";
+      ? "You are a marine parts expert. Return ONLY a JSON array of up to 4 parts needed for this boat repair. Schema per item: " + schema + ". Use specific part numbers where you know them with high confidence — set confidence to 'low' if guessing. Always use fisheriessupply.com search URLs. Return ONLY the JSON array, no markdown."
+      : "You are a marine parts expert. Return ONLY a JSON array of up to 4 maintenance parts for this marine equipment. Schema per item: " + schema + ". Use specific part numbers where you know them — set confidence to 'low' if guessing. Always use fisheriessupply.com search URLs. Return ONLY the JSON array, no markdown.";
 
     const userPrompt = type === "repair"
       ? "Parts needed for this boat repair: " + context
@@ -27,23 +29,17 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
+        max_tokens: 800,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }]
       })
     });
 
-    // Handle rate limiting gracefully
     if (res.status === 429) {
-      return Response.json({ 
-        error: "Rate limited — please wait a moment and try again",
-        rateLimited: true,
-        suggestions: [] 
-      }, { status: 429 });
+      return Response.json({ error: "Rate limited — please wait a moment and try again", rateLimited: true, suggestions: [] }, { status: 429 });
     }
 
     if (!res.ok) {
-      const err = await res.text();
       return Response.json({ error: "AI service error — please try again", suggestions: [] }, { status: res.status });
     }
 
@@ -63,13 +59,18 @@ export async function POST(request) {
     suggestions = suggestions
       .filter(function(s){ return s && s.name && s.reason; })
       .map(function(s, i){
+        // Build Fisheries Supply search URL from part name + number
+        const searchTerms = s.part_number ? s.name + " " + s.part_number : s.name;
+        const fsUrl = "https://www.fisheriessupply.com/search#q=" + encodeURIComponent(searchTerms);
         return {
           id: "ai-" + Date.now() + "-" + i,
           name: s.name,
+          part_number: s.part_number || null,
           reason: s.reason,
           price: s.price || null,
-          vendor: s.vendor || null,
-          url: s.url || null,
+          vendor: "Fisheries Supply",
+          url: fsUrl,
+          confidence: s.confidence || "medium",
           qty: 1,
         };
       });
