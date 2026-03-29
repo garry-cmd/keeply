@@ -517,6 +517,7 @@ export default function App() {
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showFab, setShowFab]                 = useState(false);
   const [showFABMenu, setShowFABMenu]           = useState(false);
   const logoTapCount = useRef(0);
   const logoTapTimer  = useRef(null);
@@ -2314,7 +2315,34 @@ export default function App() {
             </div>
           )}
 
-        {showAddEquip && (
+        {showFab && <div onClick={function(){ setShowFab(false); }} style={{ position: "fixed", inset: 0, zIndex: 199 }} />}
+
+      {/* Floating Action Button */}
+      {view === "customer" && tab === "boat" && (
+        <div style={{ position: "fixed", bottom: 24, right: 20, zIndex: 200 }}>
+          {showFab && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
+              {[
+                { label: "Add Equipment", icon: "⚙️", action: function(){ setShowAddEquip(true); setShowFab(false); } },
+                { label: "Add Repair", icon: "🔧", action: function(){ setShowAddRepair(true); setShowFab(false); } },
+                { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
+              ].map(function(item){ return (
+                <div key={item.label} onClick={item.action}
+                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "#fff", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
+                  <span style={{ fontSize: 16 }}>{item.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23", whiteSpace: "nowrap" }}>{item.label}</span>
+                </div>
+              ); })}
+            </div>
+          )}
+          <div onClick={function(){ setShowFab(function(f){ return !f; }); }}
+            style={{ width: 52, height: 52, borderRadius: "50%", background: "#0f4c8a", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(15,76,138,0.4)", marginLeft: "auto", transition: "transform 0.2s", transform: showFab ? "rotate(45deg)" : "rotate(0deg)" }}>
+            <span style={{ color: "#fff", fontSize: 28, lineHeight: 1, fontWeight: 300 }}>+</span>
+          </div>
+        </div>
+      )}
+
+      {showAddEquip && (
             <div style={s.modalBg} onClick={function(){ setShowAddEquip(false); }}>
               <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", padding: 24 }} onClick={function(e){ e.stopPropagation(); }}>
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Equipment</div>
