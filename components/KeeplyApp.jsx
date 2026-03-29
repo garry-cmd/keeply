@@ -1297,8 +1297,13 @@ export default function App() {
 
   const deleteEquipment = async function(id){
     try {
+      // Delete linked tasks and repairs first to satisfy foreign key constraints
+      await supa("maintenance_tasks", { method: "DELETE", query: "equipment_id=eq." + id, prefer: "return=minimal" });
+      await supa("repairs", { method: "DELETE", query: "equipment_id=eq." + id, prefer: "return=minimal" });
       await supa("equipment", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
       setEquipment(function(prev){ return prev.filter(function(e){ return e.id !== id; }); });
+      setTasks(function(prev){ return prev.filter(function(t){ return t.equipment_id !== id; }); });
+      setRepairs(function(prev){ return prev.filter(function(r){ return r.equipment_id !== id; }); });
       if (expandedEquip === id) setExpandedEquip(null);
     } catch(err){ setDbError(err.message); }
   };
