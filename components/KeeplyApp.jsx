@@ -10,11 +10,32 @@ const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 function db(table) { return SUPA_URL + "/rest/v1/" + table; }
 
+function safeJsonbArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch(e) { return []; }
+  }
+  return [];
+}
+
 async function supa(table, opts) {
   const { method = "GET", query = "", body, prefer } = opts || {};
-  // Use the current session token if available, fall back to anon key
-  const sess = await supabase.auth.getSession();
-  const token = (sess.data.session && sess.data.session.access_token) ? sess.data.session.access_token : SUPA_KEY;
+  // Read token synchronously from localStorage first to avoid race condition on load
+  let token = SUPA_KEY;
+  try {
+    const lsKey = Object.keys(localStorage).find(function(k){ return k.includes("auth-token"); });
+    if (lsKey) {
+      const lsData = JSON.parse(localStorage.getItem(lsKey));
+      const t = lsData?.access_token || lsData?.data?.session?.access_token;
+      if (t) { token = t; }
+    }
+  } catch(e) {}
+  // Also try async session as fallback
+  if (token === SUPA_KEY) {
+    const sess = await supabase.auth.getSession();
+    if (sess.data.session && sess.data.session.access_token) token = sess.data.session.access_token;
+  }
   const headers = {
     "apikey": SUPA_KEY,
     "Authorization": "Bearer " + token,
@@ -788,9 +809,9 @@ export default function App() {
             status:       e.status,
             lastService:  e.last_service,
             notes:        e.notes || "",
-            customParts:  e.custom_parts || [],
+            customParts:  safeJsonbArray(e.custom_parts),
             docs:         e.docs || [],
-            logs:         e.logs || [],
+            logs:         safeJsonbArray(e.logs),
             _vesselId:    e.vessel_id,
           };
         }));
@@ -844,7 +865,7 @@ export default function App() {
     try {
       const eq = await supa("equipment", { query: "vessel_id=eq." + vid + "&order=created_at" });
       setEquipment((eq || []).map(function(e){
-        return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: e.custom_parts || [], docs: e.docs || [], logs: e.logs || [], _vesselId: e.vessel_id };
+        return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: e.docs || [], logs: e.logs || [], _vesselId: e.vessel_id };
       }));
       const ts = await supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&order=section,priority" });
       setTasks((ts || []).map(function(t){
@@ -954,7 +975,7 @@ export default function App() {
       const payload = { vessel_id: activeVesselId, name: newEquip.name, category: newEquip.category, status: newEquip.status, notes: notes, last_service: today(), custom_parts: [], docs: initialDocs };
       const created = await supa("equipment", { method: "POST", body: payload });
       const e = created[0];
-      setEquipment(function(eq){ return [...eq, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: e.custom_parts || [], docs: e.docs || [], _vesselId: e.vessel_id }]; });
+      setEquipment(function(eq){ return [...eq, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: e.docs || [], _vesselId: e.vessel_id }]; });
       setNewEquip({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" });
       setShowAddEquip(false);
     } catch(err){ setDbError(err.message); }
