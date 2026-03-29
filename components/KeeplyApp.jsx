@@ -2338,6 +2338,11 @@ export default function App() {
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "#0f4c8a" }}>${part.price}</span>}
                               {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0f4c8a", fontWeight: 700 }}>↗ Buy</a>}
+                              {(function(){ const inList = cart.some(function(i){ return i.name === part.name; }); return (
+                                <button onClick={function(){ if (!inList) addToCart(part, "custom", eq.name); }} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, border: "none", cursor: inList ? "default" : "pointer", background: inList ? "#f0fdf4" : "#0f4c8a", color: inList ? "#16a34a" : "#fff" }}>
+                                  {inList ? "✓ Listed" : "+ List"}
+                                </button>
+                              ); })()}
                             </div>
                           </div>
                         ); })}
