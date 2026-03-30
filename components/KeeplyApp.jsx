@@ -2041,7 +2041,7 @@ export default function App() {
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
-          {tabHeader("My Boat", boatName + " · " + equipment.length + " items", false, null)}
+          {tabHeader(boatName, null, false, null)}
 
           {/* Urgency summary cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
