@@ -641,6 +641,21 @@ export default function App() {
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [profilePrefs, setProfilePrefs]       = useState({
+    alertInApp:    true,
+    alertEmail:    false,
+    alertOverdue:  true,
+    alert3day:     true,
+    alert7day:     false,
+    alertDayOf:    true,
+    digestTime:    "08:00",
+    timezone:      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    displayName:   "",
+    emailAddress:  "",
+  });
+  const [profileSaving, setProfileSaving]     = useState(false);
+  const [profileSaved, setProfileSaved]       = useState(false);
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
@@ -1782,6 +1797,7 @@ export default function App() {
                 {[
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "🔧 Repairs", action: function(){ setView("customer"); setTab("repairs-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="repairs-standalone" },
+                  { label: "⚙️ Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "📥 Import", action: function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); setShowMobileMenu(false); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }, active: view==="import" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); }, active: false },
@@ -3443,6 +3459,154 @@ export default function App() {
       )}
 
       {/* ── SHOPPING LIST PANEL ── */}
+            {/* ── Profile / Settings Panel ─────────────────────────── */}
+      {showProfilePanel && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }} onClick={function(){ setShowProfilePanel(false); }}>
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(420px, 100vw)", background: "#f4f6f9", display: "flex", flexDirection: "column", boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }} onClick={function(e){ e.stopPropagation(); }}>
+
+            {/* Header */}
+            <div style={{ background: "#0f4c8a", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <span style={{ color: "#fff", fontSize: 16, fontWeight: 800 }}>Settings</span>
+              <button onClick={function(){ setShowProfilePanel(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
+
+              {/* ── Profile ── */}
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px" }}>PROFILE</div>
+              <div style={{ background: "#fff", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+                {/* Avatar + name */}
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, borderBottom: "0.5px solid #f3f4f6" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#0f4c8a", flexShrink: 0 }}>
+                    {profilePrefs.displayName ? profilePrefs.displayName.split(" ").map(function(n){ return n[0]; }).join("").substring(0,2).toUpperCase() : "?"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d23" }}>{profilePrefs.displayName || "Your Name"}</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{profilePrefs.emailAddress}</div>
+                  </div>
+                </div>
+                {/* Display name editable */}
+                <div style={{ padding: "10px 20px", borderBottom: "0.5px solid #f3f4f6" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>DISPLAY NAME</div>
+                  <input value={profilePrefs.displayName} onChange={function(e){ setProfilePrefs(function(p){ return Object.assign({}, p, { displayName: e.target.value }); }); }}
+                    placeholder="Your name" style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                </div>
+                {/* Plan */}
+                <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>Plan</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>Free · 1 vessel</div>
+                  </div>
+                  <span style={{ background: "#eff6ff", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Upgrade ↗</span>
+                </div>
+              </div>
+
+              {/* ── Alert Channels ── */}
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px" }}>ALERT NOTIFICATIONS</div>
+              <div style={{ background: "#fff", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+                {[
+                  { key: "alertInApp", label: "In-app alerts", sub: "Bell icon in header", enabled: true },
+                  { key: "alertEmail", label: "Email digest", sub: "Daily summary to " + (profilePrefs.emailAddress || "your email"), enabled: true },
+                  { key: null, label: "Push notifications", sub: "Coming soon", enabled: false },
+                ].map(function(item, i){ return (
+                  <div key={i} style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < 2 ? "0.5px solid #f3f4f6" : "none" }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: item.enabled ? "#1a1d23" : "#9ca3af" }}>{item.label}</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{item.sub}</div>
+                    </div>
+                    <div onClick={function(){ if (!item.enabled || !item.key) return; setProfilePrefs(function(p){ const n = Object.assign({}, p); n[item.key] = !p[item.key]; return n; }); }}
+                      style={{ width: 40, height: 24, borderRadius: 12, background: (!item.key ? "#e2e8f0" : (profilePrefs[item.key] ? "#0f4c8a" : "#e2e8f0")), position: "relative", cursor: item.enabled && item.key ? "pointer" : "default", flexShrink: 0, opacity: !item.enabled ? 0.4 : 1, transition: "background 0.2s" }}>
+                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "#fff", top: 3, left: (!item.key ? 3 : (profilePrefs[item.key] ? 19 : 3)), transition: "left 0.2s" }} />
+                    </div>
+                  </div>
+                ); })}
+              </div>
+
+              {/* ── Alert Thresholds ── */}
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px" }}>ALERT THRESHOLDS</div>
+              <div style={{ background: "#fff", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+                {[
+                  { key: "alertOverdue", label: "Overdue", sub: "Past due date", dot: "#dc2626" },
+                  { key: "alertDayOf",   label: "Day of",  sub: "Due today",     dot: "#6b7280" },
+                  { key: "alert3day",    label: "3 days out", sub: "Due in 3 days", dot: "#ea580c" },
+                  { key: "alert7day",    label: "7 days out", sub: "Due in 7 days", dot: "#ca8a04" },
+                ].map(function(item, i, arr){ return (
+                  <div key={item.key} style={{ padding: "11px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: i < arr.length-1 ? "0.5px solid #f3f4f6" : "none" }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.dot, flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{item.label}</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{item.sub}</div>
+                    </div>
+                    <div onClick={function(){ setProfilePrefs(function(p){ const n = Object.assign({}, p); n[item.key] = !p[item.key]; return n; }); }}
+                      style={{ width: 40, height: 24, borderRadius: 12, background: profilePrefs[item.key] ? "#0f4c8a" : "#e2e8f0", position: "relative", cursor: "pointer", flexShrink: 0, transition: "background 0.2s" }}>
+                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "#fff", top: 3, left: profilePrefs[item.key] ? 19 : 3, transition: "left 0.2s" }} />
+                    </div>
+                  </div>
+                ); })}
+              </div>
+
+              {/* ── Email Digest Timing ── */}
+              {profilePrefs.alertEmail && (<>
+                <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px" }}>EMAIL DIGEST TIMING</div>
+                <div style={{ background: "#fff", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+                  <div style={{ padding: "12px 20px", borderBottom: "0.5px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>Send time</div>
+                    <input type="time" value={profilePrefs.digestTime}
+                      onChange={function(e){ setProfilePrefs(function(p){ return Object.assign({}, p, { digestTime: e.target.value }); }); }}
+                      style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "5px 10px", fontSize: 13, color: "#0f4c8a", fontWeight: 600, outline: "none" }} />
+                  </div>
+                  <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>Timezone</div>
+                    <div style={{ fontSize: 12, color: "#6b7280" }}>{profilePrefs.timezone.replace("_", " ")}</div>
+                  </div>
+                </div>
+              </>)}
+
+              {/* ── Account ── */}
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px" }}>ACCOUNT</div>
+              <div style={{ background: "#fff", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                  onClick={function(){ supabase.auth.signOut(); setShowProfilePanel(false); }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#dc2626" }}>Sign out</span>
+                  <span style={{ color: "#9ca3af", fontSize: 14 }}>›</span>
+                </div>
+                <div style={{ padding: "10px 20px" }}>
+                  <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center" }}>Keeply v1.0 · keeply.boats</div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Save button */}
+            <div style={{ padding: "14px 20px 24px", background: "#fff", borderTop: "1px solid #e2e8f0", flexShrink: 0 }}>
+              {profileSaved && <div style={{ textAlign: "center", fontSize: 12, color: "#16a34a", marginBottom: 8 }}>✓ Settings saved</div>}
+              <button disabled={profileSaving} onClick={async function(){
+                setProfileSaving(true); setProfileSaved(false);
+                try {
+                  await supabase.auth.updateUser({ data: {
+                    full_name:    profilePrefs.displayName,
+                    alertInApp:   profilePrefs.alertInApp,
+                    alertEmail:   profilePrefs.alertEmail,
+                    alertOverdue: profilePrefs.alertOverdue,
+                    alert3day:    profilePrefs.alert3day,
+                    alert7day:    profilePrefs.alert7day,
+                    alertDayOf:   profilePrefs.alertDayOf,
+                    digestTime:   profilePrefs.digestTime,
+                    timezone:     profilePrefs.timezone,
+                  }});
+                  setProfileSaved(true);
+                  setTimeout(function(){ setProfileSaved(false); }, 3000);
+                } catch(e) { console.error("Profile save error:", e); }
+                finally { setProfileSaving(false); }
+              }} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: profileSaving ? "#6b9fd4" : "#0f4c8a", color: "#fff", fontSize: 15, fontWeight: 700, cursor: profileSaving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+                {profileSaving ? "Saving…" : "Save Settings"}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
             {/* ── Confirm Part Before Adding to List ─────────────────────────── */}
       {confirmPart && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
