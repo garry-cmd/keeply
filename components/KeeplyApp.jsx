@@ -2822,13 +2822,17 @@ export default function App() {
         {view === "customer" && tab === "repairs-standalone" && (<>
           {tabHeader("Repairs", boatName + " · " + repairs.filter(function(r){ return r.status !== "closed"; }).length + " open", true, function(){ setShowAddRepair(true); })}
 
-          {/* Section filter pills */}
-          <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-            {["All", ...MAINT_SECTIONS].map(function(sec){ return (
-              <button key={sec} onClick={function(){ setRepairSectionFilter(sec); }} style={s.pill(repairSectionFilter===sec)}>
-                {sec === "All" ? "All Sections" : (SECTIONS[sec] || "") + " " + sec}
-              </button>
-            ); })}
+          {/* Section filter dropdown */}
+          <div style={{ marginBottom: 16 }}>
+            <select value={repairSectionFilter} onChange={function(e){ setRepairSectionFilter(e.target.value); }}
+              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "#fff", color: "#1a1d23", cursor: "pointer" }}>
+              <option value="All">All Sections</option>
+              {MAINT_SECTIONS.map(function(sec){
+                const count = repairs.filter(function(r){ return r.section === sec && r.status !== "closed"; }).length;
+                if (count === 0) return null;
+                return <option key={sec} value={sec}>{(SECTIONS[sec] || "") + " " + sec + " (" + count + ")"}</option>;
+              })}
+            </select>
           </div>
 
           {repairs.filter(function(r){
