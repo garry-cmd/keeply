@@ -2287,28 +2287,66 @@ export default function App() {
                               .map(function(t){
                                 const badge = getDueBadge(t.dueDate);
                                 return (
-                                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f3f4f6", opacity: completingTask === t.id ? 0 : 1, transform: completingTask === t.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
-                                    <div onClick={function(e){
-                                        e.stopPropagation();
-                                        if (completingTask === t.id) return;
-                                        setCompletingTask(t.id);
-                                        setTimeout(function(){
-                                          toggleTask(t.id);
-                                          setCompletingTask(null);
-                                        }, 600);
-                                      }}
-                                      style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingTask === t.id ? "#16a34a" : "#d1d5db"), background: completingTask === t.id ? "#16a34a" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease", flexShrink: 0 }}>
-                                      {completingTask === t.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</div>
-                                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
-                                        Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}
-                                        {t.dueDate && <span style={{ color: badge ? badge.color : "#9ca3af", fontWeight: badge ? 700 : 400 }}> · Due: {fmt(t.dueDate)}</span>}
+                                  <div key={t.id} style={{ borderBottom: "1px solid #f3f4f6", opacity: completingTask === t.id ? 0 : 1, transform: completingTask === t.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                                    {/* Task row */}
+                                    {editingTask !== t.id ? (
+                                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0" }}>
+                                        <div onClick={function(e){
+                                            e.stopPropagation();
+                                            if (completingTask === t.id) return;
+                                            setCompletingTask(t.id);
+                                            setTimeout(function(){
+                                              toggleTask(t.id);
+                                              setCompletingTask(null);
+                                            }, 600);
+                                          }}
+                                          style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingTask === t.id ? "#16a34a" : "#d1d5db"), background: completingTask === t.id ? "#16a34a" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
+                                          {completingTask === t.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{t.task}</div>
+                                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                            Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}
+                                            {t.dueDate && <span style={{ color: badge ? badge.color : "#9ca3af", fontWeight: badge ? 700 : 400 }}> · Due: {fmt(t.dueDate)}</span>}
+                                          </div>
+                                        </div>
+                                        {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
+                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "#9ca3af", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
+                                        <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }}><TrashIcon /></button>
                                       </div>
-                                    </div>
-                                    {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
-                                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }}><TrashIcon /></button>
+                                    ) : (
+                                      /* Inline edit form */
+                                      <div style={{ padding: "10px 0 12px" }} onClick={function(e){ e.stopPropagation(); }}>
+                                        <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 5 }}>TASK NAME</div>
+                                        <input value={editTaskForm.task || ""}
+                                          onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { task: e.target.value }); }); }}
+                                          style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", marginBottom: 8, fontFamily: "inherit", outline: "none" }} />
+                                        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                                          <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 5 }}>INTERVAL (DAYS)</div>
+                                            <input type="number" min="1" value={editTaskForm.interval_days || ""}
+                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { interval_days: parseInt(e.target.value) || 30 }); }); }}
+                                              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                                          </div>
+                                          <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
+                                            <input type="date" value={editTaskForm.dueDate || ""}
+                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { dueDate: e.target.value }); }); }}
+                                              style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                                          </div>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 6 }}>
+                                          <button onClick={function(e){ e.stopPropagation(); setEditingTask(null); }} style={{ flex: 1, padding: "6px 0", border: "1px solid #e2e8f0", borderRadius: 7, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                                          <button onClick={async function(e){
+                                            e.stopPropagation();
+                                            const patch = { task: editTaskForm.task, interval_days: editTaskForm.interval_days, due_date: editTaskForm.dueDate || null };
+                                            await updateTask(t.id, patch);
+                                            setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate }) : tk; }); });
+                                            setEditingTask(null);
+                                          }} style={{ flex: 2, padding: "6px 0", border: "none", borderRadius: 7, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save</button>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
