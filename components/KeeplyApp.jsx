@@ -2240,7 +2240,7 @@ export default function App() {
                               </div>
                               <button onClick={function(e){ e.stopPropagation(); if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section, repairContext: r.description + " " + r.section }); }}
                                 style={{ marginTop: 8, width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                {inList ? "✓ In Shopping List" : "+ Add to List"}
+                                {inList ? "✓ In Shopping List" : "🔍 Find Part"}
                               </button>
                             </div>
                           );
@@ -2585,7 +2585,7 @@ export default function App() {
                                                   </div>
                                                   <button onClick={function(e){ e.stopPropagation(); if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section, repairContext: r.description + " " + r.section }); }}
                                                     style={{ marginTop: 6, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                                    {inList ? "✓ In Shopping List" : "+ Add to List"}
+                                                    {inList ? "✓ In Shopping List" : "🔍 Find Part"}
                                                   </button>
                                                 </div>
                                               );
@@ -3150,7 +3150,7 @@ export default function App() {
                               </div>
                               <button onClick={function(e){ e.stopPropagation(); if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section, repairContext: r.description + " " + r.section }); }}
                                 style={{ marginTop: 8, width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                {inList ? "✓ In Shopping List" : "+ Add to List"}
+                                {inList ? "✓ In Shopping List" : "🔍 Find Part"}
                               </button>
                             </div>
                           );
