@@ -2527,13 +2527,7 @@ export default function App() {
                     {activeTab === "repairs" && (
                       <div>
                         {repairs.filter(function(r){ return r._vesselId === activeVesselId && (r.equipment_id === eq.id || (!r.equipment_id && eq.id === "general")); }).length === 0 ? (
-                          <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: 12 }}>
-                            No repairs logged.
-                            <button onClick={function(){
-                              setNewRepair(function(nr){ return { ...nr, section: eq.category, _equipmentId: eq.id }; });
-                              setShowAddRepair(true);
-                            }} style={{ display: "block", margin: "8px auto 0", background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer" }}>+ Add Repair</button>
-                          </div>
+                          <div style={{ textAlign: "center", padding: "12px 0", color: "#9ca3af", fontSize: 12 }}>No repairs logged.</div>
                         ) : (
                           <div>
                             {repairs.filter(function(r){ return r._vesselId === activeVesselId && (r.equipment_id === eq.id || (!r.equipment_id && eq.id === "general")); })
@@ -2620,10 +2614,6 @@ export default function App() {
                                   </div>
                                 );
                               })}
-                            <button onClick={function(){
-                              setNewRepair(function(nr){ return { ...nr, section: eq.category, _equipmentId: eq.id }; });
-                              setShowAddRepair(true);
-                            }} style={{ marginTop: 8, background: "none", border: "1.5px dashed #e2e8f0", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "#6b7280", cursor: "pointer", width: "100%" }}>+ Add Repair</button>
                           </div>
                         )}
                       </div>
