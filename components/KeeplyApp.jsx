@@ -1837,7 +1837,6 @@ export default function App() {
               <div style={{ position: "absolute", top: 56, right: 0, background: "#fff", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
                 {[
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
-                  { label: "🔧 Repairs", action: function(){ setView("customer"); setTab("repairs-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="repairs-standalone" },
                   { label: "⚙️ Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "📥 Import", action: function(){ setView("import"); setImportRows([]); setImportType("equipment"); setImportFile(null); setImportDone(0); setShowMobileMenu(false); if (!window.XLSX) { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; document.head.appendChild(s); } }, active: view==="import" },
