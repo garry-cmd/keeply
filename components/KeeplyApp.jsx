@@ -660,6 +660,7 @@ export default function App() {
   const [profileSaving, setProfileSaving]     = useState(false);
   const [profileSaved, setProfileSaved]       = useState(false);
   const [showFab, setShowFab]                 = useState(false);
+  const [showRepairsFab, setShowRepairsFab] = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
@@ -4099,4 +4100,46 @@ export default function App() {
 
     </div>
   );
+
+          {/* ── Repairs FAB ── */}
+          {showRepairsFab && <div onClick={function(){ setShowRepairsFab(false); }} style={{ position: "fixed", inset: 0, zIndex: 299 }} />}
+          <div style={{ position: "fixed", bottom: 24, right: 20, zIndex: 300 }}>
+            {showRepairsFab && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
+                <div onClick={function(){ setShowRepairsFab(false); setShowAddRepair(true); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "#fff", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
+                  <span style={{ fontSize: 16 }}>🔧</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23", whiteSpace: "nowrap" }}>Add Repair</span>
+                </div>
+              </div>
+            )}
+            <div onClick={function(){ setShowRepairsFab(function(f){ return !f; }); }}
+              style={{ width: 52, height: 52, borderRadius: "50%", background: "#0f4c8a", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(15,76,138,0.4)", marginLeft: "auto", transition: "transform 0.2s", transform: showRepairsFab ? "rotate(45deg)" : "rotate(0deg)" }}>
+              <span style={{ color: "#fff", fontSize: 28, lineHeight: 1, fontWeight: 300 }}>+</span>
+            </div>
+          </div>
+
+          {showAddRepair && (
+            <div style={s.modalBg} onClick={function(){ setShowAddRepair(false); }}>
+              <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
+                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
+                <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
+                  <option value="">— Not linked to equipment —</option>
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
+                </select>
+                <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
+                <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
+                  {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
+                </select>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>TARGET DATE (optional)</div>
+                <input type="date" value={newRepair.dueDate || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, dueDate: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
+                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                  <button onClick={function(){ setShowAddRepair(false); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={addRepair} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Log Repair</button>
+                </div>
+              </div>
+            </div>
+          )}
+
 }
