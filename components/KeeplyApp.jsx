@@ -2145,6 +2145,35 @@ export default function App() {
             })()}
           </div>
 
+          {/* ── Open Repairs ── */}
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length > 0 && (<>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d23" }}>🔧 Open Repairs</div>
+              <div onClick={function(){ setShowAddRepair(true); }} style={{ fontSize: 12, fontWeight: 600, color: "#0f4c8a", cursor: "pointer" }}>+ Add</div>
+            </div>
+            {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).slice(0, 5).map(function(r){ return (
+              <div key={r.id} style={{ background: "#fff", border: "0.5px solid #e2e8f0", borderRadius: 10, padding: "10px 14px", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{r.description.length > 50 ? r.description.substring(0, 50) + "…" : r.description}</div>
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{r.section} · {r.date}</div>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 12, background: r.status === "open" ? "#fef2f2" : "#fff7ed", color: r.status === "open" ? "#dc2626" : "#ea580c" }}>{r.status}</div>
+              </div>
+            ); })}
+            {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length > 5 && (
+              <div style={{ fontSize: 12, color: "#6b7280", textAlign: "center", marginBottom: 8 }}>+ {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length - 5} more open repairs</div>
+            )}
+          </>)}
+
+          {/* Add Repair button when no open repairs */}
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length === 0 && (
+            <div onClick={function(){ setShowAddRepair(true); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 16, background: "#f8fafc", border: "1px dashed #e2e8f0", borderRadius: 10, cursor: "pointer" }}>
+              <span style={{ fontSize: 16 }}>🔧</span>
+              <span style={{ fontSize: 13, color: "#6b7280" }}>No open repairs · tap to log one</span>
+            </div>
+          )}
+
+
           {/* filters */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: 8 }}>
