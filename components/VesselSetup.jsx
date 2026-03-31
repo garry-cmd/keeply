@@ -98,6 +98,29 @@ export default function VesselSetup({ userId, onComplete }) {
           }
         }
       }
+      // Onboarding starter repairs — guide new users through key features
+      const today = new Date().toISOString().split("T")[0];
+      await supabase.from("repairs").insert([
+        {
+          vessel_id: vessel.id,
+          date: today,
+          section: "General",
+          description: "Review your imported equipment — add anything missing and remove what doesn’t apply to your boat",
+          status: "open",
+          equipment_id: null,
+          due_date: null
+        },
+        {
+          vessel_id: vessel.id,
+          date: today,
+          section: "General",
+          description: "Upload docs to your Vessel card — tap the ⚓ Vessel card then the Docs tab to add manuals, insurance, or registration",
+          status: "open",
+          equipment_id: null,
+          due_date: null
+        }
+      ]);
+
       onComplete(vessel);
     } catch(e) {
       setError(e.message);
