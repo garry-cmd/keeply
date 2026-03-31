@@ -798,7 +798,6 @@ export default function App() {
 
   // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
-  const [repairSectionFilter, setRepairSectionFilter] = useState("All");
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine", _equipmentId: null });
   const [expandedRepair, setExpandedRepair] = useState(null);
