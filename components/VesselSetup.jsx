@@ -25,7 +25,6 @@ export default function VesselSetup({ userId, onComplete }) {
     setLoading(true);
     setError(null);
     try {
-      // 1. Call AI to identify vessel equipment
       const res = await fetch("/api/identify-vessel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,7 +34,6 @@ export default function VesselSetup({ userId, onComplete }) {
       if (data.error) throw new Error(data.error);
       const aiResult = Array.isArray(data.equipment) ? data.equipment : [];
 
-      // 2. Create the vessel
       const hasRigging = aiResult.some(function(i){ return i.category === "Rigging" || i.category === "Sails"; });
       const vesselType = hasRigging ? "sail" : "motor";
       const parts = boatDescription.trim().split(" ");
@@ -52,7 +50,6 @@ export default function VesselSetup({ userId, onComplete }) {
 
       await supabase.from("vessel_members").insert({ vessel_id: vessel.id, user_id: userId, role: "owner" });
 
-      // 3. Save AI-generated equipment + tasks
       if (aiResult.length > 0) {
         const today = new Date().toISOString().split("T")[0];
         for (const item of aiResult) {
@@ -65,44 +62,17 @@ export default function VesselSetup({ userId, onComplete }) {
             const taskRows = item.tasks.map(function(t){
               const dueDate = new Date();
               dueDate.setDate(dueDate.getDate() + (t.interval_days || 365));
-              return {
-                vessel_id: vessel.id,
-                equipment_id: eq.id,
-                task: t.task,
-                section: item.category,
-                interval_days: t.interval_days || 365,
-                priority: "medium",
-                last_service: today,
-                due_date: dueDate.toISOString().split("T")[0],
-                service_logs: [],
-              };
+              return { vessel_id: vessel.id, equipment_id: eq.id, task: t.task, section: item.category, interval_days: t.interval_days || 365, priority: "medium", last_service: today, due_date: dueDate.toISOString().split("T")[0], service_logs: [] };
             });
             await supabase.from("maintenance_tasks").insert(taskRows);
           }
         }
       }
 
-      // 4. Create onboarding starter repairs to guide new users
       const today = new Date().toISOString().split("T")[0];
       await supabase.from("repairs").insert([
-        {
-          vessel_id: vessel.id,
-          date: today,
-          section: "General",
-          description: "Review your imported equipment \u2014 add anything missing and remove what doesn\u2019t apply to your boat",
-          status: "open",
-          equipment_id: null,
-          due_date: null
-        },
-        {
-          vessel_id: vessel.id,
-          date: today,
-          section: "General",
-          description: "Upload docs to your Vessel card \u2014 tap the \u2693 Vessel card then the Docs tab to add manuals, insurance, or registration",
-          status: "open",
-          equipment_id: null,
-          due_date: null
-        }
+        { vessel_id: vessel.id, date: today, section: "General", description: "Review your imported equipment — add anything missing and remove what doesn’t apply to your boat", status: "open", equipment_id: null, due_date: null },
+        { vessel_id: vessel.id, date: today, section: "General", description: "Upload docs to your Vessel card — tap the ⚓ Vessel card then the Docs tab to add manuals, insurance, or registration", status: "open", equipment_id: null, due_date: null }
       ]);
 
       onComplete(vessel);
@@ -122,8 +92,8 @@ export default function VesselSetup({ userId, onComplete }) {
             {step === 2 && "Tell us about your boat"}
           </div>
           <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
-            {step === 1 && "Let\u2019s get your vessel set up"}
-            {step === 2 && "We\u2019ll build your full maintenance profile automatically"}
+            {step === 1 && "Let’s get your vessel set up"}
+            {step === 2 && "We’ll build your full maintenance profile automatically"}
           </div>
         </div>
 
@@ -139,21 +109,21 @@ export default function VesselSetup({ userId, onComplete }) {
           <label style={s.label}>VESSEL NAME *</label>
           <input placeholder="e.g. Irene, Blue Horizon" value={vesselName} onChange={function(e){ setVesselName(e.target.value); }} style={s.inp} />
           <label style={s.label}>YOUR NAME</label>
-          <input placeholder="Captain\u2019s name" value={ownerName} onChange={function(e){ setOwnerName(e.target.value); }} style={s.inp} />
+          <input placeholder="Captain’s name" value={ownerName} onChange={function(e){ setOwnerName(e.target.value); }} style={s.inp} />
           <label style={s.label}>HOME PORT (optional)</label>
           <input placeholder="e.g. Port Ludlow, La Cruz, Manzanillo" value={homePort} onChange={function(e){ setHomePort(e.target.value); }} style={{ ...s.inp, marginBottom: 20 }} />
           <button onClick={function(){ if (!vesselName.trim()) { setError("Please enter a vessel name."); return; } setError(null); setStep(2); }} style={{ ...s.btn, background: "#0f4c8a", color: "#fff" }}>
-            Next \u2192
+            Next →
           </button>
         </>)}
 
         {step === 2 && (<>
           <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "#1e40af" }}>
-            <strong>We\u2019ll build your complete equipment and maintenance list automatically.</strong> Just tell us what you have.
+            <strong>We’ll build your complete equipment and maintenance list automatically.</strong> Just tell us what you have.
           </div>
           <label style={s.label}>DESCRIBE YOUR VESSEL</label>
           <textarea
-            placeholder={"e.g. 2018 Ranger Tug R-27\nor: 1985 Pacific Seacraft 40 with Yanmar diesel\nor: 2022 Leopard 45 catamaran"}
+            placeholder="e.g. 2018 Ranger Tug R-27&#10;or: 1985 Pacific Seacraft 40 with Yanmar diesel&#10;or: 2022 Leopard 45 catamaran"
             value={boatDescription}
             onChange={function(e){ setBoatDescription(e.target.value); }}
             rows={3}
@@ -165,14 +135,14 @@ export default function VesselSetup({ userId, onComplete }) {
           {loading ? (
             <div style={{ textAlign: "center", padding: "20px 0" }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>⚙️</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f4c8a" }}>Building your boat\u2026</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f4c8a" }}>Building your boat…</div>
               <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>Generating equipment list and maintenance tasks</div>
             </div>
           ) : (
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={function(){ setStep(1); }} style={{ ...s.btn, flex: 1, background: "#f1f5f9", color: "#374151" }}>\u2190 Back</button>
+              <button onClick={function(){ setStep(1); }} style={{ ...s.btn, flex: 1, background: "#f1f5f9", color: "#374151" }}>← Back</button>
               <button onClick={handleBuildMyBoat} style={{ ...s.btn, flex: 2, background: "#0f4c8a", color: "#fff" }}>
-                Launch Keeply \u2693
+                Launch Keeply ⚓
               </button>
             </div>
           )}
