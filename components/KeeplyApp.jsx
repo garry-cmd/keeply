@@ -642,6 +642,9 @@ export default function App() {
   const [fleetLoading, setFleetLoading] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [userPlan, setUserPlan]               = useState('free'); // 'free'|'pro'|'fleet'
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason]     = useState('');
   const [profilePrefs, setProfilePrefs]       = useState({
     alertInApp:    true,
     alertEmail:    false,
@@ -805,13 +808,43 @@ export default function App() {
   const [showUrgentPanel, setShowUrgentPanel] = useState(false);
   const [confirmAction, setConfirmAction]     = useState(null);
 
+  // Handle return from Stripe checkout
+  useEffect(function(){
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgraded') === 'true') {
+      window.history.replaceState({}, '', window.location.pathname);
+      // Reload plan
+      if (session && session.user) {
+        supabase.from('user_profiles').select('plan').eq('id', session.user.id).single()
+          .then(function(r){ if (r.data) setUserPlan(r.data.plan || 'free'); });
+      }
+    }
+  }, [session]);
+
   // ─── AUTH SESSION ────────────────────────────────────────────────────────────
   useEffect(function(){
     supabase.auth.getSession().then(function(res){
       setSession(res.data.session);
-      // Claim any pending invites for this email
       if (res.data.session) {
         var user = res.data.session.user;
+        // Load plan from user_profiles
+        supabase.from('user_profiles').select('plan').eq('id', user.id).single()
+          .then(function(r){ if (r.data) setUserPlan(r.data.plan || 'free'); });
+        // Load alert prefs from user metadata
+        var meta = user.user_metadata || {};
+        setProfilePrefs(function(prev){ return Object.assign({}, prev, {
+          displayName:  meta.full_name || meta.name || '',
+          emailAddress: user.email || '',
+          alertInApp:   meta.alertInApp  !== undefined ? meta.alertInApp  : true,
+          alertEmail:   meta.alertEmail  !== undefined ? meta.alertEmail  : false,
+          alertOverdue: meta.alertOverdue !== undefined ? meta.alertOverdue : true,
+          alert3day:    meta.alert3day   !== undefined ? meta.alert3day   : true,
+          alert7day:    meta.alert7day   !== undefined ? meta.alert7day   : false,
+          alertDayOf:   meta.alertDayOf  !== undefined ? meta.alertDayOf  : true,
+          digestTime:   meta.digestTime  || '08:00',
+          timezone:     meta.timezone    || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }); });
+        // Claim any pending invites for this email
         supabase.from("vessel_members")
           .update({ user_id: user.id })
           .eq("email", user.email)
@@ -964,7 +997,14 @@ export default function App() {
   }, []);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
-  const openAddVessel = function(){ setShowVesselDropdown(false); setAvStep(1); setAvName(""); setAvOwner(""); setAvPort(""); setAvDesc(""); setAvResult(null); setAvError(null); setAvLoading(false); setShowAddVesselAI(true); };
+  const openAddVessel = function(){
+    if (userPlan === "free" && vessels.length >= 1) {
+      setUpgradeReason("Free accounts are limited to 1 vessel. Upgrade to Pro to add unlimited vessels.");
+      setShowUpgradeModal(true);
+      setShowVesselDropdown(false);
+      return;
+    }
+    setShowVesselDropdown(false); setAvStep(1); setAvName(""); setAvOwner(""); setAvPort(""); setAvDesc(""); setAvResult(null); setAvError(null); setAvLoading(false); setShowAddVesselAI(true); };
   const openEditVessel = function(vessel){ setEditingVesselId(vessel.id); setSettingsForm({ ...vessel, photoUrl: vessel.photoUrl || "" }); setShowVesselDropdown(false); setShowSettings(true); };
 
   const copyItemsToVessel = async function(sourceId, targetId, copyEquip, copyMaint) {
@@ -2713,7 +2753,16 @@ export default function App() {
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
               {[
-                { label: "Add Equipment", icon: "⚙️", action: function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false); } },
+                { label: "Add Equipment", icon: "⚙️", action: function(){
+        const vesselEquip = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; });
+        if (userPlan === "free" && vesselEquip.length >= 5) {
+          setUpgradeReason("Free accounts are limited to 5 equipment items. Upgrade to Pro for unlimited equipment.");
+          setShowUpgradeModal(true);
+          setShowFab(false);
+          return;
+        }
+        setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
+      } },
                 { label: "Add Repair", icon: "🔧", action: function(){ setShowAddRepair(true); setShowFab(false); } },
                 { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
               ].map(function(item){ return (
@@ -3501,6 +3550,104 @@ export default function App() {
       )}
 
       {/* ── SHOPPING LIST PANEL ── */}
+            {/* ── Upgrade Modal ──────────────────────────────────────────── */}
+      {showUpgradeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={function(){ setShowUpgradeModal(false); }}>
+          <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ width: 40, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 20px" }} />
+
+            {upgradeReason && (
+              <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#92400e", marginBottom: 16 }}>
+                {upgradeReason}
+              </div>
+            )}
+
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#1a1d23", marginBottom: 4 }}>Upgrade Keeply</div>
+            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>Unlock the full power of Keeply for your boat.</div>
+
+            {/* Pro Monthly */}
+            <div style={{ border: "2px solid #0f4c8a", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "#fafeff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#0f4c8a" }}>Keeply Pro</div>
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>Unlimited equipment · Email alerts · AI features</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#0f4c8a" }}>$9.99</div>
+                  <div style={{ fontSize: 10, color: "#9ca3af" }}>per month</div>
+                </div>
+              </div>
+              <button onClick={async function(){
+                try {
+                  const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ priceId: "price_1TGXViPIMPMntnuJyP20q6Zy", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
+                } catch(e) { alert("Error starting checkout: " + e.message); }
+              }} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: "#0f4c8a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                Subscribe Monthly — $9.99/mo
+              </button>
+            </div>
+
+            {/* Pro Annual */}
+            <div style={{ border: "1.5px solid #16a34a", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "#fafffe", position: "relative" }}>
+              <div style={{ position: "absolute", top: -10, left: 16, background: "#16a34a", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>Save 50%</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#166534" }}>Pro Annual</div>
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>Everything in Pro · $4.99/mo effective</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#166534" }}>$59.99</div>
+                  <div style={{ fontSize: 10, color: "#9ca3af" }}>per year</div>
+                </div>
+              </div>
+              <button onClick={async function(){
+                try {
+                  const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ priceId: "price_1TGzfDPIMPMntnuJ46IfEXFI", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
+                } catch(e) { alert("Error starting checkout: " + e.message); }
+              }} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: "#16a34a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                Subscribe Annually — $59.99/yr
+              </button>
+            </div>
+
+            {/* Fleet */}
+            <div style={{ border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#374151" }}>Keeply Fleet</div>
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>3 vessels · Fleet dashboard · Team access</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#374151" }}>$49.99</div>
+                  <div style={{ fontSize: 10, color: "#9ca3af" }}>per month</div>
+                </div>
+              </div>
+              <button onClick={async function(){
+                try {
+                  const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ priceId: "price_1TGXX8PIMPMntnuJpJxQaZAz", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
+                } catch(e) { alert("Error starting checkout: " + e.message); }
+              }} style={{ width: "100%", padding: "10px 0", border: "1.5px solid #374151", borderRadius: 8, background: "#fff", color: "#374151", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                Subscribe Fleet — $49.99/mo
+              </button>
+            </div>
+
+            <button onClick={function(){ setShowUpgradeModal(false); }}
+              style={{ width: "100%", padding: "10px 0", border: "none", background: "none", color: "#9ca3af", fontSize: 13, cursor: "pointer" }}>
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
             {/* ── Profile / Settings Panel ─────────────────────────── */}
       {showProfilePanel && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }} onClick={function(){ setShowProfilePanel(false); }}>
@@ -3537,9 +3684,22 @@ export default function App() {
                 <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>Plan</div>
-                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>Free · 1 vessel</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                      {userPlan === "fleet" ? "Fleet · Multi-vessel" : userPlan === "pro" ? "Pro · Unlimited" : "Free · 1 vessel"}
+                    </div>
                   </div>
-                  <span style={{ background: "#eff6ff", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Upgrade ↗</span>
+                  {userPlan === "free" ? (
+                    <span onClick={function(){ setShowProfilePanel(false); setUpgradeReason(""); setShowUpgradeModal(true); }}
+                      style={{ background: "#eff6ff", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Upgrade ↗</span>
+                  ) : (
+                    <span onClick={async function(){
+                      try {
+                        const res = await fetch("/api/stripe/portal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: session && session.user ? session.user.id : null, returnUrl: window.location.href }) });
+                        const d = await res.json();
+                        if (d.url) window.location.href = d.url;
+                      } catch(e) { alert(e.message); }
+                    }} style={{ background: "#f1f5f9", color: "#374151", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manage ↗</span>
+                  )}
                 </div>
               </div>
 
