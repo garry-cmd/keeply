@@ -2146,32 +2146,126 @@ export default function App() {
           </div>
 
           {/* ── Open Repairs ── */}
-          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length > 0 && (<>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d23" }}>🔧 Open Repairs</div>
-              <div onClick={function(){ setShowAddRepair(true); }} style={{ fontSize: 12, fontWeight: 600, color: "#0f4c8a", cursor: "pointer" }}>+ Add</div>
-            </div>
-            {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).slice(0, 5).map(function(r){ return (
-              <div key={r.id} style={{ background: "#fff", border: "0.5px solid #e2e8f0", borderRadius: 10, padding: "10px 14px", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{r.description.length > 50 ? r.description.substring(0, 50) + "…" : r.description}</div>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{r.section} · {r.date}</div>
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 12, background: r.status === "open" ? "#fef2f2" : "#fff7ed", color: r.status === "open" ? "#dc2626" : "#ea580c" }}>{r.status}</div>
-              </div>
-            ); })}
-            {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length > 5 && (
-              <div style={{ fontSize: 12, color: "#6b7280", textAlign: "center", marginBottom: 8 }}>+ {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length - 5} more open repairs</div>
-            )}
-          </>)}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d23" }}>🔧 Open Repairs</div>
+            <div onClick={function(){ setShowAddRepair(true); }} style={{ fontSize: 12, fontWeight: 600, color: "#0f4c8a", cursor: "pointer" }}>+ Add</div>
+          </div>
 
-          {/* Add Repair button when no open repairs */}
           {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length === 0 && (
-            <div onClick={function(){ setShowAddRepair(true); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 16, background: "#f8fafc", border: "1px dashed #e2e8f0", borderRadius: 10, cursor: "pointer" }}>
-              <span style={{ fontSize: 16 }}>🔧</span>
-              <span style={{ fontSize: 13, color: "#6b7280" }}>No open repairs · tap to log one</span>
+            <div style={{ textAlign: "center", padding: "24px", color: "#9ca3af", background: "#f8fafc", borderRadius: 10, marginBottom: 16 }}>
+              <div style={{ fontSize: 28 }}>✅</div>
+              <div style={{ marginTop: 6, fontSize: 12 }}>No open repairs</div>
             </div>
           )}
+
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){
+            const isExpanded = expandedRepair === r.id;
+            const sugg = aiSuggestions[r.id];
+            return (
+              <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                  <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
+                    style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#16a34a" : "#d1d5db"), background: completingRepair === r.id ? "#16a34a" : "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
+                    title="Mark complete">
+                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                  </button>
+                  <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
+                    const next = isExpanded ? null : r.id;
+                    setExpandedRepair(next);
+                    if (next && !sugg) getSuggestionsForRepair(r);
+                  }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
+                      <SectionBadge section={r.section} />
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(r.date)}</span>
+                      {sugg && sugg !== "loading" && sugg.length > 0 && (
+                        <span style={{ background: "#f5f3ff", color: "#7c3aed", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
+                      )}
+                    </div>
+                    {editingRepair === r.id ? (
+                      <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <textarea value={editRepairForm.description}
+                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, description: e.target.value }; }); }}
+                          style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 6, padding: "5px 8px", fontSize: 12, resize: "none", height: 56, boxSizing: "border-box" }} />
+                        <select value={editRepairForm.section}
+                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, section: e.target.value }; }); }}
+                          style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
+                        </select>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
+                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section }); }}
+                            style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "#0f4c8a", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>{r.description}</div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "#6b7280" }} title="Edit">✏️</button>
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
+                    <span style={{ color: "#9ca3af", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div style={{ borderTop: "1px solid #f3f4f6", background: "#fafafa" }} onClick={function(e){ e.stopPropagation(); }}>
+                    <div style={{ display: "flex", borderBottom: "1px solid #f3f4f6", padding: "0 16px" }}>
+                      {["parts", "notes"].map(function(t){ return (
+                        <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
+                          style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "#7c3aed" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "#7c3aed" : "#9ca3af", letterSpacing: "0.3px" }}>
+                          {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
+                          {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
+                            <span style={{ marginLeft: 5, background: "#f5f3ff", color: "#7c3aed", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
+                          )}
+                        </button>
+                      ); })}
+                    </div>
+                    {(repairTab[r.id] || "parts") === "parts" && (
+                      <div style={{ padding: "14px 16px" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 10 }}>✨ AI suggested parts</div>
+                        {sugg === "loading" && <div style={{ fontSize: 12, color: "#9ca3af" }}>Finding parts…</div>}
+                        {sugg === "error" && <div style={{ fontSize: 12, color: "#ea580c" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "#0f4c8a", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button></div>}
+                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "#9ca3af" }}>No specific parts found.</div>}
+                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
+                          const inList = cart.some(function(i){ return i.name === part.name; });
+                          return (
+                            <div key={part.name} style={{ padding: "10px 0", borderBottom: "1px solid #f3f4f6" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1d23" }}>{part.name}</div>
+                                  <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2, lineHeight: 1.4 }}>💡 {part.reason}</div>
+                                </div>
+                                <button onClick={function(e){ e.stopPropagation(); setRejectedParts(function(prev){ const n = Object.assign({}, prev); n["repair-" + r.id + "-" + part.id] = true; return n; }); getSuggestionsForRepair(r); }}
+                                  style={{ background: "none", border: "none", color: "#d1d5db", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Wrong part">✕</button>
+                              </div>
+                              <button onClick={function(e){ e.stopPropagation(); if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section, repairContext: r.description + " " + r.section }); }}
+                                style={{ marginTop: 8, width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                {inList ? "✓ In Shopping List" : "+ Add to List"}
+                              </button>
+                            </div>
+                          );
+                        })}
+                        {sugg && sugg !== "loading" && (
+                          <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh suggestions</button>
+                        )}
+                        {!sugg && (
+                          <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts for this repair</button>
+                        )}
+                      </div>
+                    )}
+                    {(repairTab[r.id] || "parts") === "notes" && (
+                      <div style={{ padding: "14px 16px" }}>
+                        <div style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>{r.description || "No additional notes."}</div>
+                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
+                          style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "#0f4c8a", cursor: "pointer", fontWeight: 600, padding: 0 }}>✏️ Edit repair</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
 
           {/* filters */}
