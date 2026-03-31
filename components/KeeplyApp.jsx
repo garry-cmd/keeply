@@ -2147,7 +2147,15 @@ export default function App() {
           {/* ── Open Repairs ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d23" }}>🔧 Open Repairs</div>
-            <div onClick={function(){ setShowAddRepair(true); }} style={{ fontSize: 12, fontWeight: 600, color: "#0f4c8a", cursor: "pointer" }}>+ Add</div>
+            <div onClick={function(){
+                const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
+                if (userPlan === "free" && vesselRepairs.length >= 2) {
+                  setUpgradeReason("You've used both free repairs. Upgrade to Pro to log unlimited repairs with AI suggestions.");
+                  setShowUpgradeModal(true);
+                  return;
+                }
+                setShowAddRepair(true);
+              }} style={{ fontSize: 12, fontWeight: 600, color: "#0f4c8a", cursor: "pointer" }}>+ Add</div>
           </div>
 
           {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length === 0 && (
@@ -2876,7 +2884,16 @@ export default function App() {
         }
         setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
       } },
-                { label: "Add Repair", icon: "🔧", action: function(){ setShowAddRepair(true); setShowFab(false); } },
+                { label: "Add Repair", icon: "🔧", action: function(){
+                    const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
+                    if (userPlan === "free" && vesselRepairs.length >= 2) {
+                      setUpgradeReason("You've used both free repairs. Upgrade to Pro to log unlimited repairs with AI suggestions.");
+                      setShowUpgradeModal(true);
+                      setShowFab(false);
+                      return;
+                    }
+                    setShowAddRepair(true); setShowFab(false);
+                  } },
                 { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
               ].map(function(item){ return (
                 <div key={item.label} onClick={item.action}
