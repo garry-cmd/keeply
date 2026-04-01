@@ -640,6 +640,7 @@ export default function App() {
   const [tab, setTab]   = useState("boat");
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
+  const [fleetPanel, setFleetPanel]     = useState(null); // { vesselId, type, vesselName }
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [userPlan, setUserPlan]               = useState('free'); // 'free'|'pro'|'fleet'
@@ -1510,7 +1511,7 @@ export default function App() {
       await Promise.all(allVesselIds.map(async function(vid){
         const [eq, tasks, repairs, docs] = await Promise.all([
           supa("equipment", { query: "vessel_id=eq." + vid + "&select=id,status" }).catch(function(){ return []; }),
-          supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&select=id,priority,due_date,section&section=neq.Paperwork" }).catch(function(){ return []; }),
+          supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&select=id,task,priority,due_date,section,equipment_id,last_service,interval_days,service_logs&section=neq.Paperwork" }).catch(function(){ return []; }),
           supa("repairs", { query: "vessel_id=eq." + vid + "&select=id,status,section,description&status=eq.open" }).catch(function(){ return []; }),
           supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&select=id,task,due_date,priority&section=eq.Paperwork" }).catch(function(){ return []; }),
         ]);
@@ -1534,7 +1535,7 @@ export default function App() {
           watch: (eq || []).filter(function(e){ return e.status === "watch"; }).length,
           needsService: (eq || []).filter(function(e){ return e.status === "needs-service"; }).length,
           openRepairs: (repairs || []).length,
-          repairs: (repairs || []).slice(0, 3),
+          repairs: repairs || [],
           overdueCount: overdue.length,
           dueSoonCount: dueSoon.length,
           expiringDocs: expiringDocs.slice(0, 3),
@@ -1951,7 +1952,7 @@ export default function App() {
                         title={stat.val > 0 ? "Go to " + stat.tab : ""}>
                         <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.val}</div>
                         <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 3, fontWeight: 600 }}>{stat.label}</div>
-                        {stat.val > 0 && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap to view →</div>}
+                        {stat.val > 0 && stat.label !== "Expiring Docs" && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap to view →</div>}
                       </div>
                     ); })}
                   </div>
@@ -1978,6 +1979,197 @@ export default function App() {
             })}
           </div>
         )}
+
+        {/* ── FLEET URGENCY PANEL ── */}
+        {fleetPanel && (function(){
+          const d = fleetData && fleetData[fleetPanel.vesselId];
+          if (!d) return null;
+          const prefix = fleetPanel.vesselType === "motor" ? "M/V" : "S/V";
+
+          // Get items for this panel type
+          const panelTasks = fleetPanel.type === "Overdue Tasks"
+            ? (d.overdueTasks || [])
+            : fleetPanel.type === "Due in 30d"
+              ? (d.dueSoonTasks || [])
+              : [];
+          const panelRepairs = fleetPanel.type === "Open Repairs" ? (d.repairs || []) : [];
+
+          return (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+              onClick={function(){ setFleetPanel(null); }}>
+              <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
+                onClick={function(e){ e.stopPropagation(); }}>
+
+                {/* Header */}
+                <div style={{ padding: "18px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d23" }}>
+                      {fleetPanel.type === "Overdue Tasks" && "🔴 Overdue Tasks"}
+                      {fleetPanel.type === "Due in 30d" && "🟡 Due in 30 Days"}
+                      {fleetPanel.type === "Open Repairs" && "🔧 Open Repairs"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+                      {prefix} {fleetPanel.vesselName} · {panelTasks.length + panelRepairs.length} items
+                    </div>
+                  </div>
+                  <button onClick={function(){ setFleetPanel(null); }}
+                    style={{ background: "#f1f5f9", border: "none", borderRadius: 8, width: 32, height: 32, fontSize: 16, cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    ✕
+                  </button>
+                </div>
+
+                {/* Body */}
+                <div style={{ overflowY: "auto", flex: 1, padding: "4px 0" }}>
+
+                  {/* Task list (Overdue + Due Soon) */}
+                  {panelTasks.length > 0 && panelTasks.map(function(t){
+                    const badge = getDueBadge(t.due_date);
+                    const isCompleting = completingTask === t.id;
+                    const isExpanded = expandedTask === t.id;
+                    const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
+                    return (
+                      <div key={t.id} style={{ borderBottom: "1px solid #f3f4f6", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s" }}>
+                        <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                          <button onClick={function(){
+                            toggleTask(t.id);
+                            if (panelTasks.length <= 1) setTimeout(function(){ setFleetPanel(null); }, 600);
+                          }}
+                            style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "#16a34a" : "#d1d5db"), background: isCompleting ? "#16a34a" : "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
+                          </button>
+                          <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23", marginBottom: 3 }}>{t.task}</div>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                              <SectionBadge section={t.section} />
+                              {eq && <span style={{ fontSize: 10, color: "#9ca3af" }}>{eq.name}</span>}
+                              {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 4, padding: "1px 5px" }}>{badge.label}</span>}
+                            </div>
+                          </div>
+                          <span style={{ color: "#9ca3af", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
+                            onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                            {isExpanded ? "▾" : "▸"}
+                          </span>
+                        </div>
+                        {isExpanded && (
+                          <div style={{ background: "#f8fafc", borderTop: "1px solid #f3f4f6", padding: "12px 20px 14px 60px" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{t.interval_days ? t.interval_days + " days" : "—"}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{t.last_service ? fmt(t.last_service) : "Never"}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#dc2626" }}>{t.due_date ? fmt(t.due_date) : "—"}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", textTransform: "capitalize" }}>{t.priority || "medium"}</div>
+                              </div>
+                            </div>
+                            {/* AI parts */}
+                            <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 10 }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", marginBottom: 8 }}>✨ Suggested parts</div>
+                              {(function(){
+                                const sugg = aiSuggestions[t.id];
+                                if (!sugg) return <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts</button>;
+                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "#9ca3af" }}>Finding parts…</div>;
+                                if (sugg === "error") return <div style={{ fontSize: 12, color: "#ea580c" }}>Error. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "#0f4c8a", fontSize: 12, cursor: "pointer" }}>Retry</button></div>;
+                                if (sugg.length === 0) return <div style={{ fontSize: 12, color: "#9ca3af" }}>No parts found.</div>;
+                                return sugg.slice(0, 3).map(function(part){
+                                  const inList = cart.some(function(i){ return i.name === part.name; });
+                                  return (
+                                    <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1d23" }}>{part.name}</div>
+                                      <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: t.section, repairContext: t.task }); }}
+                                        style={{ marginTop: 4, width: "100%", padding: "4px 8px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                        {inList ? "✓ In List" : "🔍 Find Part"}
+                                      </button>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Open Repairs list */}
+                  {panelRepairs.length > 0 && panelRepairs.map(function(r){
+                    const isExpanded = expandedRepair === r.id;
+                    const sugg = aiSuggestions[r.id];
+                    return (
+                      <div key={r.id} style={{ borderBottom: "1px solid #f3f4f6", opacity: completingRepair === r.id ? 0 : 1, transition: "opacity 0.5s" }}>
+                        <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                          <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); if (panelRepairs.length <= 1) setTimeout(function(){ setFleetPanel(null); }, 600); }}
+                            style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#16a34a" : "#d1d5db"), background: completingRepair === r.id ? "#16a34a" : "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                            {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
+                          </button>
+                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23", marginBottom: 3 }}>{r.description}</div>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                              <SectionBadge section={r.section} />
+                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>}
+                            </div>
+                          </div>
+                          <span style={{ color: "#9ca3af", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
+                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                            {isExpanded ? "▾" : "▸"}
+                          </span>
+                        </div>
+                        {isExpanded && (
+                          <div style={{ background: "#f8fafc", borderTop: "1px solid #f3f4f6", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
+                            <div style={{ padding: "12px 14px" }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", marginBottom: 8 }}>✨ Suggested parts</div>
+                              {!sugg && <button onClick={function(){ getSuggestionsForRepair(r); }} style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts</button>}
+                              {sugg === "loading" && <div style={{ fontSize: 12, color: "#9ca3af" }}>Finding parts…</div>}
+                              {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
+                                const inList = cart.some(function(i){ return i.name === part.name; });
+                                return (
+                                  <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1d23" }}>{part.name}</div>
+                                    <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
+                                    <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section, repairContext: r.description }); }}
+                                      style={{ marginTop: 4, width: "100%", padding: "4px 8px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                      {inList ? "✓ In List" : "🔍 Find Part"}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Empty state */}
+                  {panelTasks.length === 0 && panelRepairs.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: "#9ca3af" }}>
+                      <div style={{ fontSize: 32 }}>✅</div>
+                      <div style={{ marginTop: 8, fontSize: 13 }}>All clear!</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer — switch to vessel */}
+                <div style={{ padding: "12px 20px", borderTop: "1px solid #f3f4f6", flexShrink: 0 }}>
+                  <button onClick={function(){ switchVessel(fleetPanel.vesselId); setView("customer"); setFleetPanel(null); }}
+                    style={{ width: "100%", padding: "9px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", fontSize: 12, fontWeight: 600, color: "#0f4c8a", cursor: "pointer" }}>
+                    Switch to {prefix} {fleetPanel.vesselName} →
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+
 
         {view === "import" && (
           <div>
