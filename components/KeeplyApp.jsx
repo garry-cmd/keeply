@@ -804,8 +804,7 @@ export default function App() {
   const [completingRepair, setCompletingRepair] = useState(null);
   const [completingTask, setCompletingTask]     = useState(null); // id being animated
   const [editingRepair, setEditingRepair]   = useState(null); // repair id being edited
-  const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine", _equipmentId: null });
-  const [showUrgentPanel, setShowUrgentPanel] = useState(false);
+  const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine", _equipmentId: null });
   const [confirmAction, setConfirmAction]     = useState(null);
 
   // Handle return from Stripe checkout
