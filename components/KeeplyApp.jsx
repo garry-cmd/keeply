@@ -3303,13 +3303,35 @@ export default function App() {
                                 })}
                               </div>
                             )}
-                            <button onClick={function(){
-                              toggleTask(t.id);
-                              if (panelTasks.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600);
-                            }}
-                              style={{ width: "100%", padding: "8px", border: "none", borderRadius: 8, background: "#16a34a", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                              ✓ Mark as Serviced
-                            </button>
+                            {/* AI parts suggestions for this task */}
+                            <div style={{ marginTop: 10, borderTop: "1px solid #f3f4f6", paddingTop: 10 }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", letterSpacing: "0.5px", marginBottom: 8 }}>✨ Suggested parts</div>
+                              {(function(){
+                                const sugg = aiSuggestions[t.id];
+                                if (!sugg) return (
+                                  <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}
+                                    style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, width: "100%" }}>
+                                    ✨ Find parts for this task
+                                  </button>
+                                );
+                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "#9ca3af" }}>Finding parts…</div>;
+                                if (sugg === "error") return <div style={{ fontSize: 12, color: "#ea580c" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "#0f4c8a", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
+                                if (sugg.length === 0) return <div style={{ fontSize: 12, color: "#9ca3af" }}>No specific parts found.</div>;
+                                return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
+                                  const inList = cart.some(function(i){ return i.name === part.name; });
+                                  return (
+                                    <div key={part.name} style={{ padding: "7px 0", borderBottom: "1px solid #f9fafb" }}>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1d23" }}>{part.name}</div>
+                                      <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>💡 {part.reason}</div>
+                                      <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: (function(){ const eq = equipment.find(function(e){ return e.id === t.equipment_id; }); return eq ? eq.name : t.section; })(), repairContext: t.task + " " + t.section }); }}
+                                        style={{ marginTop: 5, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                        {inList ? "✓ In Shopping List" : "🔍 Find Part"}
+                                      </button>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
                           </div>
                         )}
                       </div>
