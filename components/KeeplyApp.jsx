@@ -782,6 +782,7 @@ export default function App() {
   const [filterSection, setFilterSection]   = useState("All");
   const [filterPriority, setFilterPriority] = useState("All");
   const [filterUrgency, setFilterUrgency]   = useState("All");
+  const [showUrgencyPanel, setShowUrgencyPanel] = useState(null); // null | "Critical" | "Due Soon" | "Open Repairs"
   const [showAddTask, setShowAddTask]       = useState(false);
   const [editingTask, setEditingTask]       = useState(null);
   const [editTaskForm, setEditTaskForm]     = useState({});
@@ -3500,69 +3501,6 @@ export default function App() {
           )}
         </>)}
       </div>
-
-      {/* ── URGENT PANEL ── */}
-      {showUrgentPanel && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300 }} onClick={function(){ setShowUrgentPanel(false); }}>
-          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 360, background: "#fff", boxShadow: "-4px 0 32px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ padding: "20px", borderBottom: "1px solid #e8eaed", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: "#dc2626" }}>🚨 Urgent Items</span>
-              <button onClick={function(){ setShowUrgentPanel(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}>✕</button>
-            </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
-              {openRepairs > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>OPEN REPAIRS ({openRepairs})</div>
-                  {repairs.filter(function(r){ return r.status === "open"; }).map(function(r){ return (
-                    <div key={r.id}
-                      onClick={function(){
-                        setTab("boat");
-                        setView("customer");
-                        setShowUrgentPanel(false);
-                        if (r.equipment_id) {
-                          setExpandedEquip(r.equipment_id);
-                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[r.equipment_id] = "repairs"; return n; });
-                        } else {
-                          setFilterUrgency("Open Repairs");
-                        }
-                      }}
-                      style={{ padding: "8px 12px", background: "#fef2f2", borderRadius: 8, marginBottom: 6, cursor: "pointer", borderLeft: "3px solid #dc2626" }}>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{r.section}</div>
-                      <div style={{ fontSize: 12, color: "#374151" }}>{r.description}</div>
-                      <div style={{ fontSize: 10, color: "#dc2626", marginTop: 3, fontWeight: 600 }}>tap to view →</div>
-                    </div>
-                  ); })}
-                </div>
-              )}
-              {criticalMaint > 0 && (
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>CRITICAL MAINTENANCE ({criticalMaint})</div>
-                  {maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).map(function(t){ return (
-                    <div key={t.id}
-                      onClick={function(){
-                        setTab("boat");
-                        setView("customer");
-                        setShowUrgentPanel(false);
-                        // Open the equipment card for this task
-                        if (t.equipment_id) {
-                          setExpandedEquip(t.equipment_id);
-                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[t.equipment_id] = "maintenance"; return n; });
-                        } else {
-                          setFilterUrgency("Critical");
-                        }
-                      }}
-                      style={{ padding: "8px 12px", background: "#fff7ed", borderRadius: 8, marginBottom: 6, cursor: "pointer", borderLeft: "3px solid #ea580c" }}>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{t.section} — {t.task}</div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Due: {fmt(t.dueDate || t.due_date)}</div>
-                      <div style={{ fontSize: 10, color: "#ea580c", marginTop: 3, fontWeight: 600 }}>tap to view →</div>
-                    </div>
-                  ); })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── VESSEL SETTINGS ── */}
       {showCopyDialog && (
