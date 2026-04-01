@@ -801,6 +801,7 @@ export default function App() {
   const [repairs, setRepairs]               = useState([]);
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine", _equipmentId: null });
+  const [expandedTask, setExpandedTask] = useState(null);
   const [expandedRepair, setExpandedRepair] = useState(null);
   const [completingRepair, setCompletingRepair] = useState(null);
   const [completingTask, setCompletingTask]     = useState(null); // id being animated
@@ -3347,7 +3348,195 @@ export default function App() {
           </div>
         )}
 
-                {/* ── MAINTENANCE TAB ── */}
+        
+        {/* ── URGENCY PANELS ── */}
+        {showUrgencyPanel && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+            onClick={function(){ setShowUrgencyPanel(null); setExpandedTask(null); }}>
+            <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
+              onClick={function(e){ e.stopPropagation(); }}>
+
+              {/* Header */}
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d23" }}>
+                    {showUrgencyPanel === "Critical" && "🔴 Critical Tasks"}
+                    {showUrgencyPanel === "Due Soon" && "🟡 Due Soon"}
+                    {showUrgencyPanel === "Open Repairs" && "🔧 Open Repairs"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+                    {showUrgencyPanel === "Critical" && tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length + " tasks need attention"}
+                    {showUrgencyPanel === "Due Soon" && tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length + " tasks due soon"}
+                    {showUrgencyPanel === "Open Repairs" && repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length + " repairs open"}
+                  </div>
+                </div>
+                <button onClick={function(){ setShowUrgencyPanel(null); setExpandedTask(null); }} style={{ background: "#f1f5f9", border: "none", borderRadius: 8, width: 32, height: 32, fontSize: 16, cursor: "pointer", color: "#6b7280" }}>&#x2715;</button>
+              </div>
+
+              {/* Body */}
+              <div style={{ overflowY: "auto", flex: 1 }}>
+
+                {/* Task panels */}
+                {(showUrgencyPanel === "Critical" || showUrgencyPanel === "Due Soon") && (function(){
+                  const panelTasks = tasks.filter(function(t){
+                    if (!t._vesselId || t._vesselId !== activeVesselId) return false;
+                    if (showUrgencyPanel === "Critical") return getTaskUrgency(t) === "critical";
+                    return getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon";
+                  });
+                  if (panelTasks.length === 0) return (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: "#9ca3af" }}>
+                      <div style={{ fontSize: 32 }}>&#x2705;</div>
+                      <div style={{ marginTop: 8, fontSize: 13 }}>All clear!</div>
+                    </div>
+                  );
+                  return panelTasks.map(function(t){
+                    const badge = getDueBadge(t.dueDate);
+                    const isCompleting = completingTask === t.id;
+                    const isExpanded = expandedTask === t.id;
+                    const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
+                    return (
+                      <div key={t.id} style={{ borderBottom: "1px solid #f3f4f6", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
+                        {/* Row */}
+                        <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                          <button onClick={function(){ toggleTask(t.id); if (panelTasks.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600); }}
+                            style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "#16a34a" : "#d1d5db"), background: isCompleting ? "#16a34a" : "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>&#x2713;</span>}
+                          </button>
+                          <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23", marginBottom: 3 }}>{t.task}</div>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                              <SectionBadge section={t.section} />
+                              {eq && <span style={{ fontSize: 10, color: "#9ca3af" }}>{eq.name}</span>}
+                              {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 4, padding: "1px 5px" }}>{badge.label}</span>}
+                            </div>
+                          </div>
+                          <span style={{ color: "#9ca3af", fontSize: 18, cursor: "pointer", flexShrink: 0 }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>{isExpanded ? "&#x25BE;" : "&#x25B8;"}</span>
+                        </div>
+                        {/* Expanded detail */}
+                        {isExpanded && (
+                          <div style={{ background: "#f8fafc", borderTop: "1px solid #f3f4f6", padding: "12px 20px 14px 60px" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{t.interval || (t.interval_days ? t.interval_days + " days" : "—")}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{t.lastService ? fmt(t.lastService) : "Never"}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#dc2626" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", textTransform: "capitalize" }}>{t.priority || "medium"}</div>
+                              </div>
+                            </div>
+                            {t.serviceLogs && t.serviceLogs.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.5px", marginBottom: 6 }}>SERVICE HISTORY</div>
+                                {t.serviceLogs.slice(-3).reverse().map(function(log, i){
+                                  return (
+                                    <div key={i} style={{ display: "flex", gap: 8, fontSize: 11, color: "#6b7280", marginBottom: 3 }}>
+                                      <span style={{ color: "#9ca3af", flexShrink: 0 }}>{fmt(log.date)}</span>
+                                      <span>{log.comment || "Service completed"}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <button onClick={function(){ toggleTask(t.id); if (panelTasks.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600); }}
+                              style={{ marginTop: 10, width: "100%", padding: "8px", border: "none", borderRadius: 8, background: "#16a34a", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                              &#x2713; Mark as Serviced
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+
+                {/* Open Repairs panel */}
+                {showUrgencyPanel === "Open Repairs" && (function(){
+                  const panelRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; });
+                  if (panelRepairs.length === 0) return (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: "#9ca3af" }}>
+                      <div style={{ fontSize: 32 }}>&#x2705;</div>
+                      <div style={{ marginTop: 8, fontSize: 13 }}>No open repairs!</div>
+                    </div>
+                  );
+                  return panelRepairs.map(function(r){
+                    const isExpanded = expandedRepair === r.id;
+                    const sugg = aiSuggestions[r.id];
+                    const eq = equipment.find(function(e){ return e.id === r.equipment_id; });
+                    return (
+                      <div key={r.id} style={{ borderBottom: "1px solid #f3f4f6", opacity: completingRepair === r.id ? 0 : 1, transition: "opacity 0.5s ease" }}>
+                        <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                          <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); if (panelRepairs.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600); }}
+                            style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#16a34a" : "#d1d5db"), background: completingRepair === r.id ? "#16a34a" : "#fff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                            {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>&#x2713;</span>}
+                          </button>
+                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23", marginBottom: 3 }}>{r.description}</div>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                              <SectionBadge section={r.section} />
+                              {eq && <span style={{ fontSize: 10, color: "#9ca3af" }}>{eq.name}</span>}
+                              <span style={{ fontSize: 10, color: "#9ca3af" }}>{fmt(r.date)}</span>
+                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>&#x2728; {sugg.length} parts</span>}
+                            </div>
+                          </div>
+                          <span style={{ color: "#9ca3af", fontSize: 18, cursor: "pointer", flexShrink: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "&#x25BE;" : "&#x25B8;"}</span>
+                        </div>
+                        {isExpanded && (
+                          <div style={{ background: "#f8fafc", borderTop: "1px solid #f3f4f6", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
+                            <div style={{ display: "flex", borderBottom: "1px solid #f3f4f6", padding: "0 12px" }}>
+                              {["parts","notes"].map(function(tt){ return (
+                                <button key={tt} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = tt; return n; }); if (tt === "parts" && !sugg) getSuggestionsForRepair(r); }}
+                                  style={{ padding: "8px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === tt ? "#7c3aed" : "transparent"), color: (repairTab[r.id] || "parts") === tt ? "#7c3aed" : "#9ca3af" }}>
+                                  {tt === "parts" ? "&#x1F529; Parts" : "&#x1F4DD; Notes"}
+                                  {tt === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && <span style={{ marginLeft: 4, background: "#f5f3ff", color: "#7c3aed", borderRadius: 8, padding: "1px 4px", fontSize: 10 }}>{sugg.length}</span>}
+                                </button>
+                              ); })}
+                            </div>
+                            {(repairTab[r.id] || "parts") === "parts" && (
+                              <div style={{ padding: "12px 14px" }}>
+                                {sugg === "loading" && <div style={{ fontSize: 12, color: "#9ca3af" }}>Finding parts&#x2026;</div>}
+                                {sugg === "error" && <div style={{ fontSize: 12, color: "#ea580c" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "#0f4c8a", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
+                                {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "#9ca3af" }}>No specific parts found.</div>}
+                                {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
+                                  const inList = cart.some(function(i){ return i.name === part.name; });
+                                  return (
+                                    <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid #f9fafb" }}>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1d23" }}>{part.name}</div>
+                                      <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 1 }}>&#x1F4A1; {part.reason}</div>
+                                      <button onClick={function(e){ e.stopPropagation(); if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: (function(){ const eq2 = equipment.find(function(e2){ return e2.id === r.equipment_id; }); return eq2 ? eq2.name : r.section; })(), repairContext: r.description + " " + r.section }); }}
+                                        style={{ marginTop: 6, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: inList ? "#f0fdf4" : "#7c3aed", color: inList ? "#16a34a" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                        {inList ? "&#x2713; In Shopping List" : "&#x1F50D; Find Part"}
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                                {!sugg && <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#7c3aed", cursor: "pointer", fontWeight: 600, width: "100%" }}>&#x2728; Find parts</button>}
+                              </div>
+                            )}
+                            {(repairTab[r.id] || "parts") === "notes" && (
+                              <div style={{ padding: "12px 14px" }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>{r.description || "No additional notes."}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MAINTENANCE TAB ── */}
         {view === "customer" && tab === "maintenance-standalone" && (<>
           {tabHeader("Maintenance", boatName, true, function(){ setShowAddTask(true); })}
 
