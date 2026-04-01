@@ -1944,9 +1944,9 @@ export default function App() {
                       <div key={stat.label}
                         onClick={function(e){
                           e.stopPropagation();
-                          switchVessel(vessel.id);
-                          setTab(stat.tab === "equipment" || stat.tab === "repairs" || stat.tab === "maintenance" ? "boat" : stat.tab);
-                          setView("customer");
+                          if (stat.val === 0) return;
+                          if (stat.label === "Expiring Docs") { switchVessel(vessel.id); setTab("maintenance"); setView("customer"); return; }
+                          setFleetPanel({ vesselId: vessel.id, type: stat.label, vesselName: vessel.vesselName, vesselType: vessel.vesselType });
                         }}
                         style={{ background: stat.bg, padding: "10px 8px", textAlign: "center", borderRight: "1px solid #f3f4f6", cursor: stat.val > 0 ? "pointer" : "default" }}
                         title={stat.val > 0 ? "Go to " + stat.tab : ""}>
