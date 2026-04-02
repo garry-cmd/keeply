@@ -632,6 +632,11 @@ export default function App() {
   const [session, setSession]     = useState(undefined); // undefined = loading, null = not logged in
   const [needsSetup, setNeedsSetup] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [logEntries, setLogEntries]   = useState([]);
+  const [showLogbook, setShowLogbook]   = useState(false);
+  const [showAddLog, setShowAddLog]     = useState(false);
+  const [editingLog, setEditingLog]     = useState(null);
+  const [logForm, setLogForm]           = useState({});
   const [shareEmail, setShareEmail] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
   const [shareMsg, setShareMsg]   = useState(null);
@@ -1386,6 +1391,40 @@ export default function App() {
     }).catch(function(e){ setFindPartError(e.message); })
     .finally(function(){ setFindPartLoading(false); });
   }, [!!confirmPart]);
+
+  const saveLog = async function(){
+    if (!logForm.entry_date) return;
+    const body = {
+      vessel_id:     activeVesselId,
+      entry_type:    logForm.entry_type || "passage",
+      entry_date:    logForm.entry_date,
+      title:         logForm.title || null,
+      from_location: logForm.from_location || null,
+      to_location:   logForm.to_location || null,
+      distance_nm:   logForm.distance_nm ? parseFloat(logForm.distance_nm) : null,
+      engine_hours:  logForm.engine_hours ? parseFloat(logForm.engine_hours) : null,
+      fuel_used:     logForm.fuel_used ? parseFloat(logForm.fuel_used) : null,
+      conditions:    logForm.conditions || null,
+      notes:         logForm.notes || null,
+    };
+    try {
+      if (editingLog) {
+        const { data } = await supabase.from("logbook").update(body).eq("id", editingLog).select().single();
+        setLogEntries(function(prev){ return prev.map(function(e){ return e.id === editingLog ? data : e; }); });
+      } else {
+        const { data } = await supabase.from("logbook").insert(body).select().single();
+        setLogEntries(function(prev){ return [data, ...prev]; });
+      }
+      setShowAddLog(false); setEditingLog(null); setLogForm({});
+    } catch(e){ console.error("Log save error:", e); }
+  };
+
+  const deleteLog = async function(id){
+    try {
+      await supabase.from("logbook").delete().eq("id", id);
+      setLogEntries(function(prev){ return prev.filter(function(e){ return e.id !== id; }); });
+    } catch(e){ console.error("Log delete error:", e); }
+  };
 
   const shareVessel = async function(){
     if (!shareEmail.trim()) return;
