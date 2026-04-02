@@ -1001,6 +1001,11 @@ export default function App() {
           const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
           setLogEntries(lg || []);
         } catch(e) { setLogEntries([]); }
+
+        try {
+          const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
+          setLogEntries(lg || []);
+        } catch(e) { setLogEntries([]); }
     } catch(err) {
       setDbError(err.message);
     } finally {
@@ -4582,6 +4587,127 @@ export default function App() {
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
               <button onClick={shareVessel} disabled={shareLoading} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "#6b9fd4" : "#0f4c8a", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LOGBOOK PANEL */}
+      {showLogbook && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={function(){ setShowLogbook(false); }}>
+          <div style={{ background: "#f4f6f9", borderRadius: 16, width: "100%", maxWidth: 480, maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ background: "#0f4c8a", borderRadius: "16px 16px 0 0", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>Logbook</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{boatName} · {logEntries.filter(function(e){ return e.vessel_id === activeVesselId; }).length} entries</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button onClick={function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 8, padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Entry</button>
+                <button onClick={function(){ setShowLogbook(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 30, height: 30, color: "#fff", fontSize: 16, cursor: "pointer" }}>X</button>
+              </div>
+            </div>
+            <div style={{ overflowY: "auto", flex: 1, padding: "8px 0" }}>
+              {(function(){
+                const entries = logEntries.filter(function(e){ return e.vessel_id === activeVesselId; });
+                if (entries.length === 0) return (
+                  <div style={{ textAlign: "center", padding: "48px 20px", color: "#9ca3af" }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, color: "#6b7280" }}>No log entries yet</div>
+                    <div style={{ fontSize: 12, marginBottom: 20 }}>Record your passages and notes</div>
+                    <button onClick={function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }} style={{ background: "#0f4c8a", border: "none", borderRadius: 8, padding: "10px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Log First Entry</button>
+                  </div>
+                );
+                return entries.map(function(entry){
+                  const isPassage = entry.entry_type === "passage";
+                  return (
+                    <div key={entry.id} style={{ background: "#fff", margin: "6px 12px", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                      <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: isPassage ? "#eff6ff" : "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: isPassage ? "#0f4c8a" : "#16a34a", flexShrink: 0 }}>{isPassage ? "SAIL" : "NOTE"}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d23" }}>{isPassage && entry.from_location && entry.to_location ? entry.from_location + " → " + entry.to_location : entry.title || (isPassage ? "Passage" : "Note")}</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>{entry.entry_date}</div>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
+                            {entry.distance_nm && <span style={{ fontSize: 11, color: "#0f4c8a", background: "#eff6ff", borderRadius: 4, padding: "1px 6px", fontWeight: 600 }}>{entry.distance_nm} nm</span>}
+                            {entry.engine_hours && <span style={{ fontSize: 11, color: "#6b7280", background: "#f1f5f9", borderRadius: 4, padding: "1px 6px" }}>Engine {entry.engine_hours}h</span>}
+                            {entry.fuel_used && <span style={{ fontSize: 11, color: "#6b7280", background: "#f1f5f9", borderRadius: 4, padding: "1px 6px" }}>Fuel {entry.fuel_used}gal</span>}
+                            {entry.conditions && <span style={{ fontSize: 11, color: "#6b7280", background: "#f1f5f9", borderRadius: 4, padding: "1px 6px" }}>{entry.conditions}</span>}
+                          </div>
+                          {entry.notes && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{entry.notes.length > 100 ? entry.notes.substring(0, 100) + "..." : entry.notes}</div>}
+                        </div>
+                      </div>
+                      <div style={{ borderTop: "1px solid #f3f4f6", display: "flex" }}>
+                        <button onClick={function(){ setLogForm({ entry_type: entry.entry_type, entry_date: entry.entry_date, title: entry.title || "", from_location: entry.from_location || "", to_location: entry.to_location || "", distance_nm: entry.distance_nm || "", engine_hours: entry.engine_hours || "", fuel_used: entry.fuel_used || "", conditions: entry.conditions || "", notes: entry.notes || "" }); setEditingLog(entry.id); setShowAddLog(true); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "#6b7280", cursor: "pointer", fontWeight: 600 }}>Edit</button>
+                        <div style={{ width: 1, background: "#f3f4f6" }} />
+                        <button onClick={function(){ if (window.confirm("Delete this log entry?")) deleteLog(entry.id); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "#dc2626", cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD/EDIT LOG ENTRY */}
+      {showAddLog && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 460, maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ padding: "18px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d23" }}>{editingLog ? "Edit Entry" : "New Log Entry"}</div>
+              <button onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }} style={{ background: "#f1f5f9", border: "none", borderRadius: 8, width: 30, height: 30, fontSize: 14, cursor: "pointer", color: "#6b7280" }}>X</button>
+            </div>
+            <div style={{ overflowY: "auto", flex: 1, padding: "16px 20px" }}>
+              <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 10, padding: 3, marginBottom: 16 }}>
+                {["passage", "note"].map(function(t){ return (
+                  <button key={t} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { entry_type: t }); }); }}
+                    style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: (logForm.entry_type || "passage") === t ? "#fff" : "transparent", fontSize: 13, fontWeight: 700, cursor: "pointer", color: (logForm.entry_type || "passage") === t ? "#0f4c8a" : "#6b7280" }}>
+                    {t === "passage" ? "Passage" : "Note"}
+                  </button>
+                ); })}
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>DATE *</div>
+                <input type="date" value={logForm.entry_date || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { entry_date: e.target.value }); }); }} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+              </div>
+              {(logForm.entry_type || "passage") === "note" ? (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>TITLE</div>
+                  <input placeholder="e.g. Marina maintenance day" value={logForm.title || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { title: e.target.value }); }); }} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>FROM</div><input placeholder="Departure" value={logForm.from_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { from_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>TO</div><input placeholder="Arrival" value={logForm.to_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { to_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                </div>
+              )}
+              {(logForm.entry_type || "passage") === "passage" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>DIST nm</div><input type="number" placeholder="0" value={logForm.distance_nm || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { distance_nm: e.target.value }); }); }} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 10px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>ENG HRS</div><input type="number" placeholder="0" value={logForm.engine_hours || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { engine_hours: e.target.value }); }); }} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 10px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL gal</div><input type="number" placeholder="0" value={logForm.fuel_used || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { fuel_used: e.target.value }); }); }} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 10px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                </div>
+              )}
+              {(logForm.entry_type || "passage") === "passage" && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 6 }}>CONDITIONS</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {["Calm", "Light breeze", "Moderate", "Heavy", "Motoring", "Close hauled", "Downwind"].map(function(c){ return (
+                      <button key={c} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { conditions: f.conditions === c ? "" : c }); }); }} style={{ padding: "5px 10px", border: "1.5px solid " + (logForm.conditions === c ? "#0f4c8a" : "#e2e8f0"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.conditions === c ? "#eff6ff" : "#fff", color: logForm.conditions === c ? "#0f4c8a" : "#6b7280", cursor: "pointer" }}>{c}</button>
+                    ); })}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.5px", marginBottom: 4 }}>NOTES</div>
+                <textarea placeholder="What happened? Any issues, events, or things to remember..." value={logForm.notes || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { notes: e.target.value }); }); }} rows={4} style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none" }} />
+              </div>
+            </div>
+            <div style={{ padding: "12px 20px 20px", borderTop: "1px solid #f3f4f6", flexShrink: 0 }}>
+              <button onClick={saveLog} disabled={!logForm.entry_date} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: logForm.entry_date ? "#0f4c8a" : "#93c5fd", color: "#fff", fontSize: 15, fontWeight: 700, cursor: logForm.entry_date ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                {editingLog ? "Save Changes" : "Save Log Entry"}
+              </button>
             </div>
           </div>
         </div>
