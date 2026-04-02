@@ -2331,8 +2331,8 @@ export default function App() {
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d23" }}>🔧 Open Repairs</div>
             <div onClick={function(){
                 const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                if (userPlan === "free" && vesselRepairs.length >= 2) {
-                  setUpgradeReason("You've used both free repairs. Upgrade to Pro to log unlimited repairs with AI suggestions.");
+                if (userPlan === "free" && vesselRepairs.length >= 5) {
+                  setUpgradeReason("You've used your free repairs. Upgrade to Pro for unlimited repairs with AI suggestions.");
                   setShowUpgradeModal(true);
                   return;
                 }
@@ -3068,8 +3068,8 @@ export default function App() {
       } },
                 { label: "Add Repair", icon: "🔧", action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                    if (userPlan === "free" && vesselRepairs.length >= 2) {
-                      setUpgradeReason("You've used both free repairs. Upgrade to Pro to log unlimited repairs with AI suggestions.");
+                    if (userPlan === "free" && vesselRepairs.length >= 5) {
+                      setUpgradeReason("You've used your free repairs. Upgrade to Pro for unlimited repairs with AI suggestions.");
                       setShowUpgradeModal(true);
                       setShowFab(false);
                       return;
