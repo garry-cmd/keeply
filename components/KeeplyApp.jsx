@@ -1538,6 +1538,8 @@ export default function App() {
           repairs: repairs || [],
           overdueCount: overdue.length,
           dueSoonCount: dueSoon.length,
+          overdueTasks: overdue,
+          dueSoonTasks: dueSoon,
           expiringDocs: expiringDocs.slice(0, 3),
         };
       }));
