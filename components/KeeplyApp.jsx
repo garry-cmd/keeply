@@ -4221,21 +4221,11 @@ export default function App() {
               </div>
 
               {/* ── Email Digest Timing ── */}
-              {profilePrefs.alertEmail && (<>
-                <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px" }}>EMAIL DIGEST TIMING</div>
-                <div style={{ background: "#fff", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
-                  <div style={{ padding: "12px 20px", borderBottom: "0.5px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>Send time</div>
-                    <input type="time" value={profilePrefs.digestTime}
-                      onChange={function(e){ setProfilePrefs(function(p){ return Object.assign({}, p, { digestTime: e.target.value }); }); }}
-                      style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "5px 10px", fontSize: 13, color: "#0f4c8a", fontWeight: 600, outline: "none" }} />
-                  </div>
-                  <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1d23" }}>Timezone</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>{profilePrefs.timezone.replace("_", " ")}</div>
-                  </div>
+              {profilePrefs.alertEmail && (
+                <div style={{ padding: "10px 20px 14px" }}>
+                  <div style={{ fontSize: 11, color: "#9ca3af" }}>Sent every Monday morning with your upcoming tasks and open repairs.</div>
                 </div>
-              </>)}
+              )}
 
               {/* ── Account ── */}
               <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "#6b7280", letterSpacing: "0.6px" }}>ACCOUNT</div>
