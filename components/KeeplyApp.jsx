@@ -996,6 +996,11 @@ export default function App() {
         const rp = await supa("repairs", { query: "vessel_id=eq." + vid + "&order=date.desc" });
         setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
       } catch(e) { setRepairs([]); }
+
+        try {
+          const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
+          setLogEntries(lg || []);
+        } catch(e) { setLogEntries([]); }
     } catch(err) {
       setDbError(err.message);
     } finally {
