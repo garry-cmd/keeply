@@ -814,6 +814,7 @@ export default function App() {
 
   // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
+  const [vesselMembers, setVesselMembers]   = useState([]);
   const [showAddRepair, setShowAddRepair]   = useState(false);
   const [newRepair, setNewRepair]           = useState({ description: "", section: "Engine", _equipmentId: null });
   const [expandedTask, setExpandedTask] = useState(null);
@@ -957,9 +958,15 @@ export default function App() {
           const rp = await supa("repairs", { query: "vessel_id=eq." + firstId + "&order=date.desc" });
           setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
         } catch(e) {
-          // repairs table may not exist yet — use empty array, show migration notice
           setRepairs([]);
         }
+
+        // Load vessel members for all user vessels
+        try {
+          const allVesselIds = normalizedVessels.map(function(v){ return v.id; });
+          const mb = await supa("vessel_members", { query: "vessel_id=in.(" + allVesselIds.join(",") + ")&order=created_at" });
+          setVesselMembers(mb || []);
+        } catch(e) { setVesselMembers([]); }
 
       } catch(err) {
         setDbError(err.message);
@@ -1475,6 +1482,7 @@ export default function App() {
       });
       setShareMsg("Invite sent to " + trimmed);
       setShareEmail("");
+      setVesselMembers(function(prev){ return [...prev, { id: Date.now().toString(), vessel_id: activeVesselId, email: trimmed, role: "member", user_id: null, created_at: new Date().toISOString() }]; });
     } catch(e) {
       setShareMsg("Error: " + e.message);
     } finally {
@@ -1484,7 +1492,8 @@ export default function App() {
 
   const removeMember = async function(memberId){
     try {
-      await supabase.from("vessel_members").delete().eq("id", memberId);
+      const { error } = await supabase.from("vessel_members").delete().eq("id", memberId);
+      if (error) throw error;
       setVesselMembers(function(prev){ return prev.filter(function(m){ return m.id !== memberId; }); });
     } catch(e){ console.error("Remove member error:", e); }
   };
@@ -4760,20 +4769,55 @@ export default function App() {
       {showShare && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
           onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+          <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 400, overflow: "hidden", border: "1px solid var(--border-strong)" }}
             onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <div style={{ fontWeight: 800, fontSize: 16 }}>👥 Share {boatName}</div>
-              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)", lineHeight: 1 }}>✕</button>
+            {/* Header */}
+            <div style={{ background: "#0f4c8a", padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: "#fff" }}>👥 Share {boatName}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Invite crew to access this vessel</div>
+              </div>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 30, height: 30, color: "#fff", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
             </div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Invite someone to access this vessel</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>EMAIL ADDRESS</div>
-            <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
-              style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
-            {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "var(--danger-bg)" : "var(--ok-bg)", color: shareMsg.startsWith("Error") ? "var(--danger-text)" : "var(--ok-text)", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>{shareMsg}</div>}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-              <button onClick={shareVessel} disabled={shareLoading} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
+
+            <div style={{ padding: "20px 20px 0" }}>
+              {/* Current members */}
+              {(function(){
+                const currentMembers = vesselMembers.filter(function(m){ return m.vessel_id === activeVesselId && m.role !== "owner"; });
+                if (currentMembers.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>CURRENT CREW</div>
+                    {currentMembers.map(function(m){
+                      return (
+                        <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: "var(--bg-subtle)", borderRadius: 8, marginBottom: 6, border: "1px solid var(--border)" }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{m.email}</div>
+                            <div style={{ fontSize: 11, color: m.user_id ? "var(--ok-text)" : "var(--warn-text)", marginTop: 1 }}>
+                              {m.user_id ? "✓ Active member" : "⏳ Invite pending"}
+                            </div>
+                          </div>
+                          <button onClick={function(){ if (window.confirm("Remove " + m.email + " from this vessel?")) removeMember(m.id); }}
+                            style={{ background: "none", border: "none", color: "var(--danger-text)", fontSize: 13, cursor: "pointer", fontWeight: 700, padding: "4px 8px" }}>Remove</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Invite form */}
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>INVITE BY EMAIL</div>
+              <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
+                onKeyDown={function(e){ if (e.key === "Enter") shareVessel(); }}
+                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 10, background: "var(--bg-subtle)", color: "var(--text-primary)" }} />
+              {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "var(--danger-bg)" : "var(--ok-bg)", color: shareMsg.startsWith("Error") ? "var(--danger-text)" : "var(--ok-text)", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 10 }}>{shareMsg}</div>}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: "12px 20px 20px", display: "flex", gap: 8 }}>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-subtle)", color: "var(--text-primary)", cursor: "pointer", fontWeight: 600 }}>Close</button>
+              <button onClick={shareVessel} disabled={shareLoading || !shareEmail.trim()} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: shareLoading ? "default" : "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
             </div>
           </div>
         </div>
