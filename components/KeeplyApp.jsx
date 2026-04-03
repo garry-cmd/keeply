@@ -1006,6 +1006,11 @@ export default function App() {
           const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
           setLogEntries(lg || []);
         } catch(e) { setLogEntries([]); }
+
+        try {
+          const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
+          setLogEntries(lg || []);
+        } catch(e) { setLogEntries([]); }
     } catch(err) {
       setDbError(err.message);
     } finally {
@@ -1440,23 +1445,36 @@ export default function App() {
     if (!shareEmail.trim()) return;
     setShareLoading(true); setShareMsg(null);
     try {
-      // Check if this email already has an account
       const trimmed = shareEmail.trim().toLowerCase();
-      // Insert pending invite — user_id is null until they sign in
-      const { error } = await supabase.from("vessel_members").insert({
-        vessel_id: activeVesselId,
-        email:     trimmed,
-        role:      "member",
-        user_id:   null,
-      });
+      const alreadyMember = vesselMembers.some(function(m){ return m.vessel_id === activeVesselId && m.email === trimmed; });
+      if (alreadyMember) { setShareMsg("Error: " + trimmed + " already has access"); setShareLoading(false); return; }
+      const { error } = await supabase.from("vessel_members").insert({ vessel_id: activeVesselId, email: trimmed, role: "member", user_id: null });
       if (error) throw error;
-      setShareMsg("Invite recorded for " + trimmed);
+      const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
+      await fetch("/api/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: trimmed,
+          vesselName: vessel ? vessel.vesselName : boatName,
+          vesselType: vessel ? vessel.vesselType : "sail",
+          inviterName: profilePrefs.displayName || (session && session.user ? session.user.email : "A Keeply user"),
+        }),
+      });
+      setShareMsg("Invite sent to " + trimmed);
       setShareEmail("");
     } catch(e) {
       setShareMsg("Error: " + e.message);
     } finally {
       setShareLoading(false);
     }
+  };
+
+  const removeMember = async function(memberId){
+    try {
+      await supabase.from("vessel_members").delete().eq("id", memberId);
+      setVesselMembers(function(prev){ return prev.filter(function(m){ return m.id !== memberId; }); });
+    } catch(e){ console.error("Remove member error:", e); }
   };
 
   const parseCSV = function(text) {
@@ -1902,6 +1920,7 @@ export default function App() {
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); }, active: false },
+                  { label: "Logbook", action: function(){ setShowLogbook(true); setShowMobileMenu(false); }, active: false },
                   { label: "⚙️ Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
                 ].map(function(item){ return (
                   <div key={item.label} onClick={item.action}
