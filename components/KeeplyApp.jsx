@@ -4774,8 +4774,11 @@ export default function App() {
             {/* Header */}
             <div style={{ background: "#0f4c8a", padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: "#fff" }}>👥 Share {boatName}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Invite crew to access this vessel</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Sharing</div>
+                <div style={{ fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: "-0.3px" }}>{boatName}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>
+                  {settings.make ? [settings.year, settings.make, settings.model].filter(Boolean).join(" ") : "Invite crew to access this vessel"}
+                </div>
               </div>
               <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 30, height: 30, color: "#fff", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
             </div>
@@ -4810,7 +4813,11 @@ export default function App() {
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>INVITE BY EMAIL</div>
               <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
                 onKeyDown={function(e){ if (e.key === "Enter") shareVessel(); }}
-                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 10, background: "var(--bg-subtle)", color: "var(--text-primary)" }} />
+                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 6, background: "var(--bg-subtle)", color: "var(--text-primary)" }} />
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>
+                They must sign up using this exact email to access {boatName}.
+                {vessels.length > 1 && <span style={{ color: "var(--brand)", marginLeft: 4, cursor: "pointer" }} onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>Wrong vessel? Switch first ↗</span>}
+              </div>
               {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "var(--danger-bg)" : "var(--ok-bg)", color: shareMsg.startsWith("Error") ? "var(--danger-text)" : "var(--ok-text)", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 10 }}>{shareMsg}</div>}
             </div>
 
