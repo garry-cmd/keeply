@@ -1,123 +1,35 @@
 /* ─── KEEPLY DESIGN TOKENS ───────────────────────────────────────────────────
-   Dark-first. All colors reference these variables.
-   Admin dashboard wraps content in .admin-light to override.
+   Light mode is the default (:root).
+   Dark mode applied via body.dark-mode — toggled by user preference.
+   Admin dashboard uses the same light tokens (no extra wrapper needed).
    ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
 
   /* ── Backgrounds ────────────────────────────────────────────────────────── */
-  --bg-app:        #0a0f1a;   /* page / outermost shell                       */
-  --bg-card:       #0d1520;   /* cards, list items                            */
-  --bg-elevated:   #111e2e;   /* modals, dropdowns, popovers                  */
-  --bg-subtle:     #0f1a28;   /* input fields, inner surfaces                 */
-  --bg-overlay:    rgba(0, 0, 0, 0.65); /* modal backdrops                   */
-
-  /* ── Brand ──────────────────────────────────────────────────────────────── */
-  --brand:         #4a8ab0;   /* primary interactive colour                   */
-  --brand-deep:    #1e3a5a;   /* brand on dark surfaces (buttons, borders)    */
-  --brand-muted:   #2d5070;   /* placeholder text, secondary links            */
-
-  /* ── Borders ────────────────────────────────────────────────────────────── */
-  --border:        #1a2535;   /* default border                               */
-  --border-strong: #1e3a5a;   /* emphasized border (focused inputs, cards)    */
-
-  /* ── Text ───────────────────────────────────────────────────────────────── */
-  --text-primary:   #e8f0f8;  /* headings, prominent values                   */
-  --text-secondary: #8aaccc;  /* body copy, descriptions                      */
-  --text-muted:     #3d5a78;  /* timestamps, labels, captions                 */
-  --text-label:     #2d4460;  /* ALL CAPS section labels, instrument labels   */
-  --text-on-brand:  #ffffff;  /* text sitting on --brand backgrounds          */
-
-  /* ── Semantic: Status ───────────────────────────────────────────────────── */
-  --ok-text:        #2a9e6a;
-  --ok-bg:          #0a1a12;
-  --ok-border:      #2a6e4a;
-
-  --warn-text:      #c87a20;
-  --warn-bg:        #1a1208;
-  --warn-border:    #6e4a0a;
-
-  --danger-text:    #c84040;
-  --danger-bg:      #1a0a0a;
-  --danger-border:  #7f1d1d;
-
-  --info-text:      #4a8ab0;
-  --info-bg:        #0d1828;
-  --info-border:    #1e3a5a;
-
-  /* ── Semantic: Due badges ───────────────────────────────────────────────── */
-  --critical-text:  #f87171;
-  --critical-bg:    #2a0f0f;
-  --critical-border:#7f1d1d;
-
-  --overdue-text:   #fb923c;
-  --overdue-bg:     #2a1400;
-  --overdue-border: #7c2d12;
-
-  --duesoon-text:   #fbbf24;
-  --duesoon-bg:     #1a1400;
-  --duesoon-border: #78350f;
-
-  /* ── Priority colours ───────────────────────────────────────────────────── */
-  --priority-critical-text:  #f87171;
-  --priority-critical-bg:    #2a0f0f;
-
-  --priority-high-text:      #fb923c;
-  --priority-high-bg:        #2a1400;
-
-  --priority-medium-text:    #fbbf24;
-  --priority-medium-bg:      #1a1400;
-
-  --priority-low-text:       #4ade80;
-  --priority-low-bg:         #0a2010;
-
-  /* ── Order status ───────────────────────────────────────────────────────── */
-  --order-pending-text:   #fbbf24;
-  --order-pending-bg:     #1a1400;
-
-  --order-ordered-text:   #60a5fa;
-  --order-ordered-bg:     #0d1828;
-
-  --order-fulfilled-text: #4ade80;
-  --order-fulfilled-bg:   #0a2010;
-
-  /* ── Typography ─────────────────────────────────────────────────────────── */
-  --font-sans:  "'DM Sans', 'Helvetica Neue', sans-serif";
-  --font-mono:  "'DM Mono', 'Courier New', monospace";
-
-  /* ── Radius ─────────────────────────────────────────────────────────────── */
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
-  --radius-xl:  20px;
-}
-
-
-/* ─── ADMIN LIGHT OVERRIDE ───────────────────────────────────────────────────
-   Wrap the admin dashboard in <div className="admin-light"> to restore
-   light-mode colours for that surface only.
-   ─────────────────────────────────────────────────────────────────────────── */
-
-.admin-light {
   --bg-app:        #f4f6f9;
   --bg-card:       #ffffff;
   --bg-elevated:   #ffffff;
-  --bg-subtle:     #fafafa;
+  --bg-subtle:     #f8fafc;
   --bg-overlay:    rgba(0, 0, 0, 0.4);
 
+  /* ── Brand ──────────────────────────────────────────────────────────────── */
   --brand:         #0f4c8a;
-  --brand-deep:    #0f4c8a;
+  --brand-deep:    #eff6ff;
   --brand-muted:   #3b82f6;
 
+  /* ── Borders ────────────────────────────────────────────────────────────── */
   --border:        #e2e8f0;
   --border-strong: #cbd5e1;
 
+  /* ── Text ───────────────────────────────────────────────────────────────── */
   --text-primary:   #1a1d23;
   --text-secondary: #374151;
   --text-muted:     #9ca3af;
   --text-label:     #6b7280;
   --text-on-brand:  #ffffff;
 
+  /* ── Semantic: Status ───────────────────────────────────────────────────── */
   --ok-text:        #16a34a;
   --ok-bg:          #f0fdf4;
   --ok-border:      #bbf7d0;
@@ -134,6 +46,7 @@
   --info-bg:        #dbeafe;
   --info-border:    #93c5fd;
 
+  /* ── Semantic: Due badges ───────────────────────────────────────────────── */
   --critical-text:  #dc2626;
   --critical-bg:    #fee2e2;
   --critical-border:#fca5a5;
@@ -146,26 +59,99 @@
   --duesoon-bg:     #fefce8;
   --duesoon-border: #fde68a;
 
+  /* ── Priority ───────────────────────────────────────────────────────────── */
   --priority-critical-text:  #dc2626;
   --priority-critical-bg:    #fee2e2;
-
   --priority-high-text:      #ea580c;
   --priority-high-bg:        #fff7ed;
-
   --priority-medium-text:    #ca8a04;
   --priority-medium-bg:      #fefce8;
-
   --priority-low-text:       #16a34a;
   --priority-low-bg:         #f0fdf4;
 
+  /* ── Order status ───────────────────────────────────────────────────────── */
   --order-pending-text:   #854d0e;
   --order-pending-bg:     #fef9c3;
-
   --order-ordered-text:   #1e40af;
   --order-ordered-bg:     #dbeafe;
-
   --order-fulfilled-text: #166534;
   --order-fulfilled-bg:   #dcfce7;
+
+  /* ── Radius ─────────────────────────────────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+}
+
+
+/* ─── DARK MODE ──────────────────────────────────────────────────────────────
+   Applied when <body class="dark-mode"> — toggled by user preference toggle.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+body.dark-mode {
+  --bg-app:        #0a0f1a;
+  --bg-card:       #0d1520;
+  --bg-elevated:   #111e2e;
+  --bg-subtle:     #0f1a28;
+  --bg-overlay:    rgba(0, 0, 0, 0.65);
+
+  --brand:         #4a8ab0;
+  --brand-deep:    #1e3a5a;
+  --brand-muted:   #2d5070;
+
+  --border:        #1a2535;
+  --border-strong: #1e3a5a;
+
+  --text-primary:   #e8f0f8;
+  --text-secondary: #8aaccc;
+  --text-muted:     #3d5a78;
+  --text-label:     #2d4460;
+  --text-on-brand:  #ffffff;
+
+  --ok-text:        #2a9e6a;
+  --ok-bg:          #0a1a12;
+  --ok-border:      #2a6e4a;
+
+  --warn-text:      #c87a20;
+  --warn-bg:        #1a1208;
+  --warn-border:    #6e4a0a;
+
+  --danger-text:    #c84040;
+  --danger-bg:      #1a0a0a;
+  --danger-border:  #7f1d1d;
+
+  --info-text:      #4a8ab0;
+  --info-bg:        #0d1828;
+  --info-border:    #1e3a5a;
+
+  --critical-text:  #f87171;
+  --critical-bg:    #2a0f0f;
+  --critical-border:#7f1d1d;
+
+  --overdue-text:   #fb923c;
+  --overdue-bg:     #2a1400;
+  --overdue-border: #7c2d12;
+
+  --duesoon-text:   #fbbf24;
+  --duesoon-bg:     #1a1400;
+  --duesoon-border: #78350f;
+
+  --priority-critical-text:  #f87171;
+  --priority-critical-bg:    #2a0f0f;
+  --priority-high-text:      #fb923c;
+  --priority-high-bg:        #2a1400;
+  --priority-medium-text:    #fbbf24;
+  --priority-medium-bg:      #1a1400;
+  --priority-low-text:       #4ade80;
+  --priority-low-bg:         #0a2010;
+
+  --order-pending-text:   #fbbf24;
+  --order-pending-bg:     #1a1400;
+  --order-ordered-text:   #60a5fa;
+  --order-ordered-bg:     #0d1828;
+  --order-fulfilled-text: #4ade80;
+  --order-fulfilled-bg:   #0a2010;
 }
 
 
@@ -181,12 +167,10 @@ body {
   color: var(--text-primary);
   font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.2s, color 0.2s;
 }
 
-/* ─── FORM ELEMENTS ──────────────────────────────────────────────────────────
-   Global input/select/textarea styling so every form field inherits dark mode
-   without needing inline overrides on each element.
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ─── FORM ELEMENTS ──────────────────────────────────────────────────────────*/
 
 input, select, textarea {
   background:  var(--bg-subtle);
@@ -207,16 +191,14 @@ input::placeholder, textarea::placeholder {
   color: var(--text-label);
 }
 
-/* Select arrow needs recolouring in dark mode */
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%233d5a78' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 28px;
 }
 
-/* Scrollbar — subtle in dark mode */
 ::-webkit-scrollbar        { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: var(--border-strong); border-radius: 2px; }
