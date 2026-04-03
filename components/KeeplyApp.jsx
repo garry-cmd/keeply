@@ -232,7 +232,7 @@ function AdminDashboard({ onClose }) {
     async function loadMetrics() {
       try {
         const [vessels, equipment, tasks, repairs, members, authCount, partsMetrics, storage] = await Promise.all([
-          supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,created_at,user_id&order=created_at.desc" }),
+          supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,make,model,year,photo_url,engine_hours,engine_hours_date,created_at,user_id&order=created_at.desc" }),
           supa("equipment", { query: "select=id,vessel_id,category,docs,logs,custom_parts" }),
           supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
           supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
@@ -907,7 +907,9 @@ export default function App() {
             make:       v.make        || "",
             model:      v.model       || "",
             year:       v.year        || "",
-            photoUrl:   v.photo_url   || "",
+            photoUrl:     v.photo_url      || "",
+            engineHours:  v.engine_hours   || null,
+            engineHoursDate: v.engine_hours_date || null,
           };
         });
         setVessels(normalizedVessels);
@@ -1081,7 +1083,7 @@ export default function App() {
       } else {
         const created = await supa("vessels", { method: "POST", body: payload });
         const nv = created[0];
-        const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: nv.photo_url || "" };
+        const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: nv.photo_url || "", engineHours: nv.engine_hours || null, engineHoursDate: nv.engine_hours_date || null };
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
         // If user has other vessels, offer to copy items
@@ -1819,7 +1821,7 @@ export default function App() {
   // Signed in but no vessel yet
   if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
     setNeedsSetup(false);
-    const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "" };
+    const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "", engineHours: vessel.engine_hours || null, engineHoursDate: vessel.engine_hours_date || null };
     setVessels([normalized]);
     setActiveVesselId(vessel.id);
     // Load all equipment and tasks that were just created by AI onboarding
@@ -2419,8 +2421,13 @@ export default function App() {
                       <button onClick={function(){
                         const hrs = prompt("Current engine hours:");
                         if (!hrs || isNaN(hrs)) return;
-                        const updated = { ...settings, engineHours: parseInt(hrs), engineHoursDate: today() };
-                        setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? updated : v; }); });
+                        const parsed = parseInt(hrs);
+                        const dated = today();
+                        // Update local state immediately
+                        setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
+                        // Persist to Supabase
+                        supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
+                          .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
                       }} style={{ fontSize: 10, color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontWeight: 600 }}>+ Log hours</button>
                     </>
                   )}
