@@ -644,6 +644,14 @@ export default function App() {
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
   const [tab, setTab]   = useState("hub");
   const [darkMode, setDarkMode] = useState(function(){ return typeof window !== "undefined" && localStorage.getItem("keeply-dark") === "1"; });
+
+  useEffect(function(){
+    if (typeof document !== "undefined") {
+      if (darkMode) { document.body.classList.add("dark-mode"); }
+      else { document.body.classList.remove("dark-mode"); }
+      localStorage.setItem("keeply-dark", darkMode ? "1" : "0");
+    }
+  }, [darkMode]);
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [fleetPanel, setFleetPanel]     = useState(null); // { vesselId, type, vesselName }
@@ -1768,7 +1776,7 @@ export default function App() {
   // ─── STYLES ──────────────────────────────────────────────────────────────────
   const s = {
     app:     { fontFamily: "'DM Sans','Helvetica Neue',sans-serif", background: "var(--bg-app)", minHeight: "100vh", color: "var(--text-primary)" },
-    topBar:  { background: "var(--brand-deep)", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, borderBottom: "1px solid var(--border)" },
+    topBar:  { background: "#0f4c8a", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 },
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
@@ -1904,11 +1912,7 @@ export default function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
-          {totalAlerts > 0 && (
-            <button onClick={function(){ setShowUrgentPanel(true); }} style={{ background: criticalMaint > 0 ? "var(--danger-text)" : dueSoonMaint > 0 ? "var(--warn-text)" : "var(--duesoon-text)", border: "none", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-              🚨 {totalAlerts}
-            </button>
-          )}
+
           <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "var(--brand)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🛒{cartQty > 0 ? " " + cartQty : ""}
           </button>
