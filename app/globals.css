@@ -1,26 +1,222 @@
-@import "tailwindcss";
+/* ─── KEEPLY DESIGN TOKENS ───────────────────────────────────────────────────
+   Dark-first. All colors reference these variables.
+   Admin dashboard wraps content in .admin-light to override.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+
+  /* ── Backgrounds ────────────────────────────────────────────────────────── */
+  --bg-app:        #0a0f1a;   /* page / outermost shell                       */
+  --bg-card:       #0d1520;   /* cards, list items                            */
+  --bg-elevated:   #111e2e;   /* modals, dropdowns, popovers                  */
+  --bg-subtle:     #0f1a28;   /* input fields, inner surfaces                 */
+  --bg-overlay:    rgba(0, 0, 0, 0.65); /* modal backdrops                   */
+
+  /* ── Brand ──────────────────────────────────────────────────────────────── */
+  --brand:         #4a8ab0;   /* primary interactive colour                   */
+  --brand-deep:    #1e3a5a;   /* brand on dark surfaces (buttons, borders)    */
+  --brand-muted:   #2d5070;   /* placeholder text, secondary links            */
+
+  /* ── Borders ────────────────────────────────────────────────────────────── */
+  --border:        #1a2535;   /* default border                               */
+  --border-strong: #1e3a5a;   /* emphasized border (focused inputs, cards)    */
+
+  /* ── Text ───────────────────────────────────────────────────────────────── */
+  --text-primary:   #e8f0f8;  /* headings, prominent values                   */
+  --text-secondary: #8aaccc;  /* body copy, descriptions                      */
+  --text-muted:     #3d5a78;  /* timestamps, labels, captions                 */
+  --text-label:     #2d4460;  /* ALL CAPS section labels, instrument labels   */
+  --text-on-brand:  #ffffff;  /* text sitting on --brand backgrounds          */
+
+  /* ── Semantic: Status ───────────────────────────────────────────────────── */
+  --ok-text:        #2a9e6a;
+  --ok-bg:          #0a1a12;
+  --ok-border:      #2a6e4a;
+
+  --warn-text:      #c87a20;
+  --warn-bg:        #1a1208;
+  --warn-border:    #6e4a0a;
+
+  --danger-text:    #c84040;
+  --danger-bg:      #1a0a0a;
+  --danger-border:  #7f1d1d;
+
+  --info-text:      #4a8ab0;
+  --info-bg:        #0d1828;
+  --info-border:    #1e3a5a;
+
+  /* ── Semantic: Due badges ───────────────────────────────────────────────── */
+  --critical-text:  #f87171;
+  --critical-bg:    #2a0f0f;
+  --critical-border:#7f1d1d;
+
+  --overdue-text:   #fb923c;
+  --overdue-bg:     #2a1400;
+  --overdue-border: #7c2d12;
+
+  --duesoon-text:   #fbbf24;
+  --duesoon-bg:     #1a1400;
+  --duesoon-border: #78350f;
+
+  /* ── Priority colours ───────────────────────────────────────────────────── */
+  --priority-critical-text:  #f87171;
+  --priority-critical-bg:    #2a0f0f;
+
+  --priority-high-text:      #fb923c;
+  --priority-high-bg:        #2a1400;
+
+  --priority-medium-text:    #fbbf24;
+  --priority-medium-bg:      #1a1400;
+
+  --priority-low-text:       #4ade80;
+  --priority-low-bg:         #0a2010;
+
+  /* ── Order status ───────────────────────────────────────────────────────── */
+  --order-pending-text:   #fbbf24;
+  --order-pending-bg:     #1a1400;
+
+  --order-ordered-text:   #60a5fa;
+  --order-ordered-bg:     #0d1828;
+
+  --order-fulfilled-text: #4ade80;
+  --order-fulfilled-bg:   #0a2010;
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --font-sans:  "'DM Sans', 'Helvetica Neue', sans-serif";
+  --font-mono:  "'DM Mono', 'Courier New', monospace";
+
+  /* ── Radius ─────────────────────────────────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+/* ─── ADMIN LIGHT OVERRIDE ───────────────────────────────────────────────────
+   Wrap the admin dashboard in <div className="admin-light"> to restore
+   light-mode colours for that surface only.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.admin-light {
+  --bg-app:        #f4f6f9;
+  --bg-card:       #ffffff;
+  --bg-elevated:   #ffffff;
+  --bg-subtle:     #fafafa;
+  --bg-overlay:    rgba(0, 0, 0, 0.4);
+
+  --brand:         #0f4c8a;
+  --brand-deep:    #0f4c8a;
+  --brand-muted:   #3b82f6;
+
+  --border:        #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --text-primary:   #1a1d23;
+  --text-secondary: #374151;
+  --text-muted:     #9ca3af;
+  --text-label:     #6b7280;
+  --text-on-brand:  #ffffff;
+
+  --ok-text:        #16a34a;
+  --ok-bg:          #f0fdf4;
+  --ok-border:      #bbf7d0;
+
+  --warn-text:      #d97706;
+  --warn-bg:        #fffbeb;
+  --warn-border:    #fde68a;
+
+  --danger-text:    #dc2626;
+  --danger-bg:      #fef2f2;
+  --danger-border:  #fca5a5;
+
+  --info-text:      #1e40af;
+  --info-bg:        #dbeafe;
+  --info-border:    #93c5fd;
+
+  --critical-text:  #dc2626;
+  --critical-bg:    #fee2e2;
+  --critical-border:#fca5a5;
+
+  --overdue-text:   #ea580c;
+  --overdue-bg:     #fff7ed;
+  --overdue-border: #fed7aa;
+
+  --duesoon-text:   #ca8a04;
+  --duesoon-bg:     #fefce8;
+  --duesoon-border: #fde68a;
+
+  --priority-critical-text:  #dc2626;
+  --priority-critical-bg:    #fee2e2;
+
+  --priority-high-text:      #ea580c;
+  --priority-high-bg:        #fff7ed;
+
+  --priority-medium-text:    #ca8a04;
+  --priority-medium-bg:      #fefce8;
+
+  --priority-low-text:       #16a34a;
+  --priority-low-bg:         #f0fdf4;
+
+  --order-pending-text:   #854d0e;
+  --order-pending-bg:     #fef9c3;
+
+  --order-ordered-text:   #1e40af;
+  --order-ordered-bg:     #dbeafe;
+
+  --order-fulfilled-text: #166534;
+  --order-fulfilled-bg:   #dcfce7;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+
+/* ─── BASE RESETS ────────────────────────────────────────────────────────────*/
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* ─── FORM ELEMENTS ──────────────────────────────────────────────────────────
+   Global input/select/textarea styling so every form field inherits dark mode
+   without needing inline overrides on each element.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+input, select, textarea {
+  background:  var(--bg-subtle);
+  color:       var(--text-primary);
+  border:      1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size:   13px;
+  outline:     none;
+  transition:  border-color 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--border-strong);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-label);
+}
+
+/* Select arrow needs recolouring in dark mode */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%233d5a78' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+/* Scrollbar — subtle in dark mode */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--border-strong); border-radius: 2px; }
