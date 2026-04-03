@@ -2410,8 +2410,11 @@ export default function App() {
                         <button onClick={function(){
                           const hrs = prompt("Current engine hours:");
                           if (!hrs || isNaN(hrs)) return;
-                          const updated = { ...settings, engineHours: parseInt(hrs), engineHoursDate: today() };
-                          setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? updated : v; }); });
+                          const parsed = parseInt(hrs);
+                          const dated = today();
+                          setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
+                          supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
+                            .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
                         }} style={{ fontSize: 9, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}>update</button>
                       </div>
                     </>
