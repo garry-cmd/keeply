@@ -3266,6 +3266,7 @@ export default function App() {
         }
         setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
       } },
+                { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
                 { label: "Add Repair", icon: "🔧", action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
                     if (userPlan === "free" && vesselRepairs.length >= 5) {
@@ -3276,7 +3277,7 @@ export default function App() {
                     }
                     setShowAddRepair(true); setShowFab(false);
                   } },
-                { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
+                { label: "Log Entry", icon: "🗺️", action: function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
               ].map(function(item){ return (
                 <div key={item.label} onClick={item.action}
                   style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
@@ -4937,28 +4938,6 @@ export default function App() {
         </div>
       )}
 
-          {/* ── FAB — only on My Boat ── */}
-          {view === "customer" && tab === "boat" && showRepairsFab && <div onClick={function(){ setShowRepairsFab(false); }} style={{ position: "fixed", inset: 0, zIndex: 299 }} />}
-          {view === "customer" && tab === "boat" && <div style={{ position: "fixed", bottom: 24, right: 20, zIndex: 300 }}>
-            {showRepairsFab && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
-                <div onClick={function(){ setShowRepairsFab(false); setShowAddRepair(true); }}
-                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
-                  <span style={{ fontSize: 16 }}>🔧</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Add Repair</span>
-                </div>
-                <div onClick={function(){ setShowRepairsFab(false); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }}
-                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
-                  <span style={{ fontSize: 16 }}>🗺️</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Log Entry</span>
-                </div>
-              </div>
-            )}
-            <div onClick={function(){ setShowRepairsFab(function(f){ return !f; }); }}
-              style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(15,76,138,0.4)", marginLeft: "auto", transition: "transform 0.2s", transform: showRepairsFab ? "rotate(45deg)" : "rotate(0deg)" }}>
-              <span style={{ color: "#fff", fontSize: 28, lineHeight: 1, fontWeight: 300 }}>+</span>
-            </div>
-          </div>}
 
           {showAddRepair && (
             <div style={s.modalBg} onClick={function(){ setShowAddRepair(false); }}>
