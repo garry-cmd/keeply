@@ -2041,7 +2041,7 @@ export default function App() {
                   { label: "⚙️ Equipment", action: function(){ setView("customer"); setTab("equipment-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="equipment-standalone" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
-                  { label: "⚙️ Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
+                  { label: "👤 Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
                 ].map(function(item){ return (
                   <div key={item.label} onClick={item.action}
                     style={{ padding: "13px 20px", fontSize: 14, fontWeight: item.active ? 700 : 500, color: item.active ? "var(--brand)" : "var(--text-secondary)", background: item.active ? "var(--brand-deep)" : "var(--bg-card)", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
@@ -2644,11 +2644,17 @@ export default function App() {
           })()}
 
           {/* ── Open Repairs divider ── */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--warn-text)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Open repairs</span>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-          </div>
+          {(function(){
+            const openCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length;
+            if (openCount === 0) return null;
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--warn-text)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Open repairs · {openCount}</span>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              </div>
+            );
+          })()}
 
           {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length === 0 && (
             <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 10, marginBottom: 16 }}>
@@ -2787,7 +2793,7 @@ export default function App() {
             return (<>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 4 }}>
                 <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--brand)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Maintenance due</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--brand)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Maintenance due · {urgentTasks.length}</span>
                 <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
               </div>
               {urgentTasks.map(function(t){
@@ -2917,7 +2923,7 @@ export default function App() {
               </svg>
             </div>
             <span style={{ fontSize: 13, color: "var(--text-muted)", flex: 1 }}>Ask <span style={{ color: "var(--brand)" }}>First Mate</span>...</span>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Coming soon</span>
+            <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>Pro</span>
           </div>
           <div style={{ height: 80 }} />
 
@@ -2927,6 +2933,21 @@ export default function App() {
         {/* ── EQUIPMENT STANDALONE ── */}
         {view === "customer" && tab === "equipment-standalone" && (<>
           {tabHeader("Equipment", boatName + " · " + equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length + " items", true, function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); })}
+
+          {/* Category filter */}
+          {(function(){
+            const cats = [...new Set(equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).map(function(e){ return e.category; }))].sort();
+            if (cats.length < 2) return null;
+            return (
+              <div style={{ marginBottom: 14 }}>
+                <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
+                  style={{ width: "100%", border: "0.5px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)", cursor: "pointer", appearance: "none", WebkitAppearance: "none" }}>
+                  <option value="All">All categories</option>
+                  {cats.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
+                </select>
+              </div>
+            );
+          })()}
 
           {filteredEquip.length === 0 && !showAddEquip && (
             <div style={{ textAlign: "center", padding: "56px 24px", color: "var(--text-muted)" }}>
@@ -2950,33 +2971,41 @@ export default function App() {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{isVesselCard ? "⚓ " : ""}{eq.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
+                        {isVesselCard ? "⚓ " : ""}{eq.name}
+                        {eq.status === "needs-service" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--danger-text)", display: "inline-block", flexShrink: 0 }} title="Needs service" />}
+                        {eq.status === "watch" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--warn-text)", display: "inline-block", flexShrink: 0 }} title="Watch" />}
+                      </div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
                         {(SECTIONS[eq.category] || "")} {eq.category}
                         {eq.lastService && <span> · Serviced {fmt(eq.lastService)}</span>}
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "maintenance"; return n; }); }}
-                      style={{ background: tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id && getTaskUrgency(t) !== "ok"; }).length > 0 ? "var(--critical-bg)" : "var(--bg-subtle)", color: tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id && getTaskUrgency(t) !== "ok"; }).length > 0 ? "var(--danger-text)" : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="Maintenance">
-                      📋{tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id; }).length > 0 ? " " + tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id; }).length : ""}
-                    </span>
-                    {repairs.filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id; }).length > 0 && (
-                      <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "repairs"; return n; }); }}
-                        style={{ background: "var(--critical-bg)", color: "var(--danger-text)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="Repairs">
-                        🔧 {repairs.filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id; }).length}
-                      </span>
-                    )}
-                    <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "log"; return n; }); }}
-                      style={{ background: (eq.logs||[]).length > 0 ? "var(--ok-bg)" : "var(--bg-subtle)", color: (eq.logs||[]).length > 0 ? "var(--ok-text)" : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View log">
-                      📓{(eq.logs||[]).length > 0 ? " " + eq.logs.length : ""}
-                    </span>
-                    {(eq.docs||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }} style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View documents">📎 {eq.docs.length}</span>}
-                    {(eq.customParts||[]).length > 0 && <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }} style={{ background: "var(--ok-bg)", color: "var(--ok-text)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, cursor: "pointer" }} title="View parts">🔩 {eq.customParts.length}</span>}
-
-                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete equipment"><TrashIcon /></button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {(function(){
+                      const urgentTasks = tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id && getTaskUrgency(t) !== "ok"; });
+                      const totalTasks = tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id; }).length;
+                      const openRepairs = repairs.filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status !== "closed"; }).length;
+                      return (<>
+                        {totalTasks > 0 && (
+                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "maintenance"; return n; }); }}
+                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer",
+                              background: urgentTasks.length > 0 ? "var(--danger-bg)" : "var(--bg-subtle)",
+                              color: urgentTasks.length > 0 ? "var(--danger-text)" : "var(--text-muted)",
+                              border: "0.5px solid " + (urgentTasks.length > 0 ? "var(--danger-border)" : "var(--border)") }}>
+                            {totalTasks} task{totalTasks !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                        {openRepairs > 0 && (
+                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "repairs"; return n; }); }}
+                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer", background: "var(--warn-bg)", color: "var(--warn-text)", border: "0.5px solid var(--warn-border)" }}>
+                            {openRepairs} repair{openRepairs !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </>);
+                    })()}
+                    <span style={{ color: "var(--text-muted)", fontSize: 16 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
                 {isExpanded && (
@@ -3072,7 +3101,7 @@ export default function App() {
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
                       {["maintenance","parts","docs","log","edit"].map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "var(--brand)" : t==="repairs" ? "var(--danger-text)" : "var(--brand)") : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{t === "maintenance" ? "📋 Maint" : t === "parts" ? "🔩 Parts" : t === "docs" ? "📄 Docs" : t === "log" ? "📓 Log" : "✏️ Edit"}</button>
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "var(--brand)" : t==="repairs" ? "var(--danger-text)" : "var(--brand)") : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{t === "maintenance" ? "Maintenance" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}</button>
                       ); })}
                     </div>
 
