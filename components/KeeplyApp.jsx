@@ -656,6 +656,11 @@ export default function App() {
   const [showLogbook, setShowLogbook]   = useState(false);
   const [showAddLog, setShowAddLog]     = useState(false);
   const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
+  const [fmInput, setFmInput]               = useState("");
+  const [fmMessages, setFmMessages]         = useState([]);
+  const [fmLoading, setFmLoading]           = useState(false);
+  const [fmOpen, setFmOpen]                 = useState(false);
+  const [fmContext, setFmContext]           = useState(null);
   const [editingLog, setEditingLog]     = useState(null);
   const [logForm, setLogForm]           = useState({});
   const [shareEmail, setShareEmail] = useState("");
@@ -1936,7 +1941,7 @@ export default function App() {
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
-    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px" },
+    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 80px" },
     card:    { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
     pill:    function(a,c){ return { padding: "4px 11px", borderRadius: 20, border: a ? "1.5px solid " + (c || "var(--brand)") : "1.5px solid var(--border)", background: a ? (c || "var(--brand-deep)") : "transparent", color: a ? (c || "var(--brand)") : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }; },
     plusBtn: { background: "var(--brand)", color: "var(--text-on-brand)", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 22, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -2070,12 +2075,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
 
-          <button onClick={function(){ setShowFirstMatePanel(true); }}
-            title="Ask First Mate"
-            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>
-            ⚓
-          </button>
-          <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "var(--brand)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+<button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "var(--brand)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🛒{cartQty > 0 ? " " + cartQty : ""}
           </button>
           <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>
@@ -2958,7 +2958,7 @@ export default function App() {
 
           {/* ── First Mate bar ── */}
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 8, marginTop: 16 }}
-            onClick={function(){ setShowFirstMatePanel(true); }}>
+            onClick={function(){ setFmOpen(true); setTimeout(function(){ document.getElementById("fm-input-bar")?.focus(); }, 100); }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
@@ -5119,21 +5119,18 @@ export default function App() {
       )}
 
 
-      {/* ── FIRST MATE OVERLAY ── */}
-      {showFirstMatePanel && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-app)", zIndex: 600, display: "flex", flexDirection: "column" }}>
-          <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", flex: 1, display: "flex", flexDirection: "column", padding: "0 20px 20px" }}>
-            <div style={{ paddingTop: 12 }}>
-              <FirstMate
-                vesselId={activeVesselId}
-                vesselName={boatName}
-                onBack={function(){ setShowFirstMatePanel(false); }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
+      {/* ── FIRST MATE PERSISTENT BAR ── */}
+      {view === "customer" && (
+        <FirstMate
+          vesselId={activeVesselId}
+          vesselName={boatName}
+          persistent={true}
+          fmOpen={fmOpen}
+          onOpen={function(){ setFmOpen(true); }}
+          onClose={function(){ setFmOpen(false); }}
+        />
+      )}
       {/* ── SHARE VESSEL PANEL ── */}
       {showShare && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
