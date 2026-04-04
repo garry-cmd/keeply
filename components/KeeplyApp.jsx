@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
+import LandingPage from "./LandingPage";
 import VesselSetup from "./VesselSetup";
 import LogbookPage from "./LogbookPage";
 import PartsPage from "./PartsPage";
@@ -2012,7 +2013,7 @@ export default function App() {
   );
 
   // Not signed in
-  if (!session) return <AuthScreen />;
+  if (!session) return <LandingPage />;
 
   // Signed in but no vessel yet
   if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
