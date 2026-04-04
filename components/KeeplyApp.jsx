@@ -31,10 +31,11 @@ function buyUrl(query, directUrl, retailerKey) {
 }
 
 // Returns array of {name, url, color} for all retailer buttons
-function retailerLinks(partName, directUrl) {
+// Always builds search URLs — never uses a direct URL that could belong to a competitor
+function retailerLinks(partName) {
   return Object.entries(RETAILERS).map(function(entry) {
     const key = entry[0]; const r = entry[1];
-    return { name: r.name, color: r.color, url: buyUrl(partName, key === "fisheries" ? directUrl : null, key) };
+    return { name: r.name, color: r.color, url: buyUrl(partName, null, key) };
   });
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3209,7 +3210,7 @@ export default function App() {
                                   {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                 </div>
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                  {retailerLinks(part.name, part.url).map(function(rl){ return (
+                                  {retailerLinks(part.name).map(function(rl){ return (
                                     <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
                                       style={{ padding: "4px 10px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                       {rl.name.split(" ")[0]} ↗
@@ -3408,7 +3409,7 @@ export default function App() {
                                     {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                   </div>
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                    {retailerLinks(part.name, part.url).map(function(r){ return (
+                                    {retailerLinks(part.name).map(function(r){ return (
                                       <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
                                         style={{ padding: "4px 10px", borderRadius: 6, background: r.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                         {r.name.split(" ")[0]} ↗
