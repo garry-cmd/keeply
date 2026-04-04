@@ -1039,7 +1039,7 @@ export default function App() {
         // Load repairs for first vessel
         try {
           const rp = await supa("repairs", { query: "vessel_id=eq." + firstId + "&order=date.desc" });
-          setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
+          setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, notes: r.notes || "", due_date: r.due_date || null, priority: r.priority || null, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
         } catch(e) {
           setRepairs([]);
         }
@@ -1099,7 +1099,7 @@ export default function App() {
       }));
       try {
         const rp = await supa("repairs", { query: "vessel_id=eq." + vid + "&order=date.desc" });
-        setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
+        setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, notes: r.notes || "", due_date: r.due_date || null, priority: r.priority || null, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
       } catch(e) { setRepairs([]); }
       try {
         const lg = await supa("logbook", { query: "vessel_id=eq." + vid + "&order=entry_date.desc,created_at.desc" });
