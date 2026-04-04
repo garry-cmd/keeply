@@ -1,0 +1,518 @@
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "./supabase-client";
+
+const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MON_ABBR = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+function today() { return new Date().toISOString().split("T")[0]; }
+function fmt(d) { if (!d) return ""; const p = d.split("-"); return p[1]+"/"+p[2]+"/"+p[0].slice(2); }
+
+async function fetchEntries(vesselId) {
+  const sess = await supabase.auth.getSession();
+  const token = sess?.data?.session?.access_token || SUPA_KEY;
+  const res = await fetch(
+    SUPA_URL + "/rest/v1/logbook?vessel_id=eq." + vesselId + "&order=entry_date.desc,created_at.desc",
+    { headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + token } }
+  );
+  if (!res.ok) throw new Error("Load failed: " + res.status);
+  return res.json();
+}
+
+const BLANK_FORM = { entry_type: "passage", entry_date: "", from_location: "", to_location: "", departure_time: "", arrival_time: "", crew: "", highlights: "", distance_nm: "", hours_end: "", conditions: "", wind_speed: "", wind_direction: "", sea_state: "", notes: "", _showMore: false, barometric_mb: "", visibility: "", fuel_added: "", max_speed_kts: "", anchor_location: "", anchor_depth_ft: "", incident: "" };
+
+const SEA_STATES = ["Calm", "Light chop", "Moderate", "Rough", "Very rough"];
+const CONDITIONS = ["Motoring", "Motor sailing", "Close hauled", "Broad reach", "Downwind", "Drifting"];
+const WIND_DIRS = ["N","NE","E","SE","S","SW","W","NW"];
+
+export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurnRate, onBack }) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(BLANK_FORM);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(function() {
+    if (!vesselId) return;
+    setLoading(true);
+    setError(null);
+    fetchEntries(vesselId)
+      .then(function(data) { setEntries(data || []); setLoading(false); })
+      .catch(function(e) { setError(e.message); setLoading(false); });
+  }, [vesselId]);
+
+  useEffect(function() { load(); }, [load]);
+
+  const openAdd = function() {
+    setForm(Object.assign({}, BLANK_FORM, { entry_date: today() }));
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = function(entry) {
+    setForm({
+      entry_type: entry.entry_type || "passage",
+      entry_date: entry.entry_date || "",
+      from_location: entry.from_location || "",
+      to_location: entry.to_location || "",
+      departure_time: entry.departure_time || "",
+      arrival_time: entry.arrival_time || "",
+      crew: entry.crew || "",
+      highlights: entry.highlights || "",
+      distance_nm: entry.distance_nm ? String(entry.distance_nm) : "",
+      hours_end: entry.hours_end ? String(entry.hours_end) : "",
+      conditions: entry.conditions || "",
+      wind_speed: entry.wind_speed ? String(entry.wind_speed) : "",
+      wind_direction: entry.wind_direction || "",
+      sea_state: entry.sea_state || "",
+      notes: entry.notes || "",
+      _showMore: false,
+      barometric_mb: entry.barometric_mb ? String(entry.barometric_mb) : "",
+      visibility: entry.visibility || "",
+      fuel_added: entry.fuel_added ? String(entry.fuel_added) : "",
+      max_speed_kts: entry.max_speed_kts ? String(entry.max_speed_kts) : "",
+      anchor_location: entry.anchor_location || "",
+      anchor_depth_ft: entry.anchor_depth_ft ? String(entry.anchor_depth_ft) : "",
+      incident: entry.incident || "",
+    });
+    setEditingId(entry.id);
+    setShowForm(true);
+  };
+
+  const save = async function() {
+    if (!form.entry_date) return;
+    setSaving(true);
+    const body = {
+      vessel_id: vesselId,
+      entry_type: form.entry_type || "passage",
+      entry_date: form.entry_date,
+      title: form.title || null,
+      from_location: form.from_location || null,
+      to_location: form.to_location || null,
+      departure_time: form.departure_time || null,
+      arrival_time: form.arrival_time || null,
+      crew: form.crew || null,
+      highlights: form.highlights || null,
+      distance_nm: form.distance_nm ? parseFloat(form.distance_nm) : null,
+      hours_end: form.hours_end ? parseFloat(form.hours_end) : null,
+      conditions: form.conditions || null,
+      wind_speed: form.wind_speed ? parseInt(form.wind_speed) : null,
+      wind_direction: form.wind_direction || null,
+      sea_state: form.sea_state || null,
+      notes: form.notes || null,
+      barometric_mb: form.barometric_mb ? parseFloat(form.barometric_mb) : null,
+      visibility: form.visibility || null,
+      fuel_added: form.fuel_added ? parseFloat(form.fuel_added) : null,
+      max_speed_kts: form.max_speed_kts ? parseFloat(form.max_speed_kts) : null,
+      anchor_location: form.anchor_location || null,
+      anchor_depth_ft: form.anchor_depth_ft ? parseFloat(form.anchor_depth_ft) : null,
+      incident: form.incident || null,
+    };
+    try {
+      if (editingId) {
+        const { data, error: e } = await supabase.from("logbook").update(body).eq("id", editingId).select().single();
+        if (e) throw e;
+        setEntries(function(prev) { return prev.map(function(en) { return en.id === editingId ? data : en; }); });
+        // Auto-update vessel engine hours if hours_end set
+        if (body.hours_end) {
+          await supabase.from("vessels").update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date }).eq("id", vesselId);
+        }
+      } else {
+        const { data, error: e } = await supabase.from("logbook").insert(body).select().single();
+        if (e) throw e;
+        setEntries(function(prev) { return [data, ...prev]; });
+        if (body.hours_end) {
+          await supabase.from("vessels").update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date }).eq("id", vesselId);
+        }
+      }
+      setShowForm(false);
+      setEditingId(null);
+      setForm(BLANK_FORM);
+    } catch(e) {
+      alert("Save failed: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const del = async function(id) {
+    if (!window.confirm("Delete this log entry?")) return;
+    await supabase.from("logbook").delete().eq("id", id);
+    setEntries(function(prev) { return prev.filter(function(e) { return e.id !== id; }); });
+  };
+
+  const setF = function(key, val) {
+    setForm(function(f) { return Object.assign({}, f, { [key]: val }); });
+  };
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
+  const passages = entries.filter(function(e) { return e.entry_type === "passage"; });
+  const totalNm = passages.reduce(function(acc, e) { return acc + (parseFloat(e.distance_nm) || 0); }, 0);
+  const lastHours = (function() {
+    const w = passages.filter(function(e) { return e.hours_end; }).sort(function(a, b) { return b.entry_date.localeCompare(a.entry_date); });
+    return w.length > 0 ? w[0].hours_end : null;
+  })();
+
+  // ── Derived form calculations ──────────────────────────────────────────────
+  const formDerived = (function() {
+    const dep = form.departure_time; const arr = form.arrival_time;
+    const dist = parseFloat(form.distance_nm) || 0;
+    const hoursEnd = parseFloat(form.hours_end) || null;
+    let timeHrs = null;
+    if (dep && arr) {
+      const dParts = dep.split(":").map(Number);
+      const aParts = arr.split(":").map(Number);
+      let diff = (aParts[0]*60+aParts[1]) - (dParts[0]*60+dParts[1]);
+      if (diff < 0) diff += 1440;
+      timeHrs = diff / 60;
+    }
+    const avgSpd = (timeHrs && dist > 0) ? (dist / timeHrs).toFixed(1) : null;
+    const prevHours = (function() {
+      const prev = passages.filter(function(e) { return e.hours_end && (!editingId || e.id !== editingId); })
+        .sort(function(a, b) { return b.entry_date.localeCompare(a.entry_date); });
+      return prev.length > 0 ? prev[0].hours_end : null;
+    })();
+    const runHrs = (hoursEnd && prevHours && hoursEnd > prevHours) ? (hoursEnd - prevHours) : null;
+    const fuelUsed = (runHrs && fuelBurnRate) ? (runHrs * fuelBurnRate).toFixed(1) : null;
+    const timeLabel = timeHrs ? (Math.floor(timeHrs) + "h " + Math.round((timeHrs % 1) * 60) + "m") : null;
+    return { timeLabel, avgSpd, fuelUsed };
+  })();
+
+  // ── Group by month ────────────────────────────────────────────────────────
+  const grouped = {};
+  entries.forEach(function(e) {
+    const key = e.entry_date.substring(0, 7);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(e);
+  });
+  const monthKeys = Object.keys(grouped).sort(function(a, b) { return b.localeCompare(a); });
+
+  const s = {
+    card: { background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 12, marginBottom: 8, overflow: "hidden" },
+    inp: { width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" },
+    lbl: { fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4, display: "block" },
+    derived: { background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", textAlign: "center" },
+  };
+
+  return (
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* ── Header ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text-muted)", padding: "0 4px 0 0" }}>←</button>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>Logbook</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>{vesselName}</div>
+            </div>
+          </div>
+        </div>
+        <button onClick={openAdd}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--brand)", border: "none", color: "#fff", fontSize: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300, flexShrink: 0 }}>+</button>
+      </div>
+
+      {/* ── Stats strip ── */}
+      <div style={{ display: "flex", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "0.5px solid var(--border)" }}>
+        {[
+          { label: "Passages", val: passages.length || "0" },
+          { label: "nm logged", val: totalNm > 0 ? Math.round(totalNm).toLocaleString() : "—" },
+          { label: "Engine hrs", val: lastHours ? parseFloat(lastHours).toLocaleString() : "—" },
+        ].map(function(s) { return (
+          <div key={s.label} style={{ flex: 1, background: "var(--bg-card)", padding: "10px 12px", textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{s.val}</div>
+            <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, letterSpacing: "0.5px", textTransform: "uppercase" }}>{s.label}</div>
+          </div>
+        ); })}
+      </div>
+
+      {/* ── Loading / error / empty ── */}
+      {loading && (
+        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)", fontSize: 13 }}>Loading logbook…</div>
+      )}
+      {!loading && error && (
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <div style={{ color: "var(--danger-text)", fontSize: 13, marginBottom: 12 }}>Failed to load: {error}</div>
+          <button onClick={load} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 13 }}>Retry</button>
+        </div>
+      )}
+      {!loading && !error && entries.length === 0 && (
+        <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🗺️</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>No log entries yet</div>
+          <div style={{ fontSize: 13, marginBottom: 20 }}>Record your passages and notes</div>
+          <button onClick={openAdd} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Log First Entry</button>
+        </div>
+      )}
+
+      {/* ── Timeline ── */}
+      {!loading && !error && monthKeys.map(function(mk) {
+        const [yr, mo] = mk.split("-");
+        const monthLabel = MONTHS[parseInt(mo)-1] + " " + yr;
+        return (
+          <div key={mk} style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>{monthLabel}</span>
+              <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
+            </div>
+            {grouped[mk].map(function(entry) {
+              const isPassage = entry.entry_type === "passage";
+              const dateParts = entry.entry_date.split("-");
+              const dayNum = dateParts[2];
+              const monAbbr = MON_ABBR[parseInt(dateParts[1])-1] || "";
+
+              // Time + avg speed
+              let timeLabel = null; let avgSpd = null;
+              if (entry.departure_time && entry.arrival_time) {
+                const dp = entry.departure_time.split(":").map(Number);
+                const ap = entry.arrival_time.split(":").map(Number);
+                let diff = (ap[0]*60+ap[1]) - (dp[0]*60+dp[1]);
+                if (diff < 0) diff += 1440;
+                const hrs = diff / 60;
+                timeLabel = Math.floor(hrs) + "h " + Math.round((hrs%1)*60) + "m";
+                if (entry.distance_nm && hrs > 0) avgSpd = (parseFloat(entry.distance_nm)/hrs).toFixed(1);
+              }
+
+              const chips = [];
+              if (entry.wind_direction && entry.wind_speed) chips.push({ t: entry.wind_direction + " " + entry.wind_speed + " kts", c: "var(--brand)", bg: "var(--brand-deep)" });
+              else if (entry.wind_speed) chips.push({ t: entry.wind_speed + " kts", c: "var(--brand)", bg: "var(--brand-deep)" });
+              if (entry.sea_state) chips.push({ t: entry.sea_state, c: "var(--ok-text)", bg: "var(--ok-bg)" });
+              if (entry.conditions) chips.push({ t: entry.conditions, c: "var(--text-muted)", bg: "var(--bg-subtle)" });
+              if (entry.crew) chips.push({ t: "Crew: " + entry.crew, c: "var(--text-muted)", bg: "var(--bg-subtle)" });
+
+              return (
+                <div key={entry.id} style={{ ...s.card, borderLeft: "3px solid " + (isPassage ? "#0f4c8a" : "var(--border)"), borderRadius: "0 12px 12px 0" }}>
+                  {isPassage ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "stretch" }}>
+                      {/* Date */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "14px 0", background: "var(--bg-subtle)", borderRight: "0.5px solid var(--border)" }}>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{dayNum}</span>
+                        <span style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.5px", marginTop: 2 }}>{monAbbr}</span>
+                      </div>
+                      {/* Body */}
+                      <div style={{ padding: "12px 14px" }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: entry.highlights ? 4 : 6 }}>
+                          {entry.from_location && entry.to_location ? entry.from_location + " → " + entry.to_location : "Passage"}
+                        </div>
+                        {entry.highlights && <div style={{ fontSize: 12, color: "var(--text-secondary)", fontStyle: "italic", marginBottom: 6, lineHeight: 1.4 }}>"{entry.highlights}"</div>}
+                        {chips.length > 0 && (
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {chips.map(function(c, i) { return (
+                              <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, color: c.c, background: c.bg }}>{c.t}</span>
+                            ); })}
+                          </div>
+                        )}
+                        {entry.notes && !entry.highlights && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>{entry.notes.length > 100 ? entry.notes.substring(0,100)+"…" : entry.notes}</div>}
+                      </div>
+                      {/* Stats */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", padding: "12px 14px", gap: 6, minWidth: 56 }}>
+                        {entry.distance_nm && (
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{entry.distance_nm}</div>
+                            <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>nm</div>
+                          </div>
+                        )}
+                        {avgSpd && (
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{avgSpd} kts</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}>📝</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{entry.title || "Note"}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{dayNum + " " + monAbbr}</div>
+                        </div>
+                        {(entry.highlights || entry.notes) && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 3, lineHeight: 1.4 }}>{((entry.highlights || entry.notes) || "").substring(0,120)}</div>}
+                      </div>
+                    </div>
+                  )}
+                  {/* Actions */}
+                  <div style={{ borderTop: "0.5px solid var(--border)", display: "flex" }}>
+                    <button onClick={function() { openEdit(entry); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
+                    <div style={{ width: "0.5px", background: "var(--border)" }} />
+                    <button onClick={function() { del(entry.id); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      <div style={{ height: 80 }} />
+
+      {/* ── Add / Edit Form Modal ── */}
+      {showForm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0" }}
+          onClick={function(e) { if (e.target === e.currentTarget) { setShowForm(false); setEditingId(null); } }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, maxHeight: "92vh", display: "flex", flexDirection: "column" }} onClick={function(e) { e.stopPropagation(); }}>
+
+            {/* Form header */}
+            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{editingId ? "Edit Entry" : "New Log Entry"}</div>
+              <button onClick={function() { setShowForm(false); setEditingId(null); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+
+              {/* Type toggle */}
+              <div style={{ display: "flex", background: "var(--bg-subtle)", borderRadius: 8, padding: 3, marginBottom: 14 }}>
+                {["passage", "note"].map(function(t) { return (
+                  <button key={t} onClick={function() { setF("entry_type", t); }}
+                    style={{ flex: 1, padding: "7px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: form.entry_type === t ? "var(--bg-card)" : "transparent", color: form.entry_type === t ? "var(--brand)" : "var(--text-muted)" }}>
+                    {t === "passage" ? "⛵ Passage" : "📝 Note"}
+                  </button>
+                ); })}
+              </div>
+
+              {/* Date + times */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+                <div>
+                  <span style={s.lbl}>Date *</span>
+                  <input type="date" value={form.entry_date} onChange={function(e) { setF("entry_date", e.target.value); }} style={s.inp} />
+                </div>
+                {form.entry_type === "passage" && (<>
+                  <div>
+                    <span style={s.lbl}>Departed</span>
+                    <input type="time" value={form.departure_time} onChange={function(e) { setF("departure_time", e.target.value); }} style={s.inp} />
+                  </div>
+                  <div>
+                    <span style={s.lbl}>Arrived</span>
+                    <input type="time" value={form.arrival_time} onChange={function(e) { setF("arrival_time", e.target.value); }} style={s.inp} />
+                  </div>
+                </>)}
+              </div>
+
+              {form.entry_type === "passage" && (<>
+                {/* From / To */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div><span style={s.lbl}>From</span><input placeholder="Departure port" value={form.from_location} onChange={function(e) { setF("from_location", e.target.value); }} style={s.inp} /></div>
+                  <div><span style={s.lbl}>To</span><input placeholder="Destination" value={form.to_location} onChange={function(e) { setF("to_location", e.target.value); }} style={s.inp} /></div>
+                </div>
+
+                {/* Crew + Highlights */}
+                <div style={{ marginBottom: 12 }}>
+                  <span style={s.lbl}>Crew aboard</span>
+                  <input placeholder="Names or count" value={form.crew} onChange={function(e) { setF("crew", e.target.value); }} style={s.inp} />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <span style={s.lbl}>Highlights</span>
+                  <input placeholder="The memorable moment…" value={form.highlights} onChange={function(e) { setF("highlights", e.target.value); }} style={s.inp} />
+                </div>
+
+                {/* Dist + Hours */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div><span style={s.lbl}>Dist nm</span><input type="number" placeholder="0" value={form.distance_nm} onChange={function(e) { setF("distance_nm", e.target.value); }} style={s.inp} /></div>
+                  <div><span style={s.lbl}>Hours End</span><input type="number" placeholder="e.g. 1290" step="0.1" value={form.hours_end} onChange={function(e) { setF("hours_end", e.target.value); }} style={s.inp} /></div>
+                </div>
+
+                {/* Derived */}
+                {(formDerived.timeLabel || formDerived.avgSpd || formDerived.fuelUsed) && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                    <div><span style={s.lbl}>Time at sea</span><div style={s.derived}>{formDerived.timeLabel || "—"}</div></div>
+                    <div><span style={s.lbl}>Avg speed</span><div style={s.derived}>{formDerived.avgSpd ? formDerived.avgSpd + " kts" : "—"}</div></div>
+                    <div><span style={s.lbl}>Fuel used</span><div style={s.derived}>{formDerived.fuelUsed ? formDerived.fuelUsed + " gal" : "—"}</div></div>
+                  </div>
+                )}
+
+                {/* Wind */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <span style={s.lbl}>Wind speed (kts)</span>
+                    <input type="number" placeholder="0" value={form.wind_speed} onChange={function(e) { setF("wind_speed", e.target.value); }} style={s.inp} />
+                  </div>
+                  <div>
+                    <span style={s.lbl}>Wind direction</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 }}>
+                      {WIND_DIRS.map(function(d) { return (
+                        <button key={d} onClick={function() { setF("wind_direction", form.wind_direction === d ? "" : d); }}
+                          style={{ padding: "3px 8px", border: "0.5px solid " + (form.wind_direction === d ? "var(--brand)" : "var(--border)"), borderRadius: 6, fontSize: 11, cursor: "pointer", background: form.wind_direction === d ? "var(--brand-deep)" : "var(--bg-subtle)", color: form.wind_direction === d ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>{d}</button>
+                      ); })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sea state pills */}
+                <div style={{ marginBottom: 12 }}>
+                  <span style={s.lbl}>Sea state</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {SEA_STATES.map(function(ss) { return (
+                      <button key={ss} onClick={function() { setF("sea_state", form.sea_state === ss ? "" : ss); }}
+                        style={{ padding: "5px 12px", border: "0.5px solid " + (form.sea_state === ss ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 12, cursor: "pointer", background: form.sea_state === ss ? "var(--brand-deep)" : "var(--bg-subtle)", color: form.sea_state === ss ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>{ss}</button>
+                    ); })}
+                  </div>
+                </div>
+
+                {/* Conditions pills */}
+                <div style={{ marginBottom: 12 }}>
+                  <span style={s.lbl}>Conditions</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {CONDITIONS.map(function(c) { return (
+                      <button key={c} onClick={function() { setF("conditions", form.conditions === c ? "" : c); }}
+                        style={{ padding: "5px 12px", border: "0.5px solid " + (form.conditions === c ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 12, cursor: "pointer", background: form.conditions === c ? "var(--brand-deep)" : "var(--bg-subtle)", color: form.conditions === c ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>{c}</button>
+                    ); })}
+                  </div>
+                </div>
+              </>)}
+
+              {/* Notes */}
+              <div style={{ marginBottom: 12 }}>
+                <span style={s.lbl}>Notes</span>
+                <textarea rows={3} placeholder="Anything worth remembering…" value={form.notes} onChange={function(e) { setF("notes", e.target.value); }} style={{ ...s.inp, resize: "none", lineHeight: 1.5 }} />
+              </div>
+
+              {/* More details toggle */}
+              {form.entry_type === "passage" && (
+                <button onClick={function() { setF("_showMore", !form._showMore); }}
+                  style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer", fontWeight: 600, padding: "4px 0", marginBottom: 8 }}>
+                  {form._showMore ? "▾ Less details" : "▸ More details"}
+                </button>
+              )}
+
+              {form._showMore && form.entry_type === "passage" && (
+                <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div><span style={s.lbl}>Barometric mb</span><input type="number" placeholder="1013" value={form.barometric_mb} onChange={function(e) { setF("barometric_mb", e.target.value); }} style={s.inp} /></div>
+                    <div><span style={s.lbl}>Visibility</span><input placeholder="Good / Poor" value={form.visibility} onChange={function(e) { setF("visibility", e.target.value); }} style={s.inp} /></div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div><span style={s.lbl}>Fuel added gal</span><input type="number" step="0.1" placeholder="0" value={form.fuel_added} onChange={function(e) { setF("fuel_added", e.target.value); }} style={s.inp} /></div>
+                    <div><span style={s.lbl}>Max speed kts</span><input type="number" step="0.1" placeholder="0" value={form.max_speed_kts} onChange={function(e) { setF("max_speed_kts", e.target.value); }} style={s.inp} /></div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div><span style={s.lbl}>Anchor location</span><input placeholder="Cove name" value={form.anchor_location} onChange={function(e) { setF("anchor_location", e.target.value); }} style={s.inp} /></div>
+                    <div><span style={s.lbl}>Anchor depth ft</span><input type="number" step="1" placeholder="0" value={form.anchor_depth_ft} onChange={function(e) { setF("anchor_depth_ft", e.target.value); }} style={s.inp} /></div>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <span style={s.lbl}>Incident / notes</span>
+                    <textarea rows={2} value={form.incident} onChange={function(e) { setF("incident", e.target.value); }} style={{ ...s.inp, resize: "none" }} />
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Save footer */}
+            <div style={{ padding: "12px 20px", borderTop: "0.5px solid var(--border)", display: "flex", gap: 10, flexShrink: 0 }}>
+              <button onClick={function() { setShowForm(false); setEditingId(null); }} style={{ flex: 1, padding: 12, border: "0.5px solid var(--border)", borderRadius: 10, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>Cancel</button>
+              <button onClick={save} disabled={saving || !form.entry_date}
+                style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: (saving || !form.entry_date) ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: (saving || !form.entry_date) ? "default" : "pointer", fontWeight: 700, fontSize: 14 }}>
+                {saving ? "Saving…" : editingId ? "Save Changes" : "Save Entry"}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

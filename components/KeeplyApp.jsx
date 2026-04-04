@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
 import VesselSetup from "./VesselSetup";
+import LogbookPage from "./LogbookPage";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
@@ -3711,172 +3712,15 @@ export default function App() {
 
 
         {/* ── LOGBOOK PAGE ── */}
-        {view === "customer" && tab === "logbook-standalone" && (<>
-          {tabHeader("Logbook", boatName, true, function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); })}
-
-          {(function(){
-            const entries = [...logEntries].filter(function(e){ return e.vessel_id === activeVesselId; })
-              .sort(function(a,b){ return (b.entry_date + (b.departure_time||"00:00")).localeCompare(a.entry_date + (a.departure_time||"00:00")); });
-            const passages = entries.filter(function(e){ return e.entry_type === "passage"; });
-            const totalNm = passages.reduce(function(acc,e){ return acc + (parseFloat(e.distance_nm)||0); }, 0);
-            const lastHours = (function(){
-              const withHrs = passages.filter(function(e){ return e.hours_end; }).sort(function(a,b){ return b.entry_date.localeCompare(a.entry_date); });
-              return withHrs.length > 0 ? withHrs[0].hours_end : null;
-            })();
-
-            /* ── Stats strip ── */
-            const statsRow = (
-              <div style={{ display: "flex", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "0.5px solid var(--border)" }}>
-                {[
-                  { label: "Passages", val: passages.length },
-                  { label: "nm logged", val: totalNm > 0 ? Math.round(totalNm).toLocaleString() : "—" },
-                  { label: "Engine hrs", val: lastHours ? parseFloat(lastHours).toLocaleString() : "—" },
-                ].map(function(s){ return (
-                  <div key={s.label} style={{ flex: 1, background: "var(--bg-card)", padding: "10px 12px", textAlign: "center" }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{s.val}</div>
-                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, letterSpacing: "0.4px", textTransform: "uppercase" }}>{s.label}</div>
-                  </div>
-                ); })}
-              </div>
-            );
-
-            if (loading) return (<>
-              {statsRow}
-              <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
-                <div style={{ fontSize: 13 }}>Loading logbook…</div>
-              </div>
-            </>);
-            if (entries.length === 0) return (<>
-              {statsRow}
-              <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🗺️</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>No log entries yet</div>
-                <div style={{ fontSize: 13, marginBottom: 20 }}>Record your passages, notes, and daily observations</div>
-                <button onClick={function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }}
-                  style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Log First Entry</button>
-              </div>
-            </>);
-
-            /* ── Group by month ── */
-            const grouped = {};
-            entries.forEach(function(e){
-              const key = e.entry_date.substring(0, 7);
-              if (!grouped[key]) grouped[key] = [];
-              grouped[key].push(e);
-            });
-            const monthKeys = Object.keys(grouped).sort(function(a,b){ return b.localeCompare(a); });
-            const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-            return (<>
-              {statsRow}
-              {monthKeys.map(function(monthKey){
-                const [yr, mo] = monthKey.split("-");
-                const monthLabel = MONTHS[parseInt(mo)-1] + " " + yr;
-                return (
-                  <div key={monthKey} style={{ marginBottom: 24 }}>
-                    {/* Month header */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.5px" }}>{monthLabel}</span>
-                      <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
-                    </div>
-                    {/* Entries */}
-                    {grouped[monthKey].map(function(entry){
-                      const isPassage = entry.entry_type === "passage";
-                      const parts = entry.entry_date.split("-");
-                      const dayNum = parts[2];
-                      const monAbbr = (MONTHS[parseInt(parts[1])-1]||"").substring(0,3).toUpperCase();
-                      /* Derived: time at sea, avg speed */
-                      var timeLabel = null;
-                      var avgSpd = null;
-                      if (entry.departure_time && entry.arrival_time) {
-                        const dParts = entry.departure_time.split(":").map(Number);
-                        const aParts = entry.arrival_time.split(":").map(Number);
-                        var diff = (aParts[0]*60+aParts[1]) - (dParts[0]*60+dParts[1]);
-                        if (diff < 0) diff += 1440;
-                        const hrs = diff / 60;
-                        timeLabel = Math.floor(hrs) + "h " + Math.round((hrs%1)*60) + "m";
-                        if (entry.distance_nm && hrs > 0) avgSpd = (parseFloat(entry.distance_nm)/hrs).toFixed(1) + " kts";
-                      }
-                      /* Chips */
-                      const chips = [];
-                      if (entry.wind_speed && entry.wind_direction) chips.push({ label: entry.wind_direction + " " + entry.wind_speed + " kts", color: "var(--brand)", bg: "var(--brand-deep)" });
-                      else if (entry.wind_speed) chips.push({ label: entry.wind_speed + " kts", color: "var(--brand)", bg: "var(--brand-deep)" });
-                      if (entry.sea_state) chips.push({ label: entry.sea_state, color: "var(--ok-text)", bg: "var(--ok-bg)" });
-                      if (entry.conditions) chips.push({ label: entry.conditions, color: "var(--text-muted)", bg: "var(--bg-subtle)" });
-                      if (entry.crew) chips.push({ label: "Crew: " + entry.crew, color: "var(--text-muted)", bg: "var(--bg-subtle)" });
-                      return (
-                        <div key={entry.id} style={{ ...s.card, borderLeft: "3px solid " + (isPassage ? "#0f4c8a" : "var(--border)"), borderRadius: "0 " + (s.card.borderRadius||"12px") + " " + (s.card.borderRadius||"12px") + " 0", marginBottom: 8, overflow: "hidden" }}>
-                          {isPassage ? (
-                            <div style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "stretch" }}>
-                              {/* Date column */}
-                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "14px 0", background: "var(--bg-subtle)", borderRight: "0.5px solid var(--border)" }}>
-                                <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{dayNum}</span>
-                                <span style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.5px", marginTop: 2 }}>{monAbbr}</span>
-                              </div>
-                              {/* Body */}
-                              <div style={{ padding: "12px 14px" }}>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>
-                                  {entry.from_location && entry.to_location ? entry.from_location + " → " + entry.to_location : "Passage"}
-                                </div>
-                                {entry.highlights && <div style={{ fontSize: 12, color: "var(--text-secondary)", fontStyle: "italic", marginBottom: 6, lineHeight: 1.4 }}>"{entry.highlights}"</div>}
-                                {chips.length > 0 && (
-                                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                                    {chips.map(function(c,i){ return (
-                                      <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, color: c.color, background: c.bg }}>{c.label}</span>
-                                    ); })}
-                                  </div>
-                                )}
-                                {entry.notes && !entry.highlights && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>{entry.notes.length > 100 ? entry.notes.substring(0,100)+"…" : entry.notes}</div>}
-                              </div>
-                              {/* Stats */}
-                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", padding: "12px 14px", gap: 6, minWidth: 64 }}>
-                                {entry.distance_nm && (<>
-                                  <div style={{ textAlign: "right" }}>
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{entry.distance_nm}</div>
-                                    <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>nm</div>
-                                  </div>
-                                </>)}
-                                {avgSpd && (
-                                  <div style={{ textAlign: "right" }}>
-                                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{avgSpd}</div>
-                                    <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>avg</div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            /* Note entry */
-                            <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
-                              <div style={{ width: 28, height: 28, borderRadius: 6, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                <span style={{ fontSize: 13 }}>📝</span>
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{entry.title || "Note"}</div>
-                                  <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{dayNum + " " + monAbbr}</div>
-                                </div>
-                                {(entry.notes || entry.highlights) && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 3, lineHeight: 1.4 }}>{(entry.highlights || entry.notes || "").substring(0,120)}</div>}
-                              </div>
-                            </div>
-                          )}
-                          {/* Actions */}
-                          <div style={{ borderTop: "0.5px solid var(--border)", display: "flex" }}>
-                            <button onClick={function(){ setLogForm({ entry_type: entry.entry_type, entry_date: entry.entry_date, title: entry.title||"", from_location: entry.from_location||"", to_location: entry.to_location||"", departure_time: entry.departure_time||"", arrival_time: entry.arrival_time||"", crew: entry.crew||"", highlights: entry.highlights||"", distance_nm: entry.distance_nm||"", hours_end: entry.hours_end||"", conditions: entry.conditions||"", wind_speed: entry.wind_speed||"", wind_direction: entry.wind_direction||"", sea_state: entry.sea_state||"", notes: entry.notes||"", barometric_mb: entry.barometric_mb||"", visibility: entry.visibility||"", fuel_added: entry.fuel_added||"", max_speed_kts: entry.max_speed_kts||"", anchor_location: entry.anchor_location||"", anchor_depth_ft: entry.anchor_depth_ft||"", incident: entry.incident||"" }); setEditingLog(entry.id); setShowAddLog(true); }}
-                              style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
-                            <div style={{ width: "0.5px", background: "var(--border)" }} />
-                            <button onClick={function(){ showConfirm("Delete this log entry?", function(){ deleteLog(entry.id); }); }}
-                              style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-              <div style={{ height: 80 }} />
-            </>);
-          })()}
-        </>)}
+        {view === "customer" && tab === "logbook-standalone" && (
+          <LogbookPage
+            vesselId={activeVesselId}
+            vesselName={boatName}
+            vesselType={settings.vesselType}
+            fuelBurnRate={settings.fuelBurnRate || null}
+            onBack={function(){ setTab("boat"); }}
+          />
+        )}
 
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs-standalone" && (<>
