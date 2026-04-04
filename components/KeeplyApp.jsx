@@ -5,6 +5,7 @@ import AuthScreen from "./AuthScreen";
 import VesselSetup from "./VesselSetup";
 import LogbookPage from "./LogbookPage";
 import PartsPage from "./PartsPage";
+import FirstMate from "./FirstMate";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
@@ -654,6 +655,7 @@ export default function App() {
   const [logStats, setLogStats]         = useState({ passages: 0, totalNm: 0, avgSpeed: null });
   const [showLogbook, setShowLogbook]   = useState(false);
   const [showAddLog, setShowAddLog]     = useState(false);
+  const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
   const [editingLog, setEditingLog]     = useState(null);
   const [logForm, setLogForm]           = useState({});
   const [shareEmail, setShareEmail] = useState("");
@@ -1102,7 +1104,7 @@ export default function App() {
   // Restore and persist active tab
   useEffect(function(){
     const t = localStorage.getItem("keeply_tab");
-    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone"].includes(t)) setTab(t);
+    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone","firstmate-standalone"].includes(t)) setTab(t);
   }, []);
   useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
 
@@ -2068,6 +2070,11 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
 
+          <button onClick={function(){ setShowFirstMatePanel(true); }}
+            title="Ask First Mate"
+            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>
+            ⚓
+          </button>
           <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "var(--brand)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🛒{cartQty > 0 ? " " + cartQty : ""}
           </button>
@@ -2951,7 +2958,7 @@ export default function App() {
 
           {/* ── First Mate bar ── */}
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 8, marginTop: 16 }}
-            onClick={function(){ alert("First Mate coming soon — ask questions about your boat, get maintenance advice, and plan passages."); }}>
+            onClick={function(){ setShowFirstMatePanel(true); }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
@@ -2960,7 +2967,7 @@ export default function App() {
               </svg>
             </div>
             <span style={{ fontSize: 13, color: "var(--text-muted)", flex: 1 }}>Ask <span style={{ color: "var(--brand)" }}>First Mate</span>...</span>
-            <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>Pro</span>
+            <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>→</span>
           </div>
           <div style={{ height: 80 }} />
 
@@ -3769,6 +3776,15 @@ export default function App() {
             vesselName={boatName}
             vesselType={settings.vesselType}
             fuelBurnRate={settings.fuelBurnRate || null}
+            onBack={function(){ setTab("boat"); }}
+          />
+        )}
+
+        {/* ── FIRST MATE ── */}
+        {view === "customer" && tab === "firstmate-standalone" && (
+          <FirstMate
+            vesselId={activeVesselId}
+            vesselName={boatName}
             onBack={function(){ setTab("boat"); }}
           />
         )}
@@ -5097,6 +5113,22 @@ export default function App() {
                 )}
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ── FIRST MATE OVERLAY ── */}
+      {showFirstMatePanel && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-app)", zIndex: 600, display: "flex", flexDirection: "column" }}>
+          <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", flex: 1, display: "flex", flexDirection: "column", padding: "0 20px 20px" }}>
+            <div style={{ paddingTop: 12 }}>
+              <FirstMate
+                vesselId={activeVesselId}
+                vesselName={boatName}
+                onBack={function(){ setShowFirstMatePanel(false); }}
+              />
             </div>
           </div>
         </div>
