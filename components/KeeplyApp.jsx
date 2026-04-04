@@ -2533,18 +2533,11 @@ export default function App() {
             );
           })()}
 
-          {/* ── Open Repairs ── */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>🔧 Open Repairs</div>
-            <div onClick={function(){
-                const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                if (userPlan === "free" && vesselRepairs.length >= 5) {
-                  setUpgradeReason("You've used your free repairs. Upgrade to Pro for unlimited repairs with AI suggestions.");
-                  setShowUpgradeModal(true);
-                  return;
-                }
-                setShowAddRepair(true);
-              }} style={{ fontSize: 12, fontWeight: 600, color: "var(--brand)", cursor: "pointer" }}>+ Add</div>
+          {/* ── Open Repairs divider ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--warn-text)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Open repairs</span>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
           </div>
 
           {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length === 0 && (
@@ -2558,10 +2551,10 @@ export default function App() {
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
-              <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+              <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                   <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
-                    style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
+                    style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--warn-border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
                     title="Mark complete">
                     {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                   </button>
@@ -2668,6 +2661,13 @@ export default function App() {
 
 
 
+
+          {/* ── Equipment divider ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 8 }}>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Equipment</span>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+          </div>
 
           {filteredEquip.length === 0 && !showAddEquip && (
             <div style={{ textAlign: "center", padding: "56px 24px", color: "var(--text-muted)" }}>
@@ -3463,7 +3463,7 @@ export default function App() {
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
-              <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+              <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 {/* Card header */}
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                   {/* Circle checkbox to clear repair */}
