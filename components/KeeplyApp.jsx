@@ -751,6 +751,11 @@ export default function App() {
   const [fleetPanel, setFleetPanel]     = useState(null); // { vesselId, type, vesselName }
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({ category: "General Feedback", message: "" });
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackError, setFeedbackError] = useState(null);
   const [userPlan, setUserPlan]               = useState('free'); // 'free'|'pro'|'fleet'
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [checkoutLoading, setCheckoutLoading]     = useState(false);
@@ -5634,6 +5639,11 @@ export default function App() {
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                  onClick={function(){ setShowProfilePanel(false); setShowFeedback(true); setFeedbackSent(false); setFeedbackError(null); setFeedbackForm({ category: "General Feedback", message: "" }); }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>💬 Send Feedback</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
+                </div>
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ supabase.auth.signOut(); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--danger-text)" }}>Sign out</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
@@ -6253,6 +6263,85 @@ export default function App() {
               </div>
             </div>
           )}
+
+
+      {/* ── FEEDBACK PANEL ── */}
+      {showFeedback && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 500, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={function(){ setShowFeedback(false); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, padding: 24, boxShadow: "0 -8px 32px rgba(0,0,0,0.15)", maxHeight: "85vh", overflowY: "auto" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)" }}>Send Feedback</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>We read every message personally</div>
+              </div>
+              <button onClick={function(){ setShowFeedback(false); }} style={{ background: "var(--bg-subtle)", border: "none", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16, color: "var(--text-muted)" }}>✕</button>
+            </div>
+            {feedbackSent ? (
+              <div style={{ textAlign: "center", padding: "24px 0" }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>Thanks!</div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Garry reads everything and will be in touch if needed.</div>
+                <button onClick={function(){ setShowFeedback(false); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Done</button>
+              </div>
+            ) : (<>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>TYPE</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {["Bug Report","Feature Request","Question","General Feedback"].map(function(cat){ return (
+                    <button key={cat} onClick={function(){ setFeedbackForm(function(f){ return { ...f, category: cat }; }); }}
+                      style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid " + (feedbackForm.category === cat ? "var(--brand)" : "var(--border)"), background: feedbackForm.category === cat ? "var(--brand-deep)" : "transparent", color: feedbackForm.category === cat ? "var(--brand)" : "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      {cat === "Bug Report" ? "🐛 " : cat === "Feature Request" ? "✨ " : cat === "Question" ? "❓ " : "💬 "}{cat}
+                    </button>
+                  ); })}
+                </div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>MESSAGE</div>
+                <textarea
+                  value={feedbackForm.message}
+                  onChange={function(e){ setFeedbackForm(function(f){ return { ...f, message: e.target.value }; }); }}
+                  placeholder={feedbackForm.category === "Bug Report" ? "Describe what happened and how to reproduce it…" : feedbackForm.category === "Feature Request" ? "What would you like to see? How would it help you?" : "What's on your mind?"}
+                  rows={5}
+                  style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", fontSize: 13, lineHeight: 1.6, resize: "none", boxSizing: "border-box", outline: "none", background: "var(--bg-subtle)", color: "var(--text-primary)", fontFamily: "inherit" }}
+                />
+              </div>
+              {feedbackError && (
+                <div style={{ background: "var(--danger-bg)", color: "var(--danger-text)", borderRadius: 8, padding: "8px 12px", fontSize: 12, marginBottom: 12 }}>{feedbackError}</div>
+              )}
+              <button
+                disabled={feedbackSending || !feedbackForm.message.trim()}
+                onClick={async function(){
+                  setFeedbackSending(true); setFeedbackError(null);
+                  try {
+                    const av = vessels.find(function(v){ return v.id === activeVesselId; });
+                    const res = await fetch("/api/feedback", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        category: feedbackForm.category,
+                        message: feedbackForm.message,
+                        userEmail: session?.user?.email || "",
+                        userName: session?.user?.user_metadata?.full_name || session?.user?.email || "",
+                        vesselName: av ? (av.vesselType === "motor" ? "M/V " : "S/V ") + av.vesselName : "",
+                      }),
+                    });
+                    const d = await res.json();
+                    if (d.error) throw new Error(d.error);
+                    setFeedbackSent(true);
+                    setFeedbackForm({ category: "General Feedback", message: "" });
+                  } catch(e) {
+                    setFeedbackError("Couldn't send — please try again.");
+                  } finally { setFeedbackSending(false); }
+                }}
+                style={{ width: "100%", padding: "13px", border: "none", borderRadius: 10, background: feedbackSending || !feedbackForm.message.trim() ? "var(--bg-subtle)" : "var(--brand)", color: feedbackSending || !feedbackForm.message.trim() ? "var(--text-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: feedbackSending || !feedbackForm.message.trim() ? "default" : "pointer" }}>
+                {feedbackSending ? "Sending…" : "Send Feedback →"}
+              </button>
+            </>)}
+          </div>
+        </div>
+      )}
 
     </div>
   );
