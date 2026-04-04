@@ -3481,7 +3481,7 @@ export default function App() {
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
                       {(isVesselCard ? ["info","docs","edit"] : ["maintenance","repairs","parts","docs","log","edit"]).map(function(t){ return (
                         <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}
+                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}
                         </button>
                       ); })}
                     </div>
