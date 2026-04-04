@@ -4937,12 +4937,9 @@ export default function App() {
         </div>
       )}
 
-    </div>
-  );
-
-          {/* ── Repairs FAB ── */}
-          {showRepairsFab && <div onClick={function(){ setShowRepairsFab(false); }} style={{ position: "fixed", inset: 0, zIndex: 299 }} />}
-          <div style={{ position: "fixed", bottom: 24, right: 20, zIndex: 300 }}>
+          {/* ── FAB — only on My Boat ── */}
+          {view === "customer" && tab === "boat" && showRepairsFab && <div onClick={function(){ setShowRepairsFab(false); }} style={{ position: "fixed", inset: 0, zIndex: 299 }} />}
+          {view === "customer" && tab === "boat" && <div style={{ position: "fixed", bottom: 24, right: 20, zIndex: 300 }}>
             {showRepairsFab && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
                 <div onClick={function(){ setShowRepairsFab(false); setShowAddRepair(true); }}
@@ -4961,7 +4958,7 @@ export default function App() {
               style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(15,76,138,0.4)", marginLeft: "auto", transition: "transform 0.2s", transform: showRepairsFab ? "rotate(45deg)" : "rotate(0deg)" }}>
               <span style={{ color: "#fff", fontSize: 28, lineHeight: 1, fontWeight: 300 }}>+</span>
             </div>
-          </div>
+          </div>}
 
           {showAddRepair && (
             <div style={s.modalBg} onClick={function(){ setShowAddRepair(false); }}>
@@ -4986,4 +4983,6 @@ export default function App() {
             </div>
           )}
 
+    </div>
+  );
 }
