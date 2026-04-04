@@ -3194,14 +3194,19 @@ export default function App() {
                             </div>
                             {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>No specific parts found.</div>}
                             {pr.results.map(function(part, pi){ return (
-                              <div key={pi} style={{ padding: "10px 0", borderBottom: "0.5px solid var(--border)" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                                  <div>
+                              <div key={pi} style={{ padding: "10px 0", borderBottom: "0.5px solid var(--border)", background: part.type === "replacement" ? "rgba(217,119,6,0.06)" : "transparent", borderRadius: part.type === "replacement" ? 8 : 0, padding: "10px", marginLeft: part.type === "replacement" ? -10 : 0, marginRight: part.type === "replacement" ? -10 : 0 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+                                      {part.type === "replacement"
+                                        ? <span style={{ fontSize: 9, fontWeight: 700, background: "#d97706", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Complete Unit</span>
+                                        : <span style={{ fontSize: 9, fontWeight: 700, background: "var(--text-muted)", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Service Part</span>
+                                      }
+                                    </div>
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                    {part.partNumber && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", marginTop: 1 }}>#{part.partNumber}</div>}
                                     {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
                                   </div>
-                                  {part.price && <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ok-text)", flexShrink: 0 }}>{part.price}</div>}
+                                  {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                 </div>
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                   {retailerLinks(part.name, part.url).map(function(rl){ return (
@@ -3388,14 +3393,19 @@ export default function App() {
                               </div>
                               {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found — try searching retailers directly.</div>}
                               {pr.results.map(function(part, pi){ return (
-                                <div key={pi} style={{ padding: "10px 0", borderBottom: "0.5px solid var(--border)" }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                                    <div>
+                                <div key={pi} style={{ padding: "10px", borderBottom: "0.5px solid var(--border)", background: part.type === "replacement" ? "rgba(217,119,6,0.06)" : "transparent", borderRadius: part.type === "replacement" ? 8 : 0, marginLeft: part.type === "replacement" ? -10 : 0, marginRight: part.type === "replacement" ? -10 : 0 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+                                        {part.type === "replacement"
+                                          ? <span style={{ fontSize: 9, fontWeight: 700, background: "#d97706", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Complete Unit</span>
+                                          : <span style={{ fontSize: 9, fontWeight: 700, background: "var(--text-muted)", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Service Part</span>
+                                        }
+                                      </div>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      {part.partNumber && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", marginTop: 1 }}>#{part.partNumber}</div>}
                                       {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
                                     </div>
-                                    {part.price && <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ok-text)", flexShrink: 0 }}>{part.price}</div>}
+                                    {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                   </div>
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                     {retailerLinks(part.name, part.url).map(function(r){ return (

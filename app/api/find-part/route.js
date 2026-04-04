@@ -10,27 +10,38 @@ export async function POST(request) {
       return Response.json({ error: "API key not configured" }, { status: 500 });
     }
 
-    // Build a rich search context — repair context gives the most specific query
-    const searchContext = repairContext
-      ? partName + " for " + repairContext
+    // Build context
+    const context = repairContext
+      ? repairContext
       : equipmentName
-        ? partName + " for " + equipmentName
-        : partName;
+      ? equipmentName
+      : partName;
 
     const systemPrompt = `You are a marine parts purchasing assistant. Use web search to find real products currently for sale online.
 
-Search for: "${searchContext}"
+The task/repair is: "${partName}"
+Equipment context: "${context}"
 
-Find 3-4 real products that match. For each return:
-- The exact product name as listed on the retailer site
-- The retailer/vendor name
-- The current price if visible (as a number string like "29.99")
-- The direct URL to the product page
+Search for TWO categories of products:
+
+1. COMPLETE REPLACEMENT UNIT — the full equipment itself if it needs replacing (e.g. if the task is about a raw water pump, find the complete replacement pump as a unit). Label these as type "replacement".
+
+2. SERVICE PARTS — individual components, kits, or consumables needed for repair or maintenance (impeller, seal kit, filter element, zincs, etc.). Label these as type "part".
+
+Find 2-3 results per category (4-6 total). For each return:
+- name: exact product name as listed on retailer site
+- type: "replacement" or "part"
+- reason: one short sentence on why this matches (e.g. "Complete drop-in replacement pump" or "OEM impeller kit for this pump")
+- vendor: retailer name
+- price: current price as string like "29.99" or null
+- url: direct product page URL
 
 Return ONLY a JSON array, no markdown:
-[{"name":"exact product name","vendor":"retailer name","price":"XX.XX or null","url":"https://direct-product-url"}]
+[{"name":"...","type":"replacement|part","reason":"...","vendor":"...","price":"XX.XX or null","url":"https://..."}]
 
-Prioritize: marine specialty retailers (Fisheries Supply, Defender, West Marine, Jamestown Distributors, iBoats), manufacturer direct sites, and Amazon. Only include results where the product clearly matches what was searched.`;
+Prioritize: marine specialty retailers (Fisheries Supply, Defender, West Marine, Jamestown Distributors, iBoats), manufacturer direct, then Amazon. Only include results where the product clearly matches.
+
+If the task is routine maintenance (e.g. oil change, inspect zincs) with no clear replacement unit, skip the replacement category and return only service parts.`;
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -41,7 +52,7 @@ Prioritize: marine specialty retailers (Fisheries Supply, Defender, West Marine,
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
+        max_tokens: 1500,
         tools: [{ type: "web_search_20250305", name: "web_search" }],
         messages: [{ role: "user", content: systemPrompt }],
       }),
@@ -65,11 +76,24 @@ Prioritize: marine specialty retailers (Fisheries Supply, Defender, West Marine,
     let results = [];
     try { results = JSON.parse(match ? match[0] : "[]"); } catch(e) { results = []; }
 
+    // Sort: replacements first, then parts
     results = results
       .filter(function(r){ return r && r.name && r.url; })
-      .slice(0, 4)
+      .sort(function(a, b){
+        if (a.type === "replacement" && b.type !== "replacement") return -1;
+        if (a.type !== "replacement" && b.type === "replacement") return 1;
+        return 0;
+      })
+      .slice(0, 6)
       .map(function(r){
-        return { name: r.name, vendor: r.vendor || "", price: r.price || null, url: r.url };
+        return {
+          name: r.name,
+          type: r.type || "part",
+          reason: r.reason || "",
+          vendor: r.vendor || "",
+          price: r.price || null,
+          url: r.url
+        };
       });
 
     return Response.json({ results });
