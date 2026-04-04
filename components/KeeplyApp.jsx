@@ -650,6 +650,7 @@ export default function App() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [logEntries, setLogEntries]   = useState([]);
+  const [logStats, setLogStats]         = useState({ passages: 0, totalNm: 0, avgSpeed: null });
   const [showLogbook, setShowLogbook]   = useState(false);
   const [showAddLog, setShowAddLog]     = useState(false);
   const [editingLog, setEditingLog]     = useState(null);
@@ -1065,6 +1066,37 @@ export default function App() {
       setLoading(false);
     }
   }, []);
+
+  // Fetch logbook stats for instrument strip KPIs
+  useEffect(function(){
+    if (!activeVesselId) return;
+    (async function(){
+      try {
+        const sess = await supabase.auth.getSession();
+        const token = (sess?.data?.session?.access_token) || SUPA_KEY;
+        const res = await fetch(
+          SUPA_URL + "/rest/v1/logbook?vessel_id=eq." + activeVesselId + "&entry_type=eq.passage&select=distance_nm,departure_time,arrival_time",
+          { headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + token } }
+        );
+        if (!res.ok) return;
+        const rows = await res.json();
+        const totalNm = rows.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm)||0); }, 0);
+        let totalTime = 0; let timedNm = 0;
+        rows.forEach(function(e){
+          if (e.departure_time && e.arrival_time && e.distance_nm) {
+            const dp = e.departure_time.split(":").map(Number);
+            const ap = e.arrival_time.split(":").map(Number);
+            var diff = (ap[0]*60+ap[1]) - (dp[0]*60+dp[1]);
+            if (diff < 0) diff += 1440;
+            totalTime += diff/60;
+            timedNm += parseFloat(e.distance_nm);
+          }
+        });
+        const avgSpeed = (totalTime > 0 && timedNm > 0) ? (timedNm/totalTime) : null;
+        setLogStats({ passages: rows.length, totalNm, avgSpeed });
+      } catch(e) { /* silent */ }
+    })();
+  }, [activeVesselId]);
 
   // Restore and persist active tab
   useEffect(function(){
@@ -2503,9 +2535,8 @@ export default function App() {
             const nextColor = nextUrgency === "critical" ? "var(--danger-text)" : nextUrgency === "overdue" ? "var(--warn-text)" : nextUrgency === "due-soon" ? "var(--duesoon-text)" : "var(--text-primary)";
             const daysUntil = nextDue && nextDue.dueDate ? Math.round((new Date(nextDue.dueDate) - new Date()) / 86400000) : null;
             const daysLabel = daysUntil === null ? "" : daysUntil < 0 ? Math.abs(daysUntil) + "d overdue" : daysUntil === 0 ? "due today" : "in " + daysUntil + "d";
-            // Logbook KPIs — sum from entries for this vessel
+            // Logbook KPIs — from logStats (fetched independently)
             const vesselLogs = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.entry_type === "passage"; });
-            // Last recorded hours_end from logbook
             const lastLogWithHours = [...vesselLogs].filter(function(e){ return e.hours_end; })
               .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0] || null;
             const totalNm   = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
@@ -2552,48 +2583,30 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Row 2 Cell 1 — nm logged (from logbook) */}
-                <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: vesselLogs.length > 0 ? "pointer" : "default" }}
-                  onClick={vesselLogs.length > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
+                {/* Row 2 Cell 1 — nm logged */}
+                <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: logStats.passages > 0 ? "pointer" : "default" }}
+                  onClick={logStats.passages > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
                   <div style={labelStyle}>nm logged</div>
-                  {totalNm > 0 ? (<>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{Math.round(totalNm).toLocaleString()}</div>
-                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{vesselLogs.length} {vesselLogs.length === 1 ? "passage" : "passages"}</div>
+                  {logStats.totalNm > 0 ? (<>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{Math.round(logStats.totalNm).toLocaleString()}</div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{logStats.passages} {logStats.passages === 1 ? "passage" : "passages"}</div>
                   </>) : (
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No passages yet</div>
                   )}
                 </div>
 
-                {/* Row 2 Cell 2 — avg speed from departure/arrival times */}
-                {(function(){
-                  // Only use passages with both departure_time and arrival_time logged
-                  let totalTime = 0; let timeCount = 0;
-                  vesselLogs.forEach(function(e){
-                    if (e.departure_time && e.arrival_time && e.distance_nm) {
-                      const [dh,dm] = e.departure_time.split(":").map(Number);
-                      const [ah,am] = e.arrival_time.split(":").map(Number);
-                      let diff = (ah*60+am) - (dh*60+dm);
-                      if (diff < 0) diff += 1440;
-                      totalTime += diff / 60;
-                      timeCount++;
-                    }
-                  });
-                  const timedNm = vesselLogs.filter(function(e){ return e.departure_time && e.arrival_time && e.distance_nm; })
-                    .reduce(function(acc,e){ return acc + parseFloat(e.distance_nm); }, 0);
-                  const avgSpeed = (totalTime > 0 && timedNm > 0) ? (timedNm / totalTime) : null;
-                  return (
-                    <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: vesselLogs.length > 0 ? "pointer" : "default" }}
-                      onClick={vesselLogs.length > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
-                      <div style={labelStyle}>Avg speed</div>
-                      {avgSpeed !== null ? (<>
-                        <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{avgSpeed.toFixed(1)}</div>
-                        <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{timeCount} timed {timeCount === 1 ? "passage" : "passages"}</div>
-                      </>) : (
-                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>—</div>
-                      )}
-                    </div>
-                  );
-                })()}
+                {/* Row 2 Cell 2 — avg speed */}
+                <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: logStats.passages > 0 ? "pointer" : "default" }}
+                  onClick={logStats.passages > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
+                  <div style={labelStyle}>Avg speed</div>
+                  {logStats.avgSpeed !== null ? (<>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{logStats.avgSpeed.toFixed(1)}</div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>kts avg</div>
+                  </>) : (
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>—</div>
+                  )}
+                </div>
+
 
               </div>
             );
