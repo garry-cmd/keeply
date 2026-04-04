@@ -2001,7 +2001,7 @@ export default function App() {
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
-    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 108, paddingBottom: 80 },
+    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 72, paddingBottom: 80 },
     card:    { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
     pill:    function(a,c){ return { padding: "4px 11px", borderRadius: 20, border: a ? "1.5px solid " + (c || "var(--brand)") : "1.5px solid var(--border)", background: a ? (c || "var(--brand-deep)") : "transparent", color: a ? (c || "var(--brand)") : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }; },
     plusBtn: { background: "var(--brand)", color: "var(--text-on-brand)", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 22, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -2132,9 +2132,14 @@ export default function App() {
             )}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
-          <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "var(--brand)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
+            title="Ask First Mate"
+            style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            ⚓ <span style={{ fontSize: 11 }}>Ask</span>
+          </button>
+          <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🛒{cartQty > 0 ? " " + cartQty : ""}
           </button>
           <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>
@@ -5551,6 +5556,8 @@ export default function App() {
         <FirstMate
           vesselId={activeVesselId}
           vesselName={boatName}
+          openPanel={showFirstMatePanel}
+          onClose={function(){ setShowFirstMatePanel(false); }}
         />
       )}
       {/* ── SHARE VESSEL PANEL ── */}

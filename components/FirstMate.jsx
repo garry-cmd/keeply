@@ -58,12 +58,17 @@ async function fetchVesselContext(vesselId) {
   };
 }
 
-export default function FirstMate({ vesselId, vesselName }) {
+export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [context, setContext] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [_inputInit, _setInputInit] = useState("");
+  useEffect(function() {
+    if (openPanel) { setPanelOpen(true); if (inputRef.current) setTimeout(function(){ inputRef.current?.focus(); }, 50); }
+    else { setPanelOpen(false); }
+  }, [openPanel]);
   const inputRef = useRef(null);
   const messagesRef = useRef(null);
 
@@ -118,6 +123,7 @@ export default function FirstMate({ vesselId, vesselName }) {
     setPanelOpen(false);
     setMessages([]);
     setInput("");
+    if (onClose) onClose();
   };
 
   const canSend = !!(input.trim() && !loading && context);
@@ -125,59 +131,11 @@ export default function FirstMate({ vesselId, vesselName }) {
 
   return (
     <>
-      {/* ── Fixed top bar — always visible below the nav ── */}
-      <div id="fm-top-bar" style={{
-        position: "fixed",
-        top: 56,
-        left: 0,
-        right: 0,
-        zIndex: 299,
-        background: "var(--bg-card)",
-        borderBottom: "0.5px solid var(--border)",
-        boxShadow: panelOpen ? "none" : "0 2px 8px rgba(0,0,0,0.06)",
-      }}>
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "8px 12px" }}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: "var(--bg-subtle)",
-            border: "1px solid " + (panelOpen ? "var(--brand)" : "var(--border)"),
-            borderRadius: 10,
-            padding: "7px 10px 7px 12px",
-            transition: "border-color 0.15s",
-          }}>
-            <span style={{ fontSize: 13, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={function(e) { setInput(e.target.value); if (!panelOpen) setPanelOpen(true); }}
-              onFocus={function() { setPanelOpen(true); }}
-              onKeyDown={handleKey}
-              placeholder={"Ask First Mate about " + (vesselName || "your boat") + "…"}
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit" }}
-            />
-            {hasMessages && (
-              <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Close">✕</button>
-            )}
-            <button
-              onClick={function() { send(); }}
-              disabled={!canSend}
-              style={{
-                width: 28, height: 28, borderRadius: 8, border: "none",
-                background: canSend ? "var(--brand)" : "var(--bg-subtle)",
-                color: canSend ? "#fff" : "var(--text-muted)",
-                fontSize: 13, cursor: canSend ? "pointer" : "default",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, transition: "background 0.15s",
-              }}>↑</button>
-          </div>
-        </div>
-      </div>
-
       {/* ── Drop-down response panel ── */}
       {panelOpen && (
         <div style={{
           position: "fixed",
-          top: 56 + 52, // topBar + input bar
+          top: 56, // sits directly below topBar
           left: 0,
           right: 0,
           zIndex: 298,
@@ -241,8 +199,28 @@ export default function FirstMate({ vesselId, vesselName }) {
 
           {/* Backdrop tap to dismiss when only starters shown */}
           {!hasMessages && (
-            <div style={{ position: "fixed", inset: 0, top: 56 + 52, zIndex: -1 }} onClick={function() { setPanelOpen(false); }} />
+            <div style={{ position: "fixed", inset: 0, top: 56, zIndex: -1 }} onClick={function() { close(); }} />
           )}
+
+          {/* Input row — always at bottom of panel */}
+          <div style={{ padding: "8px 14px 12px", borderTop: hasMessages ? "0.5px solid var(--border)" : "none", background: "var(--bg-card)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "7px 10px 7px 12px" }}>
+              <span style={{ fontSize: 13, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={function(e) { setInput(e.target.value); }}
+                onKeyDown={handleKey}
+                placeholder={"Ask about " + (vesselName || "your boat") + "…"}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit" }}
+              />
+              {hasMessages && (
+                <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }}>✕</button>
+              )}
+              <button onClick={function() { send(); }} disabled={!canSend}
+                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: canSend ? "var(--brand)" : "var(--bg-subtle)", color: canSend ? "#fff" : "var(--text-muted)", fontSize: 13, cursor: canSend ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>↑</button>
+            </div>
+          </div>
         </div>
       )}
     </>
