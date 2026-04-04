@@ -911,6 +911,7 @@ export default function App() {
             photoUrl:     v.photo_url      || "",
             engineHours:  v.engine_hours   || null,
             engineHoursDate: v.engine_hours_date || null,
+            fuelBurnRate: v.fuel_burn_rate || null,
           };
         });
         setVessels(normalizedVessels);
@@ -1098,14 +1099,14 @@ export default function App() {
     setSaving(true);
     try {
       const userId = session && session.user ? session.user.id : null;
-      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: settingsForm.make, model: settingsForm.model, year: settingsForm.year, user_id: userId, photo_url: settingsForm.photoUrl || null };
+      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: settingsForm.make, model: settingsForm.model, year: settingsForm.year, user_id: userId, photo_url: settingsForm.photoUrl || null, fuel_burn_rate: settingsForm.fuelBurnRate ? parseFloat(settingsForm.fuelBurnRate) : null };
       if (editingVesselId) {
         await supa("vessels", { method: "PATCH", query: "id=eq." + editingVesselId, body: payload, prefer: "return=minimal" });
         setVessels(function(vs){ return vs.map(function(v){ return v.id === editingVesselId ? { ...settingsForm, id: editingVesselId } : v; }); });
       } else {
         const created = await supa("vessels", { method: "POST", body: payload });
         const nv = created[0];
-        const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: nv.photo_url || "", engineHours: nv.engine_hours || null, engineHoursDate: nv.engine_hours_date || null };
+        const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: nv.photo_url || "", engineHours: nv.engine_hours || null, engineHoursDate: nv.engine_hours_date || null, fuelBurnRate: nv.fuel_burn_rate || null };
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
         // If user has other vessels, offer to copy items
@@ -1455,8 +1456,7 @@ export default function App() {
       crew:             logForm.crew || null,
       highlights:       logForm.highlights || null,
       distance_nm:      logForm.distance_nm ? parseFloat(logForm.distance_nm) : null,
-      engine_hours:     logForm.engine_hours ? parseFloat(logForm.engine_hours) : null,
-      fuel_used:        logForm.fuel_used ? parseFloat(logForm.fuel_used) : null,
+      hours_end:        logForm.hours_end ? parseFloat(logForm.hours_end) : null,
       conditions:       logForm.conditions || null,
       wind_speed:       logForm.wind_speed ? parseInt(logForm.wind_speed) : null,
       wind_direction:   logForm.wind_direction || null,
@@ -1474,9 +1474,19 @@ export default function App() {
       if (editingLog) {
         const { data } = await supabase.from("logbook").update(body).eq("id", editingLog).select().single();
         setLogEntries(function(prev){ return prev.map(function(e){ return e.id === editingLog ? data : e; }); });
+        // Update vessel engine hours if hours_end changed
+        if (body.hours_end) {
+          supabase.from("vessels").update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date }).eq("id", activeVesselId).then(function(){});
+          setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: body.hours_end, engineHoursDate: body.entry_date } : v; }); });
+        }
       } else {
         const { data } = await supabase.from("logbook").insert(body).select().single();
         setLogEntries(function(prev){ return [data, ...prev]; });
+        // Auto-update vessel engine hours from hours_end
+        if (body.hours_end) {
+          supabase.from("vessels").update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date }).eq("id", activeVesselId).then(function(){});
+          setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: body.hours_end, engineHoursDate: body.entry_date } : v; }); });
+        }
       }
       setShowAddLog(false); setEditingLog(null); setLogForm({});
     } catch(e){ console.error("Log save error:", e); }
@@ -1892,7 +1902,7 @@ export default function App() {
   // Signed in but no vessel yet
   if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
     setNeedsSetup(false);
-    const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "", engineHours: vessel.engine_hours || null, engineHoursDate: vessel.engine_hours_date || null };
+    const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "", engineHours: vessel.engine_hours || null, engineHoursDate: vessel.engine_hours_date || null, fuelBurnRate: vessel.fuel_burn_rate || null };
     setVessels([normalized]);
     setActiveVesselId(vessel.id);
     localStorage.setItem("keeply_active_vessel", vessel.id);
@@ -2453,19 +2463,24 @@ export default function App() {
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
-          {/* ── Instrument strip — 3 cells ── */}
+          {/* ── Instrument strip — 2x2 grid ── */}
           {(() => {
             const engineHours = settings.engineHours || null;
             const lastHoursUpdate = settings.engineHoursDate || null;
             const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
-            // Next service: soonest due task, with urgency colour
             const nextDue = [...vesselTasks].filter(function(t){ return t.dueDate; })
               .sort(function(a,b){ return new Date(a.dueDate)-new Date(b.dueDate); })[0];
             const nextUrgency = nextDue ? getTaskUrgency(nextDue) : null;
             const nextColor = nextUrgency === "critical" ? "var(--danger-text)" : nextUrgency === "overdue" ? "var(--warn-text)" : nextUrgency === "due-soon" ? "var(--duesoon-text)" : "var(--text-primary)";
-            // Days until next service
             const daysUntil = nextDue && nextDue.dueDate ? Math.round((new Date(nextDue.dueDate) - new Date()) / 86400000) : null;
             const daysLabel = daysUntil === null ? "" : daysUntil < 0 ? Math.abs(daysUntil) + "d overdue" : daysUntil === 0 ? "due today" : "in " + daysUntil + "d";
+            // Logbook KPIs — sum from entries for this vessel
+            const vesselLogs = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.entry_type === "passage"; });
+            // Last recorded hours_end from logbook
+            const lastLogWithHours = [...vesselLogs].filter(function(e){ return e.hours_end; })
+              .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0] || null;
+            const totalNm   = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
+            const totalEngHrs = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.engine_hours) || 0); }, 0);
             const updateHours = function(){
               const hrs = prompt("Current engine hours:");
               if (!hrs || isNaN(hrs)) return;
@@ -2475,25 +2490,31 @@ export default function App() {
               supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
                 .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
             };
+            const cellStyle = { background: "var(--bg-card)", padding: "11px 12px" };
+            const labelStyle = { fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 };
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
 
-                {/* Cell 1 — Engine hours */}
-                <div style={{ background: "var(--bg-card)", padding: "12px 12px", cursor: engineHours ? "default" : "pointer" }} onClick={engineHours ? undefined : updateHours}>
-                  <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Engine hrs</div>
-                  {engineHours ? (<>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{engineHours.toLocaleString()}</div>
-                    <button onClick={updateHours} style={{ fontSize: 9, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 4, padding: "2px 5px", cursor: "pointer", marginTop: 5, display: "block" }}>update</button>
+                {/* Row 1 Cell 1 — Engine hours (from last logbook hours_end or manual) */}
+                <div style={cellStyle}>
+                  <div style={labelStyle}>Engine hrs</div>
+                  {(lastLogWithHours || engineHours) ? (<>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>
+                      {(lastLogWithHours ? lastLogWithHours.hours_end : engineHours).toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>
+                      {lastLogWithHours ? "from log · " + fmt(lastLogWithHours.entry_date) : "manually entered"}
+                    </div>
                   </>) : (<>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.2 }}>Not logged</div>
-                    <div style={{ fontSize: 9, color: "var(--brand)", marginTop: 4 }}>tap to log →</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Not logged</div>
+                    <div onClick={updateHours} style={{ fontSize: 9, color: "var(--brand)", marginTop: 4, cursor: "pointer" }}>tap to log →</div>
                   </>)}
                 </div>
 
-                {/* Cell 2 — Next service */}
-                <div style={{ background: "var(--bg-card)", padding: "12px 12px", borderLeft: "1px solid var(--border)", cursor: nextDue ? "pointer" : "default" }}
+                {/* Row 1 Cell 2 — Next service */}
+                <div style={{ ...cellStyle, cursor: nextDue ? "pointer" : "default" }}
                   onClick={nextDue ? function(){ setTab("maintenance-standalone"); } : undefined}>
-                  <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Next service</div>
+                  <div style={labelStyle}>Next service</div>
                   {nextDue ? (<>
                     <div style={{ fontSize: 12, fontWeight: 700, color: nextColor, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{nextDue.task}</div>
                     <div style={{ fontSize: 10, color: nextColor, marginTop: 3, fontFamily: "DM Mono, monospace" }}>{daysLabel}</div>
@@ -2502,6 +2523,48 @@ export default function App() {
                   )}
                 </div>
 
+                {/* Row 2 Cell 1 — nm logged (from logbook) */}
+                <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: vesselLogs.length > 0 ? "pointer" : "default" }}
+                  onClick={vesselLogs.length > 0 ? function(){ setShowLogbook(true); } : undefined}>
+                  <div style={labelStyle}>nm logged</div>
+                  {totalNm > 0 ? (<>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{Math.round(totalNm).toLocaleString()}</div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{vesselLogs.length} {vesselLogs.length === 1 ? "passage" : "passages"}</div>
+                  </>) : (
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No passages yet</div>
+                  )}
+                </div>
+
+                {/* Row 2 Cell 2 — avg speed from departure/arrival times */}
+                {(function(){
+                  // Only use passages with both departure_time and arrival_time logged
+                  let totalTime = 0; let timeCount = 0;
+                  vesselLogs.forEach(function(e){
+                    if (e.departure_time && e.arrival_time && e.distance_nm) {
+                      const [dh,dm] = e.departure_time.split(":").map(Number);
+                      const [ah,am] = e.arrival_time.split(":").map(Number);
+                      let diff = (ah*60+am) - (dh*60+dm);
+                      if (diff < 0) diff += 1440;
+                      totalTime += diff / 60;
+                      timeCount++;
+                    }
+                  });
+                  const timedNm = vesselLogs.filter(function(e){ return e.departure_time && e.arrival_time && e.distance_nm; })
+                    .reduce(function(acc,e){ return acc + parseFloat(e.distance_nm); }, 0);
+                  const avgSpeed = (totalTime > 0 && timedNm > 0) ? (timedNm / totalTime) : null;
+                  return (
+                    <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: vesselLogs.length > 0 ? "pointer" : "default" }}
+                      onClick={vesselLogs.length > 0 ? function(){ setShowLogbook(true); } : undefined}>
+                      <div style={labelStyle}>Avg speed</div>
+                      {avgSpeed !== null ? (<>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{avgSpeed.toFixed(1)}</div>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{timeCount} timed {timeCount === 1 ? "passage" : "passages"}</div>
+                      </>) : (
+                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>—</div>
+                      )}
+                    </div>
+                  );
+                })()}
 
               </div>
             );
@@ -4198,6 +4261,9 @@ export default function App() {
               <input placeholder="e.g. 35, 42, 40" value={settingsForm.model || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, model: e.target.value }; }); }} style={s.inp} />
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6 }}>YEAR</div>
               <input placeholder="e.g. 1980" value={settingsForm.year || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, year: e.target.value }; }); }} style={s.inp} />
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6, marginTop: 14 }}>FUEL BURN RATE <span style={{ fontSize: 10, fontWeight: 400 }}>gal/hr</span></div>
+              <input type="number" step="0.1" placeholder="e.g. 0.7" value={settingsForm.fuelBurnRate || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, fuelBurnRate: e.target.value }; }); }} style={s.inp} />
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>Fuel per passage is derived from engine run hours × this rate.</div>
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginBottom: 6 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>VESSEL PHOTO</div>
                 {/* Hidden file input controlled by ref */}
@@ -4952,11 +5018,53 @@ export default function App() {
 
               {/* Passage-only core stats */}
               {(logForm.entry_type || "passage") === "passage" && (<>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DIST nm</div><input type="number" placeholder="0" value={logForm.distance_nm || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { distance_nm: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ENG HRS</div><input type="number" placeholder="0" step="0.1" value={logForm.engine_hours || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { engine_hours: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL USED gal</div><input type="number" placeholder="0" step="0.1" value={logForm.fuel_used || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { fuel_used: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div><div style={ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }>DIST nm</div><input type="number" placeholder="0" value={logForm.distance_nm || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { distance_nm: e.target.value }); }); }} style={ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" } /></div>
+                  <div>
+                    <div style={ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }>HOURS END</div>
+                    <input type="number" placeholder="e.g. 1290" step="0.1" value={logForm.hours_end || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { hours_end: e.target.value }); }); }} style={ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" } />
+                  </div>
                 </div>
+                {/* Derived: time at sea, avg speed, fuel used */}
+                {(function(){
+                  const dep = logForm.departure_time; const arr = logForm.arrival_time;
+                  const dist = parseFloat(logForm.distance_nm) || 0;
+                  const hoursEnd = parseFloat(logForm.hours_end) || null;
+                  let timeHrs = null;
+                  if (dep && arr) {
+                    const [dh,dm] = dep.split(":").map(Number);
+                    const [ah,am] = arr.split(":").map(Number);
+                    let diff = (ah*60+am) - (dh*60+dm);
+                    if (diff < 0) diff += 1440;
+                    timeHrs = diff / 60;
+                  }
+                  const avgSpd = (timeHrs && dist > 0) ? (dist / timeHrs).toFixed(1) : null;
+                  const lastHoursEnd = (function(){
+                    const prev = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.hours_end && (!editingLog || e.id !== editingLog); })
+                      .sort(function(a,b){ return new Date(b.entry_date+""+(b.departure_time||"00:00")) - new Date(a.entry_date+""+(a.departure_time||"00:00")); });
+                    return prev.length > 0 ? prev[0].hours_end : null;
+                  })();
+                  const runHrs = (hoursEnd && lastHoursEnd && hoursEnd > lastHoursEnd) ? (hoursEnd - lastHoursEnd) : null;
+                  const burnRate = settings.fuelBurnRate || null;
+                  const fuelUsed = (runHrs && burnRate) ? (runHrs * burnRate).toFixed(1) : null;
+                  const timeLabel = timeHrs ? (Math.floor(timeHrs) + "h " + Math.round((timeHrs % 1) * 60) + "m") : "—";
+                  return (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                      <div>
+                        <div style={ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }>TIME AT SEA</div>
+                        <div style={ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }>{timeLabel}</div>
+                      </div>
+                      <div>
+                        <div style={ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }>AVG SPEED</div>
+                        <div style={ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }>{avgSpd ? avgSpd + " kts" : "—"}</div>
+                      </div>
+                      <div>
+                        <div style={ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }>FUEL USED</div>
+                        <div style={ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }>{fuelUsed ? fuelUsed + " gal" : "—"}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Wind */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
