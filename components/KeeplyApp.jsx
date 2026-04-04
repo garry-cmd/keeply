@@ -3553,8 +3553,33 @@ export default function App() {
                                     if (!file) return;
                                     setScanningVesselDoc(true); setScanError(null);
                                     try {
+                                      // Compress image client-side if > 4MB
+                                      let uploadFile = file;
+                                      if (file.type !== "application/pdf" && file.size > 4 * 1024 * 1024) {
+                                        uploadFile = await new Promise(function(resolve) {
+                                          const img = new Image();
+                                          const url = URL.createObjectURL(file);
+                                          img.onload = function() {
+                                            URL.revokeObjectURL(url);
+                                            const canvas = document.createElement("canvas");
+                                            let w = img.width; let h = img.height;
+                                            // Scale down so longest side is max 2000px
+                                            const maxDim = 2000;
+                                            if (w > maxDim || h > maxDim) {
+                                              if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+                                              else { w = Math.round(w * maxDim / h); h = maxDim; }
+                                            }
+                                            canvas.width = w; canvas.height = h;
+                                            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                                            canvas.toBlob(function(blob) {
+                                              resolve(new File([blob], file.name, { type: "image/jpeg" }));
+                                            }, "image/jpeg", 0.85);
+                                          };
+                                          img.src = url;
+                                        });
+                                      }
                                       const fd = new FormData();
-                                      fd.append("file", file);
+                                      fd.append("file", uploadFile);
                                       const res = await fetch("/api/scan-document", { method: "POST", body: fd });
                                       const d = await res.json();
                                       if (d.error) { setScanError(d.error); return; }
