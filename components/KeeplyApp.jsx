@@ -910,6 +910,8 @@ export default function App() {
   const [completingTask, setCompletingTask]     = useState(null); // id being animated
   const [editingRepair, setEditingRepair]   = useState(null); // repair id being edited
   const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine", _equipmentId: null });
+  const [repairNotesDraft, setRepairNotesDraft] = useState({});
+  const [savingRepairNotes, setSavingRepairNotes] = useState({});
 
   const [confirmAction, setConfirmAction]     = useState(null);
 
@@ -3060,10 +3062,38 @@ export default function App() {
                       </div>
                     )}
                     {(repairTab[r.id] || "parts") === "notes" && (
-                      <div style={{ padding: "14px 16px" }}>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>{r.description || "No additional notes."}</div>
-                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
-                          style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>✏️ Edit repair</button>
+                      <div style={{ padding: "14px 16px" }} onClick={function(e){ e.stopPropagation(); }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>REPAIR NOTES</div>
+                        <textarea
+                          value={repairNotesDraft[r.id] !== undefined ? repairNotesDraft[r.id] : (r.notes || "")}
+                          onChange={function(e){ const v = e.target.value; setRepairNotesDraft(function(prev){ const n = Object.assign({}, prev); n[r.id] = v; return n; }); }}
+                          placeholder={"What's been tried, parts ordered, what the mechanic said…"}
+                          rows={4}
+                          style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 12, lineHeight: 1.5, resize: "vertical", boxSizing: "border-box", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }}
+                        />
+                        {(repairNotesDraft[r.id] !== undefined && repairNotesDraft[r.id] !== (r.notes || "")) && (
+                          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                            <button onClick={function(){ setRepairNotesDraft(function(prev){ const n = Object.assign({}, prev); delete n[r.id]; return n; }); }}
+                              style={{ flex: 1, padding: "7px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                            <button onClick={async function(){
+                              const note = repairNotesDraft[r.id] || "";
+                              setSavingRepairNotes(function(prev){ const n = Object.assign({}, prev); n[r.id] = true; return n; });
+                              try {
+                                await supa("repairs", { method: "PATCH", query: "id=eq." + r.id, body: { notes: note }, prefer: "return=minimal" });
+                                setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === r.id ? Object.assign({}, rr, { notes: note }) : rr; }); });
+                                setRepairNotesDraft(function(prev){ const n = Object.assign({}, prev); delete n[r.id]; return n; });
+                              } catch(e) { console.error("Save notes failed:", e); }
+                              finally { setSavingRepairNotes(function(prev){ const n = Object.assign({}, prev); delete n[r.id]; return n; }); }
+                            }}
+                              disabled={savingRepairNotes[r.id]}
+                              style={{ flex: 2, padding: "7px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                              {savingRepairNotes[r.id] ? "Saving…" : "Save notes"}
+                            </button>
+                          </div>
+                        )}
+                        {!(repairNotesDraft[r.id] !== undefined && repairNotesDraft[r.id] !== (r.notes || "")) && (r.notes || "") === "" && (
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Tap above to add notes — what you've tried, parts ordered, what the mechanic said.</div>
+                        )}
                       </div>
                     )}
                   </div>
