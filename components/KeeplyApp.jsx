@@ -11,7 +11,8 @@ import FirstMate from "./FirstMate";
 // ── Affiliate link helpers ────────────────────────────────────────────────────
 // Enroll at avantlink.com → get approved for Fisheries Supply (mi=10234)
 // Then paste your website ID below. Leave empty = direct links (no commission)
-const AVANTLINK_ID = "";
+// Set NEXT_PUBLIC_AVANTLINK_ID in Vercel env vars — get your publisher ID from avantlink.com
+const AVANTLINK_ID = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_AVANTLINK_ID) || "";
 
 // Retailer search bases
 const RETAILERS = {
@@ -757,6 +758,7 @@ export default function App() {
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
   const [findPartResults, setFindPartResults]   = useState([]);
+  const [inlinePartResults, setInlinePartResults] = useState({});
   const [findPartLoading, setFindPartLoading]   = useState(false);
   const [findPartError, setFindPartError]       = useState(null);
   const findPartSearched                        = useRef(null);
@@ -1527,6 +1529,34 @@ export default function App() {
     }
   };
 
+
+  // ── Unified inline part finder — calls find-part with full vessel+equipment context ──
+  const findPartsInline = async function(id, taskDescription, equipmentId, section) {
+    const eq = equipment.find(function(e){ return e.id === equipmentId; });
+    const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
+    const equipContext = eq
+      ? eq.name + (eq.notes && !eq.notes.startsWith("{") ? " " + eq.notes.substring(0, 80) : "")
+      : section;
+    const vesselContext = vessel ? [vessel.year, vessel.make, vessel.model].filter(Boolean).join(" ") : "";
+    setInlinePartResults(function(prev){ const n = Object.assign({}, prev); n[id] = { loading: true, results: [], error: null }; return n; });
+    try {
+      const res = await fetch("/api/find-part", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          partName: taskDescription,
+          equipmentName: equipContext,
+          repairContext: (vesselContext ? vesselContext + " — " : "") + taskDescription
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setInlinePartResults(function(prev){ const n = Object.assign({}, prev); n[id] = { loading: false, results: data.results || [], error: null }; return n; });
+    } catch(e) {
+      setInlinePartResults(function(prev){ const n = Object.assign({}, prev); n[id] = { loading: false, results: [], error: e.message }; return n; });
+    }
+  };
+
   const getAISuggestions = function(){};
 
   const getSuggestionsForEquipment = async function(eq){
@@ -2139,9 +2169,7 @@ export default function App() {
             style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             ⚓ <span style={{ fontSize: 11 }}>Ask</span>
           </button>
-          <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            🛒{cartQty > 0 ? " " + cartQty : ""}
-          </button>
+
           <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>
             {darkMode ? "☀️" : "🌙"}
           </button>
@@ -2416,7 +2444,7 @@ export default function App() {
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                             {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
-                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{r.description}</div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               <SectionBadge section={r.section} />
@@ -2424,7 +2452,7 @@ export default function App() {
                             </div>
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
-                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>
                             {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
@@ -2432,7 +2460,7 @@ export default function App() {
                           <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
                             <div style={{ padding: "12px 14px" }}>
                               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>✨ Suggested parts</div>
-                              {!sugg && <button onClick={function(){ getSuggestionsForRepair(r); }} style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts</button>}
+                              {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>🔩 Find parts</button>}
                               {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                               {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
                                 const inList = cart.some(function(i){ return i.name === part.name; });
@@ -2882,7 +2910,6 @@ export default function App() {
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
                     const next = isExpanded ? null : r.id;
                     setExpandedRepair(next);
-                    if (next && !sugg) getSuggestionsForRepair(r);
                   }}>
                     {editingRepair === r.id ? (
                       <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -2914,7 +2941,7 @@ export default function App() {
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
                 {isExpanded && (
@@ -2925,7 +2952,7 @@ export default function App() {
                     </div>
                     <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8 }}>
                       {["parts", "notes"].map(function(t){ return (
-                        <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
+                        <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
                           {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
@@ -2936,35 +2963,65 @@ export default function App() {
                     </div>
                     {(repairTab[r.id] || "parts") === "parts" && (
                       <div style={{ padding: "14px 16px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 10 }}>✨ AI suggested parts</div>
-                        {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
-                        {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button></div>}
-                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>}
-                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                          const inList = cart.some(function(i){ return i.name === part.name; });
-                          return (
-                            <div key={part.name} style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                  <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2, lineHeight: 1.4 }}>💡 {part.reason}</div>
-                                </div>
-                                <button onClick={function(e){ e.stopPropagation(); setRejectedParts(function(prev){ const n = Object.assign({}, prev); n["repair-" + r.id + "-" + part.id] = true; return n; }); getSuggestionsForRepair(r); }}
-                                  style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Wrong part">✕</button>
-                              </div>
-                              <button onClick={function(e){ e.stopPropagation(); if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: (function(){ const eq = equipment.find(function(e){ return e.id === r.equipment_id; }); return eq ? eq.name + (eq.model ? " " + eq.model : "") : r.section; })(), repairContext: r.description + " " + r.section }); }}
-                                style={{ marginTop: 8, width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                {inList ? "✓ In Shopping List" : "🔍 Find Part"}
-                              </button>
+                        {(function(){
+                          const pr = inlinePartResults[r.id];
+                          const repairEq = equipment.find(function(e){ return e.id === r.equipment_id; });
+                          if (!pr) return (
+                            <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }}
+                              style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 700, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                              🔩 Find parts for this repair
+                            </button>
+                          );
+                          if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>🔍 Searching for parts…</div>;
+                          if (pr.error) return (
+                            <div style={{ fontSize: 12, color: "var(--warn-text)" }}>
+                              Search failed. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button>
                             </div>
                           );
-                        })}
-                        {sugg && sugg !== "loading" && (
-                          <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh suggestions</button>
-                        )}
-                        {!sugg && (
-                          <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts for this repair</button>
-                        )}
+                          return (<>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
+                              <span>🔩 PARTS FOUND {pr.results.length > 0 ? "· " + pr.results.length : ""}</span>
+                              <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>↺ refresh</button>
+                            </div>
+                            {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>No specific parts found.</div>}
+                            {pr.results.map(function(part, pi){ return (
+                              <div key={pi} style={{ padding: "10px 0", borderBottom: "0.5px solid var(--border)" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                                  <div>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
+                                    {part.partNumber && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", marginTop: 1 }}>#{part.partNumber}</div>}
+                                    {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
+                                  </div>
+                                  {part.price && <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ok-text)", flexShrink: 0 }}>{part.price}</div>}
+                                </div>
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                  {retailerLinks(part.name, part.url).map(function(rl){ return (
+                                    <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
+                                      style={{ padding: "4px 10px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                      {rl.name.split(" ")[0]} ↗
+                                    </a>
+                                  ); })}
+                                  {repairEq && (
+                                    <button onClick={function(e){ e.stopPropagation(); saveAiPartToMyParts(repairEq, { name: part.name, reason: part.reason || "", id: "ai-" + pi }); }}
+                                      style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg-subtle)", border: "0.5px solid var(--border)", color: "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                                      + Save to parts
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ); })}
+                            {pr.results.length === 0 && (
+                              <div style={{ display: "flex", gap: 5 }}>
+                                {retailerLinks(r.description + " marine").map(function(rl){ return (
+                                  <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
+                                    style={{ flex: 1, padding: "6px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                    {rl.name.split(" ")[0]} ↗
+                                  </a>
+                                ); })}
+                              </div>
+                            )}
+                          </>);
+                        })()}
                       </div>
                     )}
                     {(repairTab[r.id] || "parts") === "notes" && (
@@ -3032,11 +3089,10 @@ export default function App() {
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                        <a href={buyUrl(t.task + " " + t.section + " marine")} target="_blank" rel="noreferrer"
-                          onClick={function(e){ e.stopPropagation(); }}
-                          style={{ fontSize: 10, fontWeight: 700, color: "#1a7f4b", background: "#f0fdf4", border: "0.5px solid #86efac", borderRadius: 6, padding: "3px 8px", textDecoration: "none", whiteSpace: "nowrap" }}>
-                          Buy parts ↗
-                        </a>
+                        <button onClick={function(e){ e.stopPropagation(); setExpandedTask(t.id); if (!inlinePartResults[t.id]) findPartsInline(t.id, t.task, t.equipment_id, t.section); }}
+                          style={{ fontSize: 10, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--brand)", borderRadius: 6, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                          🔩 Find Part
+                        </button>
                         <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }}
                           onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
                           {isExpanded ? "▾" : "▸"}
@@ -3063,49 +3119,71 @@ export default function App() {
                             <div style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{t.priority || "medium"}</div>
                           </div>
                         </div>
-                        {/* AI Parts suggestions */}
-                        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>✨ Suggested parts</div>
-                          {(function(){
-                            const sugg = aiSuggestions[t.id];
-                            if (!sugg) return (
-                              <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}
-                                style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
-                                ✨ Find parts for this task
+                        {/* ── Find Part (unified inline) ── */}
+                        {(function(){
+                          const pr = inlinePartResults[t.id];
+                          if (!pr) return (
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                              <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }}
+                                style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "9px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 700, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                                🔩 Find parts for this task
                               </button>
-                            );
-                            if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "4px 0" }}>Finding parts…</div>;
-                            if (sugg === "error") return (
-                              <div style={{ fontSize: 12, color: "var(--warn-text)" }}>
-                                Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>Try again</button>
+                            </div>
+                          );
+                          if (pr.loading) return (
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "14px 0" }}>🔍 Searching for parts…</div>
+                          );
+                          if (pr.error) return (
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, fontSize: 12, color: "var(--warn-text)" }}>
+                              Search failed. <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button>
+                            </div>
+                          );
+                          return (
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                                <span>🔩 PARTS FOUND {pr.results.length > 0 ? "· " + pr.results.length : ""}</span>
+                                <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>↺ refresh</button>
                               </div>
-                            );
-                            if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
-                            return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
-                              const inList = cart.some(function(i){ return i.name === part.name; });
-                              return (
-                                <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                  <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1, lineHeight: 1.4 }}>💡 {part.reason}</div>
-                                  <div style={{ display: "flex", gap: 5, marginTop: 6 }}>
-                                    <button onClick={function(){ if (!inList) addToCart(part, "ai-repair", eq ? eq.name : t.section); }}
-                                      style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                      {inList ? "✓ In cart" : "+ Cart"}
-                                    </button>
-                                    <a href={buyUrl(part.name, part.url, "fisheries")} target="_blank" rel="noreferrer"
-                                      style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                      FS ↗
-                                    </a>
-                                    <a href={buyUrl(part.name, null, "westmarine")} target="_blank" rel="noreferrer"
-                                      style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: "#0056a6", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                      WM ↗
-                                    </a>
+                              {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found — try searching retailers directly.</div>}
+                              {pr.results.map(function(part, pi){ return (
+                                <div key={pi} style={{ padding: "10px 0", borderBottom: "0.5px solid var(--border)" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                                    <div>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
+                                      {part.partNumber && <div style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", marginTop: 1 }}>#{part.partNumber}</div>}
+                                      {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
+                                    </div>
+                                    {part.price && <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ok-text)", flexShrink: 0 }}>{part.price}</div>}
+                                  </div>
+                                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                    {retailerLinks(part.name, part.url).map(function(r){ return (
+                                      <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
+                                        style={{ padding: "4px 10px", borderRadius: 6, background: r.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                        {r.name.split(" ")[0]} ↗
+                                      </a>
+                                    ); })}
+                                    {eq && (
+                                      <button onClick={function(){ saveAiPartToMyParts(eq, { name: part.name, reason: part.reason || "", id: "ai-" + pi }); }}
+                                        style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg-subtle)", border: "0.5px solid var(--border)", color: "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                                        + Save to parts
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
-                              );
-                            });
-                          })()}
-                        </div>
+                              ); })}
+                              {pr.results.length === 0 && (
+                                <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
+                                  {retailerLinks(t.task + " marine").map(function(r){ return (
+                                    <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
+                                      style={{ flex: 1, padding: "6px", borderRadius: 6, background: r.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                      {r.name.split(" ")[0]} ↗
+                                    </a>
+                                  ); })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -4217,7 +4295,6 @@ export default function App() {
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
                     const next = isExpanded ? null : r.id;
                     setExpandedRepair(next);
-                    if (next && !sugg) getSuggestionsForRepair(r);
                   }}>
                     {editingRepair === r.id ? (
                       <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
