@@ -1,4 +1,13 @@
-"use client"; // v2.1 — equipment page, FAB on both tabs
+"us
+
+  const saveAiPartToMyParts = async function(eq, part) {
+    const newPart = { id: "cp-" + Date.now(), name: part.name, sku: "", price: "", url: "", notes: "AI: " + (part.reason || ""), vendor: "ai" };
+    const updatedParts = [...(eq.customParts || []), newPart];
+    try {
+      await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { custom_parts: updatedParts }, prefer: "return=minimal" });
+      setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? { ...e, customParts: updatedParts } : e; }); });
+    } catch(e) { console.error("Save part failed:", e); }
+  };e client"; // v2.1 — equipment page, FAB on both tabs
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
@@ -2305,13 +2314,22 @@ export default function App() {
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No parts found.</div>;
                                 return sugg.slice(0, 3).map(function(part){
                                   const inList = cart.some(function(i){ return i.name === part.name; });
+                                  const linkedEq = t.equipment_id ? equipment.find(function(e){ return e.id === t.equipment_id; }) : null;
                                   return (
                                     <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: t.section, repairContext: t.task }); }}
-                                        style={{ marginTop: 4, width: "100%", padding: "4px 8px", border: "none", borderRadius: 6, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                        {inList ? "✓ In List" : "🔍 Find Part"}
-                                      </button>
+                                      <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+                                        {linkedEq && (
+                                          <button onClick={function(){ saveAiPartToMyParts(linkedEq, part); }}
+                                            style={{ flex: 1, padding: "4px 8px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                            💾 Save
+                                          </button>
+                                        )}
+                                        <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: t.section, repairContext: t.task }); }}
+                                          style={{ flex: 1, padding: "4px 8px", border: "none", borderRadius: 6, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                          {inList ? "✓ Listed" : "🔍 Find Part"}
+                                        </button>
+                                      </div>
                                     </div>
                                   );
                                 });
@@ -3347,9 +3365,15 @@ export default function App() {
                               }} style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1 }} title="Wrong part — get another suggestion">✕</button>
                             </div>
                             <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                              <button onClick={function(){
+                                saveAiPartToMyParts(eq, part);
+                                setRejectedParts(function(prev){ const n = Object.assign({}, prev); n[eq.id + "-" + part.id] = true; return n; });
+                              }} style={{ flex: 1, padding: "5px 10px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                💾 Save to My Parts
+                              </button>
                               <button onClick={function(){ setConfirmPart({ part: Object.assign({}, part), source: "ai-equipment", equipName: eq.name }); }}
                                 style={{ flex: 1, padding: "5px 10px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                + Add to List
+                                🛒 Add to List
                               </button>
                             </div>
                           </div>
