@@ -2894,9 +2894,13 @@ export default function App() {
                 const isCompleting = completingTask === t.id;
                 const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
                 return (
-                  <div key={t.id} style={{ ...s.card, borderTop: "2px solid var(--brand)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s ease", marginBottom: 8 }}>
+                  <div key={t.id} style={{ ...s.card, borderTop: "2px solid var(--brand)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: isCompleting ? 0 : 1, transform: isCompleting ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease", marginBottom: 8 }}>
                     <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                      <button onClick={function(){ toggleTask(t.id); }}
+                      <button onClick={function(){
+                          if (isCompleting) return;
+                          setCompletingTask(t.id);
+                          setTimeout(function(){ toggleTask(t.id); setCompletingTask(null); }, 500);
+                        }}
                         style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                         {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
                       </button>
