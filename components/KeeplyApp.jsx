@@ -658,7 +658,7 @@ export default function App() {
   const [shareMsg, setShareMsg]   = useState(null);
 
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
-  const [tab, setTab]   = useState(function(){ const t = localStorage.getItem("keeply_tab"); return ["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone"].includes(t) ? t : "boat"; });
+  const [tab, setTab]   = useState("boat");
   const [darkMode, setDarkMode] = useState(function(){ return typeof window !== "undefined" && localStorage.getItem("keeply-dark") === "1"; });
 
   useEffect(function(){
@@ -1065,7 +1065,11 @@ export default function App() {
     }
   }, []);
 
-  // Persist active tab
+  // Restore and persist active tab
+  React.useEffect(function(){
+    const t = localStorage.getItem("keeply_tab");
+    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone"].includes(t)) setTab(t);
+  }, []);
   React.useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
