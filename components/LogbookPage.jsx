@@ -592,9 +592,9 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
 
               {/* More details toggle */}
               <button onClick={function() { setF("_showMore", !form._showMore); }}
-                  style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer", fontWeight: 600, padding: "4px 0", marginBottom: 8 }}>
-                  {form._showMore ? "▾ Less details" : "▸ More details"}
-                </button>
+                style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer", fontWeight: 600, padding: "4px 0", marginBottom: 8 }}>
+                {form._showMore ? "▾ Less details" : "▸ More details"}
+              </button>
 
               {form._showMore && (
                 <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 12 }}>
