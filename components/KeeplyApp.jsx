@@ -2601,6 +2601,108 @@ export default function App() {
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
+          {/* ── Vessel passport card on My Boat ── */}
+          {(function(){
+            const vesselEq = equipment.find(function(e){ return e.category === "Vessel" && e._vesselId === activeVesselId; });
+            if (!vesselEq) return null;
+            let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
+            const activeVessel = vessels.find(function(v){ return v.id === activeVesselId; });
+            const makeModel = [activeVessel?.year, activeVessel?.make, activeVessel?.model].filter(Boolean).join(" ");
+            const isExpanded = expandedEquip === vesselEq.id;
+            return (
+              <div style={{ marginBottom: 16, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)" }}>
+                {/* Banner header */}
+                <div style={{ background: "var(--brand)", cursor: "pointer", padding: "18px 20px 16px" }}
+                  onClick={function(){ setExpandedEquip(isExpanded ? null : vesselEq.id); if (!isExpanded) setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 4 }}>Vessel</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", marginBottom: 2 }}>⚓ {vesselEq.name}</div>
+                      {makeModel && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: (info.hin || info.uscg_doc || info.home_port) ? 10 : 0 }}>{makeModel}</div>}
+                      {(info.hin || info.uscg_doc || info.home_port) && (
+                        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 8 }}>
+                          {info.hin && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>HIN</div><div style={{ fontSize: 12, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.hin}</div></div>}
+                          {info.uscg_doc && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>Doc No.</div><div style={{ fontSize: 12, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.uscg_doc}</div></div>}
+                          {info.home_port && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>Home Port</div><div style={{ fontSize: 12, color: "#fff", fontWeight: 600 }}>{info.home_port}</div></div>}
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, flexShrink: 0, paddingLeft: 12 }}>{isExpanded ? "▾" : "▸"}</span>
+                  </div>
+                </div>
+                {!isExpanded && <div style={{ height: 3, background: "linear-gradient(90deg, #5bbcf8 0%, #0e5cc7 100%)" }} />}
+                {/* Expanded — Vessel ID / Docs / Edit tabs inline */}
+                {isExpanded && (
+                  <div style={{ background: "var(--bg-subtle)", padding: "14px 16px", borderTop: "2px solid rgba(255,255,255,0.15)" }}
+                    onClick={function(e){ e.stopPropagation(); }}>
+                    {/* Render the vessel card tabs inline — reuse the same tab state */}
+                    <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+                      {["info","docs","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; }); }}
+                          style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                          {t === "info" ? "Vessel ID" : t === "docs" ? "Docs" : "Edit"}
+                        </button>
+                      ); })}
+                    </div>
+                    {/* The actual tab content is rendered by the equipment card in Equipment view.
+                        Here we show a simplified inline version pointing user to Equipment for full edit */}
+                    {(equipTab[vesselEq.id] || "info") === "info" && (function(){
+                      const hasData = Object.keys(info).length > 0;
+                      const infoFields = [
+                        { key: "hin", label: "HIN" }, { key: "uscg_doc", label: "USCG Doc No." },
+                        { key: "state_reg", label: "State Reg." }, { key: "mmsi", label: "MMSI" },
+                        { key: "call_sign", label: "Call Sign" }, { key: "flag", label: "Flag" },
+                        { key: "home_port", label: "Home Port" }, { key: "loa", label: "LOA (ft)" },
+                        { key: "beam", label: "Beam (ft)" }, { key: "draft", label: "Draft (ft)" },
+                        { key: "insurance_carrier", label: "Insurer" }, { key: "policy_no", label: "Policy No." },
+                        { key: "policy_exp", label: "Policy Expiry" },
+                      ];
+                      if (!hasData) return (
+                        <div style={{ textAlign: "center", padding: "16px 0" }}>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No vessel ID info yet</div>
+                          <button onClick={function(){ setTab("equipment-standalone"); setExpandedEquip(vesselEq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); setEditingVesselInfo(true); setVesselInfoForm(info); }}
+                            style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add Vessel ID</button>
+                        </div>
+                      );
+                      return (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                          {infoFields.filter(function(f){ return info[f.key]; }).map(function(f){ return (
+                            <div key={f.key} style={{ padding: "7px 0", borderBottom: "0.5px solid var(--border)" }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 2 }}>{f.label}</div>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", fontFamily: ["hin","uscg_doc","mmsi","call_sign","policy_no","state_reg"].includes(f.key) ? "DM Mono, monospace" : "inherit" }}>{info[f.key]}</div>
+                            </div>
+                          ); })}
+                        </div>
+                      );
+                    })()}
+                    {(equipTab[vesselEq.id] || "info") === "docs" && (
+                      <div>
+                        {(vesselEq.docs||[]).length === 0
+                          ? <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "12px 0" }}>No documents yet — go to Equipment to add</div>
+                          : (vesselEq.docs||[]).map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; return (
+                            <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
+                                <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
+                              </div>
+                            </div>
+                          ); })
+                        }
+                      </div>
+                    )}
+                    {(equipTab[vesselEq.id] || "info") === "edit" && (
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "12px 0" }}>
+                        <div style={{ marginBottom: 8 }}>Edit vessel ID and documents in Equipment view</div>
+                        <button onClick={function(){ setTab("equipment-standalone"); setExpandedEquip(vesselEq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "edit"; return n; }); }}
+                          style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Open in Equipment →</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* ── Instrument strip — 2x2 grid ── */}
           {(() => {
             const engineHours = settings.engineHours || null;
@@ -3060,11 +3162,11 @@ export default function App() {
           {[...filteredEquip].sort(function(a,b){
             const order = { "needs-service": 0, "watch": 1, "good": 2 };
             return (order[a.status] ?? 2) - (order[b.status] ?? 2);
-          }).map(function(eq){
+          }).filter(function(eq){ return eq.category !== "Vessel"; }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
-            const activeTab  = equipTab[eq.id] || (eq.category === "Vessel" ? "info" : "maintenance");
+            const activeTab  = equipTab[eq.id] || "maintenance";
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
-            const isVesselCard = eq.category === "Vessel";
+            const isVesselCard = false;
             return (
               <div key={eq.id} style={{ ...s.card, border: isVesselCard ? "none" : s.card.border, background: isVesselCard ? "var(--brand)" : s.card.background, overflow: "hidden" }}>
                 {isVesselCard ? (
