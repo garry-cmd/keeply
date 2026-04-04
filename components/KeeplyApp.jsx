@@ -18,7 +18,7 @@ const AVANTLINK_ID = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC
 const RETAILERS = {
   fisheries: { name: "Fisheries Supply", base: "https://www.fisheriessupply.com/search#q=", mi: "10234", color: "#1a7f4b" },
   westmarine: { name: "West Marine",      base: "https://www.westmarine.com/search?q=",    mi: "15506", color: "#0056a6" },
-  defender:   { name: "Defender",         base: "https://www.defender.com/search?q=",      mi: "14521", color: "#c0392b" },
+  defender:   { name: "Defender",         base: "https://defender.com/en_us/catalogsearch/result/?q=", mi: "14521", color: "#c0392b" },
 };
 
 function buyUrl(query, directUrl, retailerKey) {
