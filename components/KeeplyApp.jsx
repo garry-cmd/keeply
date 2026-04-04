@@ -752,6 +752,7 @@ export default function App() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [pushStatus, setPushStatus] = useState("unknown"); // unknown | unsupported | denied | granted | subscribed
   const [feedbackForm, setFeedbackForm] = useState({ category: "General Feedback", message: "" });
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -1582,6 +1583,59 @@ export default function App() {
     }
   };
 
+
+
+  // ── Service Worker + Push Notification setup ──────────────────────────────
+  useEffect(function(){
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+      setPushStatus("unsupported");
+      return;
+    }
+    navigator.serviceWorker.register("/sw.js").then(function(reg){
+      if (Notification.permission === "granted") {
+        reg.pushManager.getSubscription().then(function(sub){
+          setPushStatus(sub ? "subscribed" : "granted");
+        });
+      } else if (Notification.permission === "denied") {
+        setPushStatus("denied");
+      } else {
+        setPushStatus("unknown");
+      }
+    }).catch(function(e){ console.error("SW registration failed:", e); });
+  }, []);
+
+  const subscribeToPush = async function(){
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: "BJBQZXAhmXHRT7ydVu_D53evImmg-_Cdl2SxFvuATUUbHj3YJGXBk5K-3drehkRDrhAlkmQe6XoIipC66jxWkRY"
+      });
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub, userId: session?.user?.id, vesselId: activeVesselId }),
+      });
+      setPushStatus("subscribed");
+    } catch(e) {
+      console.error("Push subscribe failed:", e);
+      if (Notification.permission === "denied") setPushStatus("denied");
+    }
+  };
+
+  const enablePushNotifications = async function(){
+    if (!("Notification" in window)) { setPushStatus("unsupported"); return; }
+    if (Notification.permission === "granted") {
+      await subscribeToPush();
+    } else if (Notification.permission !== "denied") {
+      const perm = await Notification.requestPermission();
+      if (perm === "granted") {
+        await subscribeToPush();
+      } else {
+        setPushStatus("denied");
+      }
+    }
+  };
 
   // ── Unified inline part finder — calls find-part with full vessel+equipment context ──
   const findPartsInline = async function(id, taskDescription, equipmentId, section) {
@@ -5638,6 +5692,26 @@ export default function App() {
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>👥 Share Vessel</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
+                {/* Push notifications row */}
+                {pushStatus !== "unsupported" && (
+                  <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid #f3f4f6", cursor: pushStatus === "subscribed" || pushStatus === "denied" ? "default" : "pointer" }}
+                    onClick={pushStatus === "subscribed" || pushStatus === "denied" ? undefined : function(){ enablePushNotifications(); }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                        {pushStatus === "subscribed" ? "🔔 Notifications on" : pushStatus === "denied" ? "🔕 Notifications blocked" : "🔔 Enable Notifications"}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                        {pushStatus === "subscribed" ? "Maintenance reminders active" : pushStatus === "denied" ? "Allow in browser settings" : "Get maintenance reminders"}
+                      </div>
+                    </div>
+                    {pushStatus === "subscribed"
+                      ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ok-text)", background: "var(--ok-bg)", padding: "2px 8px", borderRadius: 10 }}>ON</span>
+                      : pushStatus === "denied"
+                      ? <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Blocked</span>
+                      : <span style={{ color: "var(--brand)", fontSize: 14 }}>›</span>
+                    }
+                  </div>
+                )}
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ window.open("/privacy", "_blank"); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Privacy Policy</span>
