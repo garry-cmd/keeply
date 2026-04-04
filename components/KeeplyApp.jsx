@@ -3740,6 +3740,12 @@ export default function App() {
               </div>
             );
 
+            if (loading) return (<>
+              {statsRow}
+              <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
+                <div style={{ fontSize: 13 }}>Loading logbook…</div>
+              </div>
+            </>);
             if (entries.length === 0) return (<>
               {statsRow}
               <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
