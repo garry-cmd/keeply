@@ -3091,6 +3091,11 @@ export default function App() {
                         )}
                       </>);
                     })()}
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}
+                      title="Delete equipment">
+                      <TrashIcon />
+                    </button>
                     <span style={{ color: "var(--text-muted)", fontSize: 16 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
@@ -3180,6 +3185,10 @@ export default function App() {
                           setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; });
                         }} style={{ width: "100%", padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                           Save Changes
+                        </button>
+                        <button onClick={function(){ showConfirm("Delete " + eq.name + "? This will also remove all tasks and repairs linked to it.", function(){ deleteEquipment(eq.id); }); }}
+                          style={{ width: "100%", marginTop: 8, padding: 10, border: "1px solid var(--danger-border)", borderRadius: 8, background: "none", color: "var(--danger-text)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                          🗑 Delete {eq.name}
                         </button>
                       </div>
                     )}
