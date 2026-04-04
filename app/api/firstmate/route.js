@@ -37,14 +37,24 @@ function buildSystemPrompt(ctx) {
     "== LOGBOOK ==\n" +
     "Total: " + Math.round(totalNm) + " nm across " + (logbook || []).filter(function(e){ return e.entry_type === "passage"; }).length + " passages\n" +
     (recentLog.length > 0 ? recentLog.map(function(e){
-      return e.entry_type === "passage"
-        ? "- " + e.entry_date + ": " + (e.from_location || "?") + " to " + (e.to_location || "?") + (e.distance_nm ? " (" + e.distance_nm + " nm)" : "")
-        : "- " + e.entry_date + ": Note";
+      var line = "- " + e.entry_date + " [" + (e.entry_type === "passage" ? "passage" : "note") + "]";
+      if (e.entry_type === "passage" && (e.from_location || e.to_location)) {
+        line += ": " + (e.from_location || "?") + " → " + (e.to_location || "?");
+        if (e.distance_nm) line += " (" + e.distance_nm + " nm)";
+      }
+      if (e.title) line += " — " + e.title;
+      if (e.highlights) line += " — highlights: " + e.highlights;
+      if (e.notes) line += " — notes: " + e.notes;
+      if (e.incident) line += " — INCIDENT: " + e.incident;
+      if (e.conditions) line += " [" + e.conditions + "]";
+      if (e.sea_state) line += " [sea: " + e.sea_state + "]";
+      return line;
     }).join("\n") : "No entries.") + "\n\n" +
     "== EQUIPMENT ==\n" +
     (equipIssues.length > 0 ? "Issues:\n" + equipIssues.map(function(e){ return "- " + e.name + ": " + e.status; }).join("\n") : "No issues flagged.") + "\n\n" +
     "== INSTRUCTIONS ==\n" +
-    "Answer questions about this vessel concisely. When asked if the boat is ready, check overdue tasks, repairs, and equipment issues. Use bullets for lists. Never invent data. Speak casually to the owner.";
+    "Answer questions about this vessel concisely. When asked if the boat is ready, check overdue tasks, repairs, and equipment issues. Use bullets for lists. Never invent data. Speak casually to the owner.\n\n" +
+    "IMPORTANT: Actively scan logbook notes and highlights for anomalies — unusual sounds, performance issues, smells, handling changes, anything that sounds like a developing problem. If you spot one, flag it proactively and recommend a specific action. Examples: 'transmission felt odd' → check fluid level and mounts; 'engine running rough' → fuel filter or impeller; 'bilge pump cycling frequently' → potential leak. Connect logbook observations to relevant equipment and maintenance tasks when possible.";
 }
 
 export async function POST(request) {
