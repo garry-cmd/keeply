@@ -716,6 +716,7 @@ export default function App() {
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [userPlan, setUserPlan]               = useState('free'); // 'free'|'pro'|'fleet'
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [checkoutLoading, setCheckoutLoading]     = useState(false);
   const [upgradeReason, setUpgradeReason]     = useState('');
   const [profilePrefs, setProfilePrefs]       = useState({
     alertInApp:    true,
@@ -885,18 +886,7 @@ export default function App() {
 
   const [confirmAction, setConfirmAction]     = useState(null);
 
-  // Handle return from Stripe checkout
-  useEffect(function(){
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('upgraded') === 'true') {
-      window.history.replaceState({}, '', window.location.pathname);
-      // Reload plan
-      if (session && session.user) {
-        supabase.from('user_profiles').select('plan').eq('id', session.user.id).single()
-          .then(function(r){ if (r.data) setUserPlan(r.data.plan || 'free'); });
-      }
-    }
-  }, [session]);
+  // upgraded=true handler replaced by upgraded=1 handler below
 
   // ─── AUTH SESSION ────────────────────────────────────────────────────────────
   useEffect(function(){
@@ -4762,14 +4752,17 @@ export default function App() {
                 </div>
               </div>
               <button onClick={async function(){
+                if (checkoutLoading) return;
+                setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ priceId: "price_1TGXViPIMPMntnuJyP20q6Zy", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
-              }} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                Subscribe Monthly — $9.99/mo
+                finally { setCheckoutLoading(false); }
+              }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Monthly — $9.99/mo"}
               </button>
             </div>
 
@@ -4787,14 +4780,17 @@ export default function App() {
                 </div>
               </div>
               <button onClick={async function(){
+                if (checkoutLoading) return;
+                setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ priceId: "price_1TGzfDPIMPMntnuJ46IfEXFI", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
-              }} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: "var(--ok-text)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                Subscribe Annually — $59.99/yr
+                finally { setCheckoutLoading(false); }
+              }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Annually — $59.99/yr"}
               </button>
             </div>
 
@@ -4811,14 +4807,17 @@ export default function App() {
                 </div>
               </div>
               <button onClick={async function(){
+                if (checkoutLoading) return;
+                setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ priceId: "price_1TGXX8PIMPMntnuJpJxQaZAz", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
-              }} style={{ width: "100%", padding: "10px 0", border: "1.5px solid #374151", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                Subscribe Fleet — $49.99/mo
+                finally { setCheckoutLoading(false); }
+              }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid #374151", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Fleet — $49.99/mo"}
               </button>
               <div style={{ marginTop: 10, background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#854d0e", textAlign: "center" }}>
                 🎁 Beta tester? Use code <strong>BETA2026</strong> at checkout for 100% off Fleet.
