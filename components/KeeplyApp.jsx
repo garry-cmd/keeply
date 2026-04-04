@@ -760,6 +760,7 @@ export default function App() {
   const [findPartResults, setFindPartResults]   = useState([]);
   const [inlinePartResults, setInlinePartResults] = useState({});
   const [savedParts, setSavedParts] = useState({});
+  const savingPartsRef = React.useRef({});
   const [findPartLoading, setFindPartLoading]   = useState(false);
   const [findPartError, setFindPartError]       = useState(null);
   const findPartSearched                        = useRef(null);
@@ -1304,26 +1305,36 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
+  const normalizePart = function(name) {
+    return (name || "").toLowerCase().replace(/[™®©\s\-,\.]+/g, " ").trim();
+  };
+
   const saveAiPartToMyParts = async function(eq, part) {
     if (!eq || !eq.id) { console.error("saveAiPartToMyParts: no equipment"); return; }
     const saveKey = eq.id + "-" + (part.name || part.id);
+    // Block concurrent saves of the same part
+    if (savingPartsRef.current[saveKey]) return;
+    savingPartsRef.current[saveKey] = true;
     setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "saving"; return n; });
-    // Re-fetch latest customParts to avoid overwriting newer data
-    const latestEq = equipment.find(function(e){ return e.id === eq.id; }) || eq;
-    const alreadySaved = (latestEq.customParts || []).some(function(p){ return p.name === part.name; });
-    if (alreadySaved) {
-      setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "saved"; return n; });
-      return;
-    }
-    const newPart = { id: "cp-" + Date.now(), name: part.name, sku: part.partNumber || "", price: part.price || "", url: part.url || "", notes: "AI: " + (part.reason || ""), vendor: "ai" };
-    const updatedParts = [...(latestEq.customParts || []), newPart];
     try {
+      // Re-fetch latest customParts from state to avoid stale data
+      const latestEq = equipment.find(function(e){ return e.id === eq.id; }) || eq;
+      const normalizedNew = normalizePart(part.name);
+      const alreadySaved = (latestEq.customParts || []).some(function(p){ return normalizePart(p.name) === normalizedNew; });
+      if (alreadySaved) {
+        setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "saved"; return n; });
+        return;
+      }
+      const newPart = { id: "cp-" + Date.now(), name: part.name, sku: part.partNumber || "", price: part.price || "", url: part.url || "", notes: "AI: " + (part.reason || ""), vendor: "ai" };
+      const updatedParts = [...(latestEq.customParts || []), newPart];
       await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { custom_parts: updatedParts }, prefer: "return=minimal" });
       setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? { ...e, customParts: updatedParts } : e; }); });
       setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "saved"; return n; });
     } catch(e) {
       console.error("Save part failed:", e);
       setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "error"; return n; });
+    } finally {
+      delete savingPartsRef.current[saveKey];
     }
   };
 
@@ -3468,7 +3479,7 @@ export default function App() {
 
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {(isVesselCard ? ["info","docs","edit"] : ["maintenance","parts","docs","log","edit"]).map(function(t){ return (
+                      {(isVesselCard ? ["info","docs","edit"] : ["maintenance","repairs","parts","docs","log","edit"]).map(function(t){ return (
                         <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                           {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}
                         </button>
