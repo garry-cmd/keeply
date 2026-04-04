@@ -36,6 +36,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
   const [form, setForm] = useState(BLANK_FORM);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [viewingEntry, setViewingEntry] = useState(null);
 
   const load = useCallback(function() {
     if (!vesselId) return;
@@ -287,7 +288,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
               return (
                 <div key={entry.id} style={{ ...s.card, borderLeft: "3px solid " + (isPassage ? "#0f4c8a" : "var(--border)"), borderRadius: "0 12px 12px 0" }}>
                   {isPassage ? (
-                    <div style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "stretch" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "stretch", cursor: "pointer" }} onClick={function() { setViewingEntry(entry); }}>
                       {/* Date */}
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "14px 0", background: "var(--bg-subtle)", borderRight: "0.5px solid var(--border)" }}>
                         <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{dayNum}</span>
@@ -324,7 +325,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                       </div>
                     </div>
                   ) : (
-                    <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }} onClick={function() { setViewingEntry(entry); }}>
                       <div style={{ width: 28, height: 28, borderRadius: 6, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}>📝</div>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -337,6 +338,8 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                   )}
                   {/* Actions */}
                   <div style={{ borderTop: "0.5px solid var(--border)", display: "flex" }}>
+                    <button onClick={function() { setViewingEntry(entry); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>View</button>
+                    <div style={{ width: "0.5px", background: "var(--border)" }} />
                     <button onClick={function() { openEdit(entry); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
                     <div style={{ width: "0.5px", background: "var(--border)" }} />
                     <button onClick={function() { del(entry.id); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
@@ -349,6 +352,130 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
       })}
 
       <div style={{ height: 80 }} />
+
+
+      {/* ── Entry Detail View ── */}
+      {viewingEntry && (function() {
+        const e = viewingEntry;
+        const isPassage = e.entry_type === "passage";
+        const dateParts = (e.entry_date || "").split("-");
+        const dateStr = dateParts.length === 3 ? MONTHS[parseInt(dateParts[1])-1] + " " + parseInt(dateParts[2]) + ", " + dateParts[0] : e.entry_date;
+
+        let timeLabel = null; let avgSpd = null; let runHrs = null;
+        if (e.departure_time && e.arrival_time) {
+          const dp = e.departure_time.split(":").map(Number);
+          const ap = e.arrival_time.split(":").map(Number);
+          let diff = (ap[0]*60+ap[1]) - (dp[0]*60+dp[1]);
+          if (diff < 0) diff += 1440;
+          const hrs = diff / 60;
+          timeLabel = Math.floor(hrs) + "h " + Math.round((hrs%1)*60) + "m";
+          if (e.distance_nm && hrs > 0) avgSpd = (parseFloat(e.distance_nm)/hrs).toFixed(1);
+        }
+        const prevEntry = passages.filter(function(p) { return p.entry_date < e.entry_date && p.hours_end; })
+          .sort(function(a,b){ return b.entry_date.localeCompare(a.entry_date); })[0];
+        if (e.hours_end && prevEntry?.hours_end) runHrs = (parseFloat(e.hours_end) - parseFloat(prevEntry.hours_end)).toFixed(1);
+
+        const field = function(label, val) {
+          if (!val) return null;
+          return (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>{val}</div>
+            </div>
+          );
+        };
+
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+            onClick={function(e) { if (e.target === e.currentTarget) setViewingEntry(null); }}>
+            <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, maxHeight: "88vh", display: "flex", flexDirection: "column" }}
+              onClick={function(e) { e.stopPropagation(); }}>
+
+              {/* Header */}
+              <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
+                    {isPassage ? (e.from_location && e.to_location ? e.from_location + " → " + e.to_location : "Passage") : (e.title || "Note")}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>{dateStr}</div>
+                </div>
+                <button onClick={function() { setViewingEntry(null); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)", lineHeight: 1 }}>✕</button>
+              </div>
+
+              {/* Content */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
+
+                {/* Key stats row */}
+                {isPassage && (e.distance_nm || timeLabel || avgSpd) && (
+                  <div style={{ display: "flex", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "0.5px solid var(--border)" }}>
+                    {e.distance_nm && <div style={{ flex: 1, background: "var(--bg-subtle)", padding: "10px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{e.distance_nm}</div>
+                      <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>nm</div>
+                    </div>}
+                    {timeLabel && <div style={{ flex: 1, background: "var(--bg-subtle)", padding: "10px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{timeLabel}</div>
+                      <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>time</div>
+                    </div>}
+                    {avgSpd && <div style={{ flex: 1, background: "var(--bg-subtle)", padding: "10px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{avgSpd}</div>
+                      <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>kts avg</div>
+                    </div>}
+                  </div>
+                )}
+
+                {/* Highlights / notes */}
+                {e.highlights && (
+                  <div style={{ background: "var(--bg-subtle)", borderLeft: "3px solid var(--brand)", borderRadius: "0 8px 8px 0", padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "var(--text-secondary)", fontStyle: "italic", lineHeight: 1.5 }}>
+                    "{e.highlights}"
+                  </div>
+                )}
+                {e.notes && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6 }}>Notes</div>
+                    <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{e.notes}</div>
+                  </div>
+                )}
+
+                {/* Passage details */}
+                {isPassage && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                    {field("Departed", e.departure_time)}
+                    {field("Arrived", e.arrival_time)}
+                    {field("Crew", e.crew)}
+                    {field("Conditions", e.conditions)}
+                    {field("Wind", e.wind_direction && e.wind_speed ? e.wind_direction + " " + e.wind_speed + " kts" : e.wind_speed ? e.wind_speed + " kts" : null)}
+                    {field("Sea state", e.sea_state)}
+                    {field("Engine hrs end", e.hours_end ? e.hours_end + (runHrs ? " (+" + runHrs + "h this passage)" : "") : null)}
+                    {field("Max speed", e.max_speed_kts ? e.max_speed_kts + " kts" : null)}
+                    {field("Barometric", e.barometric_mb ? e.barometric_mb + " mb" : null)}
+                    {field("Visibility", e.visibility)}
+                    {field("Fuel added", e.fuel_added ? e.fuel_added + " gal" : null)}
+                    {field("Anchored", e.anchor_location ? e.anchor_location + (e.anchor_depth_ft ? " (" + e.anchor_depth_ft + " ft)" : "") : null)}
+                    {e.incident && (
+                      <div style={{ gridColumn: "1 / -1", marginBottom: 12 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--warn-text)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 3 }}>Incident</div>
+                        <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5 }}>{e.incident}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer actions */}
+              <div style={{ padding: "12px 20px", borderTop: "0.5px solid var(--border)", display: "flex", gap: 10, flexShrink: 0 }}>
+                <button onClick={function() { setViewingEntry(null); openEdit(e); }}
+                  style={{ flex: 1, padding: "10px", border: "0.5px solid var(--border)", borderRadius: 10, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
+                  Edit
+                </button>
+                <button onClick={function() { setViewingEntry(null); }}
+                  style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Add / Edit Form Modal ── */}
       {showForm && (
