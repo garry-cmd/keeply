@@ -7,6 +7,8 @@ export default function VesselSetup({ userId, onComplete }) {
   const [vesselName, setVesselName] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [homePort, setHomePort] = useState("");
+  const [engineHours, setEngineHours] = useState("");
+  const [fuelBurnRate, setFuelBurnRate] = useState("");
   const [boatDescription, setBoatDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,8 +24,7 @@ export default function VesselSetup({ userId, onComplete }) {
   const handleBuildMyBoat = async function() {
     if (!vesselName.trim()) { setError("Please enter a vessel name."); return; }
     if (!boatDescription.trim()) { setError("Please describe your vessel."); return; }
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const res = await fetch("/api/identify-vessel", {
         method: "POST",
@@ -33,7 +34,6 @@ export default function VesselSetup({ userId, onComplete }) {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       const aiResult = Array.isArray(data.equipment) ? data.equipment : [];
-
       const hasRigging = aiResult.some(function(i){ return i.category === "Rigging" || i.category === "Sails"; });
       const vesselType = hasRigging ? "sail" : "motor";
       const parts = boatDescription.trim().split(" ");
@@ -41,17 +41,29 @@ export default function VesselSetup({ userId, onComplete }) {
       const rest = parts.filter(function(p){ return p !== year; });
       const make = rest[0] || "";
       const model = rest.slice(1).join(" ") || "";
+      const today = new Date().toISOString().split("T")[0];
+
+      const vesselPayload = {
+        vessel_name: vesselName,
+        vessel_type: vesselType,
+        owner_name: ownerName,
+        home_port: homePort,
+        make, model, year,
+        user_id: userId,
+        engine_hours: engineHours ? parseFloat(engineHours) : null,
+        engine_hours_date: engineHours ? today : null,
+        fuel_burn_rate: fuelBurnRate ? parseFloat(fuelBurnRate) : null,
+      };
 
       const { data: vessel, error: vErr } = await supabase
         .from("vessels")
-        .insert({ vessel_name: vesselName, vessel_type: vesselType, owner_name: ownerName, home_port: homePort, make, model, year, user_id: userId })
+        .insert(vesselPayload)
         .select().single();
       if (vErr) throw vErr;
 
       await supabase.from("vessel_members").insert({ vessel_id: vessel.id, user_id: userId, role: "owner" });
 
       if (aiResult.length > 0) {
-        const today = new Date().toISOString().split("T")[0];
         for (const item of aiResult) {
           const { data: eq, error: eErr } = await supabase
             .from("equipment")
@@ -69,10 +81,9 @@ export default function VesselSetup({ userId, onComplete }) {
         }
       }
 
-      const today = new Date().toISOString().split("T")[0];
       await supabase.from("repairs").insert([
-        { vessel_id: vessel.id, date: today, section: "General", description: "Review your imported equipment — add anything missing and remove what doesn’t apply to your boat", status: "open", equipment_id: null, due_date: null },
-        { vessel_id: vessel.id, date: today, section: "General", description: "Upload docs to your Vessel card — tap the ⚓ Vessel card then the Docs tab to add manuals, insurance, or registration", status: "open", equipment_id: null, due_date: null }
+        { vessel_id: vessel.id, date: today, section: "General", description: "Review your imported equipment — add anything missing and remove what doesn't apply to your boat", status: "open", equipment_id: null, due_date: null },
+        { vessel_id: vessel.id, date: today, section: "General", description: "Upload docs to your Vessel card — tap the ⚓ Vessel card then the Docs tab to add manuals, insurance, or registration", status: "open", equipment_id: null, due_date: null },
       ]);
 
       onComplete(vessel);
@@ -85,6 +96,7 @@ export default function VesselSetup({ userId, onComplete }) {
   return (
     <div style={s.wrap}>
       <div style={s.card}>
+
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: "#0f4c8a", letterSpacing: 1, marginBottom: 4 }}>⚓ KEEPLY</div>
           <div style={{ fontSize: 21, fontWeight: 800, color: "#1a1d23" }}>
@@ -92,8 +104,8 @@ export default function VesselSetup({ userId, onComplete }) {
             {step === 2 && "Tell us about your boat"}
           </div>
           <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
-            {step === 1 && "Let’s get your vessel set up"}
-            {step === 2 && "We’ll build your full maintenance profile automatically"}
+            {step === 1 && "Let's get your vessel set up"}
+            {step === 2 && "We'll build your full maintenance profile automatically"}
           </div>
         </div>
 
@@ -108,30 +120,49 @@ export default function VesselSetup({ userId, onComplete }) {
         {step === 1 && (<>
           <label style={s.label}>VESSEL NAME *</label>
           <input placeholder="e.g. Irene, Blue Horizon" value={vesselName} onChange={function(e){ setVesselName(e.target.value); }} style={s.inp} />
+
           <label style={s.label}>YOUR NAME</label>
-          <input placeholder="Captain’s name" value={ownerName} onChange={function(e){ setOwnerName(e.target.value); }} style={s.inp} />
-          <label style={s.label}>HOME PORT (optional)</label>
-          <input placeholder="e.g. Port Ludlow, La Cruz, Manzanillo" value={homePort} onChange={function(e){ setHomePort(e.target.value); }} style={{ ...s.inp, marginBottom: 20 }} />
-          <button onClick={function(){ if (!vesselName.trim()) { setError("Please enter a vessel name."); return; } setError(null); setStep(2); }} style={{ ...s.btn, background: "#0f4c8a", color: "#fff" }}>
+          <input placeholder="Captain's name" value={ownerName} onChange={function(e){ setOwnerName(e.target.value); }} style={s.inp} />
+
+          <label style={s.label}>HOME PORT <span style={{ fontWeight: 400 }}>(optional)</span></label>
+          <input placeholder="e.g. Port Ludlow, La Cruz, Manzanillo" value={homePort} onChange={function(e){ setHomePort(e.target.value); }} style={s.inp} />
+
+          <div style={{ height: 1, background: "#f1f5f9", margin: "4px 0 16px" }} />
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={s.label}>ENGINE HOURS <span style={{ fontWeight: 400 }}>(optional)</span></label>
+              <input type="number" placeholder="e.g. 1284" value={engineHours} onChange={function(e){ setEngineHours(e.target.value); }} style={{ ...s.inp, marginBottom: 0 }} />
+            </div>
+            <div>
+              <label style={s.label}>FUEL BURN <span style={{ fontWeight: 400 }}>gal/hr</span></label>
+              <input type="number" step="0.1" placeholder="e.g. 0.7" value={fuelBurnRate} onChange={function(e){ setFuelBurnRate(e.target.value); }} style={{ ...s.inp, marginBottom: 0 }} />
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 20, marginTop: 4 }}>
+            Engine hours update automatically from your logbook. Fuel burn rate derives fuel used per passage.
+          </div>
+
+          <button onClick={function(){ if (!vesselName.trim()) { setError("Please enter a vessel name."); return; } setError(null); setStep(2); }}
+            style={{ ...s.btn, background: "#0f4c8a", color: "#fff" }}>
             Next →
           </button>
         </>)}
 
         {step === 2 && (<>
           <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "#1e40af" }}>
-            <strong>We’ll build your complete equipment and maintenance list automatically.</strong> Just tell us what you have.
+            <strong>We'll build your complete equipment and maintenance list automatically.</strong> Just tell us what you have.
           </div>
+
           <label style={s.label}>DESCRIBE YOUR VESSEL</label>
           <textarea
-            placeholder="e.g. 2018 Ranger Tug R-27&#10;or: 1985 Pacific Seacraft 40 with Yanmar diesel&#10;or: 2022 Leopard 45 catamaran"
-            value={boatDescription}
-            onChange={function(e){ setBoatDescription(e.target.value); }}
-            rows={3}
-            style={{ ...s.inp, resize: "none", lineHeight: 1.6, marginBottom: 8 }}
-          />
+            placeholder={"e.g. 2018 Ranger Tug R-27\nor: 1985 Pacific Seacraft 40 with Yanmar diesel\nor: 2022 Leopard 45 catamaran"}
+            value={boatDescription} onChange={function(e){ setBoatDescription(e.target.value); }}
+            rows={3} style={{ ...s.inp, resize: "none", lineHeight: 1.6, marginBottom: 8 }} />
           <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 20 }}>
             Year, make, and model is all we need. More detail = better results.
           </div>
+
           {loading ? (
             <div style={{ textAlign: "center", padding: "20px 0" }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>⚙️</div>
@@ -141,12 +172,11 @@ export default function VesselSetup({ userId, onComplete }) {
           ) : (
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={function(){ setStep(1); }} style={{ ...s.btn, flex: 1, background: "#f1f5f9", color: "#374151" }}>← Back</button>
-              <button onClick={handleBuildMyBoat} style={{ ...s.btn, flex: 2, background: "#0f4c8a", color: "#fff" }}>
-                Launch Keeply ⚓
-              </button>
+              <button onClick={handleBuildMyBoat} style={{ ...s.btn, flex: 2, background: "#0f4c8a", color: "#fff" }}>Launch Keeply ⚓</button>
             </div>
           )}
         </>)}
+
       </div>
     </div>
   );
