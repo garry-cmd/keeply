@@ -324,7 +324,12 @@ export default function LandingPage() {
             style={{ background: GOLD, border: "none", borderRadius: 12, padding: "16px 40px", color: NAVY_DEEP, fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 24px rgba(245,166,35,0.4)" }}>
             Start free today
           </button>
-          <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>keeply.boats · Seattle, WA</p>
+          <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>keeply.boats · Miami, FL</p>
+          <p style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
+            <a href="/privacy" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Privacy Policy</a>
+            {" · "}
+            <a href="/terms" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Terms of Service</a>
+          </p>
         </div>
       </section>
 

@@ -2919,7 +2919,7 @@ export default function App() {
                           { key: "policy_no",  label: "Policy No.",           placeholder: "POL-123456" },
                           { key: "policy_exp", label: "Policy Expiry",        placeholder: "2027-01-01", type: "date" },
                           { key: "flag",       label: "Flag",                 placeholder: "USA" },
-                          { key: "home_port",  label: "Home Port",            placeholder: "Seattle, WA" },
+                          { key: "home_port",  label: "Home Port",            placeholder: "Miami, FL" },
                         ].map(function(f){ return (
                           <div key={f.key} style={{ marginBottom: 10 }}>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 3 }}>{f.label.toUpperCase()}</div>
@@ -4048,7 +4048,7 @@ export default function App() {
                         { key: "policy_no",  label: "Policy No.",             placeholder: "POL-123456" },
                         { key: "policy_exp", label: "Policy Expiry",          placeholder: "2027-01-01", type: "date" },
                         { key: "flag",       label: "Flag",                   placeholder: "USA" },
-                        { key: "home_port",  label: "Home Port",              placeholder: "Seattle, WA" },
+                        { key: "home_port",  label: "Home Port",              placeholder: "Miami, FL" },
                       ];
                       const hasData = infoFields.some(function(f){ return vesselInfo[f.key]; });
                       return (
@@ -5637,6 +5637,16 @@ export default function App() {
                   onClick={function(){ setShowProfilePanel(false); setShowShare(true); setShareMsg(null); setShareEmail(""); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>👥 Share Vessel</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
+                </div>
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                  onClick={function(){ window.open("/privacy", "_blank"); setShowProfilePanel(false); }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Privacy Policy</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>↗</span>
+                </div>
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                  onClick={function(){ window.open("/terms", "_blank"); setShowProfilePanel(false); }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Terms of Service</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>↗</span>
                 </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ setShowProfilePanel(false); setShowFeedback(true); setFeedbackSent(false); setFeedbackError(null); setFeedbackForm({ category: "General Feedback", message: "" }); }}>
