@@ -3477,7 +3477,7 @@ export default function App() {
         {showFab && <div onClick={function(){ setShowFab(false); }} style={{ position: "fixed", inset: 0, zIndex: 199 }} />}
 
       {/* Floating Action Button */}
-      {view === "customer" && (tab === "boat" || tab === "equipment-standalone") && (
+      {view === "customer" && tab === "boat" && (
         <div style={{ position: "fixed", bottom: 24, right: 20, zIndex: 200 }}>
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
