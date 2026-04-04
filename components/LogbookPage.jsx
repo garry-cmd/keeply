@@ -337,12 +337,15 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                     </div>
                   )}
                   {/* Actions */}
-                  <div style={{ borderTop: "0.5px solid var(--border)", display: "flex" }}>
-                    <button onClick={function() { setViewingEntry(entry); }} style={{ flex: 1, padding: "9px", border: "none", background: "none", fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>View</button>
-                    <div style={{ width: "0.5px", background: "var(--border)" }} />
-                    <button onClick={function() { openEdit(entry); }} style={{ flex: 1, padding: "9px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
-                    <div style={{ width: "0.5px", background: "var(--border)" }} />
-                    <button onClick={function() { del(entry.id); }} style={{ flex: 1, padding: "9px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                  <div style={{ borderTop: "0.5px solid var(--border)", display: "flex", justifyContent: "flex-end", padding: "6px 10px", gap: 4 }}>
+                    <button onClick={function(e){ e.stopPropagation(); openEdit(entry); }}
+                      title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 8px", borderRadius: 6, color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button onClick={function(e){ e.stopPropagation(); del(entry.id); }}
+                      title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 8px", borderRadius: 6, color: "var(--danger-text)", display: "flex", alignItems: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
                   </div>
                 </div>
               );
