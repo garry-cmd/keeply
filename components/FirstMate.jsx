@@ -99,10 +99,11 @@ function MessageBubble({ msg }) {
         boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
       }}>
         {msg.streaming ? (
-          <span>
-            {msg.content}
-            <span style={{ display: "inline-block", width: 8, height: 14, background: "var(--brand)", borderRadius: 2, marginLeft: 2, animation: "blink 1s step-end infinite", verticalAlign: "text-bottom" }} />
-          </span>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "2px 0" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.7 }} />
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.5 }} />
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.3 }} />
+          </div>
         ) : (
           msg.content.split("\n").map((line, i) => (
             <span key={i}>{line}{i < msg.content.split("\n").length - 1 && <br />}</span>
@@ -169,26 +170,14 @@ export default function FirstMate({ vesselId, vesselName, onBack }) {
         throw new Error(err.error || "Request failed");
       }
 
-      // Stream the response
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = "";
+      // Parse JSON response
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const text = data.response || "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        setMessages(function (prev) {
-          return prev.map(function (m) {
-            return m.id === streamId ? { ...m, content: accumulated } : m;
-          });
-        });
-      }
-
-      // Finalise — remove streaming flag
       setMessages(function (prev) {
         return prev.map(function (m) {
-          return m.id === streamId ? { ...m, streaming: false } : m;
+          return m.id === streamId ? { ...m, content: text, streaming: false } : m;
         });
       });
 
