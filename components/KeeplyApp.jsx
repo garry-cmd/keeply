@@ -2802,7 +2802,7 @@ export default function App() {
                         style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                         {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
                       </button>
-                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{t.task}</div>
                         <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
                           <SectionBadge section={t.section} />
@@ -2811,13 +2811,13 @@ export default function App() {
                         </div>
                       </div>
                       <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer", flexShrink: 0 }}
-                        onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                        onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
                         {isExpanded ? "▾" : "▸"}
                       </span>
                     </div>
                     {isExpanded && (
-                      <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)", padding: "12px 16px 14px 54px" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)", padding: "12px 16px 14px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, paddingLeft: 38 }}>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
                             <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "—"}</div>
@@ -2834,6 +2834,39 @@ export default function App() {
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
                             <div style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{t.priority || "medium"}</div>
                           </div>
+                        </div>
+                        {/* AI Parts suggestions */}
+                        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>✨ Suggested parts</div>
+                          {(function(){
+                            const sugg = aiSuggestions[t.id];
+                            if (!sugg) return (
+                              <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}
+                                style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
+                                ✨ Find parts for this task
+                              </button>
+                            );
+                            if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "4px 0" }}>Finding parts…</div>;
+                            if (sugg === "error") return (
+                              <div style={{ fontSize: 12, color: "var(--warn-text)" }}>
+                                Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>Try again</button>
+                              </div>
+                            );
+                            if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
+                            return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
+                              const inList = cart.some(function(i){ return i.name === part.name; });
+                              return (
+                                <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
+                                  <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1, lineHeight: 1.4 }}>💡 {part.reason}</div>
+                                  <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: eq ? eq.name : t.section, repairContext: t.task + " " + t.section }); }}
+                                    style={{ marginTop: 6, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                    {inList ? "✓ In Shopping List" : "🔍 Find Part"}
+                                  </button>
+                                </div>
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
                     )}
