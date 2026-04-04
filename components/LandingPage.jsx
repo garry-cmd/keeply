@@ -127,7 +127,7 @@ export default function LandingPage() {
           </h1>
 
           <p style={{ fontSize: "clamp(16px, 2.5vw, 20px)", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, marginBottom: 40, maxWidth: 520, margin: "0 auto 40px" }}>
-            AI-powered vessel intelligence. Keeply tracks your maintenance, logs your passages, and answers questions about your boat — so you spend less time worrying and more time sailing.
+            AI-powered vessel intelligence. Keeply tracks your maintenance, logs your passages, and answers questions about your boat — so you spend less time worrying and more time on the water.
           </p>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -271,12 +271,12 @@ export default function LandingPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
             {[
               {
-                name: "Free", price: "$0", period: "/month", desc: "For casual sailors getting started.",
+                name: "Free", price: "$0", period: "/month", desc: "For casual boaters getting started.",
                 features: ["1 vessel", "Basic maintenance tracking", "Logbook", "Equipment catalog"],
                 cta: "Get started free", ctaStyle: "outline", highlight: false,
               },
               {
-                name: "Pro", price: "$9.99", period: "/month", desc: "For serious sailors who want the full picture.",
+                name: "Pro", price: "$9.99", period: "/month", desc: "For serious boaters who want the full picture.",
                 features: ["Unlimited vessels", "First Mate AI", "Smart maintenance alerts", "Parts catalog + shopping list", "Fleet dashboard"],
                 cta: "Start Pro", ctaStyle: "solid", highlight: true, badge: "Most popular",
               },
@@ -319,7 +319,7 @@ export default function LandingPage() {
           <h2 style={{ fontSize: "clamp(28px, 5vw, 44px)", fontWeight: 800, color: "#fff", letterSpacing: "-1.5px", marginBottom: 16, margin: "0 0 16px" }}>
             Always ready to go.
           </h2>
-          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", marginBottom: 36, margin: "0 0 36px" }}>Join sailors already using Keeply to keep their boats in perfect order.</p>
+          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", marginBottom: 36, margin: "0 0 36px" }}>Join boaters already using Keeply to keep their boats in perfect order.</p>
           <button onClick={function(){ openAuth("signup"); }}
             style={{ background: GOLD, border: "none", borderRadius: 12, padding: "16px 40px", color: NAVY_DEEP, fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 24px rgba(245,166,35,0.4)" }}>
             Start free today
