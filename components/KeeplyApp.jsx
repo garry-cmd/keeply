@@ -3747,8 +3747,11 @@ export default function App() {
 
                 {/* Task panels (Critical + Due Soon) */}
                 {(showUrgencyPanel === "Critical" || showUrgencyPanel === "Due Soon") && (function(){
+                  const todayStr = today();
                   const panelTasks = tasks.filter(function(t){
                     if (!t._vesselId || t._vesselId !== activeVesselId) return false;
+                    // Never show a task that was serviced today — it was just completed
+                    if (t.lastService === todayStr) return false;
                     if (showUrgencyPanel === "Critical") return getTaskUrgency(t) === "critical";
                     return getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon";
                   });
