@@ -867,7 +867,7 @@ export default function App() {
           .update({ user_id: user.id })
           .eq("email", user.email)
           .is("user_id", null)
-          .then(function(){});
+          .then(function(res){ if (res.error) console.error("Invite claim error:", res.error); });
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange(function(event, sess){
@@ -877,7 +877,7 @@ export default function App() {
           .update({ user_id: sess.user.id })
           .eq("email", sess.user.email)
           .is("user_id", null)
-          .then(function(){});
+          .then(function(res){ if (res.error) console.error("Invite claim error (sign-in):", res.error); });
       }
     });
     return function(){ listener.subscription.unsubscribe(); };
@@ -964,8 +964,10 @@ export default function App() {
         // Load vessel members for all user vessels
         try {
           const allVesselIds = normalizedVessels.map(function(v){ return v.id; });
-          const mb = await supa("vessel_members", { query: "vessel_id=in.(" + allVesselIds.join(",") + ")&order=created_at" });
-          setVesselMembers(mb || []);
+          if (allVesselIds.length > 0) {
+            const mb = await supa("vessel_members", { query: "vessel_id=in.(" + allVesselIds.join(",") + ")&order=created_at" });
+            setVesselMembers(mb || []);
+          }
         } catch(e) { setVesselMembers([]); }
 
       } catch(err) {
@@ -1015,6 +1017,14 @@ export default function App() {
         const rp = await supa("repairs", { query: "vessel_id=eq." + vid + "&order=date.desc" });
         setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
       } catch(e) { setRepairs([]); }
+      // Reload vessel members for all vessels (membership may have changed)
+      try {
+        const allIds = vessels.map(function(v){ return v.id; });
+        if (allIds.length > 0) {
+          const mb = await supa("vessel_members", { query: "vessel_id=in.(" + allIds.join(",") + ")&order=created_at" });
+          setVesselMembers(mb || []);
+        }
+      } catch(e) { console.error("Members reload error:", e); }
 
         try {
           const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
@@ -1465,12 +1475,21 @@ export default function App() {
     setShareLoading(true); setShareMsg(null);
     try {
       const trimmed = shareEmail.trim().toLowerCase();
-      const alreadyMember = vesselMembers.some(function(m){ return m.vessel_id === activeVesselId && m.email === trimmed; });
-      if (alreadyMember) { setShareMsg("Error: " + trimmed + " already has access"); setShareLoading(false); return; }
-      const { error } = await supabase.from("vessel_members").insert({ vessel_id: activeVesselId, email: trimmed, role: "member", user_id: null });
+      // Duplicate check
+      const alreadyMember = vesselMembers.some(function(m){ return m.vessel_id === activeVesselId && (m.email === trimmed || (m.user_id && m.role !== "owner")); });
+      const alreadyByEmail = vesselMembers.some(function(m){ return m.vessel_id === activeVesselId && m.email === trimmed; });
+      if (alreadyByEmail) { setShareMsg("Error: " + trimmed + " already has access to this vessel"); setShareLoading(false); return; }
+      // Use RPC so existing users get linked immediately (server-side auth.users lookup)
+      const { data: rpcResult, error } = await supabase.rpc("invite_member", {
+        p_vessel_id: activeVesselId,
+        p_email: trimmed,
+      });
       if (error) throw error;
+      // rpcResult is the real inserted row with actual DB id and user_id if already a user
+      const newMember = typeof rpcResult === "string" ? JSON.parse(rpcResult) : rpcResult;
       const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
-      await fetch("/api/invite", {
+      // Send invite email (check response for errors)
+      const emailRes = await fetch("/api/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1480,11 +1499,21 @@ export default function App() {
           inviterName: profilePrefs.displayName || (session && session.user ? session.user.email : "A Keeply user"),
         }),
       });
-      setShareMsg("Invite sent to " + trimmed);
+      const emailData = await emailRes.json().catch(function(){ return {}; });
+      if (!emailRes.ok) {
+        console.error("Invite email failed:", emailData);
+        setShareMsg("Added " + trimmed + " but email failed to send");
+      } else {
+        const alreadyUser = newMember && newMember.user_id;
+        setShareMsg(alreadyUser ? trimmed + " added — they already have a Keeply account and can see this vessel now" : "Invite sent to " + trimmed);
+      }
       setShareEmail("");
-      setVesselMembers(function(prev){ return [...prev, { id: Date.now().toString(), vessel_id: activeVesselId, email: trimmed, role: "member", user_id: null, created_at: new Date().toISOString() }]; });
+      // Add real record (with real id) to local state
+      if (newMember) {
+        setVesselMembers(function(prev){ return [...prev, { id: newMember.id, vessel_id: activeVesselId, email: trimmed, role: "member", user_id: newMember.user_id || null, created_at: newMember.created_at }]; });
+      }
     } catch(e) {
-      setShareMsg("Error: " + e.message);
+      setShareMsg("Error: " + (e.message || "Something went wrong"));
     } finally {
       setShareLoading(false);
     }
@@ -1954,7 +1983,7 @@ export default function App() {
                   { label: "🏠 Hub", action: function(){ setView("customer"); setTab("hub"); setShowMobileMenu(false); }, active: view==="customer" && tab==="hub" },
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
-                  { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); }, active: false },
+                  { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
                   { label: "Logbook", action: function(){ setShowLogbook(true); setShowMobileMenu(false); }, active: false },
                   { label: "⚙️ Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
                 ].map(function(item){ return (
