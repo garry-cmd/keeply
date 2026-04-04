@@ -7,6 +7,37 @@ import LogbookPage from "./LogbookPage";
 import PartsPage from "./PartsPage";
 import FirstMate from "./FirstMate";
 
+// ── Affiliate link helpers ────────────────────────────────────────────────────
+// Enroll at avantlink.com → get approved for Fisheries Supply (mi=10234)
+// Then paste your website ID below. Leave empty = direct links (no commission)
+const AVANTLINK_ID = "";
+
+// Retailer search bases
+const RETAILERS = {
+  fisheries: { name: "Fisheries Supply", base: "https://www.fisheriessupply.com/search#q=", mi: "10234", color: "#1a7f4b" },
+  westmarine: { name: "West Marine",      base: "https://www.westmarine.com/search?q=",    mi: "15506", color: "#0056a6" },
+  defender:   { name: "Defender",         base: "https://www.defender.com/search?q=",      mi: "14521", color: "#c0392b" },
+};
+
+function buyUrl(query, directUrl, retailerKey) {
+  const retailer = RETAILERS[retailerKey || "fisheries"];
+  const target = directUrl || (retailer.base + encodeURIComponent(query));
+  if (AVANTLINK_ID) {
+    return "https://www.avantlink.com/click.php?tt=cl&mi=" + retailer.mi + "&pw=" + AVANTLINK_ID + "&url=" + encodeURIComponent(target);
+  }
+  return target;
+}
+
+// Returns array of {name, url, color} for all retailer buttons
+function retailerLinks(partName, directUrl) {
+  return Object.entries(RETAILERS).map(function(entry) {
+    const key = entry[0]; const r = entry[1];
+    return { name: r.name, color: r.color, url: buyUrl(partName, key === "fisheries" ? directUrl : null, key) };
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
@@ -2860,10 +2891,17 @@ export default function App() {
                           {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 4, padding: "1px 5px" }}>{badge.label}</span>}
                         </div>
                       </div>
-                      <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer", flexShrink: 0 }}
-                        onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
-                        {isExpanded ? "▾" : "▸"}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        <a href={buyUrl(t.task + " " + t.section + " marine")} target="_blank" rel="noreferrer"
+                          onClick={function(e){ e.stopPropagation(); }}
+                          style={{ fontSize: 10, fontWeight: 700, color: "#1a7f4b", background: "#f0fdf4", border: "0.5px solid #86efac", borderRadius: 6, padding: "3px 8px", textDecoration: "none", whiteSpace: "nowrap" }}>
+                          Buy parts ↗
+                        </a>
+                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }}
+                          onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
+                          {isExpanded ? "▾" : "▸"}
+                        </span>
+                      </div>
                     </div>
                     {isExpanded && (
                       <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)", padding: "12px 16px 14px" }}>
@@ -2909,10 +2947,20 @@ export default function App() {
                                 <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                                   <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
                                   <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1, lineHeight: 1.4 }}>💡 {part.reason}</div>
-                                  <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: eq ? eq.name : t.section, repairContext: t.task + " " + t.section }); }}
-                                    style={{ marginTop: 6, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                    {inList ? "✓ In Shopping List" : "🔍 Find Part"}
-                                  </button>
+                                  <div style={{ display: "flex", gap: 5, marginTop: 6 }}>
+                                    <button onClick={function(){ if (!inList) addToCart(part, "ai-repair", eq ? eq.name : t.section); }}
+                                      style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
+                                      {inList ? "✓ In cart" : "+ Cart"}
+                                    </button>
+                                    <a href={buyUrl(part.name, part.url, "fisheries")} target="_blank" rel="noreferrer"
+                                      style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                      FS ↗
+                                    </a>
+                                    <a href={buyUrl(part.name, null, "westmarine")} target="_blank" rel="noreferrer"
+                                      style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: "#0056a6", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                      WM ↗
+                                    </a>
+                                  </div>
                                 </div>
                               );
                             });
@@ -3362,17 +3410,25 @@ export default function App() {
                                 getSuggestionsForEquipment(eq);
                               }} style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1 }} title="Wrong part — get another suggestion">✕</button>
                             </div>
-                            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                            <div style={{ display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap" }}>
                               <button onClick={function(){
                                 saveAiPartToMyParts(eq, part);
                                 setRejectedParts(function(prev){ const n = Object.assign({}, prev); n[eq.id + "-" + part.id] = true; return n; });
-                              }} style={{ flex: 1, padding: "5px 10px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                💾 Save to My Parts
+                              }} style={{ flex: 1, padding: "5px 8px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                                💾 Save
                               </button>
-                              <button onClick={function(){ setConfirmPart({ part: Object.assign({}, part), source: "ai-equipment", equipName: eq.name }); }}
-                                style={{ flex: 1, padding: "5px 10px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                🛒 Add to List
+                              <button onClick={function(){ addToCart(part, "ai-equipment", eq.name); }}
+                                style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                                + Cart
                               </button>
+                              <a href={buyUrl(part.name, part.url, "fisheries")} target="_blank" rel="noreferrer"
+                                style={{ flex: 1, padding: "5px 8px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center", whiteSpace: "nowrap" }}>
+                                FS ↗
+                              </a>
+                              <a href={buyUrl(part.name, null, "westmarine")} target="_blank" rel="noreferrer"
+                                style={{ flex: 1, padding: "5px 8px", borderRadius: 6, background: "#0056a6", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center", whiteSpace: "nowrap" }}>
+                                WM ↗
+                              </a>
                             </div>
                           </div>
                         ); })}
@@ -5077,23 +5133,44 @@ export default function App() {
                 ) : (
                   <div style={{ padding: "0 20px 14px" }}>
                     {cart.map(function(item){ return (
-                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600 }}>{item.name}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{item.equipment_name ? item.equipment_name + " · " : ""}{item.vendor || ""}{item.price ? " · $" + item.price : ""}</div>
-                          {item.source && item.source !== "manual" && <span style={{ fontSize: 10, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontWeight: 600 }}>✨ AI</span>}
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>{item.name}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                            {item.equipment_name ? item.equipment_name : ""}
+                            {item.vendor ? (item.equipment_name ? " · " : "") + item.vendor : ""}
+                            {item.price ? " · $" + item.price : ""}
+                          </div>
                         </div>
-                        {item.url && <a href={item.url} target="_blank" rel="noreferrer" style={{ background: "var(--ok-text)", color: "#fff", borderRadius: 6, padding: "4px 8px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0 }}>↗ Buy</a>}
-                        <button onClick={function(){ removeFromCart(item.dbId); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
-                        <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
-                        <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
-                        {item.url && <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>↗</a>}
-                        <button onClick={function(){ showConfirm("Remove " + item.name + " from list?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                        <a href={buyUrl(item.name, item.url)} target="_blank" rel="noreferrer"
+                          style={{ background: "var(--ok-text)", color: "#fff", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap" }}>
+                          Buy ↗
+                        </a>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                          <button onClick={function(){ removeFromCart(item.dbId); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
+                          <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
+                          <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
+                        </div>
+                        <button onClick={function(){ showConfirm("Remove " + item.name + "?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                       </div>
                     ); })}
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, paddingTop: 8, borderTop: "1px solid var(--border)", marginBottom: 12 }}>
                       <span>Estimated total</span>
                       <span style={{ color: "var(--brand)" }}>${cartTotal.toFixed(2)}</span>
+                    </div>
+                    {/* Shop all CTA — multi-retailer */}
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 8 }}>Shop all {cart.length} item{cart.length !== 1 ? "s" : ""} at</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 4 }}>
+                      {Object.entries(RETAILERS).map(function(entry){
+                        const key = entry[0]; const r = entry[1];
+                        const allNames = cart.map(function(i){ return i.name; }).join(" ");
+                        return (
+                          <a key={key} href={buyUrl(allNames, null, key)} target="_blank" rel="noreferrer"
+                            style={{ display: "block", textAlign: "center", padding: "9px 6px", background: r.color, color: "#fff", borderRadius: 8, fontSize: 11, fontWeight: 700, textDecoration: "none", lineHeight: 1.3 }}>
+                            {r.name.split(" ")[0]} ↗
+                          </a>
+                        );
+                      })}
                     </div>
 
                   </div>
