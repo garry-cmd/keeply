@@ -57,7 +57,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
 
   const openEdit = function(entry) {
     setForm({
-      entry_type: entry.entry_type || "passage",
+      entry_type: "passage",
       entry_date: entry.entry_date || "",
       from_location: entry.from_location || "",
       to_location: entry.to_location || "",
@@ -488,21 +488,13 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
 
             {/* Form header */}
             <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{editingId ? "Edit Entry" : "New Log Entry"}</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{editingId ? "Edit Passage" : "New Passage"}</div>
               <button onClick={function() { setShowForm(false); setEditingId(null); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
 
-              {/* Type toggle */}
-              <div style={{ display: "flex", background: "var(--bg-subtle)", borderRadius: 8, padding: 3, marginBottom: 14 }}>
-                {["passage", "note"].map(function(t) { return (
-                  <button key={t} onClick={function() { setF("entry_type", t); }}
-                    style={{ flex: 1, padding: "7px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: form.entry_type === t ? "var(--bg-card)" : "transparent", color: form.entry_type === t ? "var(--brand)" : "var(--text-muted)" }}>
-                    {t === "passage" ? "⛵ Passage" : "📝 Note"}
-                  </button>
-                ); })}
-              </div>
+
 
               {/* Date + times */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
@@ -510,8 +502,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                   <span style={s.lbl}>Date *</span>
                   <input type="date" value={form.entry_date} onChange={function(e) { setF("entry_date", e.target.value); }} style={s.inp} />
                 </div>
-                {form.entry_type === "passage" && (<>
-                  <div>
+                <div>
                     <span style={s.lbl}>Departed</span>
                     <input type="time" value={form.departure_time} onChange={function(e) { setF("departure_time", e.target.value); }} style={s.inp} />
                   </div>
@@ -519,10 +510,9 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                     <span style={s.lbl}>Arrived</span>
                     <input type="time" value={form.arrival_time} onChange={function(e) { setF("arrival_time", e.target.value); }} style={s.inp} />
                   </div>
-                </>)}
               </div>
 
-              {form.entry_type === "passage" && (<>
+              <>
                 {/* From / To */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                   <div><span style={s.lbl}>From</span><input placeholder="Departure port" value={form.from_location} onChange={function(e) { setF("from_location", e.target.value); }} style={s.inp} /></div>
@@ -592,23 +582,21 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                     ); })}
                   </div>
                 </div>
-              </>)}
+              </>
 
-              {/* Notes */}
+              {/* Notes */
               <div style={{ marginBottom: 12 }}>
                 <span style={s.lbl}>Notes</span>
                 <textarea rows={3} placeholder="Anything worth remembering…" value={form.notes} onChange={function(e) { setF("notes", e.target.value); }} style={{ ...s.inp, resize: "none", lineHeight: 1.5 }} />
               </div>
 
               {/* More details toggle */}
-              {form.entry_type === "passage" && (
-                <button onClick={function() { setF("_showMore", !form._showMore); }}
+              <button onClick={function() { setF("_showMore", !form._showMore); }}
                   style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer", fontWeight: 600, padding: "4px 0", marginBottom: 8 }}>
                   {form._showMore ? "▾ Less details" : "▸ More details"}
                 </button>
-              )}
 
-              {form._showMore && form.entry_type === "passage" && (
+              {form._showMore && (
                 <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 12 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                     <div><span style={s.lbl}>Barometric mb</span><input type="number" placeholder="1013" value={form.barometric_mb} onChange={function(e) { setF("barometric_mb", e.target.value); }} style={s.inp} /></div>
