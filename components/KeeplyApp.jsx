@@ -4950,6 +4950,11 @@ export default function App() {
                   <span style={{ fontSize: 16 }}>🔧</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Add Repair</span>
                 </div>
+                <div onClick={function(){ setShowRepairsFab(false); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
+                  <span style={{ fontSize: 16 }}>🗺️</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Log Entry</span>
+                </div>
               </div>
             )}
             <div onClick={function(){ setShowRepairsFab(function(f){ return !f; }); }}
