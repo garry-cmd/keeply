@@ -2038,6 +2038,7 @@ export default function App() {
                 {[
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "🗺️ Logbook", action: function(){ setShowLogbook(true); setShowMobileMenu(false); }, active: false },
+                  { label: "⚙️ Equipment", action: function(){ setView("customer"); setTab("equipment-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="equipment-standalone" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
                   { label: "⚙️ Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
@@ -2842,12 +2843,57 @@ export default function App() {
             </>);
           })()}
 
-          {/* ── Equipment divider ── */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 8 }}>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Equipment</span>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+          {/* ── Equipment alerts (chips linking to Equipment page) ── */}
+          {(function(){
+            const alertEquip = equipment.filter(function(e){
+              return e._vesselId === activeVesselId && (e.status === "needs-service" || e.status === "watch");
+            });
+            if (alertEquip.length === 0) return null;
+            return (
+              <div style={{ marginTop: 8, marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--warn-text)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Equipment alerts</span>
+                  <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {alertEquip.map(function(e){
+                    const isNeedsService = e.status === "needs-service";
+                    return (
+                      <button key={e.id} onClick={function(){ setTab("equipment-standalone"); setExpandedEquip(e.id); }}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "1px solid " + (isNeedsService ? "var(--danger-border)" : "var(--warn-border)"), borderRadius: 20, background: isNeedsService ? "var(--danger-bg)" : "var(--warn-bg)", cursor: "pointer" }}>
+                        <span style={{ fontSize: 12 }}>{isNeedsService ? "🔴" : "🟡"}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: isNeedsService ? "var(--danger-text)" : "var(--warn-text)" }}>{e.name}</span>
+                        <span style={{ fontSize: 10, color: isNeedsService ? "var(--danger-text)" : "var(--warn-text)", opacity: 0.8 }}>→</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── First Mate bar ── */}
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 8, marginTop: 16 }}
+            onClick={function(){ alert("First Mate coming soon — ask questions about your boat, get maintenance advice, and plan passages."); }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
+                <path d="M2 7.5a5 5 0 0 0 10 0" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="7" y1="12.5" x2="7" y2="10" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 13, color: "var(--text-muted)", flex: 1 }}>Ask <span style={{ color: "var(--brand)" }}>First Mate</span>...</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Coming soon</span>
           </div>
+          <div style={{ height: 80 }} />
+
+        </>
+      )}
+
+        {/* ── EQUIPMENT STANDALONE ── */}
+        {view === "customer" && tab === "equipment-standalone" && (<>
+          {tabHeader("Equipment", boatName + " · " + equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length + " items", true, function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); })}
 
           {filteredEquip.length === 0 && !showAddEquip && (
             <div style={{ textAlign: "center", padding: "56px 24px", color: "var(--text-muted)" }}>
@@ -3431,7 +3477,7 @@ export default function App() {
         {showFab && <div onClick={function(){ setShowFab(false); }} style={{ position: "fixed", inset: 0, zIndex: 199 }} />}
 
       {/* Floating Action Button */}
-      {view === "customer" && tab === "boat" && (
+      {view === "customer" && (tab === "boat" || tab === "equipment-standalone") && (
         <div style={{ position: "fixed", bottom: 24, right: 20, zIndex: 200 }}>
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
@@ -3444,7 +3490,7 @@ export default function App() {
           setShowFab(false);
           return;
         }
-        setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
+        setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
       } },
                 { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
                 { label: "Add Repair", icon: "🔧", action: function(){
@@ -3598,19 +3644,6 @@ export default function App() {
           )}
         
 
-          {/* ── First Mate bar ── */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 8, marginTop: 8 }}
-            onClick={function(){ alert("First Mate coming soon — ask questions about your boat, get maintenance advice, and plan passages."); }}>
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
-                <path d="M2 7.5a5 5 0 0 0 10 0" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
-                <line x1="7" y1="12.5" x2="7" y2="10" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: 13, color: "var(--text-muted)", flex: 1 }}>Ask <span style={{ color: "var(--brand)" }}>First Mate</span>...</span>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Coming soon</span>
-          </div>
         </>)}
 
         {/* ── REPAIRS TAB ── */}
