@@ -4991,63 +4991,11 @@ export default function App() {
                       <span>Estimated total</span>
                       <span style={{ color: "var(--brand)" }}>${cartTotal.toFixed(2)}</span>
                     </div>
-                    <a href={"https://www.fisheriessupply.com/search#q=" + encodeURIComponent(cart.map(function(i){ return i.name; }).join(" "))}
-                      target="_blank" rel="noreferrer"
-                      style={{ display: "block", textAlign: "center", padding: "12px 16px", background: "var(--ok-text)", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 800, textDecoration: "none" }}>
-                      🛒 Shop All at Fisheries Supply ↗
-                    </a>
+
                   </div>
                 )}
               </div>
 
-              {/* ── SECTION 2: CLAUDE SUGGESTS (per repair) ── */}
-              <div style={{ background: "var(--bg-card)", flex: 1 }}>
-                <div style={{ padding: "14px 20px 10px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--brand)", letterSpacing: "0.5px" }}>✨ CLAUDE SUGGESTS</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>Auto-generated when you log a repair</div>
-                </div>
-
-                {repairs.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "20px 24px 24px", color: "var(--text-muted)" }}>
-                    <div style={{ fontSize: 28 }}>🤖</div>
-                    <div style={{ marginTop: 6, fontSize: 12 }}>Log a repair and Claude will suggest parts automatically.</div>
-                  </div>
-                )}
-
-                {repairs.map(function(r){
-                  const sugg = aiSuggestions[r.id];
-                  if (!sugg) return null;
-                  return (
-                    <div key={r.id} style={{ padding: "12px 20px", borderTop: "1px solid var(--border)" }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>
-                        {r.section}: {r.description && r.description.length > 45 ? r.description.slice(0, 45) + "…" : r.description}
-                      </div>
-                      {sugg === "loading" ? (
-                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>🤖 Finding parts…</div>
-                      ) : sugg.length === 0 ? (
-                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No catalog matches found.</div>
-                      ) : sugg.map(function(part){
-                        const inList = cart.find(function(i){ return i.id === part.id; });
-                        return (
-                          <div key={part.name + part.reason} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700 }}>{part.name}</div>
-                                              <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
-                              
-                            </div>
-                            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                              <button onClick={function(){ if (!inList) setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section }); }}
-                                style={{ flexShrink: 0, background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff", border: inList ? "1px solid #bbf7d0" : "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: inList ? "default" : "pointer" }}>
-                                {inList ? "✓ Listed" : "+ Add to List"}
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
         </div>
