@@ -4373,7 +4373,7 @@ export default function App() {
                     Describe the equipment and we'll create the card with maintenance tasks automatically.
                   </div>
                   <textarea
-                    placeholder="e.g. Volvo Penta IPS D4-300, or: Victron MultiPlus 3000, or: Maxwell RC10 windlass"
+                    placeholder="e.g. Vulcan 20kg anchor, Maxwell RC10 windlass, Victron MultiPlus 3000, Raymarine Axiom 9"
                     value={equipAiDesc}
                     onChange={function(e){ setEquipAiDesc(e.target.value); }}
                     rows={3}
@@ -4386,8 +4386,15 @@ export default function App() {
                   {equipAiResult && (
                     <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", marginBottom: 12 }}>
                       <div style={{ padding: "8px 12px", background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", display: "flex", justifyContent: "space-between" }}>
-                        <span>{equipAiResult.name} · {equipAiResult.category}</span>
-                        <span>{(equipAiResult.tasks||[]).length} tasks</span>
+                        <div>
+                          <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{equipAiResult.name}</div>
+                          <div style={{ fontWeight: 500, color: "var(--text-muted)" }}>
+                            {SECTIONS[equipAiResult.category] || ""} {equipAiResult.category}
+                            {equipAiResult.manufacturer && <span> · {equipAiResult.manufacturer}</span>}
+                            {equipAiResult.model && <span> · {equipAiResult.model}</span>}
+                          </div>
+                        </div>
+                        <span style={{ flexShrink: 0, marginLeft: 8 }}>{(equipAiResult.tasks||[]).length} tasks</span>
                       </div>
                       {(equipAiResult.tasks||[]).map(function(t, i){ return (
                         <div key={i} style={{ padding: "6px 12px", borderBottom: i < equipAiResult.tasks.length-1 ? "1px solid #f8fafc" : "none", fontSize: 12 }}>
@@ -4408,7 +4415,7 @@ export default function App() {
                           const res = await fetch("/api/identify-vessel", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ description: "Single piece of marine equipment — just return ONE equipment item (not a full vessel list). Equipment: " + equipAiDesc.trim() }),
+                            body: JSON.stringify({ description: equipAiDesc.trim(), singleItem: true }),
                           });
                           const data = await res.json();
                           if (data.error) throw new Error(data.error);
@@ -4424,10 +4431,11 @@ export default function App() {
                       <button onClick={async function(){
                         setSaving(true);
                         try {
-                          const payload = { vessel_id: activeVesselId, name: equipAiResult.name, category: equipAiResult.category, status: "good", notes: "", custom_parts: [], docs: [], logs: [] };
+                          const aiNotes = [equipAiResult.manufacturer ? "Model: " + [equipAiResult.manufacturer, equipAiResult.model].filter(Boolean).join(" ") : equipAiResult.model ? "Model: " + equipAiResult.model : ""].filter(Boolean).join(" ");
+                          const payload = { vessel_id: activeVesselId, name: equipAiResult.name, category: equipAiResult.category, status: "good", notes: aiNotes, custom_parts: [], docs: [], logs: [] };
                           const created = await supa("equipment", { method: "POST", body: payload });
                           const eq = created[0];
-                          setEquipment(function(prev){ return [...prev, { id: eq.id, name: eq.name, category: eq.category, status: eq.status, lastService: eq.last_service, notes: eq.notes || "", customParts: [], docs: [], logs: [], _vesselId: eq.vessel_id }]; });
+                          setEquipment(function(prev){ return [...prev, { id: eq.id, name: eq.name, category: eq.category, status: eq.status, lastService: eq.last_service, notes: eq.notes || "", customParts: safeJsonbArray(eq.custom_parts), docs: eq.docs || [], logs: [], _vesselId: eq.vessel_id }]; });
                           if (equipAiResult.tasks && equipAiResult.tasks.length > 0) {
                             const today = new Date().toISOString().split("T")[0];
                             const taskRows = equipAiResult.tasks.map(function(t){
