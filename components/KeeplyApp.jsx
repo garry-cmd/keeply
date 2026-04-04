@@ -2037,7 +2037,7 @@ export default function App() {
               <div style={{ position: "absolute", top: 56, right: 0, background: "var(--bg-card)", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
                 {[
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
-                  { label: "🗺️ Logbook", action: function(){ setShowLogbook(true); setShowMobileMenu(false); }, active: false },
+                  { label: "🗺️ Logbook", action: function(){ setView("customer"); setTab("logbook-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="logbook-standalone" },
                   { label: "⚙️ Equipment", action: function(){ setView("customer"); setTab("equipment-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="equipment-standalone" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
@@ -2552,7 +2552,7 @@ export default function App() {
 
                 {/* Row 2 Cell 1 — nm logged (from logbook) */}
                 <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: vesselLogs.length > 0 ? "pointer" : "default" }}
-                  onClick={vesselLogs.length > 0 ? function(){ setShowLogbook(true); } : undefined}>
+                  onClick={vesselLogs.length > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
                   <div style={labelStyle}>nm logged</div>
                   {totalNm > 0 ? (<>
                     <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{Math.round(totalNm).toLocaleString()}</div>
@@ -2581,7 +2581,7 @@ export default function App() {
                   const avgSpeed = (totalTime > 0 && timedNm > 0) ? (timedNm / totalTime) : null;
                   return (
                     <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: vesselLogs.length > 0 ? "pointer" : "default" }}
-                      onClick={vesselLogs.length > 0 ? function(){ setShowLogbook(true); } : undefined}>
+                      onClick={vesselLogs.length > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
                       <div style={labelStyle}>Avg speed</div>
                       {avgSpeed !== null ? (<>
                         <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{avgSpeed.toFixed(1)}</div>
@@ -3567,7 +3567,7 @@ export default function App() {
                     }
                     setShowAddRepair(true); setShowFab(false);
                   } },
-                { label: "Log Entry", icon: "🗺️", action: function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
+                { label: "Log Entry", icon: "🗺️", action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
               ].map(function(item){ return (
                 <div key={item.label} onClick={item.action}
                   style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
@@ -3708,6 +3708,168 @@ export default function App() {
           )}
         
 
+
+        {/* ── LOGBOOK PAGE ── */}
+        {view === "customer" && tab === "logbook-standalone" && (<>
+          {tabHeader("Logbook", boatName, true, function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); })}
+
+          {(function(){
+            const entries = [...logEntries].filter(function(e){ return e.vessel_id === activeVesselId; })
+              .sort(function(a,b){ return (b.entry_date + (b.departure_time||"00:00")).localeCompare(a.entry_date + (a.departure_time||"00:00")); });
+            const passages = entries.filter(function(e){ return e.entry_type === "passage"; });
+            const totalNm = passages.reduce(function(acc,e){ return acc + (parseFloat(e.distance_nm)||0); }, 0);
+            const lastHours = (function(){
+              const withHrs = passages.filter(function(e){ return e.hours_end; }).sort(function(a,b){ return b.entry_date.localeCompare(a.entry_date); });
+              return withHrs.length > 0 ? withHrs[0].hours_end : null;
+            })();
+
+            /* ── Stats strip ── */
+            const statsRow = (
+              <div style={{ display: "flex", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "0.5px solid var(--border)" }}>
+                {[
+                  { label: "Passages", val: passages.length },
+                  { label: "nm logged", val: totalNm > 0 ? Math.round(totalNm).toLocaleString() : "—" },
+                  { label: "Engine hrs", val: lastHours ? parseFloat(lastHours).toLocaleString() : "—" },
+                ].map(function(s){ return (
+                  <div key={s.label} style={{ flex: 1, background: "var(--bg-card)", padding: "10px 12px", textAlign: "center" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{s.val}</div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, letterSpacing: "0.4px", textTransform: "uppercase" }}>{s.label}</div>
+                  </div>
+                ); })}
+              </div>
+            );
+
+            if (entries.length === 0) return (<>
+              {statsRow}
+              <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>🗺️</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>No log entries yet</div>
+                <div style={{ fontSize: 13, marginBottom: 20 }}>Record your passages, notes, and daily observations</div>
+                <button onClick={function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }}
+                  style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Log First Entry</button>
+              </div>
+            </>);
+
+            /* ── Group by month ── */
+            const grouped = {};
+            entries.forEach(function(e){
+              const key = e.entry_date.substring(0, 7);
+              if (!grouped[key]) grouped[key] = [];
+              grouped[key].push(e);
+            });
+            const monthKeys = Object.keys(grouped).sort(function(a,b){ return b.localeCompare(a); });
+            const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+            return (<>
+              {statsRow}
+              {monthKeys.map(function(monthKey){
+                const [yr, mo] = monthKey.split("-");
+                const monthLabel = MONTHS[parseInt(mo)-1] + " " + yr;
+                return (
+                  <div key={monthKey} style={{ marginBottom: 24 }}>
+                    {/* Month header */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.5px" }}>{monthLabel}</span>
+                      <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
+                    </div>
+                    {/* Entries */}
+                    {grouped[monthKey].map(function(entry){
+                      const isPassage = entry.entry_type === "passage";
+                      const parts = entry.entry_date.split("-");
+                      const dayNum = parts[2];
+                      const monAbbr = (MONTHS[parseInt(parts[1])-1]||"").substring(0,3).toUpperCase();
+                      /* Derived: time at sea, avg speed */
+                      var timeLabel = null;
+                      var avgSpd = null;
+                      if (entry.departure_time && entry.arrival_time) {
+                        const dParts = entry.departure_time.split(":").map(Number);
+                        const aParts = entry.arrival_time.split(":").map(Number);
+                        var diff = (aParts[0]*60+aParts[1]) - (dParts[0]*60+dParts[1]);
+                        if (diff < 0) diff += 1440;
+                        const hrs = diff / 60;
+                        timeLabel = Math.floor(hrs) + "h " + Math.round((hrs%1)*60) + "m";
+                        if (entry.distance_nm && hrs > 0) avgSpd = (parseFloat(entry.distance_nm)/hrs).toFixed(1) + " kts";
+                      }
+                      /* Chips */
+                      const chips = [];
+                      if (entry.wind_speed && entry.wind_direction) chips.push({ label: entry.wind_direction + " " + entry.wind_speed + " kts", color: "var(--brand)", bg: "var(--brand-deep)" });
+                      else if (entry.wind_speed) chips.push({ label: entry.wind_speed + " kts", color: "var(--brand)", bg: "var(--brand-deep)" });
+                      if (entry.sea_state) chips.push({ label: entry.sea_state, color: "var(--ok-text)", bg: "var(--ok-bg)" });
+                      if (entry.conditions) chips.push({ label: entry.conditions, color: "var(--text-muted)", bg: "var(--bg-subtle)" });
+                      if (entry.crew) chips.push({ label: "Crew: " + entry.crew, color: "var(--text-muted)", bg: "var(--bg-subtle)" });
+                      return (
+                        <div key={entry.id} style={{ ...s.card, borderLeft: "3px solid " + (isPassage ? "#0f4c8a" : "var(--border)"), borderRadius: "0 " + (s.card.borderRadius||"12px") + " " + (s.card.borderRadius||"12px") + " 0", marginBottom: 8, overflow: "hidden" }}>
+                          {isPassage ? (
+                            <div style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "stretch" }}>
+                              {/* Date column */}
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "14px 0", background: "var(--bg-subtle)", borderRight: "0.5px solid var(--border)" }}>
+                                <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{dayNum}</span>
+                                <span style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.5px", marginTop: 2 }}>{monAbbr}</span>
+                              </div>
+                              {/* Body */}
+                              <div style={{ padding: "12px 14px" }}>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>
+                                  {entry.from_location && entry.to_location ? entry.from_location + " → " + entry.to_location : "Passage"}
+                                </div>
+                                {entry.highlights && <div style={{ fontSize: 12, color: "var(--text-secondary)", fontStyle: "italic", marginBottom: 6, lineHeight: 1.4 }}>"{entry.highlights}"</div>}
+                                {chips.length > 0 && (
+                                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                                    {chips.map(function(c,i){ return (
+                                      <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, color: c.color, background: c.bg }}>{c.label}</span>
+                                    ); })}
+                                  </div>
+                                )}
+                                {entry.notes && !entry.highlights && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>{entry.notes.length > 100 ? entry.notes.substring(0,100)+"…" : entry.notes}</div>}
+                              </div>
+                              {/* Stats */}
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", padding: "12px 14px", gap: 6, minWidth: 64 }}>
+                                {entry.distance_nm && (<>
+                                  <div style={{ textAlign: "right" }}>
+                                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{entry.distance_nm}</div>
+                                    <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>nm</div>
+                                  </div>
+                                </>)}
+                                {avgSpd && (
+                                  <div style={{ textAlign: "right" }}>
+                                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{avgSpd}</div>
+                                    <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>avg</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            /* Note entry */
+                            <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 6, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <span style={{ fontSize: 13 }}>📝</span>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{entry.title || "Note"}</div>
+                                  <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{dayNum + " " + monAbbr}</div>
+                                </div>
+                                {(entry.notes || entry.highlights) && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 3, lineHeight: 1.4 }}>{(entry.highlights || entry.notes || "").substring(0,120)}</div>}
+                              </div>
+                            </div>
+                          )}
+                          {/* Actions */}
+                          <div style={{ borderTop: "0.5px solid var(--border)", display: "flex" }}>
+                            <button onClick={function(){ setLogForm({ entry_type: entry.entry_type, entry_date: entry.entry_date, title: entry.title||"", from_location: entry.from_location||"", to_location: entry.to_location||"", departure_time: entry.departure_time||"", arrival_time: entry.arrival_time||"", crew: entry.crew||"", highlights: entry.highlights||"", distance_nm: entry.distance_nm||"", hours_end: entry.hours_end||"", conditions: entry.conditions||"", wind_speed: entry.wind_speed||"", wind_direction: entry.wind_direction||"", sea_state: entry.sea_state||"", notes: entry.notes||"", barometric_mb: entry.barometric_mb||"", visibility: entry.visibility||"", fuel_added: entry.fuel_added||"", max_speed_kts: entry.max_speed_kts||"", anchor_location: entry.anchor_location||"", anchor_depth_ft: entry.anchor_depth_ft||"", incident: entry.incident||"" }); setEditingLog(entry.id); setShowAddLog(true); }}
+                              style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
+                            <div style={{ width: "0.5px", background: "var(--border)" }} />
+                            <button onClick={function(){ showConfirm("Delete this log entry?", function(){ deleteLog(entry.id); }); }}
+                              style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              <div style={{ height: 80 }} />
+            </>);
+          })()}
+        </>)}
 
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs-standalone" && (<>
@@ -5059,62 +5221,7 @@ export default function App() {
       )}
 
       {/* LOGBOOK PANEL */}
-      {showLogbook && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={function(){ setShowLogbook(false); }}>
-          <div style={{ background: "var(--bg-app)", borderRadius: 16, width: "100%", maxWidth: 480, maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ background: "var(--brand)", borderRadius: "16px 16px 0 0", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>Logbook</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{boatName} · {logEntries.filter(function(e){ return e.vessel_id === activeVesselId; }).length} entries</div>
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button onClick={function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 8, padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Entry</button>
-                <button onClick={function(){ setShowLogbook(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 30, height: 30, color: "#fff", fontSize: 16, cursor: "pointer" }}>X</button>
-              </div>
-            </div>
-            <div style={{ overflowY: "auto", flex: 1, padding: "8px 0" }}>
-              {(function(){
-                const entries = logEntries.filter(function(e){ return e.vessel_id === activeVesselId; });
-                if (entries.length === 0) return (
-                  <div style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, color: "var(--text-muted)" }}>No log entries yet</div>
-                    <div style={{ fontSize: 12, marginBottom: 20 }}>Record your passages and notes</div>
-                    <button onClick={function(){ setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); }} style={{ background: "var(--brand)", border: "none", borderRadius: 8, padding: "10px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Log First Entry</button>
-                  </div>
-                );
-                return entries.map(function(entry){
-                  const isPassage = entry.entry_type === "passage";
-                  return (
-                    <div key={entry.id} style={{ background: "var(--bg-card)", margin: "6px 12px", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-                      <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: isPassage ? "var(--brand-deep)" : "var(--ok-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: isPassage ? "var(--brand)" : "var(--ok-text)", flexShrink: 0 }}>{isPassage ? "SAIL" : "NOTE"}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{isPassage && entry.from_location && entry.to_location ? entry.from_location + " → " + entry.to_location : entry.title || (isPassage ? "Passage" : "Note")}</div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{entry.entry_date}</div>
-                          </div>
-                          <div style={{ display: "flex", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
-                            {entry.distance_nm && <span style={{ fontSize: 11, color: "var(--brand)", background: "var(--brand-deep)", borderRadius: 4, padding: "1px 6px", fontWeight: 600 }}>{entry.distance_nm} nm</span>}
-                            {entry.engine_hours && <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 4, padding: "1px 6px" }}>Engine {entry.engine_hours}h</span>}
-                            {entry.fuel_used && <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 4, padding: "1px 6px" }}>Fuel {entry.fuel_used}gal</span>}
-                            {entry.conditions && <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 4, padding: "1px 6px" }}>{entry.conditions}</span>}
-                          </div>
-                          {entry.notes && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{entry.notes.length > 100 ? entry.notes.substring(0, 100) + "..." : entry.notes}</div>}
-                        </div>
-                      </div>
-                      <div style={{ borderTop: "1px solid var(--border)", display: "flex" }}>
-                        <button onClick={function(){ setLogForm({ entry_type: entry.entry_type, entry_date: entry.entry_date, title: entry.title || "", from_location: entry.from_location || "", to_location: entry.to_location || "", distance_nm: entry.distance_nm || "", engine_hours: entry.engine_hours || "", fuel_used: entry.fuel_used || "", conditions: entry.conditions || "", notes: entry.notes || "" }); setEditingLog(entry.id); setShowAddLog(true); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
-                        <div style={{ width: 1, background: "var(--border)" }} />
-                        <button onClick={function(){ if (window.confirm("Delete this log entry?")) deleteLog(entry.id); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Logbook modal replaced by logbook-standalone page */}
 
       {/* ADD/EDIT LOG ENTRY */}
       {showAddLog && (
