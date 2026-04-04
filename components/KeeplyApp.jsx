@@ -759,6 +759,7 @@ export default function App() {
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
   const [findPartResults, setFindPartResults]   = useState([]);
   const [inlinePartResults, setInlinePartResults] = useState({});
+  const [savedParts, setSavedParts] = useState({});
   const [findPartLoading, setFindPartLoading]   = useState(false);
   const [findPartError, setFindPartError]       = useState(null);
   const findPartSearched                        = useRef(null);
@@ -1304,12 +1305,26 @@ export default function App() {
   };
 
   const saveAiPartToMyParts = async function(eq, part) {
-    const newPart = { id: "cp-" + Date.now(), name: part.name, sku: "", price: "", url: "", notes: "AI: " + (part.reason || ""), vendor: "ai" };
-    const updatedParts = [...(eq.customParts || []), newPart];
+    if (!eq || !eq.id) { console.error("saveAiPartToMyParts: no equipment"); return; }
+    const saveKey = eq.id + "-" + (part.name || part.id);
+    setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "saving"; return n; });
+    // Re-fetch latest customParts to avoid overwriting newer data
+    const latestEq = equipment.find(function(e){ return e.id === eq.id; }) || eq;
+    const alreadySaved = (latestEq.customParts || []).some(function(p){ return p.name === part.name; });
+    if (alreadySaved) {
+      setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "saved"; return n; });
+      return;
+    }
+    const newPart = { id: "cp-" + Date.now(), name: part.name, sku: part.partNumber || "", price: part.price || "", url: part.url || "", notes: "AI: " + (part.reason || ""), vendor: "ai" };
+    const updatedParts = [...(latestEq.customParts || []), newPart];
     try {
       await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { custom_parts: updatedParts }, prefer: "return=minimal" });
       setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? { ...e, customParts: updatedParts } : e; }); });
-    } catch(e) { console.error("Save part failed:", e); }
+      setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "saved"; return n; });
+    } catch(e) {
+      console.error("Save part failed:", e);
+      setSavedParts(function(prev){ const n = Object.assign({}, prev); n[saveKey] = "error"; return n; });
+    }
   };
 
   const addCustomDoc = async function(eqId){
@@ -3001,12 +3016,17 @@ export default function App() {
                                       {rl.name.split(" ")[0]} ↗
                                     </a>
                                   ); })}
-                                  {repairEq && (
-                                    <button onClick={function(e){ e.stopPropagation(); saveAiPartToMyParts(repairEq, { name: part.name, reason: part.reason || "", id: "ai-" + pi }); }}
-                                      style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg-subtle)", border: "0.5px solid var(--border)", color: "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                                      + Save to parts
-                                    </button>
-                                  )}
+                                  {repairEq && (function(){
+                                    const sk = repairEq.id + "-" + part.name;
+                                    const st = savedParts[sk];
+                                    return (
+                                      <button onClick={function(e){ e.stopPropagation(); saveAiPartToMyParts(repairEq, part); }}
+                                        disabled={st === "saving" || st === "saved"}
+                                        style={{ padding: "4px 10px", borderRadius: 6, background: st === "saved" ? "var(--ok-bg)" : st === "error" ? "var(--danger-bg)" : "var(--bg-subtle)", border: "0.5px solid " + (st === "saved" ? "var(--ok-border)" : st === "error" ? "var(--danger-border)" : "var(--border)"), color: st === "saved" ? "var(--ok-text)" : st === "error" ? "var(--danger-text)" : "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: st ? "default" : "pointer" }}>
+                                        {st === "saving" ? "Saving…" : st === "saved" ? "✓ Saved" : st === "error" ? "✗ Failed" : "+ Save to parts"}
+                                      </button>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             ); })}
@@ -3162,12 +3182,17 @@ export default function App() {
                                         {r.name.split(" ")[0]} ↗
                                       </a>
                                     ); })}
-                                    {eq && (
-                                      <button onClick={function(){ saveAiPartToMyParts(eq, { name: part.name, reason: part.reason || "", id: "ai-" + pi }); }}
-                                        style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg-subtle)", border: "0.5px solid var(--border)", color: "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                                        + Save to parts
-                                      </button>
-                                    )}
+                                    {eq && (function(){
+                                      const sk = eq.id + "-" + part.name;
+                                      const st = savedParts[sk];
+                                      return (
+                                        <button onClick={function(){ saveAiPartToMyParts(eq, part); }}
+                                          disabled={st === "saving" || st === "saved"}
+                                          style={{ padding: "4px 10px", borderRadius: 6, background: st === "saved" ? "var(--ok-bg)" : st === "error" ? "var(--danger-bg)" : "var(--bg-subtle)", border: "0.5px solid " + (st === "saved" ? "var(--ok-border)" : st === "error" ? "var(--danger-border)" : "var(--border)"), color: st === "saved" ? "var(--ok-text)" : st === "error" ? "var(--danger-text)" : "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: st ? "default" : "pointer" }}>
+                                          {st === "saving" ? "Saving…" : st === "saved" ? "✓ Saved" : st === "error" ? "✗ Failed" : "+ Save to parts"}
+                                        </button>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               ); })}
