@@ -3094,7 +3094,7 @@ export default function App() {
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid var(--border)", padding: "16px 20px", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
 
-                    {eq.notes && <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>📝 {eq.notes}</div>}
+                    {eq.notes && !isVesselCard && <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>📝 {eq.notes}</div>}
 
                                         {/* Log tab */}
                     {activeTab === "log" && (
@@ -3160,21 +3160,21 @@ export default function App() {
                         </select>
 
                         <div style={{ display: "flex", gap: 8 }}>
-                          <input placeholder="Model (optional)" value={editEquipForm.model !== undefined ? editEquipForm.model : (eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
-                          <input placeholder="Serial No." value={editEquipForm.serial !== undefined ? editEquipForm.serial : (eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                          <input placeholder="Model (optional)" value={editEquipForm.model !== undefined ? editEquipForm.model : (isVesselCard ? "" : (eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||"")} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
+                          <input placeholder="Serial No." value={editEquipForm.serial !== undefined ? editEquipForm.serial : (isVesselCard ? "" : (eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||"")} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                         </div>
-                        <input placeholder="Notes (optional)" value={editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim()} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={s.inp} />
+                        {!isVesselCard && <input placeholder="Notes (optional)" value={editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim()} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={s.inp} />}
                         <button onClick={function(){
                           const name = editEquipForm.name || eq.name;
                           const category = editEquipForm.category || eq.category;
                           const status = editEquipForm.status || eq.status;
-                          const model = editEquipForm.model !== undefined ? editEquipForm.model : ((eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||"");
-                          const serial = editEquipForm.serial !== undefined ? editEquipForm.serial : ((eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||"");
-                          const baseNotes = editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim();
-                          const notes = [baseNotes, model ? "Model: "+model : "", serial ? "S/N: "+serial : ""].filter(Boolean).join(" | ");
+                          const model = editEquipForm.model !== undefined ? editEquipForm.model : (isVesselCard ? "" : ((eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||""));
+                          const serial = editEquipForm.serial !== undefined ? editEquipForm.serial : (isVesselCard ? "" : ((eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||""));
+                          const baseNotes = isVesselCard ? (eq.notes||"") : (editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim());
+                          const notes = isVesselCard ? baseNotes : [baseNotes, model ? "Model: "+model : "", serial ? "S/N: "+serial : ""].filter(Boolean).join(" | ");
                           updateEquipment(eq.id, { name, category, status, notes });
                           setEditEquipForm({});
-                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; });
+                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = isVesselCard ? "info" : "parts"; return n; });
                         }} style={{ width: "100%", padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                           Save Changes
                         </button>
