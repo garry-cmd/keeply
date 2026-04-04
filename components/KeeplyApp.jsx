@@ -4757,7 +4757,7 @@ export default function App() {
                 setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TGXViPIMPMntnuJyP20q6Zy", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    body: JSON.stringify({ priceId: "price_1TIWK2A726uGRX5e93qsNEDD", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
@@ -4785,7 +4785,7 @@ export default function App() {
                 setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TGzfDPIMPMntnuJ46IfEXFI", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    body: JSON.stringify({ priceId: "price_1TIWK0A726uGRX5eDS58dYIl", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
@@ -4812,7 +4812,7 @@ export default function App() {
                 setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TGXX8PIMPMntnuJpJxQaZAz", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    body: JSON.stringify({ priceId: "price_1TIWK0A726uGRX5ea2FiNpyw", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }

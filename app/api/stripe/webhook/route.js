@@ -2,9 +2,9 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const PLAN_MAP = {
-  "price_1TGXViPIMPMntnuJyP20q6Zy": "pro",
-  "price_1TGzfDPIMPMntnuJ46IfEXFI": "pro",
-  "price_1TGXX8PIMPMntnuJpJxQaZAz": "fleet",
+  "price_1TIWK2A726uGRX5e93qsNEDD": "pro",
+  "price_1TIWK0A726uGRX5eDS58dYIl": "pro",
+  "price_1TIWK0A726uGRX5ea2FiNpyw": "fleet",
 };
 
 async function verifyStripeSignature(payload, sigHeader, secret) {

@@ -28,9 +28,9 @@ function encode(obj, prefix) {
 
 // Map price ID → plan name
 const PLAN_MAP = {
-  "price_1TGXViPIMPMntnuJyP20q6Zy": "pro",
-  "price_1TGzfDPIMPMntnuJ46IfEXFI": "pro",
-  "price_1TGXX8PIMPMntnuJpJxQaZAz": "fleet",
+  "price_1TIWK2A726uGRX5e93qsNEDD": "pro",
+  "price_1TIWK0A726uGRX5eDS58dYIl": "pro",
+  "price_1TIWK0A726uGRX5ea2FiNpyw": "fleet",
 };
 
 export async function POST(request) {
