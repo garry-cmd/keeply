@@ -512,8 +512,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                   </div>
               </div>
 
-              <>
-                {/* From / To */}
+              {/* From / To */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                   <div><span style={s.lbl}>From</span><input placeholder="Departure port" value={form.from_location} onChange={function(e) { setF("from_location", e.target.value); }} style={s.inp} /></div>
                   <div><span style={s.lbl}>To</span><input placeholder="Destination" value={form.to_location} onChange={function(e) { setF("to_location", e.target.value); }} style={s.inp} /></div>
@@ -581,10 +580,9 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                         style={{ padding: "5px 12px", border: "0.5px solid " + (form.conditions === c ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 12, cursor: "pointer", background: form.conditions === c ? "var(--brand-deep)" : "var(--bg-subtle)", color: form.conditions === c ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>{c}</button>
                     ); })}
                   </div>
-                </div>
-              </>
+              </div>
 
-              {/* Notes */
+              {/* Notes */}
               <div style={{ marginBottom: 12 }}>
                 <span style={s.lbl}>Notes</span>
                 <textarea rows={3} placeholder="Anything worth remembering…" value={form.notes} onChange={function(e) { setF("notes", e.target.value); }} style={{ ...s.inp, resize: "none", lineHeight: 1.5 }} />
