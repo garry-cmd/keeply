@@ -2509,6 +2509,32 @@ export default function App() {
             })()}
           </div>
 
+          {/* ── Category filter pills ── */}
+          {(() => {
+            // Categories that have either repairs or equipment for this vessel
+            const repairSections = [...new Set(repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){ return r.section; }))];
+            const equipCategories = [...new Set(equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return e.category; }))];
+            const allCats = [...new Set([...repairSections, ...equipCategories])].filter(function(c){ return c && c !== "Vessel"; }).sort();
+            if (allCats.length <= 1) return null;
+            return (
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, marginBottom: 14, WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                {["All", ...allCats].map(function(cat){
+                  const isActive = equipSectionFilter === cat;
+                  return (
+                    <span key={cat} onClick={function(){ setEquipSectionFilter(cat); }}
+                      style={{ whiteSpace: "nowrap", flexShrink: 0, fontSize: 12, fontWeight: 500, padding: "5px 12px", borderRadius: 20,
+                        background: isActive ? "var(--brand)" : "var(--bg-card)",
+                        color: isActive ? "#fff" : "var(--text-secondary)",
+                        border: "0.5px solid " + (isActive ? "var(--brand)" : "var(--border)"),
+                        cursor: "pointer" }}>
+                      {cat === "All" ? "All" : (SECTIONS[cat] || "") + " " + cat}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {/* ── Open Repairs ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>🔧 Open Repairs</div>
@@ -2523,14 +2549,14 @@ export default function App() {
               }} style={{ fontSize: 12, fontWeight: 600, color: "var(--brand)", cursor: "pointer" }}>+ Add</div>
           </div>
 
-          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length === 0 && (
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length === 0 && (
             <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 10, marginBottom: 16 }}>
               <div style={{ fontSize: 28 }}>✅</div>
               <div style={{ marginTop: 6, fontSize: 12 }}>No open repairs</div>
             </div>
           )}
 
-          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).map(function(r){
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
@@ -2643,20 +2669,7 @@ export default function App() {
           })}
 
 
-          {/* filters */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
-                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)", cursor: "pointer" }}>
-                <option value="All">All Categories</option>
-                {EQ_CATEGORIES.map(function(c){
-                  const count = equipment.filter(function(e){ return e.category === c; }).length;
-                  if (count === 0) return null;
-                  return <option key={c} value={c}>{(SECTIONS[c] || "") + " " + c + " (" + count + ")"}</option>;
-                })}
-              </select>
-            </div>
-          </div>
+
 
           {filteredEquip.length === 0 && !showAddEquip && (
             <div style={{ textAlign: "center", padding: "56px 24px", color: "var(--text-muted)" }}>
