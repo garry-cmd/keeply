@@ -1,4 +1,4 @@
-"use client";
+"use client"; // v2.1 — equipment page, FAB on both tabs
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
