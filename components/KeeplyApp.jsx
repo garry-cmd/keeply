@@ -1979,7 +1979,7 @@ export default function App() {
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
-    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 108 },
+    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 108, paddingBottom: 80 },
     card:    { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
     pill:    function(a,c){ return { padding: "4px 11px", borderRadius: 20, border: a ? "1.5px solid " + (c || "var(--brand)") : "1.5px solid var(--border)", background: a ? (c || "var(--brand-deep)") : "transparent", color: a ? (c || "var(--brand)") : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }; },
     plusBtn: { background: "var(--brand)", color: "var(--text-on-brand)", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 22, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -2112,44 +2112,34 @@ export default function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
-
-<button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "var(--brand)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={function(){ setShowCartPanel(true); }} style={{ background: cartQty > 0 ? "var(--brand)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "var(--text-on-brand)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🛒{cartQty > 0 ? " " + cartQty : ""}
           </button>
           <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>
             {darkMode ? "☀️" : "🌙"}
           </button>
-          <button onClick={function(){ setShowMobileMenu(function(v){ return !v; }); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>
-            ☰
-          </button>
-          {showMobileMenu && (
-            <div style={{ position: "fixed", inset: 0, zIndex: 500 }} onClick={function(){ setShowMobileMenu(false); }}>
-              <div style={{ position: "absolute", top: 56, right: 0, background: "var(--bg-card)", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
-                {[
-                  { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
-                  { label: "🗺️ Logbook", action: function(){ setView("customer"); setTab("logbook-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="logbook-standalone" },
-                  { label: "⚙️ Equipment", action: function(){ setView("customer"); setTab("equipment-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="equipment-standalone" },
-                  { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
-                  { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
-                  { label: "👤 Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
-                ].map(function(item){ return (
-                  <div key={item.label} onClick={item.action}
-                    style={{ padding: "13px 20px", fontSize: 14, fontWeight: item.active ? 700 : 500, color: item.active ? "var(--brand)" : "var(--text-secondary)", background: item.active ? "var(--brand-deep)" : "var(--bg-card)", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
-                    {item.label}
-                  </div>
-                ); })}
-                <div onClick={function(){ supabase.auth.signOut(); setShowMobileMenu(false); }}
-                  style={{ padding: "13px 20px", fontSize: 14, fontWeight: 500, color: "var(--danger-text)", background: "var(--bg-card)", cursor: "pointer" }}>
-                  🚪 Sign Out
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── NAV TABS ── */}
-
+      {/* ── BOTTOM TAB BAR ── */}
+      {(view === "customer" || view === "fleet") && (
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400, background: "var(--bg-card)", borderTop: "1px solid var(--border)", display: "flex", height: 60, boxShadow: "0 -2px 12px rgba(0,0,0,0.08)" }}>
+          {[
+            { icon: "⛵", label: "My Boat",   active: view==="customer" && tab==="boat",                 action: function(){ setView("customer"); setTab("boat"); } },
+            { icon: "🗺️",  label: "Logbook",  active: view==="customer" && tab==="logbook-standalone",   action: function(){ setView("customer"); setTab("logbook-standalone"); } },
+            { icon: "⚙️",  label: "Equipment", active: view==="customer" && tab==="equipment-standalone", action: function(){ setView("customer"); setTab("equipment-standalone"); } },
+            { icon: "👤",  label: "Profile",   active: false,                                             action: function(){ setShowProfilePanel(true); } },
+          ].map(function(item){ return (
+            <button key={item.label} onClick={item.action}
+              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "6px 0",
+                color: item.active ? "var(--brand)" : "var(--text-muted)" }}>
+              <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
+              <span style={{ fontSize: 10, fontWeight: item.active ? 700 : 500, letterSpacing: "0.2px" }}>{item.label}</span>
+              {item.active && <div style={{ position: "absolute", bottom: 0, width: 32, height: 2, background: "var(--brand)", borderRadius: 1 }} />}
+            </button>
+          ); })}
+        </div>
+      )}
 
       <div style={s.main}>
         {/* ── ADMIN VIEW ── */}
@@ -4949,6 +4939,16 @@ export default function App() {
               {/* ── Account ── */}
               <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ACCOUNT</div>
               <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                  onClick={function(){ setShowProfilePanel(false); setView("fleet"); loadFleetData(); }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>⚓ Fleet Dashboard</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
+                </div>
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                  onClick={function(){ setShowProfilePanel(false); setShowShare(true); setShareMsg(null); setShareEmail(""); }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>👥 Share Vessel</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
+                </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ supabase.auth.signOut(); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--danger-text)" }}>Sign out</span>
