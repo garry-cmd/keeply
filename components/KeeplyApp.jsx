@@ -838,6 +838,8 @@ export default function App() {
   const [equipLogInput, setEquipLogInput]   = useState({}); // { eqId: string }
   const [editingEquip, setEditingEquip]     = useState(null);
   const [editEquipForm, setEditEquipForm]   = useState({});
+  const [editingVesselInfo, setEditingVesselInfo] = useState(false);
+  const [vesselInfoForm, setVesselInfoForm] = useState({});
   const [uploadingEditDoc, setUploadingEditDoc] = useState(false);
   const [equipFilter, setEquipFilter]       = useState("All");
   const [equipSectionFilter, setEquipSectionFilter] = useState("All");
@@ -3036,7 +3038,7 @@ export default function App() {
             return (order[a.status] ?? 2) - (order[b.status] ?? 2);
           }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
-            const activeTab  = equipTab[eq.id] || (eq.category === "Vessel" ? "docs" : "maintenance");
+            const activeTab  = equipTab[eq.id] || (eq.category === "Vessel" ? "info" : "maintenance");
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
             const isVesselCard = eq.category === "Vessel";
             return (
@@ -3183,8 +3185,10 @@ export default function App() {
 
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["maintenance","parts","docs","log","edit"].map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? (t==="edit" ? "var(--brand)" : t==="repairs" ? "var(--danger-text)" : "var(--brand)") : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{t === "maintenance" ? "Maintenance" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}</button>
+                      {(isVesselCard ? ["info","docs","edit"] : ["maintenance","parts","docs","log","edit"]).map(function(t){ return (
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}
+                        </button>
                       ); })}
                     </div>
 
@@ -3487,6 +3491,78 @@ export default function App() {
                         <button onClick={function(){ setAddingPartFor(eq.id); }} style={{ marginTop: 8, background: "none", border: "1.5px dashed var(--border)", borderRadius: 8, padding: "6px 16px", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", cursor: "pointer", width: "100%" }}>+ Add Custom Part</button>
                       )}
                     </>)}
+
+                    {/* ── VESSEL ID TAB ── */}
+                    {activeTab === "info" && isVesselCard && (function(){
+                      let vesselInfo = {};
+                      try { vesselInfo = JSON.parse(eq.notes || "{}"); if (typeof vesselInfo !== "object") vesselInfo = {}; } catch(e) { vesselInfo = {}; }
+                      const editingInfo = editingVesselInfo;
+                      const setEditingInfo = setEditingVesselInfo;
+                      const infoForm = vesselInfoForm;
+                      const setInfoForm = setVesselInfoForm;
+                      const infoFields = [
+                        { key: "hin",        label: "HIN (Hull ID No.)",      placeholder: "US-ABC12345D606" },
+                        { key: "uscg_doc",   label: "USCG Doc No.",           placeholder: "1234567" },
+                        { key: "state_reg",  label: "State Registration",     placeholder: "WA1234AB" },
+                        { key: "mmsi",       label: "MMSI",                   placeholder: "338123456" },
+                        { key: "call_sign",  label: "Call Sign",              placeholder: "WDH1234" },
+                        { key: "loa",        label: "LOA (ft)",               placeholder: "38" },
+                        { key: "beam",       label: "Beam (ft)",              placeholder: "13" },
+                        { key: "draft",      label: "Draft (ft)",             placeholder: "5.5" },
+                        { key: "insurance_carrier", label: "Insurance Carrier", placeholder: "BoatUS, Markel…" },
+                        { key: "policy_no",  label: "Policy No.",             placeholder: "POL-123456" },
+                        { key: "policy_exp", label: "Policy Expiry",          placeholder: "2027-01-01", type: "date" },
+                        { key: "flag",       label: "Flag",                   placeholder: "USA" },
+                        { key: "home_port",  label: "Home Port",              placeholder: "Seattle, WA" },
+                      ];
+                      const hasData = infoFields.some(function(f){ return vesselInfo[f.key]; });
+                      return (
+                        <div>
+                          {!editingInfo ? (
+                            <>
+                              {!hasData ? (
+                                <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
+                                  <div style={{ fontSize: 28, marginBottom: 8 }}>🪪</div>
+                                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>Add your vessel's official identity information</div>
+                                  <button onClick={function(){ setInfoForm(vesselInfo); setEditingInfo(true); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Vessel ID</button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, marginBottom: 12 }}>
+                                    {infoFields.filter(function(f){ return vesselInfo[f.key]; }).map(function(f){ return (
+                                      <div key={f.key} style={{ padding: "8px 0", borderBottom: "0.5px solid var(--border)" }}>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 2 }}>{f.label}</div>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", fontFamily: f.key === "hin" || f.key === "uscg_doc" || f.key === "mmsi" || f.key === "call_sign" || f.key === "policy_no" || f.key === "state_reg" ? "DM Mono, monospace" : "inherit" }}>{vesselInfo[f.key]}</div>
+                                      </div>
+                                    ); })}
+                                  </div>
+                                  <button onClick={function(){ setInfoForm(vesselInfo); setEditingInfo(true); }} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Edit Vessel ID</button>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <div>
+                              {infoFields.map(function(f){ return (
+                                <div key={f.key} style={{ marginBottom: 10 }}>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 3 }}>{f.label.toUpperCase()}</div>
+                                  <input type={f.type || "text"} placeholder={f.placeholder} value={infoForm[f.key] || ""}
+                                    onChange={function(e){ const v = e.target.value; setInfoForm(function(prev){ const n = Object.assign({}, prev); n[f.key] = v; return n; }); }}
+                                    style={{ ...s.inp, marginBottom: 0, fontFamily: f.key === "hin" || f.key === "uscg_doc" || f.key === "mmsi" || f.key === "call_sign" || f.key === "policy_no" || f.key === "state_reg" ? "DM Mono, monospace" : "inherit" }} />
+                                </div>
+                              ); })}
+                              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                                <button onClick={function(){ setEditingInfo(false); }} style={{ flex: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                                <button onClick={async function(){
+                                  const cleaned = Object.fromEntries(Object.entries(infoForm).filter(function(e){ return e[1]; }));
+                                  await updateEquipment(eq.id, { notes: JSON.stringify(cleaned) });
+                                  setEditingInfo(false);
+                                }} style={{ flex: 2, padding: "8px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save Vessel ID</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* docs tab */}
                     {activeTab === "docs" && (<>
