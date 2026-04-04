@@ -2699,14 +2699,20 @@ export default function App() {
                     {/* Render the vessel card tabs inline — reuse the same tab state */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
                       {["info","docs","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; }); }}
+                        <button key={t} onClick={function(){
+                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
+                          if (t === "edit") {
+                            let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
+                            setVesselInfoForm(info);
+                            setEditingVesselInfo(true);
+                          }
+                        }}
                           style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                           {t === "info" ? "Vessel ID" : t === "docs" ? "Docs" : "Edit"}
                         </button>
                       ); })}
                     </div>
-                    {/* The actual tab content is rendered by the equipment card in Equipment view.
-                        Here we show a simplified inline version pointing user to Equipment for full edit */}
+                    {/* The actual tab content is rendered inline */}
                     {(equipTab[vesselEq.id] || "info") === "info" && (function(){
                       const hasData = Object.keys(info).length > 0;
                       const infoFields = [
@@ -2752,10 +2758,81 @@ export default function App() {
                       </div>
                     )}
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "12px 0" }}>
-                        <div style={{ marginBottom: 8 }}>Edit vessel ID and documents in Equipment view</div>
-                        <button onClick={function(){ setTab("equipment-standalone"); setExpandedEquip(vesselEq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "edit"; return n; }); }}
-                          style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Open in Equipment →</button>
+                      <div onClick={function(e){ e.stopPropagation(); }}>
+                        {/* AI scan button */}
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px", border: "1.5px dashed #ddd6fe", borderRadius: 8, cursor: scanningVesselDoc ? "default" : "pointer", fontSize: 13, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", marginBottom: 14, boxSizing: "border-box" }}>
+                          {scanningVesselDoc ? "✨ Scanning document…" : "✨ Scan document with AI"}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} disabled={scanningVesselDoc}
+                            onChange={async function(e){
+                              const file = e.target.files[0];
+                              if (!file) return;
+                              setScanningVesselDoc(true); setScanError(null);
+                              try {
+                                let uploadFile = file;
+                                if (file.type !== "application/pdf" && file.size > 4 * 1024 * 1024) {
+                                  uploadFile = await new Promise(function(resolve) {
+                                    const img = new Image();
+                                    const url = URL.createObjectURL(file);
+                                    img.onload = function() {
+                                      URL.revokeObjectURL(url);
+                                      const canvas = document.createElement("canvas");
+                                      let w = img.width; let h = img.height;
+                                      const maxDim = 2000;
+                                      if (w > maxDim || h > maxDim) {
+                                        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+                                        else { w = Math.round(w * maxDim / h); h = maxDim; }
+                                      }
+                                      canvas.width = w; canvas.height = h;
+                                      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                                      canvas.toBlob(function(blob) { resolve(new File([blob], file.name, { type: "image/jpeg" })); }, "image/jpeg", 0.85);
+                                    };
+                                    img.src = url;
+                                  });
+                                }
+                                const fd = new FormData(); fd.append("file", uploadFile);
+                                const res = await fetch("/api/scan-document", { method: "POST", body: fd });
+                                const d = await res.json();
+                                if (d.error) { setScanError(d.error); return; }
+                                if (d.fields) setVesselInfoForm(function(prev){ return Object.assign({}, prev, d.fields); });
+                              } catch(err) { setScanError("Scan failed: " + err.message); }
+                              finally { setScanningVesselDoc(false); e.target.value = ""; }
+                            }} />
+                        </label>
+                        {scanError && <div style={{ fontSize: 12, color: "var(--danger-text)", background: "var(--danger-bg)", borderRadius: 8, padding: "8px 12px", marginBottom: 10 }}>{scanError}</div>}
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginBottom: 14 }}>or fill in manually below</div>
+                        {[
+                          { key: "hin",        label: "HIN (Hull ID No.)",    placeholder: "US-ABC12345D606" },
+                          { key: "uscg_doc",   label: "USCG Doc No.",         placeholder: "1234567" },
+                          { key: "state_reg",  label: "State Registration",   placeholder: "WA1234AB" },
+                          { key: "mmsi",       label: "MMSI",                 placeholder: "338123456" },
+                          { key: "call_sign",  label: "Call Sign",            placeholder: "WDH1234" },
+                          { key: "loa",        label: "LOA (ft)",             placeholder: "38" },
+                          { key: "beam",       label: "Beam (ft)",            placeholder: "13" },
+                          { key: "draft",      label: "Draft (ft)",           placeholder: "5.5" },
+                          { key: "insurance_carrier", label: "Insurance Carrier", placeholder: "BoatUS, Markel…" },
+                          { key: "policy_no",  label: "Policy No.",           placeholder: "POL-123456" },
+                          { key: "policy_exp", label: "Policy Expiry",        placeholder: "2027-01-01", type: "date" },
+                          { key: "flag",       label: "Flag",                 placeholder: "USA" },
+                          { key: "home_port",  label: "Home Port",            placeholder: "Seattle, WA" },
+                        ].map(function(f){ return (
+                          <div key={f.key} style={{ marginBottom: 10 }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 3 }}>{f.label.toUpperCase()}</div>
+                            <input type={f.type || "text"} placeholder={f.placeholder}
+                              value={vesselInfoForm[f.key] !== undefined ? vesselInfoForm[f.key] : (editingVesselInfo ? vesselInfoForm[f.key] || "" : "")}
+                              onChange={function(e){ const v = e.target.value; setVesselInfoForm(function(prev){ const n = Object.assign({}, prev); n[f.key] = v; return n; }); }}
+                              style={{ ...s.inp, marginBottom: 0, fontFamily: ["hin","uscg_doc","mmsi","call_sign","policy_no","state_reg"].includes(f.key) ? "DM Mono, monospace" : "inherit" }} />
+                          </div>
+                        ); })}
+                        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                          <button onClick={function(){ setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); setVesselInfoForm({}); setEditingVesselInfo(false); }}
+                            style={{ flex: 1, padding: "9px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                          <button onClick={async function(){
+                            const cleaned = Object.fromEntries(Object.entries(vesselInfoForm).filter(function(e){ return e[1]; }));
+                            await updateEquipment(vesselEq.id, { notes: JSON.stringify(cleaned) });
+                            setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; });
+                            setEditingVesselInfo(false);
+                          }} style={{ flex: 2, padding: "9px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save Vessel ID</button>
+                        </div>
                       </div>
                     )}
                   </div>
