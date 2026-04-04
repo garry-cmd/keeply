@@ -3356,6 +3356,8 @@ export default function App() {
                       const urgentTasks = tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id && getTaskUrgency(t) !== "ok"; });
                       const totalTasks = tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id; }).length;
                       const openRepairs = repairs.filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status !== "closed"; }).length;
+                      const totalParts = (eq.customParts || []).length;
+                      const totalDocs  = (eq.docs || []).length;
                       return (<>
                         {totalTasks > 0 && (
                           <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "maintenance"; return n; }); }}
@@ -3370,6 +3372,18 @@ export default function App() {
                           <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "repairs"; return n; }); }}
                             style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer", background: "var(--warn-bg)", color: "var(--warn-text)", border: "0.5px solid var(--warn-border)" }}>
                             {openRepairs} repair{openRepairs !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                        {totalParts > 0 && (
+                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }}
+                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer", background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)" }}>
+                            {totalParts} part{totalParts !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                        {totalDocs > 0 && (
+                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }}
+                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer", background: "var(--info-bg)", color: "var(--info-text)", border: "0.5px solid var(--info-border)" }}>
+                            {totalDocs} doc{totalDocs !== 1 ? "s" : ""}
                           </span>
                         )}
                       </>);
