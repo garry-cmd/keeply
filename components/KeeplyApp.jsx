@@ -2433,128 +2433,90 @@ export default function App() {
 
         {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
-          {/* ── Instrument strip ── */}
+          {/* ── Instrument strip — 3 cells ── */}
           {(() => {
             const engineHours = settings.engineHours || null;
             const lastHoursUpdate = settings.engineHoursDate || null;
             const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
-            const nextDue = [...vesselTasks].filter(function(t){ return t.dueDate; }).sort(function(a,b){ return new Date(a.dueDate)-new Date(b.dueDate); })[0];
+            // Next service: soonest due task, with urgency colour
+            const nextDue = [...vesselTasks].filter(function(t){ return t.dueDate; })
+              .sort(function(a,b){ return new Date(a.dueDate)-new Date(b.dueDate); })[0];
+            const nextUrgency = nextDue ? getTaskUrgency(nextDue) : null;
+            const nextColor = nextUrgency === "critical" ? "var(--danger-text)" : nextUrgency === "overdue" ? "var(--warn-text)" : nextUrgency === "due-soon" ? "var(--duesoon-text)" : "var(--text-primary)";
+            // Days until next service
+            const daysUntil = nextDue && nextDue.dueDate ? Math.round((new Date(nextDue.dueDate) - new Date()) / 86400000) : null;
+            const daysLabel = daysUntil === null ? "" : daysUntil < 0 ? Math.abs(daysUntil) + "d overdue" : daysUntil === 0 ? "due today" : "in " + daysUntil + "d";
+            // Open repairs count
+            const openRepairCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+            const updateHours = function(){
+              const hrs = prompt("Current engine hours:");
+              if (!hrs || isNaN(hrs)) return;
+              const parsed = parseInt(hrs);
+              const dated = today();
+              setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
+              supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
+                .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
+            };
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
-                <div style={{ background: "var(--bg-card)", padding: "12px 14px" }}>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 4 }}>Engine Hours</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
+
+                {/* Cell 1 — Engine hours */}
+                <div style={{ background: "var(--bg-card)", padding: "12px 12px", cursor: engineHours ? "default" : "pointer" }} onClick={engineHours ? undefined : updateHours}>
+                  <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Engine hrs</div>
                   {engineHours ? (<>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{engineHours.toLocaleString()}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{lastHoursUpdate ? "logged " + fmt(lastHoursUpdate) : "manually entered"}</span>
-                      <button onClick={function(){
-                        const hrs = prompt("Current engine hours:");
-                        if (!hrs || isNaN(hrs)) return;
-                        const parsed = parseInt(hrs);
-                        const dated = today();
-                        setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
-                        supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
-                          .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
-                      }} style={{ fontSize: 9, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}>update</button>
-                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{engineHours.toLocaleString()}</div>
+                    <button onClick={updateHours} style={{ fontSize: 9, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 4, padding: "2px 5px", cursor: "pointer", marginTop: 5, display: "block" }}>update</button>
                   </>) : (<>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Not logged</div>
-                    <button onClick={function(){
-                      const hrs = prompt("Current engine hours:");
-                      if (!hrs || isNaN(hrs)) return;
-                      const parsed = parseInt(hrs);
-                      const dated = today();
-                      setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
-                      supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
-                        .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
-                    }} style={{ fontSize: 10, color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 5, padding: "2px 8px", cursor: "pointer", fontWeight: 600 }}>+ Log hours</button>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.2 }}>Not logged</div>
+                    <div style={{ fontSize: 9, color: "var(--brand)", marginTop: 4 }}>tap to log →</div>
                   </>)}
                 </div>
-                <div style={{ background: "var(--bg-card)", padding: "12px 14px" }}>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 4 }}>Next Service</div>
+
+                {/* Cell 2 — Next service */}
+                <div style={{ background: "var(--bg-card)", padding: "12px 12px", cursor: nextDue ? "pointer" : "default", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)" }}
+                  onClick={nextDue ? function(){ setTab("maintenance-standalone"); } : undefined}>
+                  <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Next service</div>
                   {nextDue ? (<>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: getTaskUrgency(nextDue) === "critical" ? "var(--danger-text)" : getTaskUrgency(nextDue) === "overdue" ? "var(--warn-text)" : "var(--text-primary)", lineHeight: 1.2 }}>{nextDue.task}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{fmt(nextDue.dueDate)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: nextColor, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{nextDue.task}</div>
+                    <div style={{ fontSize: 10, color: nextColor, marginTop: 3, fontFamily: "DM Mono, monospace" }}>{daysLabel}</div>
                   </>) : (
-                    <div style={{ fontSize: 14, color: "var(--ok-text)", fontWeight: 600, marginTop: 4 }}>All clear ✓</div>
+                    <div style={{ fontSize: 12, color: "var(--ok-text)", fontWeight: 600, marginTop: 4 }}>All clear ✓</div>
                   )}
                 </div>
-              </div>
-            );
-          })()}
 
-          {/* ── Needs attention — filter chips + list ── */}
-          {(() => {
-            const criticalCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
-            const dueSoonCount  = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
-            const repairCount   = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
-            const total = criticalCount + dueSoonCount + repairCount;
-            if (total === 0) return (
-              <div style={{ background: "var(--ok-bg)", border: "1px solid var(--ok-border)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 18 }}>✅</span>
-                <span style={{ fontSize: 13, color: "var(--ok-text)", fontWeight: 600 }}>Nothing needs attention</span>
-              </div>
-            );
-            const chips = [
-              criticalCount > 0 && { key: "Critical",     label: criticalCount + " Critical",    color: "var(--danger-text)", bg: "var(--danger-bg)", border: "var(--danger-border)" },
-              dueSoonCount  > 0 && { key: "Due Soon",     label: dueSoonCount  + " Due soon",    color: "var(--warn-text)",   bg: "var(--warn-bg)",   border: "var(--warn-border)"   },
-              repairCount   > 0 && { key: "Open Repairs", label: repairCount   + " Open repairs",color: "var(--brand)",       bg: "var(--brand-deep)", border: "var(--border-strong)" },
-            ].filter(Boolean);
-            const activeChip = filterUrgency;
-            // Build attention items based on active filter
-            const attentionItems = [];
-            if (activeChip === "All" || activeChip === "Critical") {
-              tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; })
-                .slice(0,3).forEach(function(t){ attentionItems.push({ type: "task", label: t.task, sub: "Critical — " + fmt(t.dueDate), color: "var(--danger-text)", action: "VIEW", id: t.id }); });
-            }
-            if (activeChip === "All" || activeChip === "Due Soon") {
-              tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); })
-                .slice(0,3).forEach(function(t){ attentionItems.push({ type: "task", label: t.task, sub: (getTaskUrgency(t) === "overdue" ? "Overdue" : "Due soon") + " — " + fmt(t.dueDate), color: "var(--warn-text)", action: "VIEW", id: t.id }); });
-            }
-            if (activeChip === "All" || activeChip === "Open Repairs") {
-              repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; })
-                .slice(0,3).forEach(function(r){ attentionItems.push({ type: "repair", label: r.description, sub: "Open repair · " + r.section, color: "var(--brand)", action: "VIEW", id: r.id }); });
-            }
-            return (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                  {chips.map(function(chip){
-                    const isActive = activeChip === chip.key;
-                    return (
-                      <span key={chip.key} onClick={function(){ setFilterUrgency(isActive ? "All" : chip.key); }}
-                        style={{ fontSize: 11, fontFamily: "DM Mono, monospace", padding: "4px 10px", borderRadius: 20,
-                          background: isActive ? chip.color : chip.bg,
-                          color: isActive ? "#fff" : chip.color,
-                          border: "0.5px solid " + chip.border,
-                          cursor: "pointer", userSelect: "none", transition: "all 0.15s" }}>
-                        {chip.label}{isActive ? " ✕" : ""}
-                      </span>
-                    );
-                  })}
+                {/* Cell 3 — Open repairs */}
+                <div style={{ background: "var(--bg-card)", padding: "12px 12px", cursor: "pointer" }}
+                  onClick={function(){ setShowUrgencyPanel("Open Repairs"); }}>
+                  <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Open repairs</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, color: openRepairCount > 0 ? "var(--warn-text)" : "var(--ok-text)" }}>{openRepairCount}</div>
+                  <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 5 }}>{openRepairCount > 0 ? "tap to view" : "all closed"}</div>
                 </div>
-                {attentionItems.slice(0, activeChip === "All" ? 5 : 6).map(function(item, i){
-                  return (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, marginBottom: 6, background: "var(--bg-card)", border: "0.5px solid var(--border)", cursor: "pointer" }}
-                      onClick={function(){
-                        if (item.type === "repair") { setExpandedRepair(item.id); }
-                        else { setFilterUrgency(activeChip === "All" ? item.color === "var(--danger-text)" ? "Critical" : "Due Soon" : activeChip); }
-                      }}>
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, lineHeight: 1.2 }}>{item.label}</div>
-                        <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{item.sub}</div>
-                      </div>
-                      <span style={{ fontSize: 10, color: "var(--brand)", fontFamily: "DM Mono, monospace" }}>{item.action} →</span>
-                    </div>
-                  );
-                })}
-                {activeChip !== "All" && <div onClick={function(){ setFilterUrgency("All"); }} style={{ fontSize: 11, color: "var(--brand)", cursor: "pointer", textAlign: "center", padding: "4px 0 8px" }}>show all →</div>}
+
               </div>
             );
           })()}
 
-          {/* ── Divider ── */}
-          <div style={{ height: 1, background: "var(--border)", marginBottom: 16 }} />
+          {/* Urgency summary cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
+            {(() => {
+              const overdueCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
+              const dueSoonCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
+              const openRepairs  = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+              return [
+                { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "var(--danger-text)", bg: "var(--danger-bg)", border: "1px solid var(--danger-border)" },
+                { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "var(--warn-text)",   bg: "var(--warn-bg)",   border: "1px solid var(--warn-border)"   },
+                { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
+              ].map(function(card){
+                return (
+                <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
+                  style={{ background: card.bg, border: card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</div>
+                </div>
+              ); });
+            })()}
+          </div>
 
           {/* ── Open Repairs ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
