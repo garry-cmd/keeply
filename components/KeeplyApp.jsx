@@ -3044,13 +3044,49 @@ export default function App() {
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
             const isVesselCard = eq.category === "Vessel";
             return (
-              <div key={eq.id} style={{ ...s.card, border: isVesselCard ? "1.5px solid #bfdbfe" : s.card.border, background: isVesselCard ? "#fafeff" : s.card.background }}>
+              <div key={eq.id} style={{ ...s.card, border: isVesselCard ? "none" : s.card.border, background: isVesselCard ? "var(--brand)" : s.card.background, overflow: "hidden" }}>
+                {isVesselCard ? (
+                  <div style={{ cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "info"; return n; }); } }}>
+                    {/* Navy vessel passport header */}
+                    <div style={{ padding: "16px 20px 14px", background: "var(--brand)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 4 }}>Vessel</div>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>⚓ {eq.name}</div>
+                          {(function(){
+                            let info = {}; try { info = JSON.parse(eq.notes || "{}"); } catch(e) {}
+                            const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
+                            const makeModel = [vessel?.year, vessel?.make, vessel?.model].filter(Boolean).join(" ");
+                            return (<>
+                              {makeModel && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 3 }}>{makeModel}</div>}
+                              {(info.hin || info.uscg_doc || info.home_port) && (
+                                <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
+                                  {info.hin && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px", textTransform: "uppercase" }}>HIN</div><div style={{ fontSize: 11, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.hin}</div></div>}
+                                  {info.uscg_doc && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px", textTransform: "uppercase" }}>Doc No.</div><div style={{ fontSize: 11, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.uscg_doc}</div></div>}
+                                  {info.home_port && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px", textTransform: "uppercase" }}>Home Port</div><div style={{ fontSize: 11, color: "#fff", fontWeight: 600 }}>{info.home_port}</div></div>}
+                                </div>
+                              )}
+                            </>);
+                          })()}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          {(repairs||[]).filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status!=="closed"; }).length > 0 && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)" }}>
+                              {(repairs||[]).filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status!=="closed"; }).length} repair{(repairs||[]).filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status!=="closed"; }).length !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                          <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 16 }}>{isExpanded ? "▾" : "▸"}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {!isExpanded && <div style={{ height: 3, background: "linear-gradient(90deg, #5bbcf8 0%, #0e5cc7 100%)" }} />}
+                  </div>
+                ) : (
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
-                        {isVesselCard ? "⚓ " : ""}{eq.name}
+                        {eq.name}
                         {eq.status === "needs-service" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--danger-text)", display: "inline-block", flexShrink: 0 }} title="Needs service" />}
                         {eq.status === "watch" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--warn-text)", display: "inline-block", flexShrink: 0 }} title="Watch" />}
                       </div>
@@ -3091,8 +3127,9 @@ export default function App() {
                     <span style={{ color: "var(--text-muted)", fontSize: 16 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
+                )}
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid var(--border)", padding: "16px 20px", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
+                  <div style={{ borderTop: isVesselCard ? "2px solid rgba(255,255,255,0.15)" : "1px solid var(--border)", padding: "16px 20px", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
 
                     {eq.notes && !isVesselCard && <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>📝 {eq.notes}</div>}
 
@@ -3585,6 +3622,25 @@ export default function App() {
                                       if (d.error) { setScanError(d.error); return; }
                                       if (d.fields) {
                                         setInfoForm(function(prev){ return Object.assign({}, prev, d.fields); });
+                                      }
+                                      // Also save the uploaded file to docs
+                                      try {
+                                        const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
+                                        const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
+                                        const sess = await supabase.auth.getSession();
+                                        const token = sess?.data?.session?.access_token || SUPA_KEY;
+                                        const ext = uploadFile.name.split(".").pop() || "jpg";
+                                        const path = sess?.data?.session?.user?.id + "/" + eq.id + "/scan-" + Date.now() + "." + ext;
+                                        const { data: upData } = await supabase.storage.from("equipment-docs").upload(path, uploadFile, { upsert: true });
+                                        if (upData?.path) {
+                                          const { data: urlData } = supabase.storage.from("equipment-docs").getPublicUrl(upData.path);
+                                          const newDoc = { id: "doc-" + Date.now(), label: "USCG / Registration Document", type: "Registration", url: urlData?.publicUrl || "", isFile: true, fileName: uploadFile.name };
+                                          const updatedDocs = [...(eq.docs || []), newDoc];
+                                          await fetch(SUPA_URL + "/rest/v1/equipment?id=eq." + eq.id, { method: "PATCH", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + token, "Content-Type": "application/json", "Prefer": "return=minimal" }, body: JSON.stringify({ docs: updatedDocs }) });
+                                          setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? Object.assign({}, e, { docs: updatedDocs }) : e; }); });
+                                        }
+                                      } catch(docErr) {
+                                        console.error("Doc save error:", docErr);
                                       }
                                     } catch(err) {
                                       setScanError("Scan failed: " + err.message);
