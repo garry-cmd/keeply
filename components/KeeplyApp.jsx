@@ -840,6 +840,8 @@ export default function App() {
   const [editEquipForm, setEditEquipForm]   = useState({});
   const [editingVesselInfo, setEditingVesselInfo] = useState(false);
   const [vesselInfoForm, setVesselInfoForm] = useState({});
+  const [scanningVesselDoc, setScanningVesselDoc] = useState(false);
+  const [scanError, setScanError] = useState(null);
   const [uploadingEditDoc, setUploadingEditDoc] = useState(false);
   const [equipFilter, setEquipFilter]       = useState("All");
   const [equipSectionFilter, setEquipSectionFilter] = useState("All");
@@ -3542,6 +3544,33 @@ export default function App() {
                             </>
                           ) : (
                             <div>
+                              {/* AI scan button */}
+                              <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px", border: "1.5px dashed #ddd6fe", borderRadius: 8, cursor: scanningVesselDoc ? "default" : "pointer", fontSize: 13, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", marginBottom: 14, boxSizing: "border-box" }}>
+                                {scanningVesselDoc ? "✨ Scanning document…" : "✨ Scan document with AI"}
+                                <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} disabled={scanningVesselDoc}
+                                  onChange={async function(e){
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+                                    setScanningVesselDoc(true); setScanError(null);
+                                    try {
+                                      const fd = new FormData();
+                                      fd.append("file", file);
+                                      const res = await fetch("/api/scan-document", { method: "POST", body: fd });
+                                      const d = await res.json();
+                                      if (d.error) { setScanError(d.error); return; }
+                                      if (d.fields) {
+                                        setInfoForm(function(prev){ return Object.assign({}, prev, d.fields); });
+                                      }
+                                    } catch(err) {
+                                      setScanError("Scan failed: " + err.message);
+                                    } finally {
+                                      setScanningVesselDoc(false);
+                                      e.target.value = "";
+                                    }
+                                  }} />
+                              </label>
+                              {scanError && <div style={{ fontSize: 12, color: "var(--danger-text)", background: "var(--danger-bg)", borderRadius: 8, padding: "8px 12px", marginBottom: 10 }}>{scanError}</div>}
+                              <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginBottom: 14 }}>or fill in manually below</div>
                               {infoFields.map(function(f){ return (
                                 <div key={f.key} style={{ marginBottom: 10 }}>
                                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 3 }}>{f.label.toUpperCase()}</div>
