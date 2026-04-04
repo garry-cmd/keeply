@@ -2743,18 +2743,60 @@ export default function App() {
                       );
                     })()}
                     {(equipTab[vesselEq.id] || "info") === "docs" && (
-                      <div>
-                        {(vesselEq.docs||[]).length === 0
-                          ? <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "12px 0" }}>No documents yet — go to Equipment to add</div>
-                          : (vesselEq.docs||[]).map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; return (
-                            <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
-                                <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
-                              </div>
+                      <div onClick={function(e){ e.stopPropagation(); }}>
+                        {/* Existing docs */}
+                        {(vesselEq.docs||[]).map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; return (
+                          <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "0.5px solid var(--border)" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                              <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
+                              <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
                             </div>
-                          ); })
-                        }
+                            <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(vesselEq.id, doc.id); }); }}
+                              style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 6px", color: "var(--text-muted)", flexShrink: 0 }}>✕</button>
+                          </div>
+                        ); })}
+                        {/* Add doc form */}
+                        {addingDocFor === vesselEq.id ? (
+                          <div style={{ marginTop: 12, background: "var(--bg-subtle)", borderRadius: 10, padding: 14 }}>
+                            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                              {["url","file"].map(function(src){ return (
+                                <button key={src} onClick={function(){ setNewDocForm(function(f){ return { ...f, source: src }; }); }}
+                                  style={{ flex: 1, padding: "6px", border: "1.5px solid " + (newDocForm.source===src?"var(--brand)":"var(--border)"), borderRadius: 8, background: newDocForm.source===src?"var(--brand-deep)":"var(--bg-subtle)", color: newDocForm.source===src?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                                  {src === "url" ? "🔗 URL" : "📎 File"}
+                                </button>
+                              ); })}
+                            </div>
+                            <input placeholder="Document name / label" value={newDocForm.label}
+                              onChange={function(e){ setNewDocForm(function(f){ return { ...f, label: e.target.value }; }); }} style={s.inp} />
+                            {newDocForm.source === "url"
+                              ? <input placeholder="https://…" value={newDocForm.url}
+                                  onChange={function(e){ setNewDocForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
+                              : <div style={{ marginBottom: 10 }}>
+                                  <label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDocForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
+                                    {newDocForm.fileName ? "📎 " + newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
+                                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }}
+                                      onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} />
+                                  </label>
+                                </div>
+                            }
+                            <select value={newDocForm.type} onChange={function(e){ setNewDocForm(function(f){ return { ...f, type: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 10 }}>
+                              {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                            </select>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button onClick={function(){ setAddingDocFor(null); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileObj:null, fileName:"" }); }}
+                                style={{ flex: 1, padding: "7px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                              <button onClick={function(){ addCustomDoc(vesselEq.id); }} disabled={uploadingDoc}
+                                style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, fontWeight: 700 }}>
+                                {uploadingDoc ? "Uploading…" : "Add Document"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button onClick={function(){ setAddingDocFor(vesselEq.id); setNewDocForm({ label:"", url:"", type:"Registration", source:"url", fileObj:null, fileName:"" }); }}
+                            style={{ marginTop: 10, background: "none", border: "1.5px dashed #ddd6fe", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 600, color: "var(--brand)", cursor: "pointer", width: "100%" }}>
+                            + Add Document
+                          </button>
+                        )}
                       </div>
                     )}
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
