@@ -58,11 +58,12 @@ async function fetchVesselContext(vesselId) {
   };
 }
 
-export default function FirstMate({ vesselId, vesselName, fmOpen, onOpen, onClose }) {
+export default function FirstMate({ vesselId, vesselName }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [context, setContext] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(false);
   const inputRef = useRef(null);
   const messagesRef = useRef(null);
 
@@ -75,14 +76,11 @@ export default function FirstMate({ vesselId, vesselName, fmOpen, onOpen, onClos
     if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
   }, [messages]);
 
-  useEffect(function() {
-    if (fmOpen && inputRef.current) setTimeout(function() { inputRef.current?.focus(); }, 150);
-  }, [fmOpen]);
-
   const send = useCallback(async function(text) {
     const q = (text || input).trim();
     if (!q || loading || !context) return;
     setInput("");
+    setPanelOpen(true);
 
     const userMsg = { role: "user", content: q };
     const history = [...messages, userMsg];
@@ -113,7 +111,13 @@ export default function FirstMate({ vesselId, vesselName, fmOpen, onOpen, onClos
 
   const handleKey = function(e) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
-    if (e.key === "Escape") { onClose && onClose(); }
+    if (e.key === "Escape") { setPanelOpen(false); }
+  };
+
+  const close = function() {
+    setPanelOpen(false);
+    setMessages([]);
+    setInput("");
   };
 
   const canSend = !!(input.trim() && !loading && context);
@@ -121,128 +125,126 @@ export default function FirstMate({ vesselId, vesselName, fmOpen, onOpen, onClos
 
   return (
     <>
-      {/* Response panel — above the bar */}
-      {fmOpen && (
-        <div style={{ position: "fixed", bottom: 64, left: 0, right: 0, zIndex: 500, maxWidth: 480, margin: "0 auto", pointerEvents: hasMessages ? "auto" : "none" }}>
-          {!hasMessages && (
-            <div style={{ position: "fixed", inset: 0, bottom: 64 }} onClick={onClose} />
-          )}
+      {/* ── Fixed top bar — always visible below the nav ── */}
+      <div id="fm-top-bar" style={{
+        position: "fixed",
+        top: 56,
+        left: 0,
+        right: 0,
+        zIndex: 299,
+        background: "var(--bg-card)",
+        borderBottom: "0.5px solid var(--border)",
+        boxShadow: panelOpen ? "none" : "0 2px 8px rgba(0,0,0,0.06)",
+      }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "8px 12px" }}>
           <div style={{
-            margin: "0 12px",
-            background: "var(--bg-card)",
-            borderRadius: "16px 16px 0 0",
-            border: "0.5px solid var(--border)",
-            borderBottom: "none",
-            boxShadow: "0 -8px 32px rgba(0,0,0,0.18)",
-            maxHeight: "58vh",
-            display: "flex",
-            flexDirection: "column",
-            pointerEvents: "auto",
+            display: "flex", alignItems: "center", gap: 8,
+            background: "var(--bg-subtle)",
+            border: "1px solid " + (panelOpen ? "var(--brand)" : "var(--border)"),
+            borderRadius: 10,
+            padding: "7px 10px 7px 12px",
+            transition: "border-color 0.15s",
           }}>
-            {/* Header */}
-            <div style={{ padding: "12px 16px 8px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: hasMessages ? "0.5px solid var(--border)" : "none", flexShrink: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 15 }}>⚓</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>First Mate</span>
-                {!context && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>loading…</span>}
-              </div>
-              <div style={{ display: "flex", gap: 10 }}>
-                {hasMessages && <button onClick={function(){ setMessages([]); }} style={{ background: "none", border: "none", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Clear</button>}
-                <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 18, color: "var(--text-muted)", cursor: "pointer", lineHeight: 1 }}>✕</button>
-              </div>
-            </div>
-
-            {/* Starters */}
-            {!hasMessages && (
-              <div style={{ padding: "10px 14px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {STARTERS.map(function(s) {
-                  return (
-                    <button key={s} onClick={function() { send(s); }}
-                      style={{ padding: "6px 12px", border: "0.5px solid var(--border)", borderRadius: 20, background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                      {s}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Messages */}
+            <span style={{ fontSize: 13, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={function(e) { setInput(e.target.value); if (!panelOpen) setPanelOpen(true); }}
+              onFocus={function() { setPanelOpen(true); }}
+              onKeyDown={handleKey}
+              placeholder={"Ask First Mate about " + (vesselName || "your boat") + "…"}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit" }}
+            />
             {hasMessages && (
-              <div ref={messagesRef} style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-                {messages.map(function(msg, i) {
-                  const isUser = msg.role === "user";
-                  return (
-                    <div key={msg.id || i} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", gap: 8, alignItems: "flex-end" }}>
-                      {!isUser && <span style={{ fontSize: 14, flexShrink: 0 }}>⚓</span>}
-                      <div style={{
-                        maxWidth: "82%", padding: "9px 13px", fontSize: 13, lineHeight: 1.5,
-                        borderRadius: isUser ? "14px 14px 3px 14px" : "14px 14px 14px 3px",
-                        background: isUser ? "var(--brand)" : "var(--bg-subtle)",
-                        color: isUser ? "#fff" : "var(--text-primary)",
-                        border: isUser ? "none" : "0.5px solid var(--border)",
-                      }}>
-                        {msg.loading ? (
-                          <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "2px 0" }}>
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.6 }} />
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.3 }} />
-                          </div>
-                        ) : msg.content.split("\n").map(function(line, li) {
-                          return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>;
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Close">✕</button>
             )}
+            <button
+              onClick={function() { send(); }}
+              disabled={!canSend}
+              style={{
+                width: 28, height: 28, borderRadius: 8, border: "none",
+                background: canSend ? "var(--brand)" : "var(--bg-subtle)",
+                color: canSend ? "#fff" : "var(--text-muted)",
+                fontSize: 13, cursor: canSend ? "pointer" : "default",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, transition: "background 0.15s",
+              }}>↑</button>
           </div>
         </div>
-      )}
-
-      {/* Persistent bottom input bar */}
-      <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 501,
-        maxWidth: 480, margin: "0 auto",
-        padding: "8px 12px env(safe-area-inset-bottom, 8px)",
-        background: fmOpen ? "var(--bg-card)" : "transparent",
-        borderTop: fmOpen ? "0.5px solid var(--border)" : "none",
-      }}>
-        <div style={{
-          display: "flex", gap: 8, alignItems: "center",
-          background: "var(--bg-card)",
-          border: "1.5px solid " + (fmOpen ? "var(--brand)" : "var(--border)"),
-          borderRadius: 28,
-          padding: "8px 8px 8px 14px",
-          boxShadow: fmOpen ? "0 0 0 3px var(--brand-deep)" : "0 2px 16px rgba(0,0,0,0.18)",
-          transition: "border-color 0.15s, box-shadow 0.15s",
-        }}>
-          <span style={{ fontSize: 14, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
-          <input
-            ref={inputRef}
-            id="fm-input-bar"
-            value={input}
-            onChange={function(e) { setInput(e.target.value); }}
-            onFocus={function() { onOpen && onOpen(); }}
-            onKeyDown={handleKey}
-            placeholder="Ask First Mate…"
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 14, color: "var(--text-primary)", fontFamily: "inherit" }}
-          />
-          <button
-            onClick={function() { send(); }}
-            disabled={!canSend}
-            style={{
-              width: 32, height: 32, borderRadius: "50%", border: "none",
-              background: canSend ? "var(--brand)" : "var(--bg-subtle)",
-              color: canSend ? "#fff" : "var(--text-muted)",
-              fontSize: 15, cursor: canSend ? "pointer" : "default",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, transition: "background 0.15s",
-            }}>
-            ↑
-          </button>
-        </div>
       </div>
+
+      {/* ── Drop-down response panel ── */}
+      {panelOpen && (
+        <div style={{
+          position: "fixed",
+          top: 56 + 52, // topBar + input bar
+          left: 0,
+          right: 0,
+          zIndex: 298,
+          maxWidth: 480,
+          margin: "0 auto",
+          maxHeight: "55vh",
+          overflowY: "auto",
+          background: "var(--bg-card)",
+          borderBottom: "0.5px solid var(--border)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+        }} ref={messagesRef}>
+
+          {/* Suggested starters — only before first message */}
+          {!hasMessages && (
+            <div style={{ padding: "12px 14px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <div style={{ width: "100%", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6 }}>Ask First Mate</div>
+              {STARTERS.map(function(s) {
+                return (
+                  <button key={s} onClick={function() { send(s); }}
+                    style={{ padding: "6px 12px", border: "0.5px solid var(--border)", borderRadius: 20, background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Conversation */}
+          {hasMessages && (
+            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {messages.map(function(msg, i) {
+                const isUser = msg.role === "user";
+                return (
+                  <div key={msg.id || i} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", gap: 8, alignItems: "flex-end" }}>
+                    {!isUser && <span style={{ fontSize: 13, flexShrink: 0 }}>⚓</span>}
+                    <div style={{
+                      maxWidth: "84%", padding: "8px 12px", fontSize: 13, lineHeight: 1.5,
+                      borderRadius: isUser ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
+                      background: isUser ? "var(--brand)" : "var(--bg-subtle)",
+                      color: isUser ? "#fff" : "var(--text-primary)",
+                      border: isUser ? "none" : "0.5px solid var(--border)",
+                    }}>
+                      {msg.loading ? (
+                        <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "2px 0" }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.6 }} />
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.3 }} />
+                        </div>
+                      ) : (
+                        msg.content.split("\n").map(function(line, li) {
+                          return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>;
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ height: 4 }} />
+            </div>
+          )}
+
+          {/* Backdrop tap to dismiss when only starters shown */}
+          {!hasMessages && (
+            <div style={{ position: "fixed", inset: 0, top: 56 + 52, zIndex: -1 }} onClick={function() { setPanelOpen(false); }} />
+          )}
+        </div>
+      )}
     </>
   );
 }

@@ -1941,7 +1941,7 @@ export default function App() {
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
-    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 80px" },
+    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 108 },
     card:    { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
     pill:    function(a,c){ return { padding: "4px 11px", borderRadius: 20, border: a ? "1.5px solid " + (c || "var(--brand)") : "1.5px solid var(--border)", background: a ? (c || "var(--brand-deep)") : "transparent", color: a ? (c || "var(--brand)") : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }; },
     plusBtn: { background: "var(--brand)", color: "var(--text-on-brand)", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 22, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -2958,7 +2958,7 @@ export default function App() {
 
           {/* ── First Mate bar ── */}
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 8, marginTop: 16 }}
-            onClick={function(){ setFmOpen(true); setTimeout(function(){ document.getElementById("fm-input-bar")?.focus(); }, 100); }}>
+            onClick={function(){ document.querySelector("#fm-top-bar input")?.focus(); }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
@@ -5120,15 +5120,11 @@ export default function App() {
 
 
 
-      {/* ── FIRST MATE PERSISTENT BAR ── */}
+      {/* ── FIRST MATE TOP BAR — always visible below nav ── */}
       {view === "customer" && (
         <FirstMate
           vesselId={activeVesselId}
           vesselName={boatName}
-          persistent={true}
-          fmOpen={fmOpen}
-          onOpen={function(){ setFmOpen(true); }}
-          onClose={function(){ setFmOpen(false); }}
         />
       )}
       {/* ── SHARE VESSEL PANEL ── */}
