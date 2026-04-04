@@ -2193,15 +2193,15 @@ export default function App() {
             )}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
           <button onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
             title="Ask First Mate"
-            style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-            ⚓ <span style={{ fontSize: 11 }}>Ask</span>
+            style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, padding: "0 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+            ⚓ Ask
           </button>
-
-          <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>
+          <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Light mode" : "Dark mode"}
+            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, width: 34, color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             {darkMode ? "☀️" : "🌙"}
           </button>
         </div>
