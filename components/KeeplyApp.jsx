@@ -330,7 +330,8 @@ function AdminDashboard({ onClose }) {
             method: "POST",
             headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
             body: JSON.stringify({ prefix: "", limit: 500 })
-          }).then(function(r){ return r.json(); }).catch(function(){ return []; })
+          }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
+          supa("affiliate_clicks", { query: "select=retailer,part_name,context,created_at&order=created_at.desc&limit=1000" }).catch(function(){ return []; })
         ]);
 
         const now = new Date(); now.setHours(0,0,0,0);
@@ -367,6 +368,22 @@ function AdminDashboard({ onClose }) {
         const repairsByDay = function(from, to){ return (repairs||[]).filter(function(r){ return r.status === "closed" && r.date && inRange(r.date, from, to); }).length; };
 
         // Cart metrics from RPC (reads cart_items across all users)
+        // Affiliate click metrics
+        const clicks = affiliateClicks || [];
+        const clicksByRetailer = {};
+        const clicksByPart = {};
+        for (const c of clicks) {
+          clicksByRetailer[c.retailer] = (clicksByRetailer[c.retailer] || 0) + 1;
+          if (c.part_name) clicksByPart[c.part_name] = (clicksByPart[c.part_name] || 0) + 1;
+        }
+        const topParts = Object.entries(clicksByPart).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
+        const clicksThisWeek = clicks.filter(function(c){ return inRange(c.created_at, weekAgo, now); }).length;
+        const clicksLastWeek = clicks.filter(function(c){ return inRange(c.created_at, twoWeeksAgo, weekAgo); }).length;
+        const clicksThisMonth = clicks.filter(function(c){ return inRange(c.created_at, monthAgo, now); }).length;
+        const cmFS = clicksByRetailer["Fisheries Supply"] || 0;
+        const cmWM = clicksByRetailer["West Marine"] || 0;
+        const cmDef = clicksByRetailer["Defender"] || 0;
+
         const cm = partsMetrics || {};
         const cartTotalQty   = cm.total_qty   || 0;
         const cartTotalValue = parseFloat(cm.total_value  || 0);
@@ -418,6 +435,15 @@ function AdminDashboard({ onClose }) {
           totalFiles: files.length,
           storageMB: (totalSize / 1048576).toFixed(1),
           sharedVessels: (members||[]).length,
+          // Affiliate
+          totalAffiliateClicks: clicks.length,
+          affiliateClicksThisWeek: clicksThisWeek,
+          affiliateClicksLastWeek: clicksLastWeek,
+          affiliateClicksThisMonth: clicksThisMonth,
+          affiliateFS: cmFS,
+          affiliateWM: cmWM,
+          affiliateDef: cmDef,
+          affiliateTopParts: topParts,
         });
       } catch(e) {
         console.error(e);
@@ -532,6 +558,45 @@ function AdminDashboard({ onClose }) {
         {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total Cart Value", m.totalPartsQty === 0 ? "no priced parts yet" : "all vessels combined", "var(--ok-text)")}
         {stat("$" + parseFloat(m.cartAOV).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "AOV", "avg order value per vessel", "var(--brand)")}
         {stat(m.totalPartsLists, "Active Lists", "vessels with items in cart")}
+      </div>
+
+      {/* ── Affiliate Clicks ── */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", padding: "18px 0 8px" }}>AFFILIATE CLICKS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, marginBottom: 4 }}>
+        {stat(m.totalAffiliateClicks, "Total Clicks", "all time")}
+        {stat(m.affiliateClicksThisMonth, "This Month", "")}
+        {(function(){
+          const diff = m.affiliateClicksThisWeek - m.affiliateClicksLastWeek;
+          const trend = diff > 0 ? "↑ " + diff + " vs last wk" : diff < 0 ? "↓ " + Math.abs(diff) + " vs last wk" : "= same as last wk";
+          return stat(m.affiliateClicksThisWeek, "This Week", trend, diff > 0 ? "var(--ok-text)" : diff < 0 ? "var(--danger-text)" : "var(--text-muted)");
+        })()}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 8 }}>
+        <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "10px 14px" }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#16a34a" }}>{m.affiliateFS}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#16a34a" }}>Fisheries Supply</div>
+        </div>
+        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 14px" }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{m.affiliateWM}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb" }}>West Marine</div>
+        </div>
+        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px" }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#dc2626" }}>{m.affiliateDef}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>Defender</div>
+        </div>
+      </div>
+      {m.affiliateTopParts && m.affiliateTopParts.length > 0 && (
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", marginBottom: 4 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>TOP SEARCHED PARTS</div>
+          {m.affiliateTopParts.map(function(p, i){ return (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: i < m.affiliateTopParts.length - 1 ? "0.5px solid var(--border)" : "none" }}>
+              <div style={{ fontSize: 12, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, paddingRight: 8 }}>{p[0]}</div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", flexShrink: 0 }}>{p[1]}×</span>
+            </div>
+          ); })}
+        </div>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
       </div>
       {m.partsList && m.partsList.length > 0 && (
         <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
@@ -1645,6 +1710,23 @@ export default function App() {
         setPushStatus("denied");
       }
     }
+  };
+
+
+  // ── Affiliate click tracking — fire-and-forget, non-blocking ────────────────
+  const trackAffiliateClick = function(retailer, partName, context) {
+    if (!session?.user?.id) return;
+    supa("affiliate_clicks", {
+      method: "POST",
+      body: {
+        user_id:    session.user.id,
+        vessel_id:  activeVesselId || null,
+        retailer:   retailer,
+        part_name:  (partName || "").substring(0, 200),
+        context:    (context || "").substring(0, 200),
+      },
+      prefer: "return=minimal"
+    }).catch(function(){});  // silent — never block the user
   };
 
   // ── Unified inline part finder — calls find-part with full vessel+equipment context ──
@@ -3281,6 +3363,7 @@ export default function App() {
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                   {retailerLinks(part.name).map(function(rl){ return (
                                     <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
+                                      onClick={function(){ trackAffiliateClick(rl.name, part.name, part.reason || ""); }}
                                       style={{ padding: "4px 10px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                       {rl.name.split(" ")[0]} ↗
                                     </a>
@@ -3480,6 +3563,7 @@ export default function App() {
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                     {retailerLinks(part.name).map(function(r){ return (
                                       <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
+                                        onClick={function(){ trackAffiliateClick(r.name, part.name, part.reason || ""); }}
                                         style={{ padding: "4px 10px", borderRadius: 6, background: r.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                         {r.name.split(" ")[0]} ↗
                                       </a>
@@ -3502,6 +3586,7 @@ export default function App() {
                                 <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
                                   {retailerLinks(t.task + " marine").map(function(r){ return (
                                     <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
+                                      onClick={function(){ trackAffiliateClick(r.name, t.task, "no-results-fallback"); }}
                                       style={{ flex: 1, padding: "6px", borderRadius: 6, background: r.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
                                       {r.name.split(" ")[0]} ↗
                                     </a>
@@ -6020,6 +6105,7 @@ export default function App() {
                         const allNames = cart.map(function(i){ return i.name; }).join(" ");
                         return (
                           <a key={key} href={buyUrl(allNames, null, key)} target="_blank" rel="noreferrer"
+                            onClick={function(){ trackAffiliateClick(r.name, allNames.substring(0, 100), "cart-bundle"); }}
                             style={{ display: "block", textAlign: "center", padding: "9px 6px", background: r.color, color: "#fff", borderRadius: 8, fontSize: 11, fontWeight: 700, textDecoration: "none", lineHeight: 1.3 }}>
                             {r.name.split(" ")[0]} ↗
                           </a>
