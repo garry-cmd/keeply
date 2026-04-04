@@ -1492,9 +1492,23 @@ export default function App() {
 
   const removeMember = async function(memberId){
     try {
+      const member = vesselMembers.find(function(m){ return m.id === memberId; });
+      const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
       const { error } = await supabase.from("vessel_members").delete().eq("id", memberId);
       if (error) throw error;
       setVesselMembers(function(prev){ return prev.filter(function(m){ return m.id !== memberId; }); });
+      if (member && member.email && vessel) {
+        fetch("/api/remove-member", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: member.email,
+            vesselName: vessel.vesselName,
+            vesselType: vessel.vesselType || "sail",
+            removerName: profilePrefs.displayName || (session && session.user ? session.user.email : "The vessel owner"),
+          }),
+        }).catch(function(e){ console.error("Remove notification failed:", e); });
+      }
     } catch(e){ console.error("Remove member error:", e); }
   };
 
