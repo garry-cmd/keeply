@@ -1981,9 +1981,9 @@ export default function App() {
               <div style={{ position: "absolute", top: 56, right: 0, background: "var(--bg-card)", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
                 {[
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
+                  { label: "🗺️ Logbook", action: function(){ setShowLogbook(true); setShowMobileMenu(false); }, active: false },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
-                  { label: "Logbook", action: function(){ setShowLogbook(true); setShowMobileMenu(false); }, active: false },
                   { label: "⚙️ Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
                 ].map(function(item){ return (
                   <div key={item.label} onClick={item.action}
