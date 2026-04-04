@@ -2129,8 +2129,6 @@ export default function App() {
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "🗺️ Logbook", action: function(){ setView("customer"); setTab("logbook-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="logbook-standalone" },
                   { label: "⚙️ Equipment", action: function(){ setView("customer"); setTab("equipment-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="equipment-standalone" },
-                  { label: "🔧 Maintenance", action: function(){ setView("customer"); setTab("maintenance-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="maintenance-standalone" },
-                  { label: "🔩 Parts", action: function(){ setView("customer"); setTab("parts-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="parts-standalone" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
                   { label: "👤 Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
