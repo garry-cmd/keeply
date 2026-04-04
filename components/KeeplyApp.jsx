@@ -1066,11 +1066,11 @@ export default function App() {
   }, []);
 
   // Restore and persist active tab
-  React.useEffect(function(){
+  useEffect(function(){
     const t = localStorage.getItem("keeply_tab");
     if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone"].includes(t)) setTab(t);
   }, []);
-  React.useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
+  useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
   const openAddVessel = function(){
