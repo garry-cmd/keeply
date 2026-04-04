@@ -1888,6 +1888,7 @@ export default function App() {
     critical: maintTasks.filter(function(t){ return getTaskUrgency(t) === "critical"; }).length,
     overdue:  maintTasks.filter(function(t){ return getTaskUrgency(t) === "overdue"; }).length,
     dueSoon:  maintTasks.filter(function(t){ return getTaskUrgency(t) === "due-soon"; }).length,
+    ok:       maintTasks.filter(function(t){ return getTaskUrgency(t) === "ok"; }).length,
   };
 
   const docUrgencyCounts = {
@@ -2083,6 +2084,7 @@ export default function App() {
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "🗺️ Logbook", action: function(){ setView("customer"); setTab("logbook-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="logbook-standalone" },
                   { label: "⚙️ Equipment", action: function(){ setView("customer"); setTab("equipment-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="equipment-standalone" },
+                  { label: "🔧 Maintenance", action: function(){ setView("customer"); setTab("maintenance-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="maintenance-standalone" },
                   { label: "🔩 Parts", action: function(){ setView("customer"); setTab("parts-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="parts-standalone" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
@@ -4178,42 +4180,129 @@ export default function App() {
           </div>
         )}
 
-        {/* ── MAINTENANCE TAB ── */}
+        {/* ── MAINTENANCE KANBAN ── */}
         {view === "customer" && tab === "maintenance-standalone" && (<>
           {tabHeader("Maintenance", boatName, true, function(){ setShowAddTask(true); })}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
-            <UrgencyCard label="Critical" sub="10+ days overdue" val={urgencyCounts.critical} color="var(--danger-text)" bg="var(--danger-bg)" active={filterUrgency==="critical"} onClick={function(){ setFilterUrgency(filterUrgency==="critical"?"All":"critical"); }} />
-            <UrgencyCard label="Overdue" sub="5–10 days overdue" val={urgencyCounts.overdue} color="var(--warn-text)" bg="var(--overdue-bg)" active={filterUrgency==="overdue"} onClick={function(){ setFilterUrgency(filterUrgency==="overdue"?"All":"overdue"); }} />
-            <UrgencyCard label="Due Soon" sub="Within 3 days" val={urgencyCounts.dueSoon} color="#ca8a04" bg="var(--duesoon-bg)" active={filterUrgency==="due-soon"} onClick={function(){ setFilterUrgency(filterUrgency==="due-soon"?"All":"due-soon"); }} />
+          {/* Urgency summary strip */}
+          <div style={{ display: "flex", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 16, border: "0.5px solid var(--border)" }}>
+            {[
+              { label: "Critical", val: urgencyCounts.critical, color: "var(--danger-text)", bg: "var(--danger-bg)", key: "critical" },
+              { label: "Overdue", val: urgencyCounts.overdue, color: "var(--warn-text)", bg: "var(--overdue-bg)", key: "overdue" },
+              { label: "Due Soon", val: urgencyCounts.dueSoon, color: "#ca8a04", bg: "var(--duesoon-bg)", key: "due-soon" },
+              { label: "OK", val: urgencyCounts.ok, color: "var(--ok-text)", bg: "var(--ok-bg)", key: "ok" },
+            ].map(function(u){ return (
+              <div key={u.key} onClick={function(){ setFilterUrgency(filterUrgency === u.key ? "All" : u.key); }}
+                style={{ flex: 1, background: filterUrgency === u.key ? u.bg : "var(--bg-card)", padding: "8px 4px", textAlign: "center", cursor: "pointer", transition: "background 0.15s" }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: u.color, fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{u.val}</div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, letterSpacing: "0.4px", textTransform: "uppercase" }}>{u.label}</div>
+              </div>
+            ); })}
           </div>
 
-          {/* Section filter dropdown */}
-          <div style={{ marginBottom: 14 }}>
-            <select value={filterSection} onChange={function(e){ setFilterSection(e.target.value); setExpandedSection(e.target.value === "All" ? null : e.target.value); }}
-              style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)", cursor: "pointer" }}>
-              <option value="All">All Sections ({sortedTasks.length} tasks)</option>
-              {MAINT_SECTIONS.map(function(sec){
-                const stat = sectionStats.find(function(s){ return s.sec === sec; });
-                const count = stat ? stat.total : 0;
-                if (count === 0) return null;
-                return <option key={sec} value={sec}>{SECTIONS[sec]} {sec} ({count})</option>;
-              })}
-            </select>
-          </div>
+          {/* Kanban board — horizontal scroll */}
+          {(function(){
+            const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
+            const boardSections = MAINT_SECTIONS.filter(function(sec){
+              return vesselTasks.some(function(t){ return t.section === sec; });
+            });
 
+            if (boardSections.length === 0) return (
+              <div style={{ textAlign: "center", padding: "60px 24px", color: "var(--text-muted)" }}>
+                <div style={{ fontSize: 40 }}>✅</div>
+                <div style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>No maintenance tasks yet</div>
+                <div style={{ fontSize: 12, marginTop: 4 }}>Tap + to add your first task</div>
+              </div>
+            );
 
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>{sortedTasks.length} tasks{filterSection !== "All" ? " in " + filterSection : ""}</div>
+            return (
+              <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 16, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20 }}>
+                {boardSections.map(function(sec){
+                  const icon = SECTIONS[sec] || "🔧";
+                  const colTasks = vesselTasks.filter(function(t){
+                    if (t.section !== sec) return false;
+                    if (filterUrgency !== "All") return getTaskUrgency(t) === filterUrgency;
+                    return true;
+                  }).sort(function(a,b){
+                    const ua = getTaskUrgency(a); const ub = getTaskUrgency(b);
+                    const order = { critical:0, overdue:1, "due-soon":2, ok:3 };
+                    return (order[ua]||3) - (order[ub]||3);
+                  });
+                  const totalInSection = vesselTasks.filter(function(t){ return t.section === sec; }).length;
 
-          {sortedTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}><div style={{ fontSize: 36 }}>✅</div><div style={{ marginTop: 8 }}>All clear!</div></div>}
+                  return (
+                    <div key={sec} style={{ flexShrink: 0, width: 260, display: "flex", flexDirection: "column", gap: 0 }}>
+                      {/* Column header */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <span style={{ fontSize: 14 }}>{icon}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{sec}</span>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", marginLeft: 2 }}>{totalInSection}</span>
+                        <div style={{ flex: 1 }} />
+                        <button onClick={function(){ setShowAddTask(true); }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1, padding: "0 2px" }} title={"Add " + sec + " task"}>+</button>
+                      </div>
 
-          <div style={s.card}>
-            {sortedTasks.map(function(t, i){ return <TaskRow key={t.id} task={t} idx={i} total={sortedTasks.length} onToggle={toggleTask} onDelete={function(id){ var found = tasks.find(function(tk){ return tk.id === id; }); showConfirm("Delete " + (found ? found.task : "task") + "?", function(){ deleteTask(id); }); }} onSave={function(id, patch){ updateTask(id, patch); }} onAddLog={function(id, text){ addTaskLog(id, text); }} showSection={filterSection==="All"} />; })}
-          </div>
+                      {/* Cards */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {colTasks.length === 0 && filterUrgency !== "All" && (
+                          <div style={{ padding: "12px", background: "var(--bg-subtle)", borderRadius: 10, fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
+                            No {filterUrgency} tasks
+                          </div>
+                        )}
+                        {colTasks.map(function(t){
+                          const urgency = getTaskUrgency(t);
+                          const badge = getDueBadge(t.dueDate);
+                          const urgencyBorder = urgency === "critical" ? "var(--danger-text)" : urgency === "overdue" ? "var(--warn-text)" : urgency === "due-soon" ? "#ca8a04" : "transparent";
+                          const daysUntil = t.dueDate ? Math.round((new Date(t.dueDate) - new Date()) / 86400000) : null;
+                          const daysLabel = daysUntil === null ? null : daysUntil < 0 ? Math.abs(daysUntil) + "d overdue" : daysUntil === 0 ? "due today" : "in " + daysUntil + "d";
 
-          
+                          return (
+                            <div key={t.id} style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderLeft: "3px solid " + urgencyBorder, borderRadius: "0 10px 10px 0", padding: "10px 12px", cursor: "pointer" }}
+                              onClick={function(){ setShowAddTask(true); setEditingTask(t.id); }}>
 
-          
+                              {/* Task name row */}
+                              <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                                <button onClick={function(e){ e.stopPropagation(); toggleTask(t.id); }}
+                                  style={{ width: 16, height: 16, borderRadius: "50%", border: "1.5px solid var(--border)", background: "none", cursor: "pointer", flexShrink: 0, marginTop: 2 }} />
+                                <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{t.task}</div>
+                              </div>
+
+                              {/* Meta row */}
+                              <div style={{ display: "flex", gap: 5, marginTop: 7, flexWrap: "wrap", alignItems: "center" }}>
+                                {t.interval && (
+                                  <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 8, background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)" }}>
+                                    ↺ {t.interval}
+                                  </span>
+                                )}
+                                {daysLabel && (
+                                  <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 8,
+                                    background: urgency === "critical" ? "var(--danger-bg)" : urgency === "overdue" ? "var(--overdue-bg)" : urgency === "due-soon" ? "var(--duesoon-bg)" : "var(--bg-subtle)",
+                                    color: urgency === "critical" ? "var(--danger-text)" : urgency === "overdue" ? "var(--warn-text)" : urgency === "due-soon" ? "#ca8a04" : "var(--text-muted)" }}>
+                                    {daysLabel}
+                                  </span>
+                                )}
+                                {t.lastService && (
+                                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Last: {t.lastService.substring(5).replace("-","/")}</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Add task footer */}
+                        <button onClick={function(){ setShowAddTask(true); }}
+                          style={{ background: "none", border: "1.5px dashed var(--border)", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", textAlign: "left", fontWeight: 600 }}>
+                          + Add task
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          <div style={{ height: 80 }} />
         </>)}
 
         {/* ── DOCUMENTATION TAB ── */}
