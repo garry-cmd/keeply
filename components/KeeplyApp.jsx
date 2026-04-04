@@ -2446,8 +2446,6 @@ export default function App() {
             // Days until next service
             const daysUntil = nextDue && nextDue.dueDate ? Math.round((new Date(nextDue.dueDate) - new Date()) / 86400000) : null;
             const daysLabel = daysUntil === null ? "" : daysUntil < 0 ? Math.abs(daysUntil) + "d overdue" : daysUntil === 0 ? "due today" : "in " + daysUntil + "d";
-            // Open repairs count
-            const openRepairCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
             const updateHours = function(){
               const hrs = prompt("Current engine hours:");
               if (!hrs || isNaN(hrs)) return;
@@ -2458,7 +2456,7 @@ export default function App() {
                 .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
             };
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
 
                 {/* Cell 1 — Engine hours */}
                 <div style={{ background: "var(--bg-card)", padding: "12px 12px", cursor: engineHours ? "default" : "pointer" }} onClick={engineHours ? undefined : updateHours}>
@@ -2473,7 +2471,7 @@ export default function App() {
                 </div>
 
                 {/* Cell 2 — Next service */}
-                <div style={{ background: "var(--bg-card)", padding: "12px 12px", cursor: nextDue ? "pointer" : "default", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)" }}
+                <div style={{ background: "var(--bg-card)", padding: "12px 12px", borderLeft: "1px solid var(--border)", cursor: nextDue ? "pointer" : "default" }}
                   onClick={nextDue ? function(){ setTab("maintenance-standalone"); } : undefined}>
                   <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Next service</div>
                   {nextDue ? (<>
@@ -2484,13 +2482,6 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Cell 3 — Open repairs */}
-                <div style={{ background: "var(--bg-card)", padding: "12px 12px", cursor: "pointer" }}
-                  onClick={function(){ setShowUrgencyPanel("Open Repairs"); }}>
-                  <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Open repairs</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, color: openRepairCount > 0 ? "var(--warn-text)" : "var(--ok-text)" }}>{openRepairCount}</div>
-                  <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 5 }}>{openRepairCount > 0 ? "tap to view" : "all closed"}</div>
-                </div>
 
               </div>
             );
@@ -2555,13 +2546,6 @@ export default function App() {
                     setExpandedRepair(next);
                     if (next && !sugg) getSuggestionsForRepair(r);
                   }}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
-                      <SectionBadge section={r.section} />
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{fmt(r.date)}</span>
-                      {sugg && sugg !== "loading" && sugg.length > 0 && (
-                        <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
-                      )}
-                    </div>
                     {editingRepair === r.id ? (
                       <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         <textarea value={editRepairForm.description}
@@ -2578,9 +2562,15 @@ export default function App() {
                             style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
                         </div>
                       </div>
-                    ) : (
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{r.description}</div>
-                    )}
+                    ) : (<>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.description}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
+                        {fmt(r.date)}
+                        {sugg && sugg !== "loading" && sugg.length > 0 && (
+                          <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
+                        )}
+                      </div>
+                    </>)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
@@ -2591,7 +2581,11 @@ export default function App() {
                 </div>
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px" }}>
+                    <div style={{ padding: "10px 16px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <SectionBadge section={r.section} />
+                      {r.priority && <span style={{ fontSize: 10, fontWeight: 700, background: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].bg : "var(--bg-subtle)", color: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].color : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", textTransform: "uppercase" }}>{r.priority}</span>}
+                    </div>
+                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8 }}>
                       {["parts", "notes"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
@@ -3473,13 +3467,6 @@ export default function App() {
                     setExpandedRepair(next);
                     if (next && !sugg) getSuggestionsForRepair(r);
                   }}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
-                      <SectionBadge section={r.section} />
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{fmt(r.date)}</span>
-                      {sugg && sugg !== "loading" && sugg.length > 0 && (
-                        <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
-                      )}
-                    </div>
                     {editingRepair === r.id ? (
                       <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         <textarea value={editRepairForm.description}
@@ -3496,9 +3483,15 @@ export default function App() {
                             style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
                         </div>
                       </div>
-                    ) : (
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{r.description}</div>
-                    )}
+                    ) : (<>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.description}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
+                        {fmt(r.date)}
+                        {sugg && sugg !== "loading" && sugg.length > 0 && (
+                          <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
+                        )}
+                      </div>
+                    </>)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
