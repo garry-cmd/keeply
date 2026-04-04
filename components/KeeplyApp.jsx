@@ -2771,6 +2771,77 @@ export default function App() {
 
 
 
+          {/* ── Maintenance divider ── */}
+          {(function(){
+            const urgentTasks = tasks.filter(function(t){
+              if (t._vesselId !== activeVesselId) return false;
+              if (equipSectionFilter !== "All" && t.section !== equipSectionFilter) return false;
+              const u = getTaskUrgency(t);
+              return u === "critical" || u === "overdue" || u === "due-soon";
+            }).sort(function(a,b){
+              const order = { critical: 0, overdue: 1, "due-soon": 2 };
+              return (order[getTaskUrgency(a)] || 3) - (order[getTaskUrgency(b)] || 3);
+            });
+            if (urgentTasks.length === 0) return null;
+            return (<>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 4 }}>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--brand)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Maintenance due</span>
+                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              </div>
+              {urgentTasks.map(function(t){
+                const badge = getDueBadge(t.dueDate, t.interval_days);
+                const isExpanded = expandedTask === t.id;
+                const isCompleting = completingTask === t.id;
+                const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
+                return (
+                  <div key={t.id} style={{ ...s.card, borderTop: "2px solid var(--brand)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s ease", marginBottom: 8 }}>
+                    <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+                      <button onClick={function(){ toggleTask(t.id); }}
+                        style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                        {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
+                      </button>
+                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{t.task}</div>
+                        <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
+                          <SectionBadge section={t.section} />
+                          {eq && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{eq.name}</span>}
+                          {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 4, padding: "1px 5px" }}>{badge.label}</span>}
+                        </div>
+                      </div>
+                      <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer", flexShrink: 0 }}
+                        onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                        {isExpanded ? "▾" : "▸"}
+                      </span>
+                    </div>
+                    {isExpanded && (
+                      <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)", padding: "12px 16px 14px 54px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "—"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.lastService ? fmt(t.lastService) : "Never"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: badge ? badge.color : "var(--text-primary)" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{t.priority || "medium"}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>);
+          })()}
+
           {/* ── Equipment divider ── */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 8 }}>
             <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
