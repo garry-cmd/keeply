@@ -338,11 +338,11 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                   )}
                   {/* Actions */}
                   <div style={{ borderTop: "0.5px solid var(--border)", display: "flex" }}>
-                    <button onClick={function() { setViewingEntry(entry); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>View</button>
+                    <button onClick={function() { setViewingEntry(entry); }} style={{ flex: 1, padding: "9px", border: "none", background: "none", fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>View</button>
                     <div style={{ width: "0.5px", background: "var(--border)" }} />
-                    <button onClick={function() { openEdit(entry); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
+                    <button onClick={function() { openEdit(entry); }} style={{ flex: 1, padding: "9px", border: "none", background: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
                     <div style={{ width: "0.5px", background: "var(--border)" }} />
-                    <button onClick={function() { del(entry.id); }} style={{ flex: 1, padding: "8px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                    <button onClick={function() { del(entry.id); }} style={{ flex: 1, padding: "9px", border: "none", background: "none", fontSize: 12, color: "var(--danger-text)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
                   </div>
                 </div>
               );
@@ -376,11 +376,10 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
         if (e.hours_end && prevEntry?.hours_end) runHrs = (parseFloat(e.hours_end) - parseFloat(prevEntry.hours_end)).toFixed(1);
 
         const field = function(label, val) {
-          if (!val) return null;
           return (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-              <div style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>{val}</div>
+              <div style={{ fontSize: 14, color: val ? "var(--text-primary)" : "var(--text-muted)", fontWeight: val ? 500 : 400 }}>{val || "—"}</div>
             </div>
           );
         };
@@ -446,23 +445,27 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                     {field("Wind", e.wind_direction && e.wind_speed ? e.wind_direction + " " + e.wind_speed + " kts" : e.wind_speed ? e.wind_speed + " kts" : null)}
                     {field("Sea state", e.sea_state)}
                     {field("Engine hrs end", e.hours_end ? e.hours_end + (runHrs ? " (+" + runHrs + "h this passage)" : "") : null)}
+                    {field("Fuel added", e.fuel_added ? e.fuel_added + " gal" : null)}
                     {field("Max speed", e.max_speed_kts ? e.max_speed_kts + " kts" : null)}
                     {field("Barometric", e.barometric_mb ? e.barometric_mb + " mb" : null)}
                     {field("Visibility", e.visibility)}
-                    {field("Fuel added", e.fuel_added ? e.fuel_added + " gal" : null)}
-                    {field("Anchored", e.anchor_location ? e.anchor_location + (e.anchor_depth_ft ? " (" + e.anchor_depth_ft + " ft)" : "") : null)}
-                    {e.incident && (
-                      <div style={{ gridColumn: "1 / -1", marginBottom: 12 }}>
+                    {e.anchor_location ? field("Anchored at", e.anchor_location + (e.anchor_depth_ft ? " · " + e.anchor_depth_ft + " ft" : "")) : field("Anchored at", null)}
+                    {e.incident ? (
+                      <div style={{ gridColumn: "1 / -1", marginBottom: 14 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--warn-text)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 3 }}>Incident</div>
                         <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5 }}>{e.incident}</div>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>
 
               {/* Footer actions */}
               <div style={{ padding: "12px 20px", borderTop: "0.5px solid var(--border)", display: "flex", gap: 10, flexShrink: 0 }}>
+                <button onClick={function() { if (window.confirm("Delete this entry?")) { del(e.id); setViewingEntry(null); } }}
+                  style={{ padding: "10px 14px", border: "0.5px solid var(--danger-border)", borderRadius: 10, background: "none", cursor: "pointer", fontWeight: 600, fontSize: 14, color: "var(--danger-text)" }}>
+                  Delete
+                </button>
                 <button onClick={function() { setViewingEntry(null); openEdit(e); }}
                   style={{ flex: 1, padding: "10px", border: "0.5px solid var(--border)", borderRadius: 10, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
                   Edit
