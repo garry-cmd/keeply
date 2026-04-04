@@ -25,6 +25,7 @@ export async function POST(request) {
 
     const body = new URLSearchParams({
       customer: customerId,
+      configuration: "bpc_1TIWtRA726uGRX5eyB34VKpV",
       return_url: returnUrl || "https://keeply.boats",
     });
 
