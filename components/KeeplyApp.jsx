@@ -94,8 +94,22 @@ function fmt(dateStr) {
 }
 
 function intervalToDays(interval) {
+  if (!interval) return 0;
   const map = { "7 days": 7, "14 days": 14, "30 days": 30, "60 days": 60, "90 days": 90, "6 months": 180, "annual": 365, "2 years": 730, "10 years": 3650 };
-  return map[interval] || 0;
+  if (map[interval]) return map[interval];
+  // Parse "N days", "N months", "N years" formats
+  const m = String(interval).match(/^(\d+)\s*(day|month|year|week)/i);
+  if (m) {
+    const n = parseInt(m[1]);
+    const unit = m[2].toLowerCase();
+    if (unit.startsWith("day"))   return n;
+    if (unit.startsWith("week"))  return n * 7;
+    if (unit.startsWith("month")) return n * 30;
+    if (unit.startsWith("year"))  return n * 365;
+  }
+  // Plain number = days
+  const num = parseInt(interval);
+  return isNaN(num) ? 0 : num;
 }
 
 function getDueBadge(dueDate) {
@@ -1235,9 +1249,13 @@ export default function App() {
     if (!t) return;
     const serviceDate = today();
     const days = (t.interval_days && t.interval_days > 0) ? t.interval_days : intervalToDays(t.interval || "30 days");
-    const newDue = days > 0 ? addDays(serviceDate, days) : t.dueDate;
+    // Fall back to 30 days if we still can't determine interval
+    const effectiveDays = days > 0 ? days : 30;
+    const newDue = addDays(serviceDate, effectiveDays);
     const log = { date: serviceDate, comment: (t.pendingComment || "").trim() || "Service completed" };
     const updatedLogs = [...(t.serviceLogs || []), log];
+    // Optimistic update — update UI immediately, sync DB in background
+    setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? { ...tk, lastService: serviceDate, dueDate: newDue, serviceLogs: updatedLogs, pendingComment: "" } : tk; }); });
     try {
       // Auto-add log entry to linked equipment
       if (t.equipment_id) {
@@ -1250,8 +1268,12 @@ export default function App() {
         }
       }
       await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + id, body: { last_service: serviceDate, due_date: newDue, service_logs: updatedLogs }, prefer: "return=minimal" });
-      setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? { ...tk, lastService: serviceDate, dueDate: newDue, serviceLogs: updatedLogs, pendingComment: "" } : tk; }); });
-    } catch(err){ setDbError(err.message); }
+    } catch(err){
+      console.error("toggleTask DB error:", err);
+      // Rollback optimistic update on failure
+      setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? t : tk; }); });
+      setDbError(err.message);
+    }
   };
 
   const updateComment = function(id, val){ setTasks(function(prev){ return prev.map(function(t){ return t.id === id ? { ...t, pendingComment: val } : t; }); }); };
