@@ -914,7 +914,11 @@ export default function App() {
           };
         });
         setVessels(normalizedVessels);
-        const firstId = normalizedVessels[0].id;
+        // Restore last active vessel, fall back to first
+        const savedId = localStorage.getItem("keeply_active_vessel");
+        const firstId = (savedId && normalizedVessels.find(function(v){ return v.id === savedId; }))
+          ? savedId
+          : normalizedVessels[0].id;
         setActiveVesselId(firstId);
         loadCart(firstId);
 
@@ -982,6 +986,7 @@ export default function App() {
   // ─── SWITCH VESSEL — reload equipment + tasks ────────────────────────────────
   const switchVessel = useCallback(async function(vid) {
     setActiveVesselId(vid);
+    localStorage.setItem("keeply_active_vessel", vid);
     setLoading(true);
     setEquipSuggestions({});
     setAiSuggestions({});
@@ -1890,6 +1895,7 @@ export default function App() {
     const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "", engineHours: vessel.engine_hours || null, engineHoursDate: vessel.engine_hours_date || null };
     setVessels([normalized]);
     setActiveVesselId(vessel.id);
+    localStorage.setItem("keeply_active_vessel", vessel.id);
     // Load all equipment and tasks that were just created by AI onboarding
     switchVessel(vessel.id);
   }} />;
