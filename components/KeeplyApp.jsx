@@ -861,6 +861,9 @@ export default function App() {
   const [editingEquip, setEditingEquip]     = useState(null);
   const [editEquipForm, setEditEquipForm]   = useState({});
   const [editingVesselInfo, setEditingVesselInfo] = useState(false);
+  const [vesselDetailForm, setVesselDetailForm] = useState({});
+  const [vesselDetailSaving, setVesselDetailSaving] = useState(false);
+  const [vesselDetailSaved, setVesselDetailSaved] = useState(false);
   const [vesselInfoForm, setVesselInfoForm] = useState({});
   const [scanningVesselDoc, setScanningVesselDoc] = useState(false);
   const [scanError, setScanError] = useState(null);
@@ -2705,6 +2708,8 @@ export default function App() {
                             let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
                             setVesselInfoForm(info);
                             setEditingVesselInfo(true);
+                            const av = vessels.find(function(v){ return v.id === activeVesselId; });
+                            if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
                           }
                         }}
                           style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
@@ -2801,6 +2806,43 @@ export default function App() {
                     )}
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
                       <div onClick={function(e){ e.stopPropagation(); }}>
+                        {/* ── Vessel details (name / make / model / year) ── */}
+                        <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "0.5px solid var(--border)" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>VESSEL DETAILS</div>
+                          {(function(){
+                            const av = vessels.find(function(v){ return v.id === activeVesselId; });
+                            if (!av) return null;
+                            const vForm = Object.keys(vesselDetailForm).length > 0 ? vesselDetailForm : { vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" };
+                            return (<>
+                              <input placeholder="Vessel name" value={vForm.vesselName || ""}
+                                onChange={function(e){ const v = e.target.value; setVesselDetailForm(function(f){ return Object.assign({}, f, { vesselName: v }); }); setVesselDetailSaved(false); }}
+                                style={s.inp} />
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <input placeholder="Make (e.g. Ta Shing)" value={vForm.make || ""}
+                                  onChange={function(e){ const v = e.target.value; setVesselDetailForm(function(f){ return Object.assign({}, f, { make: v }); }); setVesselDetailSaved(false); }}
+                                  style={{ ...s.inp, flex: 2, marginBottom: 0 }} />
+                                <input placeholder="Year" value={vForm.year || ""}
+                                  onChange={function(e){ const v = e.target.value; setVesselDetailForm(function(f){ return Object.assign({}, f, { year: v }); }); setVesselDetailSaved(false); }}
+                                  style={{ ...s.inp, flex: 1, marginBottom: 0 }} />
+                              </div>
+                              <input placeholder="Model (e.g. Baba 35)" value={vForm.model || ""}
+                                onChange={function(e){ const v = e.target.value; setVesselDetailForm(function(f){ return Object.assign({}, f, { model: v }); }); setVesselDetailSaved(false); }}
+                                style={{ ...s.inp, marginTop: 8 }} />
+                              <button disabled={vesselDetailSaving} onClick={async function(){
+                                setVesselDetailSaving(true);
+                                try {
+                                  await supabase.from("vessels").update({ vessel_name: vForm.vesselName, make: vForm.make, model: vForm.model, year: vForm.year ? parseInt(vForm.year) : null }).eq("id", activeVesselId);
+                                  setVessels(function(prev){ return prev.map(function(v){ return v.id === activeVesselId ? Object.assign({}, v, { vesselName: vForm.vesselName, make: vForm.make, model: vForm.model, year: vForm.year }) : v; }); });
+                                  setVesselDetailSaved(true);
+                                  setVesselDetailForm({});
+                                } catch(e) { console.error(e); }
+                                finally { setVesselDetailSaving(false); }
+                              }} style={{ width: "100%", padding: "8px", border: "none", borderRadius: 8, background: vesselDetailSaved ? "var(--ok-text)" : "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
+                                {vesselDetailSaving ? "Saving…" : vesselDetailSaved ? "✓ Saved" : "Save Vessel Details"}
+                              </button>
+                            </>);
+                          })()}
+                        </div>
                         {/* AI scan button */}
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px", border: "1.5px dashed #ddd6fe", borderRadius: 8, cursor: scanningVesselDoc ? "default" : "pointer", fontSize: 13, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", marginBottom: 14, boxSizing: "border-box" }}>
                           {scanningVesselDoc ? "✨ Scanning document…" : "✨ Scan document with AI"}
