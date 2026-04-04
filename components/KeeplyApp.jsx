@@ -1439,17 +1439,31 @@ export default function App() {
   const saveLog = async function(){
     if (!logForm.entry_date) return;
     const body = {
-      vessel_id:     activeVesselId,
-      entry_type:    logForm.entry_type || "passage",
-      entry_date:    logForm.entry_date,
-      title:         logForm.title || null,
-      from_location: logForm.from_location || null,
-      to_location:   logForm.to_location || null,
-      distance_nm:   logForm.distance_nm ? parseFloat(logForm.distance_nm) : null,
-      engine_hours:  logForm.engine_hours ? parseFloat(logForm.engine_hours) : null,
-      fuel_used:     logForm.fuel_used ? parseFloat(logForm.fuel_used) : null,
-      conditions:    logForm.conditions || null,
-      notes:         logForm.notes || null,
+      vessel_id:        activeVesselId,
+      entry_type:       logForm.entry_type || "passage",
+      entry_date:       logForm.entry_date,
+      title:            logForm.title || null,
+      from_location:    logForm.from_location || null,
+      to_location:      logForm.to_location || null,
+      departure_time:   logForm.departure_time || null,
+      arrival_time:     logForm.arrival_time || null,
+      crew:             logForm.crew || null,
+      highlights:       logForm.highlights || null,
+      distance_nm:      logForm.distance_nm ? parseFloat(logForm.distance_nm) : null,
+      engine_hours:     logForm.engine_hours ? parseFloat(logForm.engine_hours) : null,
+      fuel_used:        logForm.fuel_used ? parseFloat(logForm.fuel_used) : null,
+      conditions:       logForm.conditions || null,
+      wind_speed:       logForm.wind_speed ? parseInt(logForm.wind_speed) : null,
+      wind_direction:   logForm.wind_direction || null,
+      sea_state:        logForm.sea_state || null,
+      notes:            logForm.notes || null,
+      visibility:       logForm.visibility || null,
+      barometric_mb:    logForm.barometric_mb ? parseFloat(logForm.barometric_mb) : null,
+      fuel_added:       logForm.fuel_added ? parseFloat(logForm.fuel_added) : null,
+      anchor_location:  logForm.anchor_location || null,
+      anchor_depth_ft:  logForm.anchor_depth_ft ? parseFloat(logForm.anchor_depth_ft) : null,
+      max_speed_kts:    logForm.max_speed_kts ? parseFloat(logForm.max_speed_kts) : null,
+      incident:         logForm.incident || null,
     };
     try {
       if (editingLog) {
@@ -4861,57 +4875,180 @@ export default function App() {
       {/* ADD/EDIT LOG ENTRY */}
       {showAddLog && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 460, maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>{editingLog ? "Edit Entry" : "New Log Entry"}</div>
-              <button onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, width: 30, height: 30, fontSize: 14, cursor: "pointer", color: "var(--text-muted)" }}>X</button>
+          <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 480, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={function(e){ e.stopPropagation(); }}>
+
+            {/* Header */}
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>{editingLog ? "Edit Log Entry" : "New Log Entry"}</div>
+              <button onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, width: 30, height: 30, fontSize: 14, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
             </div>
+
             <div style={{ overflowY: "auto", flex: 1, padding: "16px 20px" }}>
+
+              {/* Type toggle */}
               <div style={{ display: "flex", background: "var(--bg-subtle)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
                 {["passage", "note"].map(function(t){ return (
                   <button key={t} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { entry_type: t }); }); }}
                     style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: (logForm.entry_type || "passage") === t ? "var(--bg-card)" : "transparent", fontSize: 13, fontWeight: 700, cursor: "pointer", color: (logForm.entry_type || "passage") === t ? "var(--brand)" : "var(--text-muted)" }}>
-                    {t === "passage" ? "Passage" : "Note"}
+                    {t === "passage" ? "⛵ Passage" : "📝 Note"}
                   </button>
                 ); })}
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DATE *</div>
-                <input type="date" value={logForm.entry_date || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { entry_date: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+
+              {/* Date + times */}
+              <div style={{ display: "grid", gridTemplateColumns: (logForm.entry_type || "passage") === "passage" ? "1fr 1fr 1fr" : "1fr", gap: 10, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DATE *</div>
+                  <input type="date" value={logForm.entry_date || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { entry_date: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                </div>
+                {(logForm.entry_type || "passage") === "passage" && (<>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DEPARTED</div>
+                    <input type="time" value={logForm.departure_time || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { departure_time: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ARRIVED</div>
+                    <input type="time" value={logForm.arrival_time || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { arrival_time: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </>)}
               </div>
+
+              {/* From / To or Title */}
               {(logForm.entry_type || "passage") === "note" ? (
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TITLE</div>
-                  <input placeholder="e.g. Marina maintenance day" value={logForm.title || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { title: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  <input placeholder="e.g. Marina maintenance day" value={logForm.title || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { title: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FROM</div><input placeholder="Departure" value={logForm.from_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { from_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TO</div><input placeholder="Arrival" value={logForm.to_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { to_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                </div>
-              )}
-              {(logForm.entry_type || "passage") === "passage" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DIST nm</div><input type="number" placeholder="0" value={logForm.distance_nm || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { distance_nm: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ENG HRS</div><input type="number" placeholder="0" value={logForm.engine_hours || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { engine_hours: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL gal</div><input type="number" placeholder="0" value={logForm.fuel_used || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { fuel_used: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                </div>
-              )}
-              {(logForm.entry_type || "passage") === "passage" && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>CONDITIONS</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {["Calm", "Light breeze", "Moderate", "Heavy", "Motoring", "Close hauled", "Downwind"].map(function(c){ return (
-                      <button key={c} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { conditions: f.conditions === c ? "" : c }); }); }} style={{ padding: "5px 10px", border: "1.5px solid " + (logForm.conditions === c ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.conditions === c ? "var(--brand-deep)" : "var(--bg-subtle)", color: logForm.conditions === c ? "var(--brand)" : "var(--text-muted)", cursor: "pointer" }}>{c}</button>
-                    ); })}
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FROM</div>
+                    <input placeholder="Departure port" value={logForm.from_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { from_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TO</div>
+                    <input placeholder="Arrival port" value={logForm.to_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { to_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
                   </div>
                 </div>
               )}
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>NOTES</div>
-                <textarea placeholder="What happened? Any issues, events, or things to remember..." value={logForm.notes || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { notes: e.target.value }); }); }} rows={4} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none" }} />
+
+              {/* Crew */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>CREW ABOARD</div>
+                <input placeholder="e.g. Garry, Melissa, Tom (or just a count)" value={logForm.crew || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { crew: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
               </div>
+
+              {/* Highlights */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>HIGHLIGHTS</div>
+                <input placeholder="The story hook — saw dolphins, first night passage, new record..." value={logForm.highlights || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { highlights: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+              </div>
+
+              {/* Passage-only core stats */}
+              {(logForm.entry_type || "passage") === "passage" && (<>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DIST nm</div><input type="number" placeholder="0" value={logForm.distance_nm || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { distance_nm: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ENG HRS</div><input type="number" placeholder="0" step="0.1" value={logForm.engine_hours || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { engine_hours: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL USED gal</div><input type="number" placeholder="0" step="0.1" value={logForm.fuel_used || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { fuel_used: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                </div>
+
+                {/* Wind */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>WIND SPEED kts</div>
+                    <input type="number" placeholder="0" value={logForm.wind_speed || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { wind_speed: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>WIND DIR</div>
+                    <select value={logForm.wind_direction || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { wind_direction: e.target.value }); }); }} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                      <option value="">—</option>
+                      {["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"].map(function(d){ return <option key={d} value={d}>{d}</option>; })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Sea state pills */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>SEA STATE</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                    {["Calm", "Light", "Moderate", "Rough", "Heavy"].map(function(s){ return (
+                      <button key={s} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { sea_state: f.sea_state === s ? "" : s }); }); }}
+                        style={{ padding: "5px 12px", border: "1.5px solid " + (logForm.sea_state === s ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.sea_state === s ? "var(--brand-deep)" : "var(--bg-subtle)", color: logForm.sea_state === s ? "var(--brand)" : "var(--text-muted)", cursor: "pointer" }}>{s}</button>
+                    ); })}
+                  </div>
+                </div>
+
+                {/* Conditions pills (sailing angle / motor) */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>SAILING CONDITIONS</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                    {["Motoring", "Close hauled", "Beam reach", "Broad reach", "Downwind", "Motor sailing"].map(function(c){ return (
+                      <button key={c} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { conditions: f.conditions === c ? "" : c }); }); }}
+                        style={{ padding: "5px 10px", border: "1.5px solid " + (logForm.conditions === c ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.conditions === c ? "var(--brand-deep)" : "var(--bg-subtle)", color: logForm.conditions === c ? "var(--brand)" : "var(--text-muted)", cursor: "pointer" }}>{c}</button>
+                    ); })}
+                  </div>
+                </div>
+              </>)}
+
+              {/* Notes */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>NOTES</div>
+                <textarea placeholder="What happened? Any events, observations, or things to remember..." value={logForm.notes || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { notes: e.target.value }); }); }} rows={3} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, resize: "none" }} />
+              </div>
+
+              {/* More details toggle */}
+              <div style={{ borderTop: "1px solid var(--border)", marginBottom: 12, paddingTop: 12 }}>
+                <button onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { _showMore: !f._showMore }); }); }}
+                  style={{ background: "none", border: "none", fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                  {logForm._showMore ? "▾ Hide details" : "▸ More details"}
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 400 }}>barometric pressure, visibility, anchor, incident</span>
+                </button>
+              </div>
+
+              {/* Expanded fields */}
+              {logForm._showMore && (<>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>BARO mb</div>
+                    <input type="number" placeholder="1013" value={logForm.barometric_mb || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { barometric_mb: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>VISIBILITY</div>
+                    <select value={logForm.visibility || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { visibility: e.target.value }); }); }} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                      <option value="">—</option>
+                      {["Unlimited", "Good (>5nm)", "Moderate (2–5nm)", "Poor (<2nm)", "Fog", "Rain"].map(function(v){ return <option key={v} value={v}>{v}</option>; })}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL ADDED gal</div>
+                    <input type="number" placeholder="0" step="0.1" value={logForm.fuel_added || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { fuel_added: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>MAX SPEED kts</div>
+                    <input type="number" placeholder="0" step="0.1" value={logForm.max_speed_kts || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { max_speed_kts: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ANCHOR LOCATION</div>
+                    <input placeholder="Anchorage name" value={logForm.anchor_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { anchor_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ANCHOR DEPTH ft</div>
+                    <input type="number" placeholder="0" step="0.5" value={logForm.anchor_depth_ft || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { anchor_depth_ft: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>INCIDENT / UNUSUAL EVENT</div>
+                  <textarea placeholder="Any incidents, equipment failures, medical events, or distress calls observed..." value={logForm.incident || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { incident: e.target.value }); }); }} rows={2} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, resize: "none" }} />
+                </div>
+              </>)}
+
             </div>
+
+            {/* Footer */}
             <div style={{ padding: "12px 20px 20px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
               <button onClick={saveLog} disabled={!logForm.entry_date} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: logForm.entry_date ? "var(--brand)" : "var(--brand-deep)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: logForm.entry_date ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
                 {editingLog ? "Save Changes" : "Save Log Entry"}
