@@ -803,7 +803,7 @@ export default function App() {
   const [showAddEquip, setShowAddEquip]     = useState(false);
   const [newEquip, setNewEquip]             = useState({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" });
   const [addingPartFor, setAddingPartFor]   = useState(null);
-  const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "", sku: "" });
+  const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "", sku: "", notes: "" });
   const [addingDocFor, setAddingDocFor]     = useState(null);
   const [newDocForm, setNewDocForm]         = useState({ label: "", url: "", type: "Manual", source: "url", fileObj: null, fileName: "" });
   const [uploadingDoc, setUploadingDoc]     = useState(false);
@@ -1223,7 +1223,7 @@ export default function App() {
     if (!newPartForm.name.trim()) return;
     const eq = equipment.find(function(e){ return e.id === eqId; });
     if (!eq) return;
-    const newPart = { id: "cp-" + Date.now(), name: newPartForm.name, url: newPartForm.url, price: newPartForm.price, sku: newPartForm.sku, vendor: "custom" };
+    const newPart = { id: "cp-" + Date.now(), name: newPartForm.name, url: newPartForm.url, price: newPartForm.price, sku: newPartForm.sku, notes: newPartForm.notes, vendor: "custom" };
     const updatedParts = [...(eq.customParts || []), newPart];
     try {
       await supa("equipment", { method: "PATCH", query: "id=eq." + eqId, body: { custom_parts: updatedParts }, prefer: "return=minimal" });
@@ -3359,35 +3359,45 @@ export default function App() {
                         <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ marginTop: 6, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh suggestions</button>
                       )}
                       {(eq.customParts||[]).length > 0 && (<>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginTop: 14, marginBottom: 8 }}>CUSTOM PARTS</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginTop: 14, marginBottom: 8 }}>MY PARTS</div>
                         {eq.customParts.map(function(part){ return (
-                          <div key={part.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                            <div>
-                              <span style={{ fontSize: 13, fontWeight: 600 }}>{part.name}</span>
-                              {part.sku && <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 6 }}>SKU: {part.sku}</span>}
-                            </div>
-                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                              {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>${part.price}</span>}
-                              {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>↗ Buy</a>}
-                              {(function(){ const inList = cart.some(function(i){ return i.name === part.name; }); return (
-                                <button onClick={function(){ if (!inList) addToCart(part, "custom", eq.name); }} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, border: "none", cursor: inList ? "default" : "pointer", background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff" }}>
-                                  {inList ? "✓ Listed" : "+ List"}
-                                </button>
-                              ); })()}
+                          <div key={part.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{part.name}</div>
+                                {part.sku && (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                                    <span style={{ fontSize: 11, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", padding: "1px 6px", borderRadius: 4 }}>#{part.sku}</span>
+                                    <a href={"https://www.google.com/search?q=" + encodeURIComponent(part.sku + " " + part.name)} target="_blank" rel="noreferrer"
+                                      style={{ fontSize: 10, color: "var(--text-muted)", textDecoration: "none" }}>🔍 search</a>
+                                  </div>
+                                )}
+                                {part.notes && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{part.notes}</div>}
+                              </div>
+                              <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
+                                {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>${part.price}</span>}
+                                {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>↗ Buy</a>}
+                                {(function(){ const inList = cart.some(function(i){ return i.name === part.name; }); return (
+                                  <button onClick={function(){ if (!inList) addToCart(part, "custom", eq.name); }} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, border: "none", cursor: inList ? "default" : "pointer", background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff" }}>
+                                    {inList ? "✓ Listed" : "+ List"}
+                                  </button>
+                                ); })()}
+                              </div>
                             </div>
                           </div>
                         ); })}
                       </>)}
                       {addingPartFor === eq.id ? (
                         <div style={{ marginTop: 12, background: "var(--bg-subtle)", borderRadius: 10, padding: 14 }}>
-                          <input placeholder="Part name" value={newPartForm.name} onChange={function(e){ setNewPartForm(function(f){ return { ...f, name: e.target.value }; }); }} style={s.inp} />
+                          <input placeholder="Part name *" value={newPartForm.name} onChange={function(e){ setNewPartForm(function(f){ return { ...f, name: e.target.value }; }); }} style={s.inp} />
                           <div style={{ display: "flex", gap: 8 }}>
-                            <input placeholder="SKU (optional)" value={newPartForm.sku} onChange={function(e){ setNewPartForm(function(f){ return { ...f, sku: e.target.value }; }); }} style={{ ...s.inp, flex: 1, marginBottom: 0 }} />
+                            <input placeholder="Part # (e.g. 211-60390)" value={newPartForm.sku} onChange={function(e){ setNewPartForm(function(f){ return { ...f, sku: e.target.value }; }); }} style={{ ...s.inp, flex: 2, marginBottom: 0, fontFamily: newPartForm.sku ? "DM Mono, monospace" : "inherit" }} />
                             <input placeholder="Price" value={newPartForm.price} onChange={function(e){ setNewPartForm(function(f){ return { ...f, price: e.target.value }; }); }} style={{ ...s.inp, flex: 1, marginBottom: 0 }} />
                           </div>
-                          <input placeholder="URL (optional)" value={newPartForm.url} onChange={function(e){ setNewPartForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
+                          <input placeholder="Notes / supplier (e.g. Fisheries Supply)" value={newPartForm.notes} onChange={function(e){ setNewPartForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={s.inp} />
+                          <input placeholder="Buy URL (optional)" value={newPartForm.url} onChange={function(e){ setNewPartForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
                                           <div style={{ display: "flex", gap: 8 }}>
-                            <button onClick={function(){ setAddingPartFor(null); setNewPartForm({ name: "", url: "", price: "", sku: "" }); }} style={{ flex: 1, padding: "7px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
+                            <button onClick={function(){ setAddingPartFor(null); setNewPartForm({ name: "", url: "", price: "", sku: "", notes: "" }); }} style={{ flex: 1, padding: "7px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                             <button onClick={function(){ addCustomPart(eq.id); }} style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Add Part</button>
                           </div>
                         </div>
