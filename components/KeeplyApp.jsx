@@ -2708,8 +2708,14 @@ export default function App() {
             const engineHours = settings.engineHours || null;
             const lastHoursUpdate = settings.engineHoursDate || null;
             const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
+            const urgencyOrder = { "critical": 0, "overdue": 1, "due-soon": 2, "ok": 3 };
             const nextDue = [...vesselTasks].filter(function(t){ return t.dueDate; })
-              .sort(function(a,b){ return new Date(a.dueDate)-new Date(b.dueDate); })[0];
+              .sort(function(a,b){
+                const ua = urgencyOrder[getTaskUrgency(a)] ?? 3;
+                const ub = urgencyOrder[getTaskUrgency(b)] ?? 3;
+                if (ua !== ub) return ua - ub;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+              })[0];
             const nextUrgency = nextDue ? getTaskUrgency(nextDue) : null;
             const nextColor = nextUrgency === "critical" ? "var(--danger-text)" : nextUrgency === "overdue" ? "var(--warn-text)" : nextUrgency === "due-soon" ? "var(--duesoon-text)" : "var(--text-primary)";
             const daysUntil = nextDue && nextDue.dueDate ? Math.round((new Date(nextDue.dueDate) - new Date()) / 86400000) : null;
@@ -2990,7 +2996,13 @@ export default function App() {
                 <span style={{ fontSize: 10, fontWeight: 600, color: "var(--brand)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Maintenance due · {urgentTasks.length}</span>
                 <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
               </div>
-              {urgentTasks.map(function(t){
+              {[...urgentTasks].sort(function(a,b){
+                const order = { "critical": 0, "overdue": 1, "due-soon": 2 };
+                const ua = order[getTaskUrgency(a)] ?? 2;
+                const ub = order[getTaskUrgency(b)] ?? 2;
+                if (ua !== ub) return ua - ub;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+              }).map(function(t){
                 const badge = getDueBadge(t.dueDate, t.interval_days);
                 const isExpanded = expandedTask === t.id;
                 const isCompleting = completingTask === t.id;
