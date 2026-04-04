@@ -658,7 +658,7 @@ export default function App() {
   const [shareMsg, setShareMsg]   = useState(null);
 
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
-  const [tab, setTab]   = useState("boat");
+  const [tab, setTab]   = useState(function(){ const t = localStorage.getItem("keeply_tab"); return ["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone"].includes(t) ? t : "boat"; });
   const [darkMode, setDarkMode] = useState(function(){ return typeof window !== "undefined" && localStorage.getItem("keeply-dark") === "1"; });
 
   useEffect(function(){
@@ -1041,6 +1041,10 @@ export default function App() {
         const rp = await supa("repairs", { query: "vessel_id=eq." + vid + "&order=date.desc" });
         setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
       } catch(e) { setRepairs([]); }
+      try {
+        const lg = await supa("logbook", { query: "vessel_id=eq." + vid + "&order=entry_date.desc,created_at.desc" });
+        setLogEntries(lg || []);
+      } catch(e) { setLogEntries([]); }
       // Reload vessel members for all vessels (membership may have changed)
       try {
         const allIds = vessels.map(function(v){ return v.id; });
@@ -1054,22 +1058,15 @@ export default function App() {
           const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
           setLogEntries(lg || []);
         } catch(e) { setLogEntries([]); }
-
-        try {
-          const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
-          setLogEntries(lg || []);
-        } catch(e) { setLogEntries([]); }
-
-        try {
-          const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
-          setLogEntries(lg || []);
-        } catch(e) { setLogEntries([]); }
     } catch(err) {
       setDbError(err.message);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Persist active tab
+  React.useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
   const openAddVessel = function(){
