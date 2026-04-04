@@ -1,52 +1,95 @@
+const STRIPE_API = "https://api.stripe.com/v1";
+
+function stripeHeaders() {
+  return {
+    "Authorization": "Bearer " + process.env.STRIPE_SECRET_KEY,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+}
+
+function encode(obj, prefix) {
+  const parts = [];
+  for (const key in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+    const fullKey = prefix ? prefix + "[" + key + "]" : key;
+    const val = obj[key];
+    if (val !== null && val !== undefined) {
+      if (typeof val === "object" && !Array.isArray(val)) {
+        parts.push(encode(val, fullKey));
+      } else if (Array.isArray(val)) {
+        val.forEach(function(v, i) { parts.push(encode(v, fullKey + "[" + i + "]")); });
+      } else {
+        parts.push(encodeURIComponent(fullKey) + "=" + encodeURIComponent(val));
+      }
+    }
+  }
+  return parts.join("&");
+}
+
+// Map price ID → plan name
+const PLAN_MAP = {
+  "price_1TGXViPIMPMntnuJyP20q6Zy": "pro",
+  "price_1TGzfDPIMPMntnuJ46IfEXFI": "pro",
+  "price_1TGXX8PIMPMntnuJpJxQaZAz": "fleet",
+};
+
 export async function POST(request) {
   try {
-    const Stripe = (await import('stripe')).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
     const { priceId, userId, userEmail, returnUrl } = await request.json();
 
     if (!priceId || !userId) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+      return Response.json({ error: "Missing priceId or userId" }, { status: 400 });
+    }
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return Response.json({ error: "Stripe not configured" }, { status: 500 });
     }
 
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
+    // Check if user already has a Stripe customer ID
+    const supaRes = await fetch(
+      process.env.NEXT_PUBLIC_SUPABASE_URL + "/rest/v1/user_profiles?id=eq." + userId + "&select=stripe_customer_id",
+      { headers: { "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, "Authorization": "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY } }
     );
+    const profiles = await supaRes.json();
+    const existingCustomerId = profiles?.[0]?.stripe_customer_id || null;
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('stripe_customer_id')
-      .eq('id', userId)
-      .single();
+    const baseUrl = returnUrl || "https://keeply.boats";
+    const successUrl = baseUrl + (baseUrl.includes("?") ? "&" : "?") + "upgraded=1";
 
-    let customerId = profile?.stripe_customer_id;
+    const sessionData = {
+      mode: "subscription",
+      allow_promotion_codes: "true",
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": "1",
+      success_url: successUrl,
+      cancel_url: baseUrl,
+      client_reference_id: userId,
+      metadata: { userId, plan: PLAN_MAP[priceId] || "pro" },
+      "subscription_data[metadata][userId]": userId,
+      "subscription_data[metadata][plan]": PLAN_MAP[priceId] || "pro",
+    };
 
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: userEmail,
-        metadata: { supabase_user_id: userId },
-      });
-      customerId = customer.id;
-      await supabase.from('user_profiles').upsert({ id: userId, stripe_customer_id: customerId });
+    if (existingCustomerId) {
+      sessionData.customer = existingCustomerId;
+    } else if (userEmail) {
+      sessionData.customer_email = userEmail;
     }
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: 'subscription',
-      success_url: (returnUrl || 'https://keeply.boats') + '?upgraded=true',
-      cancel_url: (returnUrl || 'https://keeply.boats') + '?cancelled=true',
-      metadata: { supabase_user_id: userId },
-      subscription_data: { metadata: { supabase_user_id: userId } },
-      allow_promotion_codes: true,
+    const res = await fetch(STRIPE_API + "/checkout/sessions", {
+      method: "POST",
+      headers: stripeHeaders(),
+      body: encode(sessionData),
     });
 
+    const session = await res.json();
+
+    if (!res.ok) {
+      return Response.json({ error: session.error?.message || "Stripe error" }, { status: 500 });
+    }
+
     return Response.json({ url: session.url });
-  } catch (err) {
-    console.error('Stripe checkout error:', err);
-    return Response.json({ error: err.message }, { status: 500 });
+
+  } catch (e) {
+    console.error("Checkout error:", e);
+    return Response.json({ error: e.message }, { status: 500 });
   }
 }

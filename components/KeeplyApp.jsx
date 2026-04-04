@@ -1137,6 +1137,22 @@ export default function App() {
     })();
   }, [activeVesselId]);
 
+  // Handle post-checkout redirect
+  useEffect(function(){
+    if (typeof window !== "undefined" && window.location.search.includes("upgraded=1")) {
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+      // Reload plan after brief delay (webhook may not have fired yet)
+      setTimeout(async function(){
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          supabase.from("user_profiles").select("plan").eq("id", session.user.id).single()
+            .then(function(r){ if (r.data) setUserPlan(r.data.plan || "free"); });
+        }
+      }, 2000);
+    }
+  }, []);
+
   // Restore and persist active tab
   useEffect(function(){
     const t = localStorage.getItem("keeply_tab");
@@ -4804,6 +4820,9 @@ export default function App() {
               }} style={{ width: "100%", padding: "10px 0", border: "1.5px solid #374151", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                 Subscribe Fleet — $49.99/mo
               </button>
+              <div style={{ marginTop: 10, background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#854d0e", textAlign: "center" }}>
+                🎁 Beta tester? Use code <strong>BETA2026</strong> at checkout for 100% off Fleet.
+              </div>
             </div>
 
             <button onClick={function(){ setShowUpgradeModal(false); }}
