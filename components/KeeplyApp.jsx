@@ -4,6 +4,7 @@ import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
 import VesselSetup from "./VesselSetup";
 import LogbookPage from "./LogbookPage";
+import PartsPage from "./PartsPage";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
@@ -1101,7 +1102,7 @@ export default function App() {
   // Restore and persist active tab
   useEffect(function(){
     const t = localStorage.getItem("keeply_tab");
-    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone"].includes(t)) setTab(t);
+    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone"].includes(t)) setTab(t);
   }, []);
   useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
 
@@ -2082,6 +2083,7 @@ export default function App() {
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "🗺️ Logbook", action: function(){ setView("customer"); setTab("logbook-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="logbook-standalone" },
                   { label: "⚙️ Equipment", action: function(){ setView("customer"); setTab("equipment-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="equipment-standalone" },
+                  { label: "🔩 Parts", action: function(){ setView("customer"); setTab("parts-standalone"); setShowMobileMenu(false); }, active: view==="customer" && tab==="parts-standalone" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
                   { label: "👤 Settings", action: function(){ setShowProfilePanel(true); setShowMobileMenu(false); }, active: false },
@@ -3765,6 +3767,16 @@ export default function App() {
             vesselName={boatName}
             vesselType={settings.vesselType}
             fuelBurnRate={settings.fuelBurnRate || null}
+            onBack={function(){ setTab("boat"); }}
+          />
+        )}
+
+        {/* ── PARTS PAGE ── */}
+        {view === "customer" && tab === "parts-standalone" && (
+          <PartsPage
+            equipment={equipment.filter(function(e){ return e._vesselId === activeVesselId; })}
+            cart={cart}
+            onAddToCart={addToCart}
             onBack={function(){ setTab("boat"); }}
           />
         )}
