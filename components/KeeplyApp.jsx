@@ -3425,6 +3425,8 @@ export default function App() {
             </div>
           )}
 
+        </>)}
+
           {showAddTask && (
             <div style={s.modalBg} onClick={function(){ setShowAddTask(false); }}>
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
@@ -3644,7 +3646,6 @@ export default function App() {
           )}
         
 
-        </>)}
 
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs-standalone" && (<>
