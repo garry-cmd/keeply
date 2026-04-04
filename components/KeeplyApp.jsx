@@ -1,13 +1,4 @@
-"us
-
-  const saveAiPartToMyParts = async function(eq, part) {
-    const newPart = { id: "cp-" + Date.now(), name: part.name, sku: "", price: "", url: "", notes: "AI: " + (part.reason || ""), vendor: "ai" };
-    const updatedParts = [...(eq.customParts || []), newPart];
-    try {
-      await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { custom_parts: updatedParts }, prefer: "return=minimal" });
-      setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? { ...e, customParts: updatedParts } : e; }); });
-    } catch(e) { console.error("Save part failed:", e); }
-  };e client"; // v2.1 — equipment page, FAB on both tabs
+"use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
@@ -1240,6 +1231,15 @@ export default function App() {
       setNewPartForm({ name: "", url: "", price: "", sku: "" });
       setAddingPartFor(null);
     } catch(err){ setDbError(err.message); }
+  };
+
+  const saveAiPartToMyParts = async function(eq, part) {
+    const newPart = { id: "cp-" + Date.now(), name: part.name, sku: "", price: "", url: "", notes: "AI: " + (part.reason || ""), vendor: "ai" };
+    const updatedParts = [...(eq.customParts || []), newPart];
+    try {
+      await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { custom_parts: updatedParts }, prefer: "return=minimal" });
+      setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? { ...e, customParts: updatedParts } : e; }); });
+    } catch(e) { console.error("Save part failed:", e); }
   };
 
   const addCustomDoc = async function(eqId){
