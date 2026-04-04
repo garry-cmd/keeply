@@ -2509,28 +2509,26 @@ export default function App() {
             })()}
           </div>
 
-          {/* ── Category filter pills ── */}
+          {/* ── Category filter ── */}
           {(() => {
-            // Categories that have either repairs or equipment for this vessel
             const repairSections = [...new Set(repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){ return r.section; }))];
             const equipCategories = [...new Set(equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return e.category; }))];
             const allCats = [...new Set([...repairSections, ...equipCategories])].filter(function(c){ return c && c !== "Vessel"; }).sort();
             if (allCats.length <= 1) return null;
             return (
-              <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, marginBottom: 14, WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                {["All", ...allCats].map(function(cat){
-                  const isActive = equipSectionFilter === cat;
-                  return (
-                    <span key={cat} onClick={function(){ setEquipSectionFilter(cat); }}
-                      style={{ whiteSpace: "nowrap", flexShrink: 0, fontSize: 12, fontWeight: 500, padding: "5px 12px", borderRadius: 20,
-                        background: isActive ? "var(--brand)" : "var(--bg-card)",
-                        color: isActive ? "#fff" : "var(--text-secondary)",
-                        border: "0.5px solid " + (isActive ? "var(--brand)" : "var(--border)"),
-                        cursor: "pointer" }}>
-                      {cat === "All" ? "All" : (SECTIONS[cat] || "") + " " + cat}
-                    </span>
-                  );
-                })}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.4px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Filter</span>
+                <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
+                  style={{ flex: 1, border: "0.5px solid var(--border)", borderRadius: 20, padding: "6px 14px", fontSize: 13, background: equipSectionFilter !== "All" ? "var(--brand-deep)" : "var(--bg-card)", color: equipSectionFilter !== "All" ? "var(--brand)" : "var(--text-primary)", cursor: "pointer", fontWeight: equipSectionFilter !== "All" ? 600 : 400, appearance: "none", WebkitAppearance: "none" }}>
+                  <option value="All">All categories</option>
+                  {allCats.map(function(cat){
+                    return <option key={cat} value={cat}>{(SECTIONS[cat] || "") + " " + cat}</option>;
+                  })}
+                </select>
+                {equipSectionFilter !== "All" && (
+                  <span onClick={function(){ setEquipSectionFilter("All"); }}
+                    style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer", whiteSpace: "nowrap", padding: "4px 2px" }}>✕ clear</span>
+                )}
               </div>
             );
           })()}
