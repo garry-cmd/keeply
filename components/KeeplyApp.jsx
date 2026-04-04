@@ -112,14 +112,16 @@ function intervalToDays(interval) {
   return isNaN(num) ? 0 : num;
 }
 
-function getDueBadge(dueDate) {
+function getDueBadge(dueDate, intervalDays) {
   if (!dueDate) return null;
   const now = new Date(); now.setHours(0,0,0,0);
   const due = new Date(dueDate); due.setHours(0,0,0,0);
   const diff = Math.round((due - now) / 86400000);
   if (diff <= -10) return { label: "🔴 Critical",  color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)" };
   if (diff <= -5)  return { label: "🟠 Overdue",   color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)"  };
-  if (diff <= 10)  return { label: "🟡 Due Soon",  color: "var(--duesoon-text)",  bg: "var(--duesoon-bg)",  border: "var(--duesoon-border)"  };
+  // Due Soon window = half the interval, capped at 10 days
+  const dueSoonDays = intervalDays ? Math.min(Math.floor(intervalDays / 2), 10) : 10;
+  if (diff <= dueSoonDays) return { label: "🟡 Due Soon",  color: "var(--duesoon-text)",  bg: "var(--duesoon-bg)",  border: "var(--duesoon-border)"  };
   return null;
 }
 
@@ -1812,7 +1814,7 @@ export default function App() {
 
     // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
-    const b = getDueBadge(t.dueDate || t.due_date);
+    const b = getDueBadge(t.dueDate || t.due_date, t.interval_days);
     if (!b) return "ok";
     return b.label.indexOf("Critical") >= 0 ? "critical" : b.label.indexOf("Overdue") >= 0 ? "overdue" : "due-soon";
   };
@@ -3747,11 +3749,8 @@ export default function App() {
 
                 {/* Task panels (Critical + Due Soon) */}
                 {(showUrgencyPanel === "Critical" || showUrgencyPanel === "Due Soon") && (function(){
-                  const todayStr = today();
                   const panelTasks = tasks.filter(function(t){
                     if (!t._vesselId || t._vesselId !== activeVesselId) return false;
-                    // Never show a task that was serviced today — it was just completed
-                    if (t.lastService === todayStr) return false;
                     if (showUrgencyPanel === "Critical") return getTaskUrgency(t) === "critical";
                     return getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon";
                   });
