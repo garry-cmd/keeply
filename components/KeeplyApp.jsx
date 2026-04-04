@@ -760,7 +760,7 @@ export default function App() {
   const [findPartResults, setFindPartResults]   = useState([]);
   const [inlinePartResults, setInlinePartResults] = useState({});
   const [savedParts, setSavedParts] = useState({});
-  const savingPartsRef = React.useRef({});
+  const savingPartsRef = useRef({});
   const [findPartLoading, setFindPartLoading]   = useState(false);
   const [findPartError, setFindPartError]       = useState(null);
   const findPartSearched                        = useRef(null);
