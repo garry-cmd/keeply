@@ -2956,20 +2956,7 @@ export default function App() {
             );
           })()}
 
-          {/* ── First Mate bar ── */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 8, marginTop: 16 }}
-            onClick={function(){ document.querySelector("#fm-top-bar input")?.focus(); }}>
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
-                <path d="M2 7.5a5 5 0 0 0 10 0" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
-                <line x1="7" y1="12.5" x2="7" y2="10" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: 13, color: "var(--text-muted)", flex: 1 }}>Ask <span style={{ color: "var(--brand)" }}>First Mate</span>...</span>
-            <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>→</span>
-          </div>
-          <div style={{ height: 80 }} />
+          <div style={{ height: 24 }} />
 
         </>
       )}
