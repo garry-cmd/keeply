@@ -1586,22 +1586,30 @@ export default function App() {
 
 
   // ── Service Worker + Push Notification setup ──────────────────────────────
+  const isIOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isPWA = typeof window !== "undefined" && (window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches);
+
   useEffect(function(){
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       setPushStatus("unsupported");
+      return;
+    }
+    // iOS Safari (non-PWA) cannot use push — requires home screen install
+    if (isIOS && !isPWA) {
+      setPushStatus("ios-browser");
       return;
     }
     navigator.serviceWorker.register("/sw.js").then(function(reg){
       if (Notification.permission === "granted") {
         reg.pushManager.getSubscription().then(function(sub){
-          setPushStatus(sub ? "subscribed" : "granted");
+          setPushStatus(sub ? "subscribed" : "unknown");
         });
       } else if (Notification.permission === "denied") {
         setPushStatus("denied");
       } else {
         setPushStatus("unknown");
       }
-    }).catch(function(e){ console.error("SW registration failed:", e); });
+    }).catch(function(e){ console.error("SW registration failed:", e); setPushStatus("unsupported"); });
   }, []);
 
   const subscribeToPush = async function(){
@@ -1620,11 +1628,13 @@ export default function App() {
     } catch(e) {
       console.error("Push subscribe failed:", e);
       if (Notification.permission === "denied") setPushStatus("denied");
+      else setPushStatus("unknown");
     }
   };
 
   const enablePushNotifications = async function(){
-    if (!("Notification" in window)) { setPushStatus("unsupported"); return; }
+    if (!("Notification" in window) || !("PushManager" in window)) { setPushStatus("unsupported"); return; }
+    if (isIOS && !isPWA) { setPushStatus("ios-browser"); return; }
     if (Notification.permission === "granted") {
       await subscribeToPush();
     } else if (Notification.permission !== "denied") {
@@ -5634,19 +5644,40 @@ export default function App() {
                 {[
                   { key: "alertInApp", label: "In-app alerts", sub: "Bell icon in header", enabled: true },
                   { key: "alertEmail", label: "Email digest", sub: "Daily summary to " + (profilePrefs.emailAddress || "your email"), enabled: true },
-                  { key: null, label: "Push notifications", sub: "Coming soon", enabled: false },
                 ].map(function(item, i){ return (
-                  <div key={i} style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < 2 ? "0.5px solid #f3f4f6" : "none" }}>
+                  <div key={i} style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid #f3f4f6" }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: item.enabled ? "var(--text-primary)" : "var(--text-muted)" }}>{item.label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{item.label}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{item.sub}</div>
                     </div>
-                    <div onClick={function(){ if (!item.enabled || !item.key) return; setProfilePrefs(function(p){ const n = Object.assign({}, p); n[item.key] = !p[item.key]; return n; }); }}
-                      style={{ width: 40, height: 24, borderRadius: 12, background: (!item.key ? "var(--border)" : (profilePrefs[item.key] ? "var(--brand)" : "var(--border)")), position: "relative", cursor: item.enabled && item.key ? "pointer" : "default", flexShrink: 0, opacity: !item.enabled ? 0.4 : 1, transition: "background 0.2s" }}>
-                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "var(--bg-card)", top: 3, left: (!item.key ? 3 : (profilePrefs[item.key] ? 19 : 3)), transition: "left 0.2s" }} />
+                    <div onClick={function(){ if (!item.key) return; setProfilePrefs(function(p){ const n = Object.assign({}, p); n[item.key] = !p[item.key]; return n; }); }}
+                      style={{ width: 40, height: 24, borderRadius: 12, background: profilePrefs[item.key] ? "var(--brand)" : "var(--border)", position: "relative", cursor: "pointer", flexShrink: 0, transition: "background 0.2s" }}>
+                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "var(--bg-card)", top: 3, left: profilePrefs[item.key] ? 19 : 3, transition: "left 0.2s" }} />
                     </div>
                   </div>
                 ); })}
+                {/* Push notifications — real toggle */}
+                <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: pushStatus === "unsupported" ? "var(--text-muted)" : "var(--text-primary)" }}>Push notifications</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1, lineHeight: 1.4 }}>
+                      {pushStatus === "subscribed"   ? "Maintenance reminders active"
+                       : pushStatus === "denied"     ? "Blocked — allow in browser Settings"
+                       : pushStatus === "ios-browser"? "Add Keeply to Home Screen first (Share → Add to Home Screen)"
+                       : pushStatus === "unsupported"? "Not supported on this browser"
+                       : "Get maintenance reminders on your phone"}
+                    </div>
+                  </div>
+                  <div
+                    onClick={function(){
+                      if (pushStatus === "subscribed") return; // already on
+                      if (pushStatus === "denied" || pushStatus === "unsupported" || pushStatus === "ios-browser") return;
+                      enablePushNotifications();
+                    }}
+                    style={{ width: 40, height: 24, borderRadius: 12, background: pushStatus === "subscribed" ? "var(--brand)" : "var(--border)", position: "relative", cursor: pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "unsupported" || pushStatus === "ios-browser" ? "default" : "pointer", flexShrink: 0, opacity: pushStatus === "unsupported" ? 0.4 : 1, transition: "background 0.2s" }}>
+                    <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "var(--bg-card)", top: 3, left: pushStatus === "subscribed" ? 19 : 3, transition: "left 0.2s" }} />
+                  </div>
+                </div>
               </div>
 
               {/* ── Alert Thresholds ── */}
@@ -5694,22 +5725,27 @@ export default function App() {
                 </div>
                 {/* Push notifications row */}
                 {pushStatus !== "unsupported" && (
-                  <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid #f3f4f6", cursor: pushStatus === "subscribed" || pushStatus === "denied" ? "default" : "pointer" }}
-                    onClick={pushStatus === "subscribed" || pushStatus === "denied" ? undefined : function(){ enablePushNotifications(); }}>
-                    <div>
+                  <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid #f3f4f6", cursor: pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "ios-browser" ? "default" : "pointer" }}
+                    onClick={pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "ios-browser" ? undefined : function(){ enablePushNotifications(); }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                         {pushStatus === "subscribed" ? "🔔 Notifications on" : pushStatus === "denied" ? "🔕 Notifications blocked" : "🔔 Enable Notifications"}
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                        {pushStatus === "subscribed" ? "Maintenance reminders active" : pushStatus === "denied" ? "Allow in browser settings" : "Get maintenance reminders"}
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1, lineHeight: 1.4 }}>
+                        {pushStatus === "subscribed" ? "Maintenance reminders active"
+                          : pushStatus === "denied" ? "Blocked — allow in browser Settings"
+                          : pushStatus === "ios-browser" ? "Add Keeply to your Home Screen first (Share → Add to Home Screen)"
+                          : "Get maintenance reminders on your phone"}
                       </div>
                     </div>
-                    {pushStatus === "subscribed"
-                      ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ok-text)", background: "var(--ok-bg)", padding: "2px 8px", borderRadius: 10 }}>ON</span>
-                      : pushStatus === "denied"
-                      ? <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Blocked</span>
-                      : <span style={{ color: "var(--brand)", fontSize: 14 }}>›</span>
-                    }
+                    <div style={{ flexShrink: 0, marginLeft: 8 }}>
+                      {pushStatus === "subscribed"
+                        ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ok-text)", background: "var(--ok-bg)", padding: "2px 8px", borderRadius: 10 }}>ON</span>
+                        : pushStatus === "denied" || pushStatus === "ios-browser"
+                        ? <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{pushStatus === "ios-browser" ? "ℹ️" : "Blocked"}</span>
+                        : <span style={{ color: "var(--brand)", fontSize: 14 }}>›</span>
+                      }
+                    </div>
                   </div>
                 )}
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
