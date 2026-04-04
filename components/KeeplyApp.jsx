@@ -2128,12 +2128,26 @@ export default function App() {
             { icon: "⛵", label: "My Boat",   active: view==="customer" && tab==="boat",                 action: function(){ setView("customer"); setTab("boat"); } },
             { icon: "🗺️",  label: "Logbook",  active: view==="customer" && tab==="logbook-standalone",   action: function(){ setView("customer"); setTab("logbook-standalone"); } },
             { icon: "⚙️",  label: "Equipment", active: view==="customer" && tab==="equipment-standalone", action: function(){ setView("customer"); setTab("equipment-standalone"); } },
-            { icon: "👤",  label: "Profile",   active: false,                                             action: function(){ setShowProfilePanel(true); } },
+            { icon: function(active){ return (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  {/* Cap brim */}
+                  <path d="M2 16 Q12 14 22 16" stroke={active ? "var(--brand)" : "var(--text-muted)"} strokeWidth="2" strokeLinecap="round" fill="none"/>
+                  {/* Cap body */}
+                  <path d="M4 16 Q4 10 12 9 Q20 10 20 16" fill={active ? "var(--brand)" : "var(--text-muted)"}/>
+                  {/* Cap top flat */}
+                  <rect x="6" y="8.5" width="12" height="2" rx="1" fill={active ? "var(--brand)" : "var(--text-muted)"}/>
+                  {/* Badge anchor */}
+                  <circle cx="12" cy="13" r="2" fill={active ? "#fff" : "var(--bg-card)"} opacity="0.9"/>
+                  <path d="M12 11.5 L12 14.5 M10.8 12.3 Q12 11.5 13.2 12.3" stroke={active ? "var(--brand)" : "var(--text-muted)"} strokeWidth="0.8" strokeLinecap="round"/>
+                </svg>
+              ); }, label: "Profile", active: false, action: function(){ setShowProfilePanel(true); } },
           ].map(function(item){ return (
             <button key={item.label} onClick={item.action}
               style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "6px 0",
                 color: item.active ? "var(--brand)" : "var(--text-muted)" }}>
-              <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
+              {typeof item.icon === "function"
+                ? item.icon(item.active)
+                : <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>}
               <span style={{ fontSize: 10, fontWeight: item.active ? 700 : 500, letterSpacing: "0.2px" }}>{item.label}</span>
               {item.active && <div style={{ position: "absolute", bottom: 0, width: 32, height: 2, background: "var(--brand)", borderRadius: 1 }} />}
             </button>
