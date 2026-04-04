@@ -234,14 +234,30 @@ const PRIORITY_CFG = {
   low:      { color: "var(--priority-low-text)",      bg: "var(--priority-low-bg)",      order: 3 },
 };
 const SECTIONS = {
-  Anchor: "⚓", Bilge: "🪣", Deck: "🛥", Dink: "⛵", Electrical: "⚡",
+  Anchor:      "⚓",
+  Bilge:       "🪣",
+  Deck:        "🛥️",
+  Dinghy:      "🚤",
+  Electrical:  "⚡",
   Electronics: "📡",
-  Engine: "🔧", Galley: "🍳", General: "🚢", Hydrovane: "🧭", Navigation: "🗺",
-  Paperwork: "📄", Vessel: "⚓", Plumbing: "🔩", Rigging: "🪢", Safety: "🛟", Watermaker: "💧",
+  Engine:      "🔧",
+  Galley:      "🍳",
+  Generator:   "🔌",
+  Hull:        "🚢",
+  Mechanical:  "⚙️",
+  Navigation:  "🗺️",
+  Paperwork:   "📄",
+  Plumbing:    "🚿",
+  Rigging:     "🪢",
+  Safety:      "🛟",
+  Sails:       "⛵",
+  Steering:    "🧭",
+  Vessel:      "⚓",
+  Watermaker:  "💧",
 };
 const ALL_SECTIONS   = Object.keys(SECTIONS);
-const MAINT_SECTIONS = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork"; });
-const EQ_CATEGORIES  = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Dink" && s !== "Vessel"; });
+const MAINT_SECTIONS = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Vessel"; });
+const EQ_CATEGORIES  = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Dinghy" && s !== "Vessel"; });
 
 // ─── SMALL SHARED COMPONENTS ─────────────────────────────────────────────────
 function Badge({ label, color, bg, border }) {
