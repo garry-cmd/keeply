@@ -642,7 +642,7 @@ export default function App() {
   const [shareMsg, setShareMsg]   = useState(null);
 
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
-  const [tab, setTab]   = useState("hub");
+  const [tab, setTab]   = useState("boat");
   const [darkMode, setDarkMode] = useState(function(){ return typeof window !== "undefined" && localStorage.getItem("keeply-dark") === "1"; });
 
   useEffect(function(){
@@ -1980,7 +1980,6 @@ export default function App() {
             <div style={{ position: "fixed", inset: 0, zIndex: 500 }} onClick={function(){ setShowMobileMenu(false); }}>
               <div style={{ position: "absolute", top: 56, right: 0, background: "var(--bg-card)", minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", overflow: "hidden" }} onClick={function(e){ e.stopPropagation(); }}>
                 {[
-                  { label: "🏠 Hub", action: function(){ setView("customer"); setTab("hub"); setShowMobileMenu(false); }, active: view==="customer" && tab==="hub" },
                   { label: "⛵ My Boat", action: function(){ setView("customer"); setTab("boat"); setShowMobileMenu(false); }, active: view==="customer" && tab==="boat" },
                   { label: "⚓ Fleet", action: function(){ setView("fleet"); loadFleetData(); setShowMobileMenu(false); }, active: view==="fleet" },
                   { label: "👥 Share Vessel", action: function(){ setShowShare(true); setShowMobileMenu(false); setShareMsg(null); setShareEmail(""); }, active: false },
@@ -2431,188 +2430,131 @@ export default function App() {
 
         {view === "admin" && <AdminDashboard onClose={function(){ setView("customer"); }} />}
 
-        {/* ── HUB TAB ── */}
-        {view === "customer" && tab === "hub" && (<>
-          {/* Vessel header */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{boatName}</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              {settings.make ? [settings.year, settings.make, settings.model].filter(Boolean).join(" ") : "My Vessel"}
-              {settings.address ? " · " + settings.address : ""}
-            </div>
-          </div>
 
-          {/* Instrument strip — engine hours + next service */}
+        {/* ── EQUIPMENT TAB ── */}
+        {view === "customer" && tab === "boat" && (<>
+          {/* ── Instrument strip ── */}
           {(() => {
-            const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
-            const overdueTasks = vesselTasks.filter(function(t){ return getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue"; });
-            const soonTasks = vesselTasks.filter(function(t){ return getTaskUrgency(t) === "due-soon"; });
-            const nextDue = [...vesselTasks].filter(function(t){ return t.dueDate; }).sort(function(a,b){ return new Date(a.dueDate)-new Date(b.dueDate); })[0];
             const engineHours = settings.engineHours || null;
             const lastHoursUpdate = settings.engineHoursDate || null;
+            const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
+            const nextDue = [...vesselTasks].filter(function(t){ return t.dueDate; }).sort(function(a,b){ return new Date(a.dueDate)-new Date(b.dueDate); })[0];
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 20, border: "1px solid var(--border)" }}>
-                <div style={{ background: "var(--bg-card)", padding: "14px 16px" }}>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 6 }}>Engine Hours</div>
-                  {engineHours ? (
-                    <>
-                      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{engineHours.toLocaleString()}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{lastHoursUpdate ? "logged " + fmt(lastHoursUpdate) : "manually entered"}</span>
-                        <button onClick={function(){
-                          const hrs = prompt("Current engine hours:");
-                          if (!hrs || isNaN(hrs)) return;
-                          const parsed = parseInt(hrs);
-                          const dated = today();
-                          setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
-                          supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
-                            .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
-                        }} style={{ fontSize: 9, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}>update</button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: 15, color: "var(--text-muted)", marginBottom: 4 }}>Not logged yet</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
+                <div style={{ background: "var(--bg-card)", padding: "12px 14px" }}>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 4 }}>Engine Hours</div>
+                  {engineHours ? (<>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{engineHours.toLocaleString()}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{lastHoursUpdate ? "logged " + fmt(lastHoursUpdate) : "manually entered"}</span>
                       <button onClick={function(){
                         const hrs = prompt("Current engine hours:");
                         if (!hrs || isNaN(hrs)) return;
                         const parsed = parseInt(hrs);
                         const dated = today();
-                        // Update local state immediately
                         setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
-                        // Persist to Supabase
                         supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
                           .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
-                      }} style={{ fontSize: 10, color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontWeight: 600 }}>+ Log hours</button>
-                    </>
-                  )}
+                      }} style={{ fontSize: 9, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}>update</button>
+                    </div>
+                  </>) : (<>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Not logged</div>
+                    <button onClick={function(){
+                      const hrs = prompt("Current engine hours:");
+                      if (!hrs || isNaN(hrs)) return;
+                      const parsed = parseInt(hrs);
+                      const dated = today();
+                      setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
+                      supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
+                        .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
+                    }} style={{ fontSize: 10, color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--border-strong)", borderRadius: 5, padding: "2px 8px", cursor: "pointer", fontWeight: 600 }}>+ Log hours</button>
+                  </>)}
                 </div>
-                <div style={{ background: "var(--bg-card)", padding: "14px 16px" }}>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 6 }}>Next Service</div>
-                  {nextDue ? (
-                    <>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: overdueTasks.length > 0 ? "var(--warn-text)" : "var(--text-primary)", lineHeight: 1.2 }}>{nextDue.task}</div>
-                      <div style={{ fontSize: 11, color: overdueTasks.length > 0 ? "var(--warn-text)" : "var(--text-muted)", marginTop: 4 }}>{fmt(nextDue.dueDate)}</div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 14, color: "var(--ok-text)", fontWeight: 600 }}>All clear ✓</div>
+                <div style={{ background: "var(--bg-card)", padding: "12px 14px" }}>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 4 }}>Next Service</div>
+                  {nextDue ? (<>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: getTaskUrgency(nextDue) === "critical" ? "var(--danger-text)" : getTaskUrgency(nextDue) === "overdue" ? "var(--warn-text)" : "var(--text-primary)", lineHeight: 1.2 }}>{nextDue.task}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{fmt(nextDue.dueDate)}</div>
+                  </>) : (
+                    <div style={{ fontSize: 14, color: "var(--ok-text)", fontWeight: 600, marginTop: 4 }}>All clear ✓</div>
                   )}
                 </div>
               </div>
             );
           })()}
 
-          {/* Needs attention */}
+          {/* ── Needs attention — filter chips + list ── */}
           {(() => {
-            const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
-            const attentionItems = [];
-            // Critical/overdue tasks
-            vesselTasks.filter(function(t){ return getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue"; }).slice(0,3).forEach(function(t){
-              const badge = getDueBadge(t.dueDate);
-              attentionItems.push({ dot: "var(--danger-text)", text: t.task, sub: badge ? badge.label : "Overdue", action: "VIEW" });
-            });
-            // Due soon tasks
-            vesselTasks.filter(function(t){ return getTaskUrgency(t) === "due-soon"; }).slice(0,2).forEach(function(t){
-              attentionItems.push({ dot: "var(--warn-text)", text: t.task, sub: "Due soon · " + fmt(t.dueDate), action: "VIEW" });
-            });
-            // Open repairs
-            repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).slice(0,2).forEach(function(r){
-              attentionItems.push({ dot: "var(--warn-text)", text: r.description, sub: "Open repair", action: "VIEW" });
-            });
-            if (attentionItems.length === 0) return (
-              <div style={{ background: "var(--ok-bg)", border: "1px solid var(--ok-border)", borderRadius: 10, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 20 }}>✅</span>
+            const criticalCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
+            const dueSoonCount  = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
+            const repairCount   = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+            const total = criticalCount + dueSoonCount + repairCount;
+            if (total === 0) return (
+              <div style={{ background: "var(--ok-bg)", border: "1px solid var(--ok-border)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18 }}>✅</span>
                 <span style={{ fontSize: 13, color: "var(--ok-text)", fontWeight: 600 }}>Nothing needs attention</span>
               </div>
             );
+            const chips = [
+              criticalCount > 0 && { key: "Critical",     label: criticalCount + " Critical",    color: "var(--danger-text)", bg: "var(--danger-bg)", border: "var(--danger-border)" },
+              dueSoonCount  > 0 && { key: "Due Soon",     label: dueSoonCount  + " Due soon",    color: "var(--warn-text)",   bg: "var(--warn-bg)",   border: "var(--warn-border)"   },
+              repairCount   > 0 && { key: "Open Repairs", label: repairCount   + " Open repairs",color: "var(--brand)",       bg: "var(--brand-deep)", border: "var(--border-strong)" },
+            ].filter(Boolean);
+            const activeChip = filterUrgency;
+            // Build attention items based on active filter
+            const attentionItems = [];
+            if (activeChip === "All" || activeChip === "Critical") {
+              tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; })
+                .slice(0,3).forEach(function(t){ attentionItems.push({ type: "task", label: t.task, sub: "Critical — " + fmt(t.dueDate), color: "var(--danger-text)", action: "VIEW", id: t.id }); });
+            }
+            if (activeChip === "All" || activeChip === "Due Soon") {
+              tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); })
+                .slice(0,3).forEach(function(t){ attentionItems.push({ type: "task", label: t.task, sub: (getTaskUrgency(t) === "overdue" ? "Overdue" : "Due soon") + " — " + fmt(t.dueDate), color: "var(--warn-text)", action: "VIEW", id: t.id }); });
+            }
+            if (activeChip === "All" || activeChip === "Open Repairs") {
+              repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; })
+                .slice(0,3).forEach(function(r){ attentionItems.push({ type: "repair", label: r.description, sub: "Open repair · " + r.section, color: "var(--brand)", action: "VIEW", id: r.id }); });
+            }
             return (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 10 }}>Needs Attention</div>
-                {attentionItems.map(function(item, i){
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                  {chips.map(function(chip){
+                    const isActive = activeChip === chip.key;
+                    return (
+                      <span key={chip.key} onClick={function(){ setFilterUrgency(isActive ? "All" : chip.key); }}
+                        style={{ fontSize: 11, fontFamily: "DM Mono, monospace", padding: "4px 10px", borderRadius: 20,
+                          background: isActive ? chip.color : chip.bg,
+                          color: isActive ? "#fff" : chip.color,
+                          border: "0.5px solid " + chip.border,
+                          cursor: "pointer", userSelect: "none", transition: "all 0.15s" }}>
+                        {chip.label}{isActive ? " ✕" : ""}
+                      </span>
+                    );
+                  })}
+                </div>
+                {attentionItems.slice(0, activeChip === "All" ? 5 : 6).map(function(item, i){
                   return (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, marginBottom: 6, background: "var(--bg-card)", border: "1px solid var(--border)", cursor: "pointer" }}
-                      onClick={function(){ setTab("boat"); }}>
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.dot, flexShrink: 0 }} />
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, marginBottom: 6, background: "var(--bg-card)", border: "0.5px solid var(--border)", cursor: "pointer" }}
+                      onClick={function(){
+                        if (item.type === "repair") { setExpandedRepair(item.id); }
+                        else { setFilterUrgency(activeChip === "All" ? item.color === "var(--danger-text)" ? "Critical" : "Due Soon" : activeChip); }
+                      }}>
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500 }}>{item.text}</div>
-                        <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{item.sub}</div>
+                        <div style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, lineHeight: 1.2 }}>{item.label}</div>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{item.sub}</div>
                       </div>
-                      <div style={{ fontSize: 10, color: "var(--brand)", fontWeight: 700 }}>{item.action} →</div>
+                      <span style={{ fontSize: 10, color: "var(--brand)", fontFamily: "DM Mono, monospace" }}>{item.action} →</span>
                     </div>
                   );
                 })}
+                {activeChip !== "All" && <div onClick={function(){ setFilterUrgency("All"); }} style={{ fontSize: 11, color: "var(--brand)", cursor: "pointer", textAlign: "center", padding: "4px 0 8px" }}>show all →</div>}
               </div>
             );
           })()}
 
-          {/* Last log entry */}
-          {(() => {
-            const vesselLogs = logEntries ? logEntries.filter(function(l){ return l.vessel_id === activeVesselId; }) : [];
-            const lastLog = vesselLogs[0];
-            return (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 10 }}>Last Log Entry</div>
-                {lastLog ? (
-                  <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "11px 13px", cursor: "pointer" }}
-                    onClick={function(){ setShowLogbook(true); }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{fmt(lastLog.entry_date)}</span>
-                      {lastLog.engine_hours && <span style={{ fontSize: 10, color: "var(--ok-text)", fontFamily: "DM Mono, monospace" }}>+{lastLog.engine_hours} hrs engine</span>}
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>{lastLog.notes || lastLog.entry_type || "Log entry"}</div>
-                  </div>
-                ) : (
-                  <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 8, padding: "11px 13px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>No log entries yet</span>
-                    <button onClick={function(){ setShowLogbook(true); setShowAddLog(true); }} style={{ fontSize: 11, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>+ Add entry</button>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* First Mate bar */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-            onClick={function(){ alert("First Mate coming soon! Ask questions about your boat, maintenance, and passages."); }}>
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
-                <path d="M2 7.5a5 5 0 0 0 10 0" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
-                <line x1="7" y1="12.5" x2="7" y2="10" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: 13, color: "var(--text-muted)", flex: 1 }}>Ask <span style={{ color: "var(--brand)" }}>First Mate</span>...</span>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Coming soon</span>
-          </div>
-        </>)}
-
-
-        {/* ── EQUIPMENT TAB ── */}
-        {view === "customer" && tab === "boat" && (<>
-          {tabHeader(boatName, null, false, null)}
-
-          {/* Urgency summary cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
-            {(() => {
-              const overdueCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
-              const dueSoonCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
-              const openRepairs  = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
-              return [
-                { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "var(--danger-text)", bg: "var(--danger-bg)", border: "#fca5a5" },
-                { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "var(--warn-text)", bg: "var(--overdue-bg)", border: "#fdba74" },
-                { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "#fde68a" },
-              ].map(function(card){ 
-                const active = filterUrgency === card.label;
-                return (
-                <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
-                  style={{ background: card.bg, border: active ? "2px solid " + card.color : "1px solid " + card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{active ? "tap to clear ✕" : card.sub}</div>
-                </div>
-              ); });
-            })()}
-          </div>
+          {/* ── Divider ── */}
+          <div style={{ height: 1, background: "var(--border)", marginBottom: 16 }} />
 
           {/* ── Open Repairs ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -2768,7 +2710,10 @@ export default function App() {
               <button onClick={function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Add First Equipment</button>
             </div>
           )}
-          {filteredEquip.map(function(eq){
+          {[...filteredEquip].sort(function(a,b){
+            const order = { "needs-service": 0, "watch": 1, "good": 2 };
+            return (order[a.status] ?? 2) - (order[b.status] ?? 2);
+          }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
             const activeTab  = equipTab[eq.id] || (eq.category === "Vessel" ? "docs" : "maintenance");
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
@@ -3503,6 +3448,21 @@ export default function App() {
               </div>
             </div>
           )}
+        
+
+          {/* ── First Mate bar ── */}
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 8, marginTop: 8 }}
+            onClick={function(){ alert("First Mate coming soon — ask questions about your boat, get maintenance advice, and plan passages."); }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand-deep)", border: "1px solid var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="4" y="1" width="6" height="8" rx="3" stroke="var(--brand)" strokeWidth="1.2"/>
+                <path d="M2 7.5a5 5 0 0 0 10 0" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="7" y1="12.5" x2="7" y2="10" stroke="var(--brand)" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 13, color: "var(--text-muted)", flex: 1 }}>Ask <span style={{ color: "var(--brand)" }}>First Mate</span>...</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Coming soon</span>
+          </div>
         </>)}
 
         {/* ── REPAIRS TAB ── */}
