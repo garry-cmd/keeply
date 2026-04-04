@@ -90,27 +90,28 @@ async function supa(table, opts) {
 
 // ─── STORAGE UPLOAD ──────────────────────────────────────────────────────────
 async function uploadToStorage(file, eqId) {
-  const ext = file.name.split(".").pop();
-  const path = eqId + "/" + Date.now() + "-" + file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = eqId + "/" + Date.now() + "-" + safeFileName;
   const sess = await supabase.auth.getSession();
   const token = (sess.data.session && sess.data.session.access_token) ? sess.data.session.access_token : SUPA_KEY;
   const res = await fetch(
-    "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/vessel-docs/" + path,
+    "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/equipment-docs/" + path,
     {
       method: "POST",
       headers: {
         "apikey": SUPA_KEY,
         "Authorization": "Bearer " + token,
         "Content-Type": file.type || "application/octet-stream",
+        "x-upsert": "true",
       },
       body: file,
     }
   );
   if (!res.ok) {
     const err = await res.json().catch(function(){ return {}; });
-    throw new Error(err.message || "Upload failed");
+    throw new Error("File upload failed: " + (err.message || err.error || res.status) + ". Check storage bucket RLS policies.");
   }
-  return "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/public/vessel-docs/" + path;
+  return "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/public/equipment-docs/" + path;
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
