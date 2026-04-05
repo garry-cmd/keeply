@@ -3213,8 +3213,8 @@ export default function App() {
                                           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                                             <div style={{ flex: 1 }}>
                                               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>INTERVAL (MONTHS)</div>
-                                              <input type="number" min="1" value={editAdminTaskForm.interval_months || ""}
-                                                onChange={function(e){ setEditAdminTaskForm(function(f){ return Object.assign({}, f, { interval_months: parseInt(e.target.value) || 12 }); }); }}
+                                              <input type="text" inputMode="numeric" pattern="[0-9]*" value={editAdminTaskForm.interval_months || ""}
+                                                onChange={function(e){ setEditAdminTaskForm(function(f){ return Object.assign({}, f, { interval_months: e.target.value }); }); }}
                                                 style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)" }} />
                                             </div>
                                             <div style={{ flex: 1 }}>
@@ -3228,7 +3228,7 @@ export default function App() {
                                             <button onClick={function(){ setEditingAdminTask(null); }}
                                               style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>Cancel</button>
                                             <button onClick={async function(){
-                                              await supa("vessel_admin_tasks", { method: "PATCH", query: "id=eq." + task.id, body: { name: editAdminTaskForm.name, interval_months: editAdminTaskForm.interval_months, due_date: editAdminTaskForm.due_date || null }, prefer: "return=minimal" });
+                                              await supa("vessel_admin_tasks", { method: "PATCH", query: "id=eq." + task.id, body: { name: editAdminTaskForm.name, interval_months: Math.max(1, parseInt(editAdminTaskForm.interval_months) || 12), due_date: editAdminTaskForm.due_date || null }, prefer: "return=minimal" });
                                               setVesselAdminTasks(function(prev){
                                                 const updated = (prev[vesselEq._vesselId] || []).map(function(t){ return t.id === task.id ? Object.assign({}, t, { name: editAdminTaskForm.name, interval_months: editAdminTaskForm.interval_months, due_date: editAdminTaskForm.due_date || null }) : t; });
                                                 return Object.assign({}, prev, { [vesselEq._vesselId]: updated });
@@ -4264,8 +4264,8 @@ export default function App() {
                                         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                                           <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>INTERVAL (DAYS)</div>
-                                            <input type="number" min="1" value={editTaskForm.interval_days || ""}
-                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { interval_days: Math.max(1, parseInt(e.target.value) || 1) }); }); }}
+                                            <input type="text" inputMode="numeric" pattern="[0-9]*" value={editTaskForm.interval_days || ""}
+                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { interval_days: e.target.value }); }); }}
                                               style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                                           </div>
                                           <div style={{ flex: 1 }}>
@@ -4279,7 +4279,7 @@ export default function App() {
                                           <button onClick={function(e){ e.stopPropagation(); setEditingTask(null); }} style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                                           <button onClick={async function(e){
                                             e.stopPropagation();
-                                            const patch = { task: editTaskForm.task, interval_days: Math.max(1, editTaskForm.interval_days || 1), due_date: editTaskForm.dueDate || null };
+                                            const patch = { task: editTaskForm.task, interval_days: Math.max(1, parseInt(editTaskForm.interval_days) || 1), due_date: editTaskForm.dueDate || null };
                                             await updateTask(t.id, patch);
                                             setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate }) : tk; }); });
                                             setEditingTask(null);
