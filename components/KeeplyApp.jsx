@@ -3980,7 +3980,7 @@ export default function App() {
                 <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
                   style={{ width: "100%", border: "0.5px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)", cursor: "pointer", appearance: "none", WebkitAppearance: "none" }}>
                   <option value="All">All categories</option>
-                  {cats.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
+                  {cats.map(function(c){ return <option key={c} value={c}>{(SECTIONS[c] || "") + " " + c}</option>; })}
                 </select>
               </div>
             );
