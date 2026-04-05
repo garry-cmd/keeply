@@ -22,12 +22,20 @@ self.addEventListener('push', function(e) {
 
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/';
+  const url = (e.notification.data && e.notification.data.url) || 'https://keeply.boats/';
+
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) {
+      // If app is already open — navigate it to the panel URL rather than just focusing
       for (const c of clients) {
-        if (c.url.includes(self.location.origin) && 'focus' in c) return c.focus();
+        if (c.url.includes(self.location.origin)) {
+          return c.focus().then(function() {
+            // Navigate the existing window to the deep-link URL
+            if ('navigate' in c) return c.navigate(url);
+          });
+        }
       }
+      // App not open — open fresh at the panel URL
       if (self.clients.openWindow) return self.clients.openWindow(url);
     })
   );
