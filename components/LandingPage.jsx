@@ -133,7 +133,7 @@ export default function LandingPage() {
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={function(){ openAuth("signup"); }}
               style={{ background: GOLD, border: "none", borderRadius: 12, padding: "15px 32px", color: NAVY_DEEP, fontSize: 16, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px", boxShadow: "0 4px 20px rgba(245,166,35,0.4)" }}>
-              Start free — no credit card
+              Start free trial →
             </button>
             <button onClick={function(){ openAuth("login"); }}
               style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 12, padding: "15px 32px", color: "#fff", fontSize: 16, fontWeight: 600, cursor: "pointer" }}>
@@ -141,7 +141,7 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <p style={{ marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Free · No credit card · Cancel anytime</p>
+          <p style={{ marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>3 months free · credit card required · cancel anytime</p>
         </div>
       </section>
 
@@ -260,7 +260,7 @@ export default function LandingPage() {
           {/* Beta banner */}
           <div style={{ background: "linear-gradient(135deg, #071e3d 0%, #0f4c8a 100%)", borderRadius: 16, padding: "18px 24px", marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: GOLD, marginBottom: 4 }}>🎁 Beta tester? Fleet is free.</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: GOLD, marginBottom: 4 }}>🎁 Beta tester? Get Fleet free.</div>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)" }}>Use code <strong style={{ color: "#fff" }}>BETA2026</strong> at checkout for 100% off Fleet subscription.</div>
             </div>
             <button onClick={function(){ openAuth("signup"); }} style={{ background: GOLD, border: "none", borderRadius: 8, padding: "9px 20px", color: NAVY_DEEP, fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -321,6 +321,21 @@ export default function LandingPage() {
               </div>
             ); })}
           </div>
+
+          {/* Entry plan callout */}
+          <div style={{ marginTop: 20, textAlign: "center", padding: "16px 24px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, maxWidth: 480, margin: "20px auto 0" }}>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>
+              Just getting started? <strong style={{ color: "rgba(255,255,255,0.75)" }}>Entry plan — $2.99/mo</strong>
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>
+              1 vessel · unlimited equipment · basic maintenance tracking
+            </div>
+            <button onClick={function(){ openAuth("signup"); }}
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "8px 20px", color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Start with Entry →
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -333,7 +348,7 @@ export default function LandingPage() {
           <p style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", marginBottom: 36, margin: "0 0 36px" }}>Join boaters already using Keeply to keep their boats in perfect order.</p>
           <button onClick={function(){ openAuth("signup"); }}
             style={{ background: GOLD, border: "none", borderRadius: 12, padding: "16px 40px", color: NAVY_DEEP, fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 24px rgba(245,166,35,0.4)" }}>
-            Start free today
+            Start free trial →
           </button>
           <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>keeply.boats · Miami, FL</p>
           <p style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
