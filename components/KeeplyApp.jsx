@@ -3480,13 +3480,7 @@ export default function App() {
                 </div>
 
                 {/* Row 1 Cell 2 — Next service */}
-                <div style={{ ...cellStyle, cursor: nextDue ? "pointer" : "default" }}
-                  onClick={nextDue ? function(){
-                    const urgency = getTaskUrgency(nextDue);
-                    if (urgency === "critical" || urgency === "overdue") setShowUrgencyPanel("Critical");
-                    else if (urgency === "due-soon") setShowUrgencyPanel("Due Soon");
-                    else setShowUrgencyPanel("Due Soon");
-                  } : undefined}>
+                <div style={cellStyle}>
                   <div style={labelStyle}>Next service</div>
                   {nextDue ? (<>
                     <div style={{ fontSize: 12, fontWeight: 700, color: nextColor, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{nextDue.task}</div>
