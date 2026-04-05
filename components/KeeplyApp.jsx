@@ -759,10 +759,10 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
               <div style={{ display: "flex", gap: 8 }}>
                 <select value={editForm.interval} onChange={function(e){ setEditForm(function(f){ return { ...f, interval: e.target.value }; }); }}
                   style={{ flex: 1, border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, background: "var(--bg-card)" }}>
-                  {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(iv){ return <option key={iv} value={iv}>{iv}</option>; })}
+                  {["30 days","60 days","90 days","6 months","annual","2 years"].map(function(iv){ return <option key={iv} value={iv}>{iv}</option>; })}
                 </select>
                 <button onClick={function(){
-                  const days = { "7 days":7,"14 days":14,"30 days":30,"60 days":60,"90 days":90,"6 months":180,"annual":365,"2 years":730 }[editForm.interval] || 30;
+                  const days = { "30 days":30,"60 days":60,"90 days":90,"6 months":180,"annual":365,"2 years":730 }[editForm.interval] || 30;
                   onSave(task.id, { task: editForm.task, section: editForm.section, priority: editForm.priority, interval_days: days, interval: editForm.interval });
                   setIsExpanded(false);
                 }} style={{ flex: 1, padding: "7px 14px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
@@ -2117,7 +2117,7 @@ export default function App() {
     const matchedPriority = priorities.find(function(p){ return p.toLowerCase() === priority.toLowerCase(); }) || "medium";
     // Normalize interval
     const intervalStr = String(interval).trim();
-    const knownIntervals = ["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"];
+    const knownIntervals = ["30 days","60 days","90 days","6 months","annual","2 years"];
     let matchedInterval = "30 days";
     if (knownIntervals.includes(intervalStr)) matchedInterval = intervalStr;
     else if (/^\d+$/.test(intervalStr)) matchedInterval = intervalStr + " days";
@@ -4265,7 +4265,7 @@ export default function App() {
                                           <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>INTERVAL (DAYS)</div>
                                             <input type="number" min="1" value={editTaskForm.interval_days || ""}
-                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { interval_days: parseInt(e.target.value) || 30 }); }); }}
+                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { interval_days: Math.max(1, parseInt(e.target.value) || 1) }); }); }}
                                               style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                                           </div>
                                           <div style={{ flex: 1 }}>
@@ -4279,7 +4279,7 @@ export default function App() {
                                           <button onClick={function(e){ e.stopPropagation(); setEditingTask(null); }} style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                                           <button onClick={async function(e){
                                             e.stopPropagation();
-                                            const patch = { task: editTaskForm.task, interval_days: editTaskForm.interval_days, due_date: editTaskForm.dueDate || null };
+                                            const patch = { task: editTaskForm.task, interval_days: Math.max(1, editTaskForm.interval_days || 1), due_date: editTaskForm.dueDate || null };
                                             await updateTask(t.id, patch);
                                             setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate }) : tk; }); });
                                             setEditingTask(null);
@@ -4769,7 +4769,7 @@ export default function App() {
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                 </select>
                 <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
-                  {["7 days","14 days","30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
+                  {["30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
                 </select>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 4 }}>DUE DATE (optional — overrides interval)</div>
                 <input type="date" value={newTask.dueDate || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, dueDate: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
