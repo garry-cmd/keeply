@@ -1273,7 +1273,7 @@ export default function App() {
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
   const openAddVessel = function(){
     if ((userPlan === "free" || !userPlan) && vessels.length >= 1) {
-      setUpgradeReason("Entry accounts are limited to 1 vessel. Start your free trial to add more.");
+      setUpgradeReason("Entry accounts are limited to 1 vessel. Upgrade to Pro to add more.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
@@ -5572,10 +5572,10 @@ export default function App() {
             )}
 
             <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>
-              {userPlan === "pro" ? "Upgrade to Fleet" : "Start your free trial"}
+              {userPlan === "pro" ? "Upgrade to Fleet" : userPlan === "free" || !userPlan ? "Upgrade your plan" : "Upgrade Keeply"}
             </div>
             <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-              {userPlan === "pro" ? "Unlock the fleet dashboard and add more vessels." : "3 months free · credit card required · cancel anytime."}
+              {userPlan === "pro" ? "Unlock the fleet dashboard and add more vessels." : "Unlock more features for your boat."}
             </div>
 
             {/* Entry — shown only when on free/null plan */}
@@ -5630,7 +5630,7 @@ export default function App() {
                 } catch(e) { alert("Error starting checkout: " + e.message); }
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout…" : userPlan === "pro" ? "Switch to Monthly — $9.99/mo" : "Try free for 3 months — then $9.99/mo"}
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Monthly — $9.99/mo"}
               </button>
             </div>
 
@@ -5658,7 +5658,7 @@ export default function App() {
                 } catch(e) { alert("Error starting checkout: " + e.message); }
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout…" : userPlan === "pro" ? "Switch to Annual — $69.99/yr" : "Try free for 3 months — then $69.99/yr"}
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Annually — $69.99/yr"}
               </button>
             </div>
 

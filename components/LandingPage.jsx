@@ -133,7 +133,7 @@ export default function LandingPage() {
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={function(){ openAuth("signup"); }}
               style={{ background: GOLD, border: "none", borderRadius: 12, padding: "15px 32px", color: NAVY_DEEP, fontSize: 16, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px", boxShadow: "0 4px 20px rgba(245,166,35,0.4)" }}>
-              Start free trial →
+              Get started →
             </button>
             <button onClick={function(){ openAuth("login"); }}
               style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 12, padding: "15px 32px", color: "#fff", fontSize: 16, fontWeight: 600, cursor: "pointer" }}>
@@ -141,7 +141,7 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <p style={{ marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>3 months free · credit card required · cancel anytime</p>
+          <p style={{ marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Plans from $2.99/mo · cancel anytime</p>
         </div>
       </section>
 
@@ -268,14 +268,19 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {[
+              {
+                name: "Entry", price: "$2.99", period: "/mo", sub: "1 vessel · get organised",
+                desc: "Track maintenance and keep your boat organised.",
+                features: ["1 vessel", "Unlimited equipment items", "Maintenance tasks & logbook", "Up to 5 repair cards"],
+                cta: "Start Entry", ctaStyle: "outline", highlight: false,
+              },
               {
                 name: "Pro", price: "$9.99", period: "/mo", sub: "or $69.99/yr — save 42%",
                 desc: "Everything you need to keep your boat in perfect order.",
-                features: ["2 vessels", "Unlimited equipment items", "Unlimited repairs", "First Mate AI assistant", "Parts search + ordering", "Document storage"],
-                cta: "Try free for 3 months →", ctaStyle: "solid", highlight: true, badge: "Start here",
-                trial: "Credit card required · Cancel anytime",
+                features: ["2 vessels", "Unlimited equipment & repairs", "First Mate AI assistant", "Parts search + ordering", "Document storage"],
+                cta: "Start Pro", ctaStyle: "solid", highlight: true, badge: "Most popular",
               },
               {
                 name: "Fleet", price: "$49.99", period: "/mo", sub: "3 vessels included · +$20/vessel",
@@ -311,29 +316,10 @@ export default function LandingPage() {
                   style={{ width: "100%", padding: "12px 0", border: plan.ctaStyle === "outline" ? "1.5px solid " + (plan.enterprise ? "#7c3aed" : plan.highlight ? "rgba(255,255,255,0.3)" : "#d1d5db") : "none", borderRadius: 10, background: plan.ctaStyle === "solid" ? GOLD : plan.enterprise ? "#ede9fe" : plan.highlight ? "rgba(255,255,255,0.12)" : "#f9fafb", color: plan.ctaStyle === "solid" ? NAVY_DEEP : plan.enterprise ? "#7c3aed" : plan.highlight ? "#fff" : "#374151", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                   {plan.cta}
                 </button>
-                {plan.trial && (
-                  <div style={{ textAlign: "center", marginTop: 10 }}>
-                    <p style={{ fontSize: 11, color: plan.highlight ? "rgba(255,255,255,0.5)" : "#9ca3af" }}>{plan.trial}</p>
-                    <p style={{ fontSize: 11, color: plan.highlight ? "rgba(255,255,255,0.4)" : "#9ca3af", marginTop: 4 }}>Just getting started? <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={function(){ openAuth("signup"); }}>Entry plan at $2.99/mo</span></p>
-                  </div>
-                )}
+
                 {plan.enterprise && <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 10 }}>support@keeply.boats</p>}
               </div>
             ); })}
-          </div>
-
-          {/* Entry plan callout */}
-          <div style={{ marginTop: 20, textAlign: "center", padding: "16px 24px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, maxWidth: 480, margin: "20px auto 0" }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>
-              Just getting started? <strong style={{ color: "rgba(255,255,255,0.75)" }}>Entry plan — $2.99/mo</strong>
-            </div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>
-              1 vessel · unlimited equipment · basic maintenance tracking
-            </div>
-            <button onClick={function(){ openAuth("signup"); }}
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "8px 20px", color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Start with Entry →
-            </button>
           </div>
 
         </div>
@@ -348,7 +334,7 @@ export default function LandingPage() {
           <p style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", marginBottom: 36, margin: "0 0 36px" }}>Join boaters already using Keeply to keep their boats in perfect order.</p>
           <button onClick={function(){ openAuth("signup"); }}
             style={{ background: GOLD, border: "none", borderRadius: 12, padding: "16px 40px", color: NAVY_DEEP, fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 24px rgba(245,166,35,0.4)" }}>
-            Start free trial →
+            Get started →
           </button>
           <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>keeply.boats · Miami, FL</p>
           <p style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
