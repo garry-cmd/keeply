@@ -1272,6 +1272,21 @@ export default function App() {
     }
   }, []);
 
+  // Handle push notification tap-through — open the right urgency panel
+  useEffect(function(){
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const panel = params.get("panel");
+    if (panel === "Critical" || panel === "Due+Soon" || panel === "Due Soon") {
+      window.history.replaceState({}, "", window.location.pathname);
+      // Wait for app to finish loading before showing panel
+      setTimeout(function(){
+        setTab("boat");
+        setShowUrgencyPanel(panel === "Due+Soon" ? "Due Soon" : panel);
+      }, 800);
+    }
+  }, []);
+
   // Restore and persist active tab
   useEffect(function(){
     const t = localStorage.getItem("keeply_tab");
