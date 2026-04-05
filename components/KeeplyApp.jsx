@@ -3102,7 +3102,14 @@ export default function App() {
                       if (!hasData) return (
                         <div style={{ textAlign: "center", padding: "16px 0" }}>
                           <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No vessel ID info yet</div>
-                          <button onClick={function(){ setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); setEditingVesselInfo(true); setVesselInfoForm(info); }}
+                          <button onClick={function(){
+                            let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
+                            setVesselInfoForm(info);
+                            setEditingVesselInfo(true);
+                            const av = vessels.find(function(v){ return v.id === activeVesselId; });
+                            if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
+                            setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "edit"; return n; });
+                          }}
                             style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add Vessel ID</button>
                         </div>
                       );
