@@ -3397,6 +3397,19 @@ export default function App() {
                                 const d = await res.json();
                                 if (d.error) { setScanError(d.error); return; }
                                 if (d.fields) setVesselInfoForm(function(prev){ return Object.assign({}, prev, d.fields); });
+                                // Also save the scanned document to the vessel's Docs tab
+                                try {
+                                  const docLabel = d.fields && d.fields.uscg_doc ? "USCG Documentation"
+                                    : d.fields && d.fields.state_reg ? "Vessel Registration"
+                                    : d.fields && d.fields.insurance_carrier ? "Insurance Document"
+                                    : d.fields && d.fields.policy_no ? "Insurance Policy"
+                                    : "Vessel Document";
+                                  const fileUrl = await uploadToStorage(uploadFile, vesselEq.id);
+                                  const newDoc = { id: "doc-" + Date.now(), label: docLabel, type: "Registration", url: fileUrl, fileName: uploadFile.name, isFile: true };
+                                  const updatedDocs = [...(vesselEq.docs || []), newDoc];
+                                  await supa("equipment", { method: "PATCH", query: "id=eq." + vesselEq.id, body: { docs: updatedDocs }, prefer: "return=minimal" });
+                                  setEquipment(function(prev){ return prev.map(function(e){ return e.id === vesselEq.id ? { ...e, docs: updatedDocs } : e; }); });
+                                } catch(docErr) { console.error("Doc save error:", docErr); }
                               } catch(err) { setScanError("Scan failed: " + err.message); }
                               finally { setScanningVesselDoc(false); e.target.value = ""; }
                             }} />
