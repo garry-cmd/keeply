@@ -950,6 +950,10 @@ export default function App() {
   const [editEquipForm, setEditEquipForm]   = useState({});
   const [editingVesselInfo, setEditingVesselInfo] = useState(false);
   const [vesselDetailForm, setVesselDetailForm] = useState({});
+  const [vesselAdminTasks, setVesselAdminTasks] = useState({});  // { [vesselId]: [...tasks] }
+  const [adminTaskLoading, setAdminTaskLoading] = useState({});
+  const [showAddAdminTask, setShowAddAdminTask] = useState(null); // vesselId
+  const [newAdminTask, setNewAdminTask] = useState({ name: "", category: "registrations", due_date: "", notes: "" });
   const [vesselDetailSaving, setVesselDetailSaving] = useState(false);
   const [vesselDetailSaved, setVesselDetailSaved] = useState(false);
   const [vesselInfoForm, setVesselInfoForm] = useState({});
@@ -1338,6 +1342,7 @@ export default function App() {
         const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: nv.photo_url || "", engineHours: nv.engine_hours || null, engineHoursDate: nv.engine_hours_date || null, fuelBurnRate: nv.fuel_burn_rate || null };
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
+        createDefaultAdminTasks(nv.id, userId);  // Pre-populate admin tasks
         // If user has other vessels, offer to copy items
         if (vessels.length > 0) {
           setNewVesselId(nv.id);
@@ -1725,6 +1730,69 @@ export default function App() {
   };
 
 
+
+  // ── Vessel admin tasks ────────────────────────────────────────────────────
+  const loadVesselAdminTasks = async function(vesselId) {
+    if (!vesselId) return;
+    setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: true }; });
+    try {
+      const tasks = await supa("vessel_admin_tasks", { query: "vessel_id=eq." + vesselId + "&order=category.asc,name.asc" });
+      setVesselAdminTasks(function(prev){ return { ...prev, [vesselId]: tasks || [] }; });
+    } catch(e) { console.error("Admin tasks load error:", e); }
+    finally { setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: false }; }); }
+  };
+
+  const createDefaultAdminTasks = async function(vesselId, userId) {
+    if (!vesselId || !userId) return;
+    try {
+      const tasks = DEFAULT_ADMIN_TASKS.map(function(t){
+        return { vessel_id: vesselId, user_id: userId, name: t.name, category: t.category, icon: t.icon, interval_months: t.interval_months, notes: t.notes, is_custom: false };
+      });
+      await supa("vessel_admin_tasks", { method: "POST", body: tasks, prefer: "return=minimal" });
+    } catch(e) { console.error("createDefaultAdminTasks error:", e); }
+  };
+
+  const saveAdminTaskField = async function(taskId, field, value, vesselId) {
+    try {
+      await supa("vessel_admin_tasks", { method: "PATCH", query: "id=eq." + taskId, body: { [field]: value }, prefer: "return=minimal" });
+      setVesselAdminTasks(function(prev){
+        const tasks = (prev[vesselId] || []).map(function(t){ return t.id === taskId ? { ...t, [field]: value } : t; });
+        return { ...prev, [vesselId]: tasks };
+      });
+    } catch(e) { console.error("saveAdminTaskField error:", e); }
+  };
+
+  const deleteAdminTask = async function(taskId, vesselId) {
+    try {
+      await supa("vessel_admin_tasks", { method: "DELETE", query: "id=eq." + taskId, prefer: "return=minimal" });
+      setVesselAdminTasks(function(prev){
+        return { ...prev, [vesselId]: (prev[vesselId] || []).filter(function(t){ return t.id !== taskId; }) };
+      });
+    } catch(e) { console.error("deleteAdminTask error:", e); }
+  };
+
+  const addCustomAdminTask = async function(vesselId) {
+    if (!newAdminTask.name.trim()) return;
+    const userId = session && session.user ? session.user.id : null;
+    try {
+      const created = await supa("vessel_admin_tasks", { method: "POST", body: { vessel_id: vesselId, user_id: userId, name: newAdminTask.name.trim(), category: newAdminTask.category, icon: "📌", due_date: newAdminTask.due_date || null, notes: newAdminTask.notes || "", is_custom: true, interval_months: 12 } });
+      setVesselAdminTasks(function(prev){ return { ...prev, [vesselId]: [...(prev[vesselId] || []), created[0]] }; });
+      setNewAdminTask({ name: "", category: "registrations", due_date: "", notes: "" });
+      setShowAddAdminTask(null);
+    } catch(e) { console.error("addCustomAdminTask error:", e); }
+  };
+
+  const getAdminTaskStatus = function(task) {
+    if (!task.due_date) return "no-date";
+    const today = new Date(); today.setHours(0,0,0,0);
+    const due = new Date(task.due_date);
+    const diff = Math.round((due - today) / 86400000);
+    if (diff < 0)   return "overdue";
+    if (diff <= 30)  return "due-soon";
+    if (diff <= 90)  return "upcoming";
+    return "ok";
+  };
+
   // ── Affiliate click tracking — fire-and-forget, non-blocking ────────────────
   const trackAffiliateClick = function(retailer, partName, context) {
     if (!session?.user?.id) return;
@@ -1740,6 +1808,27 @@ export default function App() {
       prefer: "return=minimal"
     }).catch(function(){});  // silent — never block the user
   };
+
+
+  // ── Default vessel admin tasks ────────────────────────────────────────────
+  const DEFAULT_ADMIN_TASKS = [
+    // Registrations & legal
+    { name: "Vessel registration renewal", category: "registrations", icon: "📋", interval_months: 12,  notes: "State or federal registration" },
+    { name: "Marine insurance renewal",    category: "registrations", icon: "🛡️", interval_months: 12,  notes: "" },
+    { name: "USCG documentation renewal",  category: "registrations", icon: "📄", interval_months: 12,  notes: "Federal documentation — if applicable" },
+    { name: "MMSI registration",           category: "registrations", icon: "📡", interval_months: 24,  notes: "Renew every 2 years with BoatUS or USPS" },
+    // Safety equipment
+    { name: "Flares — expiry check",       category: "safety",        icon: "🔴", interval_months: 42,  notes: "USCG requires non-expired visual distress signals" },
+    { name: "EPIRB battery replacement",   category: "safety",        icon: "🚨", interval_months: 60,  notes: "Battery expires every 5 years" },
+    { name: "EPIRB NOAA registration",     category: "safety",        icon: "🛰️", interval_months: 24,  notes: "Register/renew at beaconregistration.noaa.gov" },
+    { name: "Life raft service & re-cert", category: "safety",        icon: "🔵", interval_months: 36,  notes: "Every 3 years — includes hydrostatic release" },
+    { name: "Fire extinguisher inspection",category: "safety",        icon: "🧯", interval_months: 12,  notes: "Annual professional service per NFPA" },
+    { name: "PFD inspection & service",    category: "safety",        icon: "🦺", interval_months: 12,  notes: "Inspect inflatables — rearming kit & CO₂ cylinder" },
+    // Surveys & inspections
+    { name: "Marine survey",               category: "surveys",       icon: "🔍", interval_months: 60,  notes: "Condition & valuation — required for insurance" },
+    { name: "USCG vessel safety check",    category: "surveys",       icon: "⚓", interval_months: 12,  notes: "Free voluntary check — schedule at uscgboating.org" },
+    { name: "Haul out",                    category: "surveys",       icon: "🚢", interval_months: 12,  notes: "Bottom paint, zincs, hull inspection" },
+  ];
 
   // ── Unified inline part finder — calls find-part with full vessel+equipment context ──
   const findPartsInline = async function(id, taskDescription, equipmentId, section) {
@@ -2881,9 +2970,10 @@ export default function App() {
                     onClick={function(e){ e.stopPropagation(); }}>
                     {/* Render the vessel card tabs inline — reuse the same tab state */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["info","docs","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
+                      {["info","docs","admin","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
                         <button key={t} onClick={function(){
                           setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
+                          if (t === "admin" && !vesselAdminTasks[vesselEq.id]) { loadVesselAdminTasks(vesselEq.id); }
                           if (t === "edit") {
                             let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
                             setVesselInfoForm(info);
@@ -2893,7 +2983,7 @@ export default function App() {
                           }
                         }}
                           style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                          {t === "info" ? "Vessel ID" : t === "docs" ? "Docs" : "Edit"}
+                          {t === "info" ? "Vessel ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : "Edit"}
                         </button>
                       ); })}
                     </div>
@@ -2984,6 +3074,100 @@ export default function App() {
                         )}
                       </div>
                     )}
+
+                    {(equipTab[vesselEq.id] || "info") === "admin" && (function(){
+                      const tasks = vesselAdminTasks[vesselEq.id] || [];
+                      const loading = adminTaskLoading[vesselEq.id];
+                      const GROUPS = [
+                        { key: "registrations", label: "Registrations & legal" },
+                        { key: "safety",        label: "Safety equipment" },
+                        { key: "surveys",       label: "Surveys & inspections" },
+                      ];
+                      const statusStyle = function(s) {
+                        if (s === "overdue")  return { bg: "var(--danger-bg,#fef2f2)", color: "var(--danger-text,#dc2626)" };
+                        if (s === "due-soon") return { bg: "var(--overdue-bg,#fff7ed)", color: "var(--warn-text,#b45309)" };
+                        if (s === "upcoming") return { bg: "var(--bg-subtle)", color: "var(--text-muted)" };
+                        if (s === "ok")       return { bg: "#f0fdf4", color: "#16a34a" };
+                        return { bg: "var(--bg-subtle)", color: "var(--text-muted)" };
+                      };
+                      const statusLabel = function(task) {
+                        if (!task.due_date) return "No date set";
+                        const today = new Date(); today.setHours(0,0,0,0);
+                        const due = new Date(task.due_date);
+                        const diff = Math.round((due - today) / 86400000);
+                        if (diff < 0)   return Math.abs(diff) + "d overdue";
+                        if (diff === 0) return "Due today";
+                        if (diff <= 30) return diff + "d away";
+                        const months = Math.round(diff / 30);
+                        return months + "mo away";
+                      };
+                      if (loading) return <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>Loading…</div>;
+                      return (
+                        <div>
+                          {GROUPS.map(function(group){
+                            const groupTasks = tasks.filter(function(t){ return t.category === group.key; });
+                            if (groupTasks.length === 0) return null;
+                            return (
+                              <div key={group.key} style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6, marginTop: 10 }}>{group.label}</div>
+                                {groupTasks.map(function(task){
+                                  const st = getAdminTaskStatus(task);
+                                  const ss = statusStyle(st);
+                                  return (
+                                    <div key={task.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 10px", background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, marginBottom: 5 }}>
+                                      <div style={{ fontSize: 14, marginTop: 2, flexShrink: 0 }}>{task.icon || "📋"}</div>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{task.name}</div>
+                                        <input type="date" value={task.due_date || ""}
+                                          onChange={function(e){ saveAdminTaskField(task.id, "due_date", e.target.value, vesselEq.id); }}
+                                          style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--text-muted)", padding: 0, cursor: "pointer", width: "100%", fontFamily: "inherit" }} />
+                                      </div>
+                                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: ss.bg, color: ss.color, whiteSpace: "nowrap" }}>{statusLabel(task)}</span>
+                                        <button onClick={function(){ if (window.confirm("Remove " + task.name + "?")) deleteAdminTask(task.id, vesselEq.id); }}
+                                          style={{ fontSize: 9, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "0 2px" }}>✕ remove</button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                          {tasks.length === 0 && (
+                            <div style={{ textAlign: "center", padding: "16px 0", fontSize: 12, color: "var(--text-muted)" }}>No admin tasks yet</div>
+                          )}
+                          {showAddAdminTask === vesselEq.id ? (
+                            <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "10px 12px", marginTop: 10 }}>
+                              <input placeholder="Item name" value={newAdminTask.name}
+                                onChange={function(e){ setNewAdminTask(function(p){ return { ...p, name: e.target.value }; }); }}
+                                style={{ width: "100%", padding: "6px 8px", border: "0.5px solid var(--border)", borderRadius: 6, fontSize: 12, marginBottom: 6, background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }} />
+                              <select value={newAdminTask.category}
+                                onChange={function(e){ setNewAdminTask(function(p){ return { ...p, category: e.target.value }; }); }}
+                                style={{ width: "100%", padding: "6px 8px", border: "0.5px solid var(--border)", borderRadius: 6, fontSize: 12, marginBottom: 6, background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }}>
+                                <option value="registrations">Registrations & legal</option>
+                                <option value="safety">Safety equipment</option>
+                                <option value="surveys">Surveys & inspections</option>
+                              </select>
+                              <input type="date" value={newAdminTask.due_date}
+                                onChange={function(e){ setNewAdminTask(function(p){ return { ...p, due_date: e.target.value }; }); }}
+                                style={{ width: "100%", padding: "6px 8px", border: "0.5px solid var(--border)", borderRadius: 6, fontSize: 12, marginBottom: 8, background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }} />
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button onClick={function(){ addCustomAdminTask(vesselEq.id); }}
+                                  style={{ flex: 1, padding: "7px 0", background: "var(--brand)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
+                                <button onClick={function(){ setShowAddAdminTask(null); setNewAdminTask({ name: "", category: "registrations", due_date: "", notes: "" }); }}
+                                  style={{ padding: "7px 12px", background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)", borderRadius: 7, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button onClick={function(){ setShowAddAdminTask(vesselEq.id); }}
+                              style={{ width: "100%", marginTop: 10, padding: "8px 0", background: "none", border: "0.5px dashed var(--border)", borderRadius: 8, color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
+                              + Add item
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
                       <div onClick={function(e){ e.stopPropagation(); }}>
                         {/* ── Vessel details (name / make / model / year) ── */}
