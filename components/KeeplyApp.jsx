@@ -2471,7 +2471,10 @@ export default function App() {
           </button>
           <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Light mode" : "Dark mode"}
             style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, width: 34, color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {darkMode ? "☀️" : "🌙"}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5"/>
+              <path d="M8 2a6 6 0 0 1 0 12V2Z" fill="rgba(255,255,255,0.9)"/>
+            </svg>
           </button>
         </div>
       </div>
