@@ -1187,6 +1187,8 @@ export default function App() {
           }
         } catch(e) { console.log("Vessel card auto-create skipped:", e.message); }
       }
+      // Auto-load admin tasks for this vessel
+      loadVesselAdminTasks(vid);
       // Pin Vessel card first
       eqList = [...eqList.filter(function(e){ return e.category === "Vessel"; }), ...eqList.filter(function(e){ return e.category !== "Vessel"; })];
       setEquipment(eqList);
@@ -2138,11 +2140,12 @@ export default function App() {
       const allVesselIds = vessels.map(function(v){ return v.id; });
       const data = {};
       await Promise.all(allVesselIds.map(async function(vid){
-        const [eq, tasks, repairs, docs] = await Promise.all([
+        const [eq, tasks, repairs, docs, adminTasks] = await Promise.all([
           supa("equipment", { query: "vessel_id=eq." + vid + "&select=id,status" }).catch(function(){ return []; }),
           supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&select=id,task,priority,due_date,section,equipment_id,last_service,interval_days,service_logs&section=neq.Paperwork" }).catch(function(){ return []; }),
           supa("repairs", { query: "vessel_id=eq." + vid + "&select=id,status,section,description&status=eq.open" }).catch(function(){ return []; }),
           supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&select=id,task,due_date,priority&section=eq.Paperwork" }).catch(function(){ return []; }),
+          supa("vessel_admin_tasks", { query: "vessel_id=eq." + vid + "&select=id,name,icon,due_date,category,interval_months" }).catch(function(){ return []; }),
         ]);
         const now = new Date(); now.setHours(0,0,0,0);
         const overdue = (tasks || []).filter(function(t){ return t.due_date && new Date(t.due_date) < now; });
@@ -2170,6 +2173,8 @@ export default function App() {
           overdueTasks: overdue,
           dueSoonTasks: dueSoon,
           expiringDocs: expiringDocs.slice(0, 3),
+          adminDueCount: (adminTasks || []).filter(function(t){ return t.due_date && Math.round((new Date(t.due_date)-now)/86400000)<=30; }).length,
+          adminDueTasks: (adminTasks || []).filter(function(t){ return t.due_date && Math.round((new Date(t.due_date)-now)/86400000)<=30; }),
         };
       }));
       setFleetData(data);
@@ -2530,7 +2535,7 @@ export default function App() {
             )}
 
             {fleetData && vessels.map(function(vessel){
-              const d = fleetData[vessel.id] || { good: 0, watch: 0, needsService: 0, openRepairs: 0, overdueCount: 0, dueSoonCount: 0, repairs: [], expiringDocs: [], equipment: [] };
+              const d = fleetData[vessel.id] || { good: 0, watch: 0, needsService: 0, openRepairs: 0, overdueCount: 0, dueSoonCount: 0, repairs: [], expiringDocs: [], equipment: [], adminDueCount: 0, adminDueTasks: [] };
               const totalEq = d.good + d.watch + d.needsService;
               const healthPct = totalEq > 0 ? Math.round((d.good / totalEq) * 100) : 100;
               const isActive = vessel.id === activeVesselId;
@@ -2564,25 +2569,27 @@ export default function App() {
                   </div>
 
                   {/* Stats row — each box deep-links to that tab */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 0, borderTop: "1px solid var(--border)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 0, borderTop: "1px solid var(--border)" }}>
                     {[
                       { label: "Open Repairs", val: d.openRepairs, color: d.openRepairs > 0 ? "var(--danger-text)" : "var(--text-muted)", bg: d.openRepairs > 0 ? "var(--danger-bg)" : "var(--bg-subtle)", tab: "repairs" },
                       { label: "Overdue Tasks", val: d.overdueCount, color: d.overdueCount > 0 ? "var(--warn-text)" : "var(--text-muted)", bg: d.overdueCount > 0 ? "var(--overdue-bg)" : "var(--bg-subtle)", tab: "maintenance" },
                       { label: "Due in 30d", val: d.dueSoonCount, color: d.dueSoonCount > 0 ? "var(--duesoon-text)" : "var(--text-muted)", bg: d.dueSoonCount > 0 ? "var(--duesoon-bg)" : "var(--bg-subtle)", tab: "maintenance" },
                       { label: "Expiring Docs", val: d.expiringDocs.length, color: d.expiringDocs.length > 0 ? "var(--brand)" : "var(--text-muted)", bg: d.expiringDocs.length > 0 ? "var(--brand-deep)" : "var(--bg-subtle)", tab: "documentation" },
+                      { label: "Admin Due", val: d.adminDueCount, color: d.adminDueCount > 0 ? "#7c3aed" : "var(--text-muted)", bg: d.adminDueCount > 0 ? "#ede9fe" : "var(--bg-subtle)", tab: "admin", isAdmin: true },
                     ].map(function(stat){ return (
                       <div key={stat.label}
                         onClick={function(e){
                           e.stopPropagation();
                           if (stat.val === 0) return;
                           if (stat.label === "Expiring Docs") { switchVessel(vessel.id); setTab("maintenance"); setView("customer"); return; }
+                          if (stat.label === "Admin Due") { setFleetPanel({ vesselId: vessel.id, type: "Admin Due", vesselName: vessel.vesselName, vesselType: vessel.vesselType, adminDueTasks: d.adminDueTasks }); return; }
                           setFleetPanel({ vesselId: vessel.id, type: stat.label, vesselName: vessel.vesselName, vesselType: vessel.vesselType });
                         }}
-                        style={{ background: stat.bg, padding: "10px 8px", textAlign: "center", borderRight: "1px solid var(--border)", cursor: stat.val > 0 ? "pointer" : "default" }}
-                        title={stat.val > 0 ? "Go to " + stat.tab : ""}>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.val}</div>
-                        <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3, fontWeight: 600 }}>{stat.label}</div>
-                        {stat.val > 0 && stat.label !== "Expiring Docs" && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap to view →</div>}
+                        style={{ background: stat.bg, padding: "10px 6px", textAlign: "center", borderRight: "1px solid var(--border)", cursor: stat.val > 0 ? "pointer" : "default" }}
+                        title={stat.val > 0 ? "View " + stat.tab : ""}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.val}</div>
+                        <div style={{ fontSize: 9, color: stat.isAdmin && stat.val > 0 ? "#7c3aed" : "var(--text-muted)", marginTop: 3, fontWeight: 600 }}>{stat.label}</div>
+                        {stat.val > 0 && stat.label !== "Expiring Docs" && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap →</div>}
                       </div>
                     ); })}
                   </div>
@@ -2637,6 +2644,7 @@ export default function App() {
                       {fleetPanel.type === "Overdue Tasks" && "🔴 Overdue Tasks"}
                       {fleetPanel.type === "Due in 30d" && "🟡 Due in 30 Days"}
                       {fleetPanel.type === "Open Repairs" && "🔧 Open Repairs"}
+                      {fleetPanel.type === "Admin Due" && "📋 Admin Due"}
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
                       {prefix} {fleetPanel.vesselName} · {panelTasks.length + panelRepairs.length} items
@@ -2650,6 +2658,36 @@ export default function App() {
 
                 {/* Body */}
                 <div style={{ overflowY: "auto", flex: 1, padding: "4px 0" }}>
+
+                  {/* Admin Due list */}
+                  {fleetPanel.type === "Admin Due" && (function(){
+                    const adminItems = fleetPanel.adminDueTasks || [];
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    if (adminItems.length === 0) return <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>All admin items current ✅</div>;
+                    return (
+                      <div>
+                        {adminItems.map(function(task){
+                          const diff = Math.round((new Date(task.due_date) - today) / 86400000);
+                          const isOver = diff < 0;
+                          const badgeBg = isOver ? "var(--danger-bg,#fef2f2)" : "var(--overdue-bg,#fff7ed)";
+                          const badgeC  = isOver ? "var(--danger-text,#dc2626)" : "var(--warn-text,#b45309)";
+                          const badgeB  = isOver ? "#fca5a5" : "#fed7aa";
+                          const label   = isOver ? Math.abs(diff) + "d overdue" : diff === 0 ? "Due today" : diff + "d away";
+                          const cat     = task.category === "registrations" ? "Reg & legal" : task.category === "safety" ? "Safety" : "Survey";
+                          return (
+                            <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", borderBottom: "0.5px solid var(--border)" }}>
+                              <div style={{ fontSize: 16 }}>{task.icon || "📋"}</div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{cat} · Every {task.interval_months} mo</div>
+                              </div>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: badgeBg, color: badgeC, border: "1px solid " + badgeB, whiteSpace: "nowrap" }}>{label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
 
                   {/* Task list (Overdue + Due Soon) */}
                   {panelTasks.length > 0 && panelTasks.map(function(t){
@@ -3429,26 +3467,38 @@ export default function App() {
           })()}
 
           {/* Urgency summary cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
-            {(() => {
-              const overdueCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
-              const dueSoonCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
-              const openRepairs  = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
-              return [
-                { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "var(--danger-text)", bg: "var(--danger-bg)", border: "1px solid var(--danger-border)" },
-                { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "var(--warn-text)",   bg: "var(--warn-bg)",   border: "1px solid var(--warn-border)"   },
-                { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
-              ].map(function(card){
-                return (
-                <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
-                  style={{ background: card.bg, border: card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</div>
-                </div>
-              ); });
-            })()}
-          </div>
+          {(function(){
+            const overdueCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
+            const dueSoonCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
+            const openRepairs  = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+            const today = new Date(); today.setHours(0,0,0,0);
+            const adminDueTasks = (vesselAdminTasks[activeVesselId] || []).filter(function(t){
+              if (!t.due_date) return false;
+              return Math.round((new Date(t.due_date) - today) / 86400000) <= 30;
+            });
+            const adminDueCount = adminDueTasks.length;
+            const cols = adminDueCount > 0 ? "repeat(4,1fr)" : "repeat(3,1fr)";
+            const cards = [
+              { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "var(--danger-text)",  bg: "var(--danger-bg)",  border: "1px solid var(--danger-border)"  },
+              { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "var(--warn-text)",    bg: "var(--warn-bg)",    border: "1px solid var(--warn-border)"    },
+              { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
+            ];
+            if (adminDueCount > 0) cards.push(
+              { label: "Admin Due", val: adminDueCount, sub: "Reg, safety & surveys", color: "#7c3aed", bg: "#ede9fe", border: "1px solid #a78bfa" }
+            );
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: cols, gap: 10, marginBottom: 20 }}>
+                {cards.map(function(card){ return (
+                  <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
+                    style={{ background: card.bg, border: card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</div>
+                  </div>
+                ); })}
+              </div>
+            );
+          })()}
 
           {/* ── Category filter ── */}
           {(() => {
@@ -5107,11 +5157,13 @@ export default function App() {
                     {showUrgencyPanel === "Critical" && "🔴 Critical Tasks"}
                     {showUrgencyPanel === "Due Soon" && "🟡 Due Soon"}
                     {showUrgencyPanel === "Open Repairs" && "🔧 Open Repairs"}
+                    {showUrgencyPanel === "Admin Due" && "📋 Admin Due"}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
                     {showUrgencyPanel === "Critical" && tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length + " tasks need attention"}
                     {showUrgencyPanel === "Due Soon" && tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length + " tasks due soon"}
                     {showUrgencyPanel === "Open Repairs" && repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length + " repairs open"}
+                    {showUrgencyPanel === "Admin Due" && (function(){ const t = new Date(); t.setHours(0,0,0,0); return (vesselAdminTasks[activeVesselId]||[]).filter(function(a){ return a.due_date && Math.round((new Date(a.due_date)-t)/86400000)<=30; }).length; })() + " items need attention"}
                   </div>
                 </div>
                 <button onClick={function(){ setShowUrgencyPanel(null); setExpandedTask(null); }}
@@ -5231,6 +5283,59 @@ export default function App() {
                       </div>
                     );
                   });
+                })()}
+
+                {/* Admin Due panel */}
+                {showUrgencyPanel === "Admin Due" && (function(){
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const panelAdmin = (vesselAdminTasks[activeVesselId] || []).filter(function(t){
+                    return t.due_date && Math.round((new Date(t.due_date) - today) / 86400000) <= 30;
+                  }).sort(function(a, b){ return new Date(a.due_date) - new Date(b.due_date); });
+                  if (panelAdmin.length === 0) return (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
+                      <div style={{ fontSize: 32 }}>✅</div>
+                      <div style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>All admin items current</div>
+                    </div>
+                  );
+                  return (
+                    <div>
+                      {panelAdmin.map(function(task){
+                        const diff = Math.round((new Date(task.due_date) - today) / 86400000);
+                        const isOverdue = diff < 0;
+                        const isDueSoon = diff >= 0 && diff <= 30;
+                        const badgeBg    = isOverdue ? "var(--danger-bg,#fef2f2)"  : "var(--overdue-bg,#fff7ed)";
+                        const badgeColor = isOverdue ? "var(--danger-text,#dc2626)" : "var(--warn-text,#b45309)";
+                        const badgeBorder= isOverdue ? "#fca5a5"                    : "#fed7aa";
+                        const badgeLabel = isOverdue ? Math.abs(diff) + "d overdue" : diff === 0 ? "Due today" : diff + "d away";
+                        const catLabel   = task.category === "registrations" ? "Reg & legal" : task.category === "safety" ? "Safety" : "Survey";
+                        return (
+                          <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", borderBottom: "0.5px solid var(--border)" }}>
+                            <div style={{ fontSize: 16, flexShrink: 0 }}>{task.icon || "📋"}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
+                              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{catLabel} · Every {task.interval_months} mo</div>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: badgeBg, color: badgeColor, border: "1px solid " + badgeBorder, whiteSpace: "nowrap", flexShrink: 0 }}>{badgeLabel}</span>
+                          </div>
+                        );
+                      })}
+                      <div style={{ padding: "12px 20px", borderTop: "0.5px solid var(--border)", background: "var(--bg-subtle)" }}>
+                        <button onClick={function(){
+                          setShowUrgencyPanel(null);
+                          setTab("boat");
+                          setTimeout(function(){
+                            const vesselEq = equipment.find(function(e){ return e._vesselId === activeVesselId && e.category === "Vessel"; });
+                            if (vesselEq) {
+                              setExpandedEquip(vesselEq.id);
+                              setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "admin"; return n; });
+                            }
+                          }, 100);
+                        }} style={{ background: "none", border: "none", color: "#7c3aed", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0 }}>
+                          Open Admin tab to edit dates →
+                        </button>
+                      </div>
+                    </div>
+                  );
                 })()}
 
                 {/* Open Repairs panel */}
