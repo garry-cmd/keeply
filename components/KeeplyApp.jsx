@@ -1279,16 +1279,18 @@ export default function App() {
     const panel = params.get("panel");
     if (panel === "Critical" || panel === "Due+Soon" || panel === "Due Soon") {
       window.history.replaceState({}, "", window.location.pathname);
-      // Wait for app to finish loading before showing panel
+      setTab("boat");
+      // Defer panel open until after render
       setTimeout(function(){
-        setTab("boat");
         setShowUrgencyPanel(panel === "Due+Soon" ? "Due Soon" : panel);
-      }, 800);
+      }, 300);
     }
   }, []);
 
-  // Restore and persist active tab
+  // Restore and persist active tab — skip if a notification deep-link panel param is present
   useEffect(function(){
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("panel")) return; // panel handler will set tab instead
     const t = localStorage.getItem("keeply_tab");
     if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone","firstmate-standalone"].includes(t)) setTab(t);
   }, []);
