@@ -1279,7 +1279,13 @@ export default function App() {
       return;
     }
     if (userPlan === "pro" && vessels.length >= 2) {
-      setUpgradeReason("Pro includes up to 2 vessels. Upgrade to Fleet for unlimited vessels and the fleet dashboard.");
+      setUpgradeReason("Pro includes up to 2 vessels. Upgrade to Fleet for the fleet dashboard and up to 3 vessels.");
+      setShowUpgradeModal(true);
+      setShowVesselDropdown(false);
+      return;
+    }
+    if (userPlan === "fleet" && vessels.length >= 3) {
+      setUpgradeReason("Fleet includes up to 3 vessels. Contact us at support@keeply.boats to discuss an Enterprise plan for larger fleets.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
@@ -5667,7 +5673,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)" }}>Keeply Fleet</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>3 vessels included · fleet dashboard · +$20/vessel/mo</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>3 vessels included · fleet dashboard · team access</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-secondary)" }}>$49.99</div>

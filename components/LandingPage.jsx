@@ -280,7 +280,7 @@ export default function LandingPage() {
                 cta: "Start Pro", highlight: true, badge: "Most popular",
               },
               {
-                name: "Fleet", price: "$49.99", period: "/mo", sub: "3 vessels · +$20/vessel",
+                name: "Fleet", price: "$49.99", period: "/mo", sub: "Up to 3 vessels",
                 features: ["3 vessels included", "Fleet dashboard", "Team access", "Service reports PDF"],
                 cta: "Start Fleet", highlight: false,
               },
