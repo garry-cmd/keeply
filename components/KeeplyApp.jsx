@@ -955,6 +955,7 @@ export default function App() {
   const [showAddAdminTask, setShowAddAdminTask] = useState(null); // vesselId
   const [newAdminTask, setNewAdminTask] = useState({ name: "", category: "registrations", due_date: "", notes: "" });
   const [editingAdminTask, setEditingAdminTask] = useState(null);
+  const [completingAdminTask, setCompletingAdminTask] = useState(null);
   const [editAdminTaskForm, setEditAdminTaskForm] = useState({});
   const [vesselDetailSaving, setVesselDetailSaving] = useState(false);
   const [vesselDetailSaved, setVesselDetailSaved] = useState(false);
@@ -1754,6 +1755,34 @@ export default function App() {
       });
       await supa("vessel_admin_tasks", { method: "POST", body: tasks, prefer: "return=minimal" });
     } catch(e) { console.error("createDefaultAdminTasks error:", e); }
+  };
+
+
+  const completeAdminTask = async function(task, vesselId) {
+    setCompletingAdminTask(task.id);
+    const serviceDate = today();
+    // Roll due date forward by interval_months from today
+    const d = new Date(serviceDate);
+    d.setMonth(d.getMonth() + (task.interval_months || 12));
+    const newDue = d.toISOString().split("T")[0];
+    // Optimistic update
+    setVesselAdminTasks(function(prev){
+      const updated = (prev[vesselId] || []).map(function(t){
+        return t.id === task.id ? { ...t, last_completed: serviceDate, due_date: newDue } : t;
+      });
+      return { ...prev, [vesselId]: updated };
+    });
+    setTimeout(function(){ setCompletingAdminTask(null); }, 700);
+    try {
+      await supa("vessel_admin_tasks", { method: "PATCH", query: "id=eq." + task.id, body: { last_completed: serviceDate, due_date: newDue }, prefer: "return=minimal" });
+    } catch(e) {
+      console.error("completeAdminTask error:", e);
+      // Rollback
+      setVesselAdminTasks(function(prev){
+        const rolled = (prev[vesselId] || []).map(function(t){ return t.id === task.id ? task : t; });
+        return { ...prev, [vesselId]: rolled };
+      });
+    }
   };
 
   const saveAdminTaskField = async function(taskId, field, value, vesselId) {
@@ -3150,15 +3179,23 @@ export default function App() {
                                   const badge = statusBadge(task);
                                   const isEditing = editingAdminTask === task.id;
                                   return (
-                                    <div key={task.id} style={{ borderBottom: "0.5px solid var(--border)" }}>
+                                    <div key={task.id} style={{ borderBottom: "0.5px solid var(--border)", opacity: completingAdminTask === task.id ? 0 : 1, transform: completingAdminTask === task.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                                       {!isEditing ? (
                                         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+                                          <div onClick={function(){
+                                            if (completingAdminTask === task.id) return;
+                                            completeAdminTask(task, vesselEq._vesselId);
+                                          }}
+                                            style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingAdminTask === task.id ? "var(--ok-text)" : "var(--border)"), background: completingAdminTask === task.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
+                                            {completingAdminTask === task.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                                          </div>
                                           <div style={{ fontSize: 15, flexShrink: 0 }}>{task.icon || "📋"}</div>
                                           <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
                                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
                                               Every {task.interval_months} mo
                                               {task.due_date && <span> · Due {new Date(task.due_date).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })}</span>}
+                                              {task.last_completed && <span> · Done {new Date(task.last_completed).toLocaleDateString("en-US", { month:"short", year:"numeric" })}</span>}
                                             </div>
                                           </div>
                                           {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
