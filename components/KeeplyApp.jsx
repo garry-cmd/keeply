@@ -1759,6 +1759,16 @@ export default function App() {
     setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: true }; });
     try {
       const tasks = await supa("vessel_admin_tasks", { query: "vessel_id=eq." + vesselId + "&order=category.asc,name.asc" });
+      // Auto-backfill if no tasks exist yet for this vessel
+      if (!tasks || tasks.length === 0) {
+        const userId = session && session.user ? session.user.id : null;
+        if (userId) {
+          await createDefaultAdminTasks(vesselId, userId);
+          const refetched = await supa("vessel_admin_tasks", { query: "vessel_id=eq." + vesselId + "&order=category.asc,name.asc" });
+          setVesselAdminTasks(function(prev){ return { ...prev, [vesselId]: refetched || [] }; });
+          return;
+        }
+      }
       setVesselAdminTasks(function(prev){ return { ...prev, [vesselId]: tasks || [] }; });
     } catch(e) { console.error("Admin tasks load error:", e); }
     finally { setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: false }; }); }
@@ -2427,6 +2437,7 @@ export default function App() {
     setVessels([normalized]);
     setActiveVesselId(vessel.id);
     localStorage.setItem("keeply_active_vessel", vessel.id);
+    createDefaultAdminTasks(vessel.id, session.user.id);
     // Load all equipment and tasks that were just created by AI onboarding
     switchVessel(vessel.id);
   }} />;
