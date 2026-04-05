@@ -100,7 +100,6 @@ export default function LandingPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button onClick={function(){ openAuth("login"); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Log in</button>
-            <button onClick={function(){ openAuth("signup"); }} style={{ background: GOLD, border: "none", borderRadius: 8, padding: "7px 16px", color: NAVY_DEEP, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Get started free</button>
           </div>
         </div>
       </nav>
@@ -268,56 +267,49 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
             {[
               {
-                name: "Entry", price: "$2.99", period: "/mo", sub: "1 vessel · get organised",
-                desc: "Track maintenance and keep your boat organised.",
-                features: ["1 vessel", "Unlimited equipment items", "Maintenance tasks & logbook", "Up to 5 repair cards"],
-                cta: "Start Entry", ctaStyle: "outline", highlight: false,
+                name: "Entry",  price: "$2.99",  period: "/mo", sub: "or $29.99/yr",
+                features: ["1 vessel", "Unlimited equipment", "Maintenance & logbook", "5 repair cards"],
+                cta: "Start Entry", highlight: false,
               },
               {
                 name: "Pro", price: "$9.99", period: "/mo", sub: "or $69.99/yr — save 42%",
-                desc: "Everything you need to keep your boat in perfect order.",
-                features: ["2 vessels", "Unlimited equipment & repairs", "First Mate AI assistant", "Parts search + ordering", "Document storage"],
-                cta: "Start Pro", ctaStyle: "solid", highlight: true, badge: "Most popular",
+                features: ["2 vessels", "Unlimited repairs", "First Mate AI", "Parts search & docs"],
+                cta: "Start Pro", highlight: true, badge: "Most popular",
               },
               {
-                name: "Fleet", price: "$49.99", period: "/mo", sub: "3 vessels included · +$20/vessel",
-                desc: "For charter operators, marinas, and fleet managers.",
-                features: ["3 vessels included", "Fleet dashboard", "Team access", "Service reports (PDF)", "Priority support"],
-                cta: "Start Fleet", ctaStyle: "outline", highlight: false,
+                name: "Fleet", price: "$49.99", period: "/mo", sub: "3 vessels · +$20/vessel",
+                features: ["3 vessels included", "Fleet dashboard", "Team access", "Service reports PDF"],
+                cta: "Start Fleet", highlight: false,
               },
               {
-                name: "Enterprise", price: "Custom", period: "", sub: "15+ assets · sales call required",
-                desc: "For yacht management companies and large operators.",
-                features: ["Unlimited assets (custom pricing)", "Dedicated account manager", "API access", "SSO / white-label options", "Custom onboarding"],
-                cta: "Book a call →", ctaStyle: "outline", highlight: false, enterprise: true,
+                name: "Enterprise", price: "Custom", period: "", sub: "15+ assets",
+                features: ["Unlimited assets", "Account manager", "API access", "SSO / white-label"],
+                cta: "Book a call", highlight: false, enterprise: true,
               },
             ].map(function(plan) { return (
-              <div key={plan.name} style={{ background: plan.highlight ? BRAND : "#fff", border: plan.highlight ? "none" : plan.enterprise ? "1.5px solid #7c3aed" : "1.5px solid #e5e7eb", borderRadius: 20, padding: "28px 24px", position: "relative", boxShadow: plan.highlight ? "0 8px 32px rgba(15,76,138,0.25)" : "none" }}>
-                {plan.badge && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: GOLD, color: NAVY_DEEP, fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20 }}>{plan.badge}</div>}
-                <div style={{ fontSize: 13, fontWeight: 700, color: plan.highlight ? "rgba(255,255,255,0.7)" : plan.enterprise ? "#7c3aed" : "#6b7280", marginBottom: 8 }}>{plan.name}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginBottom: 4 }}>
-                  <span style={{ fontSize: plan.price === "Custom" ? 28 : 36, fontWeight: 800, color: plan.highlight ? "#fff" : "#111", letterSpacing: "-1px" }}>{plan.price}</span>
-                  <span style={{ fontSize: 13, color: plan.highlight ? "rgba(255,255,255,0.5)" : "#9ca3af" }}>{plan.period}</span>
+              <div key={plan.name} style={{ background: plan.highlight ? BRAND : plan.enterprise ? "#faf8ff" : "#fff", border: plan.highlight ? "2px solid " + GOLD : plan.enterprise ? "1.5px solid #7c3aed" : "1.5px solid #e5e7eb", borderRadius: 16, padding: "20px 16px", position: "relative", display: "flex", flexDirection: "column" }}>
+                {plan.badge && <div style={{ position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)", background: GOLD, color: NAVY_DEEP, fontSize: 10, fontWeight: 800, padding: "2px 10px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge}</div>}
+                <div style={{ fontSize: 10, fontWeight: 700, color: plan.highlight ? "rgba(255,255,255,0.6)" : plan.enterprise ? "#7c3aed" : "#6b7280", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.8px" }}>{plan.name}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 1, marginBottom: 2 }}>
+                  <span style={{ fontSize: plan.price === "Custom" ? 20 : 26, fontWeight: 800, color: plan.highlight ? "#fff" : "#111", letterSpacing: "-0.5px" }}>{plan.price}</span>
+                  <span style={{ fontSize: 11, color: plan.highlight ? "rgba(255,255,255,0.5)" : "#9ca3af", marginLeft: 2 }}>{plan.period}</span>
                 </div>
-                <div style={{ fontSize: 11, color: plan.highlight ? "rgba(255,255,255,0.5)" : "#9ca3af", marginBottom: 14 }}>{plan.sub}</div>
-                <p style={{ fontSize: 13, color: plan.highlight ? "rgba(255,255,255,0.65)" : "#6b7280", marginBottom: 20, lineHeight: 1.5 }}>{plan.desc}</p>
-                <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 10, color: plan.highlight ? "rgba(255,255,255,0.45)" : "#9ca3af", marginBottom: 14 }}>{plan.sub}</div>
+                <div style={{ flex: 1, marginBottom: 16 }}>
                   {plan.features.map(function(f) { return (
-                    <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 9, fontSize: 13, color: plan.highlight ? "rgba(255,255,255,0.9)" : "#374151" }}>
-                      <span style={{ color: plan.highlight ? "#5bbcf8" : plan.enterprise ? "#7c3aed" : "#16a34a", fontWeight: 700, fontSize: 14, flexShrink: 0, marginTop: 1 }}>✓</span>
+                    <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 6, fontSize: 12, color: plan.highlight ? "rgba(255,255,255,0.85)" : "#374151" }}>
+                      <span style={{ color: plan.highlight ? "#5bbcf8" : plan.enterprise ? "#7c3aed" : "#16a34a", fontWeight: 700, fontSize: 11, flexShrink: 0, marginTop: 1 }}>✓</span>
                       {f}
                     </div>
                   ); })}
                 </div>
                 <button onClick={function(){ plan.enterprise ? window.location.href = "mailto:support@keeply.boats?subject=Enterprise enquiry" : openAuth("signup"); }}
-                  style={{ width: "100%", padding: "12px 0", border: plan.ctaStyle === "outline" ? "1.5px solid " + (plan.enterprise ? "#7c3aed" : plan.highlight ? "rgba(255,255,255,0.3)" : "#d1d5db") : "none", borderRadius: 10, background: plan.ctaStyle === "solid" ? GOLD : plan.enterprise ? "#ede9fe" : plan.highlight ? "rgba(255,255,255,0.12)" : "#f9fafb", color: plan.ctaStyle === "solid" ? NAVY_DEEP : plan.enterprise ? "#7c3aed" : plan.highlight ? "#fff" : "#374151", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ width: "100%", padding: "9px 0", border: plan.highlight ? "none" : plan.enterprise ? "1.5px solid #7c3aed" : "1.5px solid #d1d5db", borderRadius: 8, background: plan.highlight ? GOLD : plan.enterprise ? "#7c3aed" : "#f9fafb", color: plan.highlight ? NAVY_DEEP : plan.enterprise ? "#fff" : "#374151", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                   {plan.cta}
                 </button>
-
-                {plan.enterprise && <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 10 }}>support@keeply.boats</p>}
               </div>
             ); })}
           </div>
