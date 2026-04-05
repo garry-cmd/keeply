@@ -954,6 +954,8 @@ export default function App() {
   const [adminTaskLoading, setAdminTaskLoading] = useState({});
   const [showAddAdminTask, setShowAddAdminTask] = useState(null); // vesselId
   const [newAdminTask, setNewAdminTask] = useState({ name: "", category: "registrations", due_date: "", notes: "" });
+  const [editingAdminTask, setEditingAdminTask] = useState(null);
+  const [editAdminTaskForm, setEditAdminTaskForm] = useState({});
   const [vesselDetailSaving, setVesselDetailSaving] = useState(false);
   const [vesselDetailSaved, setVesselDetailSaved] = useState(false);
   const [vesselInfoForm, setVesselInfoForm] = useState({});
@@ -3086,23 +3088,16 @@ export default function App() {
                         { key: "safety",        label: "Safety equipment" },
                         { key: "surveys",       label: "Surveys & inspections" },
                       ];
-                      const statusStyle = function(s) {
-                        if (s === "overdue")  return { bg: "var(--danger-bg,#fef2f2)", color: "var(--danger-text,#dc2626)" };
-                        if (s === "due-soon") return { bg: "var(--overdue-bg,#fff7ed)", color: "var(--warn-text,#b45309)" };
-                        if (s === "upcoming") return { bg: "var(--bg-subtle)", color: "var(--text-muted)" };
-                        if (s === "ok")       return { bg: "#f0fdf4", color: "#16a34a" };
-                        return { bg: "var(--bg-subtle)", color: "var(--text-muted)" };
-                      };
-                      const statusLabel = function(task) {
-                        if (!task.due_date) return "No date set";
+                      const statusBadge = function(task) {
+                        if (!task.due_date) return null;
                         const today = new Date(); today.setHours(0,0,0,0);
                         const due = new Date(task.due_date);
                         const diff = Math.round((due - today) / 86400000);
-                        if (diff < 0)   return Math.abs(diff) + "d overdue";
-                        if (diff === 0) return "Due today";
-                        if (diff <= 30) return diff + "d away";
-                        const months = Math.round(diff / 30);
-                        return months + "mo away";
+                        if (diff < 0)   return { label: Math.abs(diff) + "d overdue", bg: "var(--danger-bg,#fef2f2)", color: "var(--danger-text,#dc2626)", border: "#fca5a5" };
+                        if (diff === 0) return { label: "Due today",                  bg: "var(--overdue-bg,#fff7ed)", color: "var(--warn-text,#b45309)", border: "#fed7aa" };
+                        if (diff <= 30) return { label: diff + "d away",              bg: "var(--overdue-bg,#fff7ed)", color: "var(--warn-text,#b45309)", border: "#fed7aa" };
+                        if (diff <= 90) return { label: Math.round(diff/30) + "mo away", bg: "var(--bg-subtle)", color: "var(--text-muted)", border: "var(--border)" };
+                        return { label: "✓ " + Math.round(diff/30) + "mo away",      bg: "#f0fdf4", color: "#16a34a", border: "#86efac" };
                       };
                       if (loading) return <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>Loading…</div>;
                       return (
@@ -3111,25 +3106,63 @@ export default function App() {
                             const groupTasks = tasks.filter(function(t){ return t.category === group.key; });
                             if (groupTasks.length === 0) return null;
                             return (
-                              <div key={group.key} style={{ marginBottom: 12 }}>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6, marginTop: 10 }}>{group.label}</div>
+                              <div key={group.key}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4, marginTop: 12 }}>{group.label}</div>
                                 {groupTasks.map(function(task){
-                                  const st = getAdminTaskStatus(task);
-                                  const ss = statusStyle(st);
+                                  const badge = statusBadge(task);
+                                  const isEditing = editingAdminTask === task.id;
                                   return (
-                                    <div key={task.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 10px", background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, marginBottom: 5 }}>
-                                      <div style={{ fontSize: 14, marginTop: 2, flexShrink: 0 }}>{task.icon || "📋"}</div>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{task.name}</div>
-                                        <input type="date" value={task.due_date || ""}
-                                          onChange={function(e){ saveAdminTaskField(task.id, "due_date", e.target.value, vesselEq._vesselId); }}
-                                          style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--text-muted)", padding: 0, cursor: "pointer", width: "100%", fontFamily: "inherit" }} />
-                                      </div>
-                                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: ss.bg, color: ss.color, whiteSpace: "nowrap" }}>{statusLabel(task)}</span>
-                                        <button onClick={function(){ if (window.confirm("Remove " + task.name + "?")) deleteAdminTask(task.id, vesselEq._vesselId); }}
-                                          style={{ fontSize: 9, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "0 2px" }}>✕ remove</button>
-                                      </div>
+                                    <div key={task.id} style={{ borderBottom: "0.5px solid var(--border)" }}>
+                                      {!isEditing ? (
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+                                          <div style={{ fontSize: 15, flexShrink: 0 }}>{task.icon || "📋"}</div>
+                                          <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
+                                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                                              Every {task.interval_months} mo
+                                              {task.due_date && <span> · Due {new Date(task.due_date).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })}</span>}
+                                            </div>
+                                          </div>
+                                          {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
+                                          <button onClick={function(){ setEditingAdminTask(task.id); setEditAdminTaskForm({ name: task.name, interval_months: task.interval_months || 12, due_date: task.due_date || "" }); }}
+                                            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit">✏️</button>
+                                          <button onClick={function(){ showConfirm("Delete " + task.name + "?", function(){ deleteAdminTask(task.id, vesselEq._vesselId); }); }}
+                                            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
+                                        </div>
+                                      ) : (
+                                        <div style={{ padding: "10px 0 12px" }}>
+                                          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>NAME</div>
+                                          <input value={editAdminTaskForm.name || ""}
+                                            onChange={function(e){ setEditAdminTaskForm(function(f){ return Object.assign({}, f, { name: e.target.value }); }); }}
+                                            style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", marginBottom: 8, fontFamily: "inherit", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)" }} />
+                                          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                                            <div style={{ flex: 1 }}>
+                                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>INTERVAL (MONTHS)</div>
+                                              <input type="number" min="1" value={editAdminTaskForm.interval_months || ""}
+                                                onChange={function(e){ setEditAdminTaskForm(function(f){ return Object.assign({}, f, { interval_months: parseInt(e.target.value) || 12 }); }); }}
+                                                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)" }} />
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
+                                              <input type="date" value={editAdminTaskForm.due_date || ""}
+                                                onChange={function(e){ setEditAdminTaskForm(function(f){ return Object.assign({}, f, { due_date: e.target.value }); }); }}
+                                                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)" }} />
+                                            </div>
+                                          </div>
+                                          <div style={{ display: "flex", gap: 6 }}>
+                                            <button onClick={function(){ setEditingAdminTask(null); }}
+                                              style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>Cancel</button>
+                                            <button onClick={async function(){
+                                              await supa("vessel_admin_tasks", { method: "PATCH", query: "id=eq." + task.id, body: { name: editAdminTaskForm.name, interval_months: editAdminTaskForm.interval_months, due_date: editAdminTaskForm.due_date || null }, prefer: "return=minimal" });
+                                              setVesselAdminTasks(function(prev){
+                                                const updated = (prev[vesselEq._vesselId] || []).map(function(t){ return t.id === task.id ? Object.assign({}, t, { name: editAdminTaskForm.name, interval_months: editAdminTaskForm.interval_months, due_date: editAdminTaskForm.due_date || null }) : t; });
+                                                return Object.assign({}, prev, { [vesselEq._vesselId]: updated });
+                                              });
+                                              setEditingAdminTask(null);
+                                            }} style={{ flex: 2, padding: "6px 0", border: "none", borderRadius: 7, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save</button>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
@@ -3140,30 +3173,39 @@ export default function App() {
                             <div style={{ textAlign: "center", padding: "16px 0", fontSize: 12, color: "var(--text-muted)" }}>No admin tasks yet</div>
                           )}
                           {showAddAdminTask === vesselEq._vesselId ? (
-                            <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "10px 12px", marginTop: 10 }}>
-                              <input placeholder="Item name" value={newAdminTask.name}
+                            <div style={{ padding: "10px 0 4px" }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>NAME</div>
+                              <input placeholder="e.g. Dinghy registration" value={newAdminTask.name}
                                 onChange={function(e){ setNewAdminTask(function(p){ return { ...p, name: e.target.value }; }); }}
-                                style={{ width: "100%", padding: "6px 8px", border: "0.5px solid var(--border)", borderRadius: 6, fontSize: 12, marginBottom: 6, background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }} />
-                              <select value={newAdminTask.category}
-                                onChange={function(e){ setNewAdminTask(function(p){ return { ...p, category: e.target.value }; }); }}
-                                style={{ width: "100%", padding: "6px 8px", border: "0.5px solid var(--border)", borderRadius: 6, fontSize: 12, marginBottom: 6, background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }}>
-                                <option value="registrations">Registrations & legal</option>
-                                <option value="safety">Safety equipment</option>
-                                <option value="surveys">Surveys & inspections</option>
-                              </select>
-                              <input type="date" value={newAdminTask.due_date}
-                                onChange={function(e){ setNewAdminTask(function(p){ return { ...p, due_date: e.target.value }; }); }}
-                                style={{ width: "100%", padding: "6px 8px", border: "0.5px solid var(--border)", borderRadius: 6, fontSize: 12, marginBottom: 8, background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }} />
+                                style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 8, padding: "7px 10px", fontSize: 13, marginBottom: 8, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "var(--bg-card)", color: "var(--text-primary)" }} />
+                              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>CATEGORY</div>
+                                  <select value={newAdminTask.category}
+                                    onChange={function(e){ setNewAdminTask(function(p){ return { ...p, category: e.target.value }; }); }}
+                                    style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                                    <option value="registrations">Registrations & legal</option>
+                                    <option value="safety">Safety equipment</option>
+                                    <option value="surveys">Surveys & inspections</option>
+                                  </select>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
+                                  <input type="date" value={newAdminTask.due_date}
+                                    onChange={function(e){ setNewAdminTask(function(p){ return { ...p, due_date: e.target.value }; }); }}
+                                    style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", background: "var(--bg-card)", color: "var(--text-primary)" }} />
+                                </div>
+                              </div>
                               <div style={{ display: "flex", gap: 6 }}>
-                                <button onClick={function(){ addCustomAdminTask(vesselEq._vesselId); }}
-                                  style={{ flex: 1, padding: "7px 0", background: "var(--brand)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
                                 <button onClick={function(){ setShowAddAdminTask(null); setNewAdminTask({ name: "", category: "registrations", due_date: "", notes: "" }); }}
-                                  style={{ padding: "7px 12px", background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)", borderRadius: 7, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                                  style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>Cancel</button>
+                                <button onClick={function(){ addCustomAdminTask(vesselEq._vesselId); }}
+                                  style={{ flex: 2, padding: "7px 0", background: "var(--brand)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add item</button>
                               </div>
                             </div>
                           ) : (
                             <button onClick={function(){ setShowAddAdminTask(vesselEq._vesselId); }}
-                              style={{ width: "100%", marginTop: 10, padding: "8px 0", background: "none", border: "0.5px dashed var(--border)", borderRadius: 8, color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
+                              style={{ width: "100%", marginTop: 10, padding: "7px 0", background: "none", border: "1.5px dashed var(--border)", borderRadius: 8, color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
                               + Add item
                             </button>
                           )}
