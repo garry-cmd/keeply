@@ -2976,7 +2976,7 @@ export default function App() {
                       {["info","docs","admin","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
                         <button key={t} onClick={function(){
                           setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
-                          if (t === "admin" && !vesselAdminTasks[vesselEq.id]) { loadVesselAdminTasks(vesselEq.id); }
+                          if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
                           if (t === "edit") {
                             let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
                             setVesselInfoForm(info);
@@ -3079,8 +3079,8 @@ export default function App() {
                     )}
 
                     {(equipTab[vesselEq.id] || "info") === "admin" && (function(){
-                      const tasks = vesselAdminTasks[vesselEq.id] || [];
-                      const loading = adminTaskLoading[vesselEq.id];
+                      const tasks = vesselAdminTasks[vesselEq._vesselId] || [];
+                      const loading = adminTaskLoading[vesselEq._vesselId];
                       const GROUPS = [
                         { key: "registrations", label: "Registrations & legal" },
                         { key: "safety",        label: "Safety equipment" },
@@ -3122,12 +3122,12 @@ export default function App() {
                                       <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{task.name}</div>
                                         <input type="date" value={task.due_date || ""}
-                                          onChange={function(e){ saveAdminTaskField(task.id, "due_date", e.target.value, vesselEq.id); }}
+                                          onChange={function(e){ saveAdminTaskField(task.id, "due_date", e.target.value, vesselEq._vesselId); }}
                                           style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--text-muted)", padding: 0, cursor: "pointer", width: "100%", fontFamily: "inherit" }} />
                                       </div>
                                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: ss.bg, color: ss.color, whiteSpace: "nowrap" }}>{statusLabel(task)}</span>
-                                        <button onClick={function(){ if (window.confirm("Remove " + task.name + "?")) deleteAdminTask(task.id, vesselEq.id); }}
+                                        <button onClick={function(){ if (window.confirm("Remove " + task.name + "?")) deleteAdminTask(task.id, vesselEq._vesselId); }}
                                           style={{ fontSize: 9, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "0 2px" }}>✕ remove</button>
                                       </div>
                                     </div>
@@ -3139,7 +3139,7 @@ export default function App() {
                           {tasks.length === 0 && (
                             <div style={{ textAlign: "center", padding: "16px 0", fontSize: 12, color: "var(--text-muted)" }}>No admin tasks yet</div>
                           )}
-                          {showAddAdminTask === vesselEq.id ? (
+                          {showAddAdminTask === vesselEq._vesselId ? (
                             <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "10px 12px", marginTop: 10 }}>
                               <input placeholder="Item name" value={newAdminTask.name}
                                 onChange={function(e){ setNewAdminTask(function(p){ return { ...p, name: e.target.value }; }); }}
@@ -3155,14 +3155,14 @@ export default function App() {
                                 onChange={function(e){ setNewAdminTask(function(p){ return { ...p, due_date: e.target.value }; }); }}
                                 style={{ width: "100%", padding: "6px 8px", border: "0.5px solid var(--border)", borderRadius: 6, fontSize: 12, marginBottom: 8, background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }} />
                               <div style={{ display: "flex", gap: 6 }}>
-                                <button onClick={function(){ addCustomAdminTask(vesselEq.id); }}
+                                <button onClick={function(){ addCustomAdminTask(vesselEq._vesselId); }}
                                   style={{ flex: 1, padding: "7px 0", background: "var(--brand)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
                                 <button onClick={function(){ setShowAddAdminTask(null); setNewAdminTask({ name: "", category: "registrations", due_date: "", notes: "" }); }}
                                   style={{ padding: "7px 12px", background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)", borderRadius: 7, fontSize: 12, cursor: "pointer" }}>Cancel</button>
                               </div>
                             </div>
                           ) : (
-                            <button onClick={function(){ setShowAddAdminTask(vesselEq.id); }}
+                            <button onClick={function(){ setShowAddAdminTask(vesselEq._vesselId); }}
                               style={{ width: "100%", marginTop: 10, padding: "8px 0", background: "none", border: "0.5px dashed var(--border)", borderRadius: 8, color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
                               + Add item
                             </button>
