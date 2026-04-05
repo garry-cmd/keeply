@@ -1272,8 +1272,14 @@ export default function App() {
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
   const openAddVessel = function(){
-    if (userPlan === "free" && vessels.length >= 1) {
-      setUpgradeReason("Free accounts are limited to 1 vessel. Upgrade to Pro to add unlimited vessels.");
+    if ((userPlan === "free" || !userPlan) && vessels.length >= 1) {
+      setUpgradeReason("Entry accounts are limited to 1 vessel. Start your free trial to add more.");
+      setShowUpgradeModal(true);
+      setShowVesselDropdown(false);
+      return;
+    }
+    if (userPlan === "pro" && vessels.length >= 2) {
+      setUpgradeReason("Pro includes up to 2 vessels. Upgrade to Fleet for unlimited vessels and the fleet dashboard.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
@@ -4485,20 +4491,13 @@ export default function App() {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
               {[
                 { label: "Add Equipment", icon: "⚙️", action: function(){
-        const vesselEquip = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; });
-        if (userPlan === "free" && vesselEquip.length >= 5) {
-          setUpgradeReason("Free accounts are limited to 5 equipment items. Upgrade to Pro for unlimited equipment.");
-          setShowUpgradeModal(true);
-          setShowFab(false);
-          return;
-        }
         setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
       } },
                 { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
                 { label: "Add Repair", icon: "🔧", action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                    if (userPlan === "free" && vesselRepairs.length >= 5) {
-                      setUpgradeReason("You've used your free repairs. Upgrade to Pro for unlimited repairs with AI suggestions.");
+                    if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
+                      setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs with AI parts suggestions.");
                       setShowUpgradeModal(true);
                       setShowFab(false);
                       return;
@@ -5572,15 +5571,48 @@ export default function App() {
               </div>
             )}
 
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>Upgrade Keeply</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Unlock the full power of Keeply for your boat.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>
+              {userPlan === "pro" ? "Upgrade to Fleet" : "Start your free trial"}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
+              {userPlan === "pro" ? "Unlock the fleet dashboard and add more vessels." : "3 months free · credit card required · cancel anytime."}
+            </div>
+
+            {/* Entry — shown only when on free/null plan */}
+            {(userPlan === "free" || !userPlan) && (
+              <div style={{ border: "1.5px solid var(--border)", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "var(--bg-subtle)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)" }}>Entry</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>1 vessel · unlimited equipment · 5 repairs</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-secondary)" }}>$2.99</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>per month</div>
+                  </div>
+                </div>
+                <button onClick={async function(){
+                  if (checkoutLoading) return;
+                  setCheckoutLoading(true);
+                  try {
+                    const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ priceId: "price_1TIeLpA726uGRX5et6I8xTAE", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                  } catch(e) { alert("Error starting checkout: " + e.message); }
+                  finally { setCheckoutLoading(false); }
+                }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                  {checkoutLoading ? "Opening checkout…" : "Start Entry — $2.99/mo"}
+                </button>
+              </div>
+            )}
 
             {/* Pro Monthly */}
             <div style={{ border: "2px solid #0f4c8a", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "#fafeff" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--brand)" }}>Keeply Pro</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Unlimited equipment · Email alerts · AI features</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>2 vessels · unlimited equipment · AI features</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "var(--brand)" }}>$9.99</div>
@@ -5598,20 +5630,20 @@ export default function App() {
                 } catch(e) { alert("Error starting checkout: " + e.message); }
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout…" : "Subscribe Monthly — $9.99/mo"}
+                {checkoutLoading ? "Opening checkout…" : userPlan === "pro" ? "Switch to Monthly — $9.99/mo" : "Try free for 3 months — then $9.99/mo"}
               </button>
             </div>
 
             {/* Pro Annual */}
             <div style={{ border: "1.5px solid #16a34a", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "#fafffe", position: "relative" }}>
-              <div style={{ position: "absolute", top: -10, left: 16, background: "var(--ok-text)", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>Save 50%</div>
+              <div style={{ position: "absolute", top: -10, left: 16, background: "var(--ok-text)", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>Save 42%</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ok-text)" }}>Pro Annual</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Everything in Pro · $4.99/mo effective</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Everything in Pro · $5.83/mo effective</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ok-text)" }}>$59.99</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ok-text)" }}>$69.99</div>
                   <div style={{ fontSize: 10, color: "var(--text-muted)" }}>per year</div>
                 </div>
               </div>
@@ -5620,13 +5652,13 @@ export default function App() {
                 setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TIWK0A726uGRX5eDS58dYIl", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    body: JSON.stringify({ priceId: "price_1TIe58A726uGRX5eCugFA44l", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout…" : "Subscribe Annually — $59.99/yr"}
+                {checkoutLoading ? "Opening checkout…" : userPlan === "pro" ? "Switch to Annual — $69.99/yr" : "Try free for 3 months — then $69.99/yr"}
               </button>
             </div>
 
@@ -5635,7 +5667,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)" }}>Keeply Fleet</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>3 vessels · Fleet dashboard · Team access</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>3 vessels included · fleet dashboard · +$20/vessel/mo</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-secondary)" }}>$49.99</div>
@@ -5658,6 +5690,24 @@ export default function App() {
               <div style={{ marginTop: 10, background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#854d0e", textAlign: "center" }}>
                 🎁 Beta tester? Use code <strong>BETA2026</strong> at checkout for 100% off Fleet.
               </div>
+            </div>
+
+            {/* Enterprise */}
+            <div style={{ border: "1.5px solid #7c3aed", borderRadius: 14, padding: "14px 18px", marginBottom: 10, background: "#faf8ff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#7c3aed" }}>Enterprise</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>15+ assets · dedicated account manager · API access</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#7c3aed" }}>Custom</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>sales call</div>
+                </div>
+              </div>
+              <a href="mailto:support@keeply.boats?subject=Enterprise enquiry"
+                style={{ display: "block", width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: "#7c3aed", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "none", textAlign: "center" }}>
+                Book a call →
+              </a>
             </div>
 
             <button onClick={function(){ setShowUpgradeModal(false); }}
@@ -5705,12 +5755,14 @@ export default function App() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Plan</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                      {userPlan === "fleet" ? "Fleet · Multi-vessel" : userPlan === "pro" ? "Pro · Unlimited" : "Free · 1 vessel"}
+                      {userPlan === "fleet" ? "Fleet · Multi-vessel" : userPlan === "pro" ? "Pro · 2 vessels" : userPlan === "enterprise" ? "Enterprise · Unlimited" : "Entry · 1 vessel · 5 repairs"}
                     </div>
                   </div>
-                  {userPlan === "free" ? (
+                  {(userPlan === "free" || !userPlan || userPlan === "pro") ? (
                     <span onClick={function(){ setShowProfilePanel(false); setUpgradeReason(""); setShowUpgradeModal(true); }}
-                      style={{ background: "var(--brand-deep)", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Upgrade ↗</span>
+                      style={{ background: "var(--brand-deep)", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      {userPlan === "pro" ? "Upgrade ↗" : "Start trial ↗"}
+                    </span>
                   ) : (
                     <span onClick={async function(){
                       try {
@@ -5799,7 +5851,15 @@ export default function App() {
               <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ACCOUNT</div>
               <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
-                  onClick={function(){ setShowProfilePanel(false); setView("fleet"); loadFleetData(); }}>
+                  onClick={function(){
+                      if (userPlan !== "fleet" && userPlan !== "enterprise") {
+                        setShowProfilePanel(false);
+                        setUpgradeReason("The Fleet Dashboard is included with the Fleet plan — manage multiple vessels, track the whole fleet, and assign team access.");
+                        setShowUpgradeModal(true);
+                        return;
+                      }
+                      setShowProfilePanel(false); setView("fleet"); loadFleetData();
+                    }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>⚓ Fleet Dashboard</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
