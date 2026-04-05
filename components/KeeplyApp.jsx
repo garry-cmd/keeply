@@ -2688,7 +2688,7 @@ export default function App() {
                 {/* Body */}
                 <div style={{ overflowY: "auto", flex: 1, padding: "4px 0" }}>
 
-                  {/* Admin Due list */}
+                {/* Admin Due list */}
                   {fleetPanel.type === "Admin Due" && (function(){
                     const adminItems = fleetPanel.adminDueTasks || [];
                     const today = new Date(); today.setHours(0,0,0,0);
@@ -5334,45 +5334,35 @@ export default function App() {
                       <div style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>All admin items current</div>
                     </div>
                   );
-                  return (
-                    <div>
-                      {panelAdmin.map(function(task){
-                        const diff = Math.round((new Date(task.due_date) - today) / 86400000);
-                        const isOverdue = diff < 0;
-                        const isDueSoon = diff >= 0 && diff <= 30;
-                        const badgeBg    = isOverdue ? "var(--danger-bg,#fef2f2)"  : "var(--overdue-bg,#fff7ed)";
-                        const badgeColor = isOverdue ? "var(--danger-text,#dc2626)" : "var(--warn-text,#b45309)";
-                        const badgeBorder= isOverdue ? "#fca5a5"                    : "#fed7aa";
-                        const badgeLabel = isOverdue ? Math.abs(diff) + "d overdue" : diff === 0 ? "Due today" : diff + "d away";
-                        const catLabel   = task.category === "registrations" ? "Reg & legal" : task.category === "safety" ? "Safety" : "Survey";
-                        return (
-                          <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", borderBottom: "0.5px solid var(--border)" }}>
-                            <div style={{ fontSize: 16, flexShrink: 0 }}>{task.icon || "📋"}</div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
-                              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{catLabel} · Every {task.interval_months} mo</div>
-                            </div>
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: badgeBg, color: badgeColor, border: "1px solid " + badgeBorder, whiteSpace: "nowrap", flexShrink: 0 }}>{badgeLabel}</span>
+                  return panelAdmin.map(function(task){
+                    const diff = Math.round((new Date(task.due_date) - today) / 86400000);
+                    const isOver = diff < 0;
+                    const isCompleting = completingAdminTask === task.id;
+                    const badgeBg    = isOver ? "var(--danger-bg,#fef2f2)"   : "var(--overdue-bg,#fff7ed)";
+                    const badgeColor = isOver ? "var(--danger-text,#dc2626)" : "var(--warn-text,#b45309)";
+                    const badgeBorder= isOver ? "#fca5a5"                    : "#fed7aa";
+                    const badgeLabel = isOver ? Math.abs(diff) + "d overdue" : diff === 0 ? "Due today" : diff + "d away";
+                    const catLabel   = task.category === "registrations" ? "Reg & legal" : task.category === "safety" ? "Safety" : "Survey";
+                    return (
+                      <div key={task.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
+                        <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                          <button onClick={function(){
+                            completeAdminTask(task, activeVesselId);
+                            if (panelAdmin.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 700);
+                          }}
+                            style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "#a78bfa"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
+                          </button>
+                          <div style={{ fontSize: 18, flexShrink: 0 }}>{task.icon || "📋"}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{catLabel} · Every {task.interval_months} mo</div>
                           </div>
-                        );
-                      })}
-                      <div style={{ padding: "12px 20px", borderTop: "0.5px solid var(--border)", background: "var(--bg-subtle)" }}>
-                        <button onClick={function(){
-                          setShowUrgencyPanel(null);
-                          setTab("boat");
-                          setTimeout(function(){
-                            const vesselEq = equipment.find(function(e){ return e._vesselId === activeVesselId && e.category === "Vessel"; });
-                            if (vesselEq) {
-                              setExpandedEquip(vesselEq.id);
-                              setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "admin"; return n; });
-                            }
-                          }, 100);
-                        }} style={{ background: "none", border: "none", color: "#7c3aed", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0 }}>
-                          Open Admin tab to edit dates →
-                        </button>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: badgeBg, color: badgeColor, border: "1px solid " + badgeBorder, whiteSpace: "nowrap", flexShrink: 0 }}>{badgeLabel}</span>
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  });
                 })()}
 
                 {/* Open Repairs panel */}
