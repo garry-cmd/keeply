@@ -568,7 +568,7 @@ function AdminDashboard({ onClose }) {
   );
 }
 
-// ─── TASK ROW ─────────────────────────────────────────────────────────────────
+// ─── TASK ROW ──────────────────────────────────────────────────────────────────
 function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showSection }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("log");
@@ -2627,8 +2627,27 @@ export default function App() {
                         )}
                       </div>
                     );
-                  });
-                })()}
+                  })}
+
+                  {/* Open Repairs list */}
+                  {fleetPanel.type === "Open Repairs" && (d.repairs || []).map(function(r, i){
+                    return (
+                      <div key={r.id || i} style={{ padding: "12px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                        <SectionBadge section={r.section} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{r.description}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{r.section}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, background: "var(--danger-bg)", color: "var(--danger-text)", borderRadius: 5, padding: "2px 7px", flexShrink: 0 }}>open</span>
+                      </div>
+                    );
+                  })}
+
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
 
 
