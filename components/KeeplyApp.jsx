@@ -962,6 +962,8 @@ export default function App() {
   const [addingPartFor, setAddingPartFor]   = useState(null);
   const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "", sku: "", notes: "" });
   const [addingDocFor, setAddingDocFor]     = useState(null);
+  const [renamingDoc, setRenamingDoc]       = useState(null);   // { eqId, docId }
+  const [renameDocLabel, setRenameDocLabel] = useState("");
   const [newDocForm, setNewDocForm]         = useState({ label: "", url: "", type: "Manual", source: "url", fileObj: null, fileName: "" });
   const [uploadingDoc, setUploadingDoc]     = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -1478,6 +1480,19 @@ export default function App() {
       setAddingDocFor(null);
     } catch(err){ setDbError(err.message); }
     finally { setSaving(false); setUploadingDoc(false); }
+  };
+
+
+  const saveDocLabel = async function(eqId, docId, newLabel) {
+    if (!newLabel.trim()) return;
+    const eq = equipment.find(function(e){ return e.id === eqId; });
+    if (!eq) return;
+    const updatedDocs = (eq.docs || []).map(function(d){ return d.id === docId ? Object.assign({}, d, { label: newLabel.trim() }) : d; });
+    setEquipment(function(prev){ return prev.map(function(e){ return e.id === eqId ? Object.assign({}, e, { docs: updatedDocs }) : e; }); });
+    setRenamingDoc(null);
+    try {
+      await supa("equipment", { method: "PATCH", query: "id=eq." + eqId, body: { docs: updatedDocs }, prefer: "return=minimal" });
+    } catch(e) { console.error("Rename doc error:", e); }
   };
 
   const removeDoc = async function(eqId, docId){
@@ -3114,14 +3129,31 @@ export default function App() {
                     {(equipTab[vesselEq.id] || "info") === "docs" && (
                       <div onClick={function(e){ e.stopPropagation(); }}>
                         {/* Existing docs */}
-                        {(vesselEq.docs||[]).map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; return (
-                          <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "0.5px solid var(--border)" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                              <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
-                              <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
-                            </div>
-                            <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(vesselEq.id, doc.id); }); }}
-                              style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 6px", color: "var(--text-muted)", flexShrink: 0 }}>✕</button>
+                        {(vesselEq.docs||[]).map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; const isRenaming = renamingDoc && renamingDoc.eqId === vesselEq.id && renamingDoc.docId === doc.id; return (
+                          <div key={doc.id} style={{ borderBottom: "0.5px solid var(--border)" }}>
+                            {!isRenaming ? (
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                                  <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
+                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
+                                </div>
+                                <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                                  <button onClick={function(){ setRenamingDoc({ eqId: vesselEq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">✏️</button>
+                                  <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(vesselEq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", flexShrink: 0, display: "flex", alignItems: "center" }}><TrashIcon /></button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ padding: "8px 0" }}>
+                                <input autoFocus value={renameDocLabel}
+                                  onChange={function(e){ setRenameDocLabel(e.target.value); }}
+                                  onKeyDown={function(e){ if (e.key === "Enter") saveDocLabel(vesselEq.id, doc.id, renameDocLabel); if (e.key === "Escape") setRenamingDoc(null); }}
+                                  style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 8, padding: "6px 10px", fontSize: 13, boxSizing: "border-box", marginBottom: 6, fontFamily: "inherit", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)" }} />
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button onClick={function(){ setRenamingDoc(null); }} style={{ flex: 1, padding: "5px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>Cancel</button>
+                                  <button onClick={function(){ saveDocLabel(vesselEq.id, doc.id, renameDocLabel); }} style={{ flex: 2, padding: "5px 0", border: "none", borderRadius: 7, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save</button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ); })}
                         {/* Add doc form */}
@@ -3391,8 +3423,12 @@ export default function App() {
                                     : d.fields && d.fields.insurance_carrier ? "Insurance Document"
                                     : d.fields && d.fields.policy_no ? "Insurance Policy"
                                     : "Vessel Document";
-                                  const fileUrl = await uploadToStorage(uploadFile, vesselEq.id);
-                                  const newDoc = { id: "doc-" + Date.now(), label: docLabel, type: "Registration", url: fileUrl, fileName: uploadFile.name, isFile: true };
+                                  const ext = uploadFile.name.split(".").pop().toLowerCase() || "jpg";
+                                  const vesselName = (vessels.find(function(v){ return v.id === activeVesselId; }) || {}).vesselName || "";
+                                  const cleanName = (docLabel + (vesselName ? "-" + vesselName : "")).replace(/[^a-zA-Z0-9-]/g, "-") + "." + ext;
+                                  const renamedFile = new File([uploadFile], cleanName, { type: uploadFile.type });
+                                  const fileUrl = await uploadToStorage(renamedFile, vesselEq.id);
+                                  const newDoc = { id: "doc-" + Date.now(), label: docLabel, type: "Registration", url: fileUrl, fileName: cleanName, isFile: true };
                                   const updatedDocs = [...(vesselEq.docs || []), newDoc];
                                   await supa("equipment", { method: "PATCH", query: "id=eq." + vesselEq.id, body: { docs: updatedDocs }, prefer: "return=minimal" });
                                   setEquipment(function(prev){ return prev.map(function(e){ return e.id === vesselEq.id ? { ...e, docs: updatedDocs } : e; }); });
@@ -4635,8 +4671,12 @@ export default function App() {
                                            : d.fields && d.fields.state_reg ? "Vessel Registration"
                                            : d.fields && d.fields.insurance_carrier ? "Insurance Document"
                                            : "Vessel Document";
-                                         const fileUrl = await uploadToStorage(uploadFile, eq.id);
-                                         const newDoc = { id: "doc-" + Date.now(), label: docLabel, type: "Registration", url: fileUrl, fileName: uploadFile.name, isFile: true };
+                                         const ext = uploadFile.name.split(".").pop().toLowerCase() || "jpg";
+                                         const vesselName = (vessels.find(function(v){ return v.id === activeVesselId; }) || {}).vesselName || "";
+                                         const cleanName = (docLabel + (vesselName ? "-" + vesselName : "")).replace(/[^a-zA-Z0-9-]/g, "-") + "." + ext;
+                                         const renamedFile = new File([uploadFile], cleanName, { type: uploadFile.type });
+                                         const fileUrl = await uploadToStorage(renamedFile, eq.id);
+                                         const newDoc = { id: "doc-" + Date.now(), label: docLabel, type: "Registration", url: fileUrl, fileName: cleanName, isFile: true };
                                          const updatedDocs = [...(eq.docs || []), newDoc];
                                          await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { docs: updatedDocs }, prefer: "return=minimal" });
                                          setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? Object.assign({}, e, { docs: updatedDocs }) : e; }); });
@@ -4679,13 +4719,31 @@ export default function App() {
                     {activeTab === "docs" && (<>
                       {(eq.docs||[]).length > 0 && (<>
                         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>DOCUMENTS</div>
-                        {eq.docs.map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; return (
-                          <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
-                              <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
-                            </div>
-                            <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(eq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove document"><TrashIcon /></button>
+                        {eq.docs.map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; const isRenaming = renamingDoc && renamingDoc.eqId === eq.id && renamingDoc.docId === doc.id; return (
+                          <div key={doc.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                            {!isRenaming ? (
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                                  <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
+                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
+                                </div>
+                                <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                                  <button onClick={function(){ setRenamingDoc({ eqId: eq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">✏️</button>
+                                  <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(eq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove"><TrashIcon /></button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ padding: "8px 0" }}>
+                                <input autoFocus value={renameDocLabel}
+                                  onChange={function(e){ setRenameDocLabel(e.target.value); }}
+                                  onKeyDown={function(e){ if (e.key === "Enter") saveDocLabel(eq.id, doc.id, renameDocLabel); if (e.key === "Escape") setRenamingDoc(null); }}
+                                  style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 8, padding: "6px 10px", fontSize: 13, boxSizing: "border-box", marginBottom: 6, fontFamily: "inherit", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)" }} />
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button onClick={function(){ setRenamingDoc(null); }} style={{ flex: 1, padding: "5px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>Cancel</button>
+                                  <button onClick={function(){ saveDocLabel(eq.id, doc.id, renameDocLabel); }} style={{ flex: 2, padding: "5px 0", border: "none", borderRadius: 7, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save</button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ); })}
                       </>)}
