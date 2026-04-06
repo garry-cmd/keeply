@@ -3536,13 +3536,38 @@ export default function App() {
                           {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, borderRadius: 4, padding: "1px 5px" }}>{badge.label}</span>}
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                        <button onClick={function(){ showConfirm("Delete " + eq.name + "? This will also remove all tasks and repairs linked to it.", function(){ deleteEquipment(eq.id); }); }}
-                          style={{ width: "100%", marginTop: 8, padding: 10, border: "1px solid var(--danger-border)", borderRadius: 8, background: "none", color: "var(--danger-text)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                          🗑 Delete {eq.name}
-                        </button>
+                      <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
+                        onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
+                        {isExpanded ? "▾" : "▸"}
+                      </span>
+                    </div>
+                    {isExpanded && (
+                      <div style={{ borderTop: "1px solid var(--border)", padding: "12px 16px", background: "var(--bg-subtle)" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval_days ? t.interval_days + " days" : "—"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICE</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.last_service ? fmt(t.last_service) : "Never"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.due_date ? fmt(t.due_date) : "—"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", textTransform: "capitalize" }}>{t.priority || "medium"}</div>
+                          </div>
+                        </div>
                       </div>
                     )}
+                  </div>
+                );
+              })}
+            </>);
+          })()}
 
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
