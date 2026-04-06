@@ -3757,9 +3757,6 @@ export default function App() {
                               }} style={{ flex: 1, padding: "5px 8px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                                 💾 Save
                               </button>
-                                style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                                + Cart
-                              </button>
                               <a href={buyUrl(part.name, part.url, "fisheries")} target="_blank" rel="noreferrer"
                                 style={{ flex: 1, padding: "5px 8px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center", whiteSpace: "nowrap" }}>
                                 FS ↗
