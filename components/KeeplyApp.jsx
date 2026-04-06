@@ -317,7 +317,6 @@ function AdminDashboard({ onClose }) {
   useEffect(function(){
     async function loadMetrics() {
       try {
-        const [vessels, equipment, tasks, repairs, members, authCount, partsMetrics, storage, affiliateClicks] = await Promise.all([
           supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,make,model,year,photo_url,engine_hours,engine_hours_date,created_at,user_id&order=created_at.desc" }),
           supa("equipment", { query: "select=id,vessel_id,category,docs,logs,custom_parts" }),
           supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
@@ -334,8 +333,6 @@ function AdminDashboard({ onClose }) {
         ]);
 
         const now = new Date(); now.setHours(0,0,0,0);
-        const files = (storage || []).filter(function(f){ return f.id; });
-        const totalSize = files.reduce(function(s, f){ return s + (f.metadata && f.metadata.size ? f.metadata.size : 0); }, 0);
 
         // Date helpers
         const daysAgo = function(n){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - n); return d; };
@@ -382,9 +379,6 @@ function AdminDashboard({ onClose }) {
         const cmWM = clicksByRetailer["West Marine"] || 0;
         const cmDef = clicksByRetailer["Defender"] || 0;
 
-        const cm = partsMetrics || {};
-        const cartTotalQty   = cm.total_qty   || 0;
-        const cartTotalLists = cm.total_lists  || 0;
 
         setMetrics({
           authUsers,
@@ -422,8 +416,6 @@ function AdminDashboard({ onClose }) {
           totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
           totalLogs: (equipment||[]).reduce(function(s, e){ return s + ((e.logs||[]).length); }, 0),
           // Storage
-          totalFiles: files.length,
-          storageMB: (totalSize / 1048576).toFixed(1),
           sharedVessels: (members||[]).length,
           // Affiliate
           totalAffiliateClicks: clicks.length,
@@ -541,7 +533,6 @@ function AdminDashboard({ onClose }) {
         </div>
       </div>
 
-      {/* Parts & Shopping Lists */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
       </div>
@@ -588,35 +579,12 @@ function AdminDashboard({ onClose }) {
           <div style={{ padding: "7px 12px", background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
             <span>PART</span><span>PRICE</span>
           </div>
-          {m.partsList.slice(0, 30).map(function(p, i){ return (
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
-                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                  {p.equipment_name ? p.equipment_name + " · " : ""}
-                  {p.vendor || ""}
-                  {p.source === "ai-equipment" || p.source === "ai-repair" ? " · ✨ AI" : ""}
-                  {p.qty > 1 ? " · qty " + p.qty : ""}
-                </div>
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: p.price ? "var(--ok-text)" : "var(--text-muted)", flexShrink: 0 }}>
-                {p.price ? "$" + (parseFloat(p.price) * (p.qty || 1)).toFixed(2) : "—"}
-              </div>
-            </div>
-          ); })}
-          )}
-        </div>
-      )}
-        <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "var(--text-muted)", marginBottom: 20 }}>
-          No items in any shopping lists yet. Parts are added via the 🔩 Parts tab and ✨ AI suggestions on equipment cards.
-        </div>
-      )}
 
       {/* Engagement */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>ENGAGEMENT</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
         {stat(m.totalLogs, "Log Entries", "across all equipment")}
         {stat(m.totalDocs, "Docs Attached", "manuals, parts lists, etc.")}
-        {stat(m.totalFiles, "Files in Storage", m.storageMB + " MB used")}
         {stat(m.sharedVessels, "Shared Access", "vessel member records")}
       </div>
 
@@ -858,9 +826,6 @@ export default function App() {
   const [dbError, setDbError]   = useState(null);
   const [saving, setSaving]     = useState(false);
 
-  const [cart, setCart]                     = useState([]);
-  const [showCartPanel, setShowCartPanel]   = useState(false);
-  const [cartLoaded, setCartLoaded]         = useState(false);
 
 
   // ── Vessels (Supabase) ──
@@ -925,7 +890,6 @@ export default function App() {
   const [filterDocUrgency, setFilterDocUrgency] = useState("All");
   const [expandedDoc, setExpandedDoc]       = useState(null);
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
-  const [showCartOnly, setShowCartOnly]     = useState(false);
   const [aiSuggestions, setAiSuggestions]   = useState({});
   const [aiLoading, setAiLoading]           = useState(false);
   const [aiLoaded, setAiLoaded]             = useState(false);
