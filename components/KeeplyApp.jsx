@@ -534,47 +534,6 @@ function AdminDashboard({ onClose }) {
 
       {/* ── Affiliate Clicks ── */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", padding: "18px 0 8px" }}>AFFILIATE CLICKS</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, marginBottom: 4 }}>
-        {stat(m.totalAffiliateClicks, "Total Clicks", "all time")}
-        {stat(m.affiliateClicksThisMonth, "This Month", "")}
-        {(function(){
-          const diff = m.affiliateClicksThisWeek - m.affiliateClicksLastWeek;
-          const trend = diff > 0 ? "↑ " + diff + " vs last wk" : diff < 0 ? "↓ " + Math.abs(diff) + " vs last wk" : "= same as last wk";
-          return stat(m.affiliateClicksThisWeek, "This Week", trend, diff > 0 ? "var(--ok-text)" : diff < 0 ? "var(--danger-text)" : "var(--text-muted)");
-        })()}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 8 }}>
-        <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "10px 14px" }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#16a34a" }}>{m.affiliateFS}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#16a34a" }}>Fisheries Supply</div>
-        </div>
-        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 14px" }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{m.affiliateWM}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb" }}>West Marine</div>
-        </div>
-        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px" }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#dc2626" }}>{m.affiliateDef}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>Defender</div>
-        </div>
-      </div>
-      {m.affiliateTopParts && m.affiliateTopParts.length > 0 && (
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", marginBottom: 4 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>TOP SEARCHED PARTS</div>
-          {m.affiliateTopParts.map(function(p, i){ return (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: i < m.affiliateTopParts.length - 1 ? "0.5px solid var(--border)" : "none" }}>
-              <div style={{ fontSize: 12, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, paddingRight: 8 }}>{p[0]}</div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", flexShrink: 0 }}>{p[1]}×</span>
-            </div>
-          ); })}
-        </div>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
-      </div>
-        <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ padding: "7px 12px", background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
-            <span>PART</span><span>PRICE</span>
-          </div>
-
       {/* Engagement */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>ENGAGEMENT</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
