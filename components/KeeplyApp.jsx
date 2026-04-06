@@ -1470,7 +1470,6 @@ export default function App() {
       setRepairs(function(prev){ return [{ id: newR.id, date: newR.date, section: newR.section, description: newR.description, status: newR.status, _vesselId: newR.vessel_id, equipment_id: newR.equipment_id || null }, ...prev]; });
       setNewRepair({ description: "", section: "Engine", _equipmentId: null, dueDate: "" });
       setShowAddRepair(false);
-      getSuggestionsForRepair(newR);
     } catch(err){
       setRepairs(function(prev){ return [{ id: "local-" + Date.now(), date: today(), section: newRepair.section, description: newRepair.description, status: "open", vessel_id: activeVesselId }, ...prev]; });
       setNewRepair({ description: "", section: "Engine" });
@@ -3529,7 +3528,7 @@ export default function App() {
                         style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                         {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
                       </button>
-                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
+                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{t.task}</div>
                         <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
                           <SectionBadge section={t.section} />
@@ -3670,7 +3669,7 @@ export default function App() {
                                         style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, background: isCompleting ? "var(--ok-bg)" : "transparent", transition: "all 0.3s" }}>
                                         {isCompleting && <span style={{ color: "var(--ok-text)", fontSize: 12, fontWeight: 700 }}>✓</span>}
                                       </div>
-                                      <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                                      <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                                         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{r.description}</div>
                                         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{r.section} · {fmt(r.date)}</div>
                                       </div>
@@ -3678,53 +3677,14 @@ export default function App() {
                                         {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                                           <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length}</span>
                                         )}
-                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
+                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
                                         <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}><TrashIcon /></button>
                                       </div>
                                     </div>
                                     {/* Expanded parts tab */}
                                     {isExpanded && (
                                       <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", marginLeft: 30 }}>
-                                        <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 8px" }}>
-                                          {["notes"].map(function(t){ return (
-                                            <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
-                                              style={{ padding: "6px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)" }}>
-                                              "📝 Notes"
-                                            </button>
-                                          ); })}
-                                        </div>
-                                        {(repairTab[r.id] || "parts") === "parts" && (
-                                          <div style={{ padding: "12px 12px 8px" }}>
-                                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>✨ AI suggested parts</div>
-                                            {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
-                                            {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
-                                            {sugg && sugg !== "loading" && sugg !== "error" && sugg.filter(function(p){ return !rejectedParts["repair-" + r.id + "-" + p.id]; }).map(function(part){
-                                              return (
-                                                <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                                                    <div style={{ flex: 1 }}>
-                                                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2 }}>💡 {part.reason}</div>
-                                                    </div>
-                                                    <button onClick={function(e){ e.stopPropagation(); setRejectedParts(function(prev){ const n = Object.assign({}, prev); n["repair-" + r.id + "-" + part.id] = true; return n; }); getSuggestionsForRepair(r); }}
-                                                      style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 2px", flexShrink: 0 }} title="Wrong part">✕</button>
-                                                  </div>
-                                            )}
-                                            {sugg && sugg !== "loading" && (
-                                              <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
-                                                style={{ marginTop: 6, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>
-                                                ↺ Refresh
-                                              </button>
-                                            )}
-                                          </div>
-                                        )}
-                                        {(repairTab[r.id] || "parts") === "notes" && (
-                                          <div style={{ padding: "10px 12px", fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
-                                            {r.description || "No additional notes."}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
+                                        
                                   </div>
                                 );
                               })}
@@ -4422,7 +4382,7 @@ export default function App() {
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
 
@@ -4430,75 +4390,9 @@ export default function App() {
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
 
-                    {/* Tab bar */}
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px" }}>
-                      {["notes"].map(function(t){ return (
-                        <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
-                          style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
-                          "📝 Notes"
-                          {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
-                            <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
-                          )}
-                        </button>
-                      ); })}
-                    </div>
 
                     {/* Parts tab */}
-                    {(repairTab[r.id] || "parts") === "parts" && (
-                      <div style={{ padding: "14px 16px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}>
-                          ✨ AI suggested parts for this repair
-                        </div>
-
-                        {sugg === "loading" && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Finding parts for this repair…</div>
-                        )}
-                        {sugg === "error" && (
-                          <div style={{ fontSize: 12, color: "var(--warn-text)", marginBottom: 10 }}>
-                            Couldn't load suggestions.
-                            <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginLeft: 8, background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button>
-                          </div>
-                        )}
-                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No specific parts found.</div>
-                        )}
-
-                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                          return (
-                            <div key={part.name} style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                  <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2, lineHeight: 1.4 }}>💡 {part.reason}</div>
-                                </div>
-                                <button onClick={function(e){ e.stopPropagation(); setRejectedParts(function(prev){ const n = Object.assign({}, prev); n["repair-" + r.id + "-" + part.id] = true; return n; }); getSuggestionsForRepair(r); }}
-                                  style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Wrong part">✕</button>
-                              </div>
-                        )}
-
-                        {!sugg && (
-                          <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
-                            style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
-                            ✨ Find parts for this repair
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Notes tab */}
-                    {(repairTab[r.id] || "parts") === "notes" && (
-                      <div style={{ padding: "14px 16px" }}>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
-                          {r.description || "No additional notes."}
-                        </div>
-                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
-                          style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>
-                          ✏️ Edit repair
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    
               </div>
             );
           })}
@@ -4613,36 +4507,7 @@ export default function App() {
                                 })}
                               </div>
                             )}
-                            {/* AI parts suggestions for this task */}
-                            <div style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>✨ Suggested parts</div>
-                              {(function(){
-                                const sugg = aiSuggestions[t.id];
-                                if (!sugg) return (
-                                  <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}
-                                    style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
-                                    ✨ Find parts for this task
-                                  </button>
-                                );
-                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
-                                if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
-                                if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
-                                return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
-                                  return (
-                                    <div key={part.name} style={{ padding: "7px 0", borderBottom: "1px solid #f9fafb" }}>
-                                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
-                          <div style={{ fontSize: 18, flexShrink: 0 }}>{task.icon || "📋"}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{catLabel} · Every {task.interval_months} mo</div>
-                          </div>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: badgeBg, color: badgeColor, border: "1px solid " + badgeBorder, whiteSpace: "nowrap", flexShrink: 0 }}>{badgeLabel}</span>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
+
 
                 {/* Open Repairs panel */}
                 {showUrgencyPanel === "Open Repairs" && (function(){
@@ -4664,53 +4529,23 @@ export default function App() {
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                             {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
-                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{r.description}</div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                               <SectionBadge section={r.section} />
                               {eq && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{eq.name}</span>}
                               <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{fmt(r.date)}</span>
-                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>}
+                              
                             </div>
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
-                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
+                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                             {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
                         {isExpanded && (
                           <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
-                            <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 12px" }}>
-                              {["notes"].map(function(tt){ return (
-                                <button key={tt} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = tt; return n; }); if (tt === "parts" && !sugg) getSuggestionsForRepair(r); }}
-                                  style={{ padding: "8px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === tt ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === tt ? "var(--brand)" : "var(--text-muted)" }}>
-                                  "📝 Notes"
-                                  {tt === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && <span style={{ marginLeft: 4, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 4px", fontSize: 10 }}>{sugg.length}</span>}
-                                </button>
-                              ); })}
-                            </div>
-                            {(repairTab[r.id] || "parts") === "parts" && (
-                              <div style={{ padding: "12px 14px" }}>
-                                {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
-                                {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
-                                {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>}
-                                {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                                  return (
-                                    <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid #f9fafb" }}>
-                                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
-                              </div>
-                            )}
-                            {(repairTab[r.id] || "parts") === "notes" && (
-                              <div style={{ padding: "12px 14px" }}>
-                                <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>{r.description || "No additional notes."}</div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  });
+                            );
                 })()}
               </div>
             </div>
