@@ -527,9 +527,6 @@ function AdminDashboard({ onClose }) {
         </div>
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
-      </div>
 
       {/* ── Affiliate Clicks ── */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", padding: "18px 0 8px" }}>AFFILIATE CLICKS</div>
@@ -567,8 +564,8 @@ function AdminDashboard({ onClose }) {
           ); })}
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
-      </div>
+    </div>
+  );
 }
 
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
