@@ -317,23 +317,17 @@ function AdminDashboard({ onClose }) {
   useEffect(function(){
     async function loadMetrics() {
       try {
-        const [vessels, equipment, tasks, repairs, members, authCount, partsMetrics, storage, affiliateClicks] = await Promise.all([
+        const [vessels, equipment, tasks, repairs, members, authCount, affiliateClicks] = await Promise.all([
           supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,make,model,year,photo_url,engine_hours,engine_hours_date,created_at,user_id&order=created_at.desc" }),
           supa("equipment", { query: "select=id,vessel_id,category,docs,logs,custom_parts" }),
           supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
           supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
           supa("vessel_members", { query: "select=id,vessel_id,user_id,role,email" }).catch(function(){ return []; }),
           fetch(SUPA_URL + "/rest/v1/rpc/get_auth_user_count", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
-            method: "POST",
-            headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({ prefix: "", limit: 500 })
-          }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
           supa("affiliate_clicks", { query: "select=retailer,part_name,context,created_at&order=created_at.desc&limit=1000" }).catch(function(){ return []; })
         ]);
 
         const now = new Date(); now.setHours(0,0,0,0);
-        const files = (storage || []).filter(function(f){ return f.id; });
-        const totalSize = files.reduce(function(s, f){ return s + (f.metadata && f.metadata.size ? f.metadata.size : 0); }, 0);
 
         // Date helpers
         const daysAgo = function(n){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - n); return d; };
@@ -380,7 +374,6 @@ function AdminDashboard({ onClose }) {
         const cmWM = clicksByRetailer["West Marine"] || 0;
         const cmDef = clicksByRetailer["Defender"] || 0;
 
-        const cm = partsMetrics || {};
         const cartTotalValue = parseFloat(cm.total_value  || 0);
         const cartAOV        = parseFloat(cm.avg_order_value || 0);
         const cartPartsList  = cm.parts_list  || [];
@@ -424,8 +417,6 @@ function AdminDashboard({ onClose }) {
           totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
           totalLogs: (equipment||[]).reduce(function(s, e){ return s + ((e.logs||[]).length); }, 0),
           // Storage
-          totalFiles: files.length,
-          storageMB: (totalSize / 1048576).toFixed(1),
           sharedVessels: (members||[]).length,
           // Affiliate
           totalAffiliateClicks: clicks.length,
@@ -622,7 +613,6 @@ function AdminDashboard({ onClose }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
         {stat(m.totalLogs, "Log Entries", "across all equipment")}
         {stat(m.totalDocs, "Docs Attached", "manuals, parts lists, etc.")}
-        {stat(m.totalFiles, "Files in Storage", m.storageMB + " MB used")}
         {stat(m.sharedVessels, "Shared Access", "vessel member records")}
       </div>
 
