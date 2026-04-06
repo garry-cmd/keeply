@@ -3557,7 +3557,6 @@ export default function App() {
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
-                        </button>
                       ); })}
                     </div>
                     
@@ -4897,7 +4896,6 @@ export default function App() {
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
-                        </button>
                       ); })}
                     </div>
 
