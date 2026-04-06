@@ -3447,80 +3447,8 @@ export default function App() {
                       <SectionBadge section={r.section} />
                       {r.priority && <span style={{ fontSize: 10, fontWeight: 700, background: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].bg : "var(--bg-subtle)", color: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].color : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", textTransform: "uppercase" }}>{r.priority}</span>}
                     </div>
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8 }}>
-                      {["notes"].map(function(t){ return (
-                      ); })}
-                    </div>
-                    {(repairTab[r.id] || "parts") === "parts" && (
-                      <div style={{ padding: "14px 16px" }}>
-                        {(function(){
-                          const repairEq = equipment.find(function(e){ return e.id === r.equipment_id; });
-                          if (!pr) return (
-                          );
-                          if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>🔍 Searching for parts…</div>;
-                          if (pr.error) return (
-                            <div style={{ fontSize: 12, color: "var(--warn-text)" }}>
-                            </div>
-                          );
-                          return (<>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-                              <span>🔩 PARTS FOUND {pr.results.length > 0 ? "· " + pr.results.length : ""}</span>
-                            </div>
-                            {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>No specific parts found.</div>}
-                            {pr.results.map(function(part, pi){ return (
-                              <div key={pi} style={{ padding: "10px 0", borderBottom: "0.5px solid var(--border)", background: part.type === "replacement" ? "rgba(217,119,6,0.06)" : "transparent", borderRadius: part.type === "replacement" ? 8 : 0, padding: "10px", marginLeft: part.type === "replacement" ? -10 : 0, marginRight: part.type === "replacement" ? -10 : 0 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-                                      {part.type === "replacement"
-                                        ? <span style={{ fontSize: 9, fontWeight: 700, background: "#d97706", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Complete Unit</span>
-                                        : <span style={{ fontSize: 9, fontWeight: 700, background: "var(--text-muted)", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Service Part</span>
-                                      }
-                                    </div>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                    {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
-                                  </div>
-                                  {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
-                                </div>
-                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                  {retailerLinks(part.name).map(function(rl){ return (
-                                    <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                                      onClick={function(){ trackAffiliateClick(rl.name, part.name, part.reason || ""); }}
-                                      style={{ padding: "4px 10px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                      {rl.name.split(" ")[0]} ↗
-                                    </a>
-                                  ); })}
-                                  {repairEq && (function(){
-                                    const sk = repairEq.id + "-" + part.name;
-                                    const st = savedParts[sk];
-                                    return (
-                                      <button onClick={function(e){ e.stopPropagation(); saveAiPartToMyParts(repairEq, part); }}
-                                        disabled={st === "saving" || st === "saved"}
-                                        style={{ padding: "4px 10px", borderRadius: 6, background: st === "saved" ? "var(--ok-bg)" : st === "error" ? "var(--danger-bg)" : "var(--bg-subtle)", border: "0.5px solid " + (st === "saved" ? "var(--ok-border)" : st === "error" ? "var(--danger-border)" : "var(--border)"), color: st === "saved" ? "var(--ok-text)" : st === "error" ? "var(--danger-text)" : "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: st ? "default" : "pointer" }}>
-                                        {st === "saving" ? "Saving…" : st === "saved" ? "✓ Saved" : st === "error" ? "✗ Failed" : "+ Save to parts"}
-                                      </button>
-                                    );
-                                  })()}
-                                </div>
-                              </div>
-                            ); })}
-                            {pr.results.length === 0 && (
-                              <div style={{ display: "flex", gap: 5 }}>
-                                {retailerLinks(r.description + " marine").map(function(rl){ return (
-                                  <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                                    style={{ flex: 1, padding: "6px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                    {rl.name.split(" ")[0]} ↗
-                                  </a>
-                                ); })}
-                              </div>
-                            )}
-                          </>);
-                        })()}
-                      </div>
-                    )}
-                    {(repairTab[r.id] || "parts") === "notes" && (
-                      <div style={{ padding: "14px 16px" }} onClick={function(e){ e.stopPropagation(); }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>REPAIR NOTES</div>
+                    <div style={{ padding: "14px 16px" }} onClick={function(e){ e.stopPropagation(); }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>REPAIR NOTES</div>
                         <textarea
                           value={repairNotesDraft[r.id] !== undefined ? repairNotesDraft[r.id] : (r.notes || "")}
                           onChange={function(e){ const v = e.target.value; setRepairNotesDraft(function(prev){ const n = Object.assign({}, prev); n[r.id] = v; return n; }); }}
@@ -3552,7 +3480,6 @@ export default function App() {
                           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Tap above to add notes — what you've tried, parts ordered, what the mechanic said.</div>
                         )}
                       </div>
-                    )}
                   </div>
                 )}
               </div>
