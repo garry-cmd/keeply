@@ -3396,7 +3396,6 @@ export default function App() {
 
           {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).map(function(r){
             const isExpanded = expandedRepair === r.id;
-            const sugg = aiSuggestions[r.id];
             return (
               <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -3685,7 +3684,6 @@ export default function App() {
                               .map(function(r){
                                 const isCompleting = completingRepair === r.id;
                                 const isExpanded = expandedRepair === r.id;
-                                const sugg = aiSuggestions[r.id];
                                 return (
                                   <div key={r.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.5s" }}>
                                     {/* Row header */}
@@ -3699,17 +3697,17 @@ export default function App() {
                                         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{r.section} · {fmt(r.date)}</div>
                                       </div>
                                       <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                                        {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
-                                          <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length}</span>
-                                        )}
+                                        
                                         <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
                                         <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}><TrashIcon /></button>
                                       </div>
                                     </div>
-                                    {/* Expanded parts tab */}
                                     {isExpanded && (
-                                      <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", marginLeft: 30 }}>
-                                        
+                                      <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)", padding: "10px 14px 12px 14px" }}>
+                                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>NOTES</div>
+                                        <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{r.notes || <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>No notes yet</span>}</div>
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -4361,7 +4359,6 @@ export default function App() {
             return repairSectionFilter === "All" || r.section === repairSectionFilter;
           }).map(function(r){
             const isExpanded = expandedRepair === r.id;
-            const sugg = aiSuggestions[r.id];
             return (
               <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 {/* Card header */}
@@ -4545,7 +4542,6 @@ export default function App() {
                   );
                   return panelRepairs.map(function(r){
                     const isExpanded = expandedRepair === r.id;
-                    const sugg = aiSuggestions[r.id];
                     const eq = equipment.find(function(e){ return e.id === r.equipment_id; });
                     return (
                       <div key={r.id} style={{ borderBottom: "1px solid var(--border)", opacity: completingRepair === r.id ? 0 : 1, transition: "opacity 0.5s ease" }}>
