@@ -2623,53 +2623,12 @@ export default function App() {
                               </div>
                             </div>
                             {/* AI parts */}
-                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>✨ Suggested parts</div>
-                              {(function(){
-                                const sugg = aiSuggestions[t.id];
-                                if (!sugg) return <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts</button>;
-                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
-                                if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Error. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer" }}>Retry</button></div>;
-                                if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No parts found.</div>;
-                                return sugg.slice(0, 3).map(function(part){
-                                  const linkedEq = t.equipment_id ? equipment.find(function(e){ return e.id === t.equipment_id; }) : null;
-                                  return (
-                                    <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
-                                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
-                                        {linkedEq && (
-                                          <button onClick={function(){ saveAiPartToMyParts(linkedEq, part); }}
-                                            style={{ flex: 1, padding: "4px 8px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                            💾 Save
-                                          </button>
-                                        )}
-                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{r.description}</div>
-                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                              <SectionBadge section={r.section} />
-                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>}
-                            </div>
                           </div>
-                          <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
-                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>
-                            {isExpanded ? "▾" : "▸"}
-                          </span>
-                        </div>
-                        {isExpanded && (
-                          <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
-                            <div style={{ padding: "12px 14px" }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>✨ Suggested parts</div>
-                              {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
-                              {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                                return (
-                                  <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                    <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
 
 
 
