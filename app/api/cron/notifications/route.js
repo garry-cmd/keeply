@@ -1,18 +1,22 @@
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-webpush.setVapidDetails(
-  'mailto:support@keeply.boats',
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
-
 export const dynamic = 'force-dynamic';
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+function initWebPush() {
+  webpush.setVapidDetails(
+    'mailto:support@keeply.boats',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
@@ -21,6 +25,9 @@ export async function GET(request) {
   }
 
   try {
+    initWebPush();
+    const supabase = getSupabase();
+
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const soon = new Date(today);
@@ -50,7 +57,6 @@ export async function GET(request) {
     }
 
     const vesselIds = Object.keys(byVessel);
-
     const { data: vessels } = await supabase
       .from('vessels')
       .select('id, vessel_name, vessel_type')
@@ -88,11 +94,9 @@ export async function GET(request) {
 
     for (const sub of subs) {
       const vIds = userVessels[sub.user_id] || [];
-      let totalOverdue = 0;
-      let totalSoon = 0;
+      let totalOverdue = 0, totalSoon = 0;
       let vesselNames = [];
-      let firstOverdueTask = null;
-      let firstSoonTask = null;
+      let firstOverdueTask = null, firstSoonTask = null;
 
       for (const vid of vIds) {
         if (!byVessel[vid]) continue;
@@ -105,24 +109,25 @@ export async function GET(request) {
 
       if (totalOverdue === 0 && totalSoon === 0) continue;
 
-      // Build deep-link URL — lands on My Boat with the right urgency panel open
       const panel = totalOverdue > 0 ? 'Critical' : 'Due+Soon';
       const deepUrl = 'https://keeply.boats/?panel=' + panel;
-
       let title, body;
+
       if (totalOverdue > 0) {
         title = '🔴 ' + totalOverdue + ' overdue task' + (totalOverdue > 1 ? 's' : '');
-        body = (firstOverdueTask ? firstOverdueTask.task + (totalOverdue > 1 ? ' + ' + (totalOverdue - 1) + ' more' : '') : vesselNames.join(', '))
-          + (totalSoon > 0 ? ' · ' + totalSoon + ' due soon' : '');
+        body = (firstOverdueTask
+          ? firstOverdueTask.task + (totalOverdue > 1 ? ' + ' + (totalOverdue - 1) + ' more' : '')
+          : vesselNames.join(', ')) + (totalSoon > 0 ? ' · ' + totalSoon + ' due soon' : '');
       } else {
         title = '⚓ ' + totalSoon + ' task' + (totalSoon > 1 ? 's' : '') + ' due soon';
-        body = firstSoonTask ? firstSoonTask.task + (totalSoon > 1 ? ' + ' + (totalSoon - 1) + ' more' : '') : vesselNames.join(', ');
+        body = firstSoonTask
+          ? firstSoonTask.task + (totalSoon > 1 ? ' + ' + (totalSoon - 1) + ' more' : '')
+          : vesselNames.join(', ');
       }
 
       try {
         await webpush.sendNotification(sub.subscription, JSON.stringify({
-          title,
-          body,
+          title, body,
           icon: '/apple-icon.png',
           tag: 'keeply-maintenance',
           data: { url: deepUrl },
