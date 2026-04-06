@@ -786,14 +786,8 @@ export default function App() {
   const [showShare, setShowShare] = useState(false);
   const [logEntries, setLogEntries]   = useState([]);
   const [logStats, setLogStats]         = useState({ passages: 0, totalNm: 0, avgSpeed: null });
-  const [showLogbook, setShowLogbook]   = useState(false);
   const [showAddLog, setShowAddLog]     = useState(false);
   const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
-  const [fmInput, setFmInput]               = useState("");
-  const [fmMessages, setFmMessages]         = useState([]);
-  const [fmLoading, setFmLoading]           = useState(false);
-  const [fmOpen, setFmOpen]                 = useState(false);
-  const [fmContext, setFmContext]           = useState(null);
   const [editingLog, setEditingLog]     = useState(null);
   const [logForm, setLogForm]           = useState({});
   const [shareEmail, setShareEmail] = useState("");
@@ -841,7 +835,6 @@ export default function App() {
   const [profileSaving, setProfileSaving]     = useState(false);
   const [profileSaved, setProfileSaved]       = useState(false);
   const [showFab, setShowFab]                 = useState(false);
-  const [showRepairsFab, setShowRepairsFab] = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
@@ -868,7 +861,6 @@ export default function App() {
   const [avFuelBurnRate, setAvFuelBurnRate]   = useState("");
   const [avLoading, setAvLoading]             = useState(false);
   const [avError, setAvError]                 = useState(null);
-  const [showFABMenu, setShowFABMenu]           = useState(false);
   const logoTapCount = useRef(0);
   const logoTapTimer  = useRef(null);
   const [showCopyDialog, setShowCopyDialog]   = useState(false);
@@ -1109,7 +1101,7 @@ export default function App() {
             const vname0 = normalizedVessels[0] ? normalizedVessels[0].vesselName : "My Vessel";
             const vc0 = await supa("equipment", { method: "POST", body: { vessel_id: firstId, name: vname0, category: "Vessel", status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
             if (vc0 && vc0[0]) eqList0 = [{ id: vc0[0].id, name: vc0[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: firstId }, ...eqList0];
-          } catch(e) { console.log("Vessel card skip:", e.message); }
+          } catch(e) { /* vessel card exists already */ }
         }
         eqList0 = [...eqList0.filter(function(e){ return e.category === "Vessel"; }), ...eqList0.filter(function(e){ return e.category !== "Vessel"; })];
         setEquipment(eqList0);
@@ -1186,7 +1178,7 @@ export default function App() {
           if (created && created[0]) {
             eqList = [{ id: created[0].id, name: created[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: vid }, ...eqList];
           }
-        } catch(e) { console.log("Vessel card auto-create skipped:", e.message); }
+        } catch(e) { /* vessel card auto-create skipped */ }
       }
       // Auto-load admin tasks for this vessel
       loadVesselAdminTasks(vid);
@@ -1213,11 +1205,6 @@ export default function App() {
           setVesselMembers(mb || []);
         }
       } catch(e) { console.error("Members reload error:", e); }
-
-        try {
-          const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
-          setLogEntries(lg || []);
-        } catch(e) { setLogEntries([]); }
     } catch(err) {
       setDbError(err.message);
     } finally {
@@ -4050,11 +4037,10 @@ export default function App() {
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
             const isVesselCard = false;
             return (
-              <div key={eq.id} style={{ ...s.card, border: isVesselCard ? "none" : s.card.border, background: isVesselCard ? "var(--brand)" : s.card.background, overflow: "hidden" }}>
-                {isVesselCard ? (
-                  <div style={{ cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "info"; return n; }); } }}>
-                    {/* Navy vessel passport header */}
-                    <div style={{ padding: "16px 20px 14px", background: "var(--brand)" }}>
+              <div key={eq.id} style={{ ...s.card, overflow: "hidden" }}>
+                {false ? (
+                  <div>
+                    <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
                           <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 4 }}>Vessel</div>
@@ -4645,23 +4631,18 @@ export default function App() {
                                       }
                                       // Also save the uploaded file to docs
                                       try {
-                                        const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
-                                        const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
-                                        const sess = await supabase.auth.getSession();
-                                        const token = sess?.data?.session?.access_token || SUPA_KEY;
-                                        const ext = uploadFile.name.split(".").pop() || "jpg";
-                                        const path = sess?.data?.session?.user?.id + "/" + eq.id + "/scan-" + Date.now() + "." + ext;
-                                        const { data: upData } = await supabase.storage.from("equipment-docs").upload(path, uploadFile, { upsert: true });
-                                        if (upData?.path) {
-                                          const { data: urlData } = supabase.storage.from("equipment-docs").getPublicUrl(upData.path);
-                                          const newDoc = { id: "doc-" + Date.now(), label: "USCG / Registration Document", type: "Registration", url: urlData?.publicUrl || "", isFile: true, fileName: uploadFile.name };
-                                          const updatedDocs = [...(eq.docs || []), newDoc];
-                                          await fetch(SUPA_URL + "/rest/v1/equipment?id=eq." + eq.id, { method: "PATCH", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + token, "Content-Type": "application/json", "Prefer": "return=minimal" }, body: JSON.stringify({ docs: updatedDocs }) });
-                                          setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? Object.assign({}, e, { docs: updatedDocs }) : e; }); });
-                                        }
-                                      } catch(docErr) {
-                                        console.error("Doc save error:", docErr);
-                                      }
+                                         const docLabel = d.fields && d.fields.uscg_doc ? "USCG Documentation"
+                                           : d.fields && d.fields.state_reg ? "Vessel Registration"
+                                           : d.fields && d.fields.insurance_carrier ? "Insurance Document"
+                                           : "Vessel Document";
+                                         const fileUrl = await uploadToStorage(uploadFile, eq.id);
+                                         const newDoc = { id: "doc-" + Date.now(), label: docLabel, type: "Registration", url: fileUrl, fileName: uploadFile.name, isFile: true };
+                                         const updatedDocs = [...(eq.docs || []), newDoc];
+                                         await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { docs: updatedDocs }, prefer: "return=minimal" });
+                                         setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? Object.assign({}, e, { docs: updatedDocs }) : e; }); });
+                                       } catch(docErr) {
+                                         console.error("Doc save error:", docErr);
+                                       }
                                     } catch(err) {
                                       setScanError("Scan failed: " + err.message);
                                     } finally {
