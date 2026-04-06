@@ -374,9 +374,6 @@ function AdminDashboard({ onClose }) {
         const cmWM = clicksByRetailer["West Marine"] || 0;
         const cmDef = clicksByRetailer["Defender"] || 0;
 
-        const cartTotalValue = parseFloat(cm.total_value  || 0);
-        const cartAOV        = parseFloat(cm.avg_order_value || 0);
-        const cartPartsList  = cm.parts_list  || [];
 
         setMetrics({
           authUsers,
@@ -410,10 +407,6 @@ function AdminDashboard({ onClose }) {
           repairsLastWeek:   repairsByDay(twoWeeksAgo, weekAgo),
           repairsThisMonth:  repairsByDay(monthAgo, now),
           repairsLastMonth:  repairsByDay(twoMonthsAgo, monthAgo),
-          // Cart
-          totalPartsValue: cartTotalValue.toFixed(2),
-          cartAOV: cartAOV.toFixed(2),
-          partsList: cartPartsList,
           totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
           totalLogs: (equipment||[]).reduce(function(s, e){ return s + ((e.logs||[]).length); }, 0),
           // Storage
@@ -534,10 +527,8 @@ function AdminDashboard({ onClose }) {
         </div>
       </div>
 
-      {/* Parts & Shopping Lists */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
-        {stat("$" + parseFloat(m.cartAOV).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "AOV", "avg order value per vessel", "var(--brand)")}
       </div>
 
       {/* ── Affiliate Clicks ── */}
@@ -578,60 +569,6 @@ function AdminDashboard({ onClose }) {
       )}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
       </div>
-      {m.partsList && m.partsList.length > 0 && (
-        <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ padding: "7px 12px", background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", display: "flex", justifyContent: "space-between" }}>
-            <span>PART</span><span>PRICE</span>
-          </div>
-          {m.partsList.slice(0, 30).map(function(p, i){ return (
-            <div key={i} style={{ padding: "7px 12px", borderBottom: i < Math.min(m.partsList.length, 30)-1 ? "1px solid #f8fafc" : "none", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
-                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                  {p.equipment_name ? p.equipment_name + " · " : ""}
-                  {p.vendor || ""}
-                  {p.source === "ai-equipment" || p.source === "ai-repair" ? " · ✨ AI" : ""}
-                  {p.qty > 1 ? " · qty " + p.qty : ""}
-                </div>
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: p.price ? "var(--ok-text)" : "var(--text-muted)", flexShrink: 0 }}>
-                {p.price ? "$" + (parseFloat(p.price) * (p.qty || 1)).toFixed(2) : "—"}
-              </div>
-            </div>
-          ); })}
-          {m.partsList.length > 20 && (
-            <div style={{ padding: "7px 12px", fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>+ {m.partsList.length - 20} more items</div>
-          )}
-        </div>
-      )}
-        <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "var(--text-muted)", marginBottom: 20 }}>
-        </div>
-      )}
-
-      {/* Engagement */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>ENGAGEMENT</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
-        {stat(m.totalLogs, "Log Entries", "across all equipment")}
-        {stat(m.totalDocs, "Docs Attached", "manuals, parts lists, etc.")}
-        {stat(m.sharedVessels, "Shared Access", "vessel member records")}
-      </div>
-
-      {/* System links */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>SYSTEM LINKS</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {[
-          { label: "Supabase Dashboard", url: "https://console.supabase.com/project/waapqyshmqaaamiiitso" },
-          { label: "Vercel Dashboard", url: "https://vercel.com/garry-cmds-projects/keeply" },
-          { label: "Anthropic Console", url: "https://console.anthropic.com" },
-        ].map(function(link){ return (
-          <a key={link.url} href={link.url} target="_blank" rel="noreferrer"
-            style={{ display: "block", padding: "10px 14px", background: "var(--bg-subtle)", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--brand)", textDecoration: "none" }}>
-            {link.label} ↗
-          </a>
-        ); })}
-      </div>
-    </div>
-  );
 }
 
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
@@ -858,8 +795,6 @@ export default function App() {
 
 
 
-  const cartTotal = cart.reduce(function(s,i){ return s + (i.price ? parseFloat(i.price) : 0) * i.qty; }, 0);
-  const cartQty   = cart.reduce(function(s,i){ return s + i.qty; }, 0);
 
   // ── Vessels (Supabase) ──
   const [vessels, setVessels]               = useState([]);
@@ -5901,90 +5836,11 @@ export default function App() {
               </button>
               <button onClick={function(){
               }} style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-                ✓ Add to Shopping List
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
           <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 400, background: "var(--bg-app)", boxShadow: "-4px 0 32px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
 
             {/* Header */}
             <div style={{ padding: "18px 20px 16px", background: "var(--brand)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>🛒 Shopping List {cartQty > 0 ? "(" + cartQty + ")" : ""}</span>
-            </div>
-
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
-
-              {/* ── SECTION 1: MY LIST ── */}
-              <div style={{ background: "var(--bg-card)", borderBottom: "3px solid #f4f6f9" }}>
-                <div style={{ padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--brand)", letterSpacing: "0.5px" }}>MY LIST</div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <button onClick={function(){
-                      const name = window.prompt("Part name:");
-                      if (!name || !name.trim()) return;
-                      const price = window.prompt("Price (optional, e.g. 29.99):") || "";
-                      const vendor = window.prompt("Vendor (optional, e.g. West Marine):") || "";
-                    }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Add Part</button>
-                  </div>
-                </div>
-
-                {cart.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "20px 24px 24px", color: "var(--text-muted)" }}>
-                    <div style={{ fontSize: 28 }}>🛒</div>
-                    <div style={{ marginTop: 6, fontSize: 12 }}>Add parts from equipment cards</div>
-                  </div>
-                ) : (
-                  <div style={{ padding: "0 20px 14px" }}>
-                    {cart.map(function(item){ return (
-                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>{item.name}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                            {item.equipment_name ? item.equipment_name : ""}
-                            {item.vendor ? (item.equipment_name ? " · " : "") + item.vendor : ""}
-                            {item.price ? " · $" + item.price : ""}
-                          </div>
-                        </div>
-                        <a href={buyUrl(item.name, item.url)} target="_blank" rel="noreferrer"
-                          style={{ background: "var(--ok-text)", color: "#fff", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap" }}>
-                          Buy ↗
-                        </a>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
-                        </div>
-                      </div>
-                    ); })}
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, paddingTop: 8, borderTop: "1px solid var(--border)", marginBottom: 12 }}>
-                      <span>Estimated total</span>
-                      <span style={{ color: "var(--brand)" }}>${cartTotal.toFixed(2)}</span>
-                    </div>
-                    {/* Shop all CTA — multi-retailer */}
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 8 }}>Shop all {cart.length} item{cart.length !== 1 ? "s" : ""} at</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 4 }}>
-                      {Object.entries(RETAILERS).map(function(entry){
-                        const key = entry[0]; const r = entry[1];
-                        const allNames = cart.map(function(i){ return i.name; }).join(" ");
-                        return (
-                          <a key={key} href={buyUrl(allNames, null, key)} target="_blank" rel="noreferrer"
-                            onClick={function(){ trackAffiliateClick(r.name, allNames.substring(0, 100), "cart-bundle"); }}
-                            style={{ display: "block", textAlign: "center", padding: "9px 6px", background: r.color, color: "#fff", borderRadius: 8, fontSize: 11, fontWeight: 700, textDecoration: "none", lineHeight: 1.3 }}>
-                            {r.name.split(" ")[0]} ↗
-                          </a>
-                        );
-                      })}
-                    </div>
-
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
 
 
 
