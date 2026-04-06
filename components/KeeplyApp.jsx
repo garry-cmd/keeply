@@ -317,18 +317,13 @@ function AdminDashboard({ onClose }) {
   useEffect(function(){
     async function loadMetrics() {
       try {
+        const [vessels, equipment, tasks, repairs, members, authCount, affiliateClicks] = await Promise.all([
           supa("vessels", { query: "select=id,vessel_name,vessel_type,owner_name,home_port,make,model,year,photo_url,engine_hours,engine_hours_date,created_at,user_id&order=created_at.desc" }),
           supa("equipment", { query: "select=id,vessel_id,category,docs,logs,custom_parts" }),
           supa("maintenance_tasks", { query: "select=id,vessel_id,section,due_date,last_service,equipment_id" }),
           supa("repairs", { query: "select=id,vessel_id,section,date,status,equipment_id" }).catch(function(){ return []; }),
           supa("vessel_members", { query: "select=id,vessel_id,user_id,role,email" }).catch(function(){ return []; }),
           fetch(SUPA_URL + "/rest/v1/rpc/get_auth_user_count", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
-          fetch(SUPA_URL + "/rest/v1/rpc/get_cart_metrics", { method: "POST", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }, body: "{}" }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
-          fetch(SUPA_URL + "/storage/v1/object/list/vessel-docs", {
-            method: "POST",
-            headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({ prefix: "", limit: 500 })
-          }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
           supa("affiliate_clicks", { query: "select=retailer,part_name,context,created_at&order=created_at.desc&limit=1000" }).catch(function(){ return []; })
         ]);
 
