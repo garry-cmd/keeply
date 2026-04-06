@@ -748,12 +748,8 @@ export default function App() {
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
-  const [findPartResults, setFindPartResults]   = useState([]);
   const [savedParts, setSavedParts] = useState({});
   const savingPartsRef = useRef({});
-  const [findPartLoading, setFindPartLoading]   = useState(false);
-  const [findPartError, setFindPartError]       = useState(null);
-  const findPartSearched                        = useRef(null);
   const [rejectedParts, setRejectedParts]     = useState({});    // { [eqId+partId]: true }
   const [equipAiDesc, setEquipAiDesc]         = useState("");
   const [equipAiResult, setEquipAiResult]     = useState(null);
@@ -857,7 +853,6 @@ export default function App() {
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
   const [aiSuggestions, setAiSuggestions]   = useState({});
   const [aiLoading, setAiLoading]           = useState(false);
-  const [aiLoaded, setAiLoaded]             = useState(false);
   const [equipSuggestions, setEquipSuggestions] = useState({});
 
   // ── Repairs (Supabase) ──
@@ -1800,32 +1795,6 @@ export default function App() {
       setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "error"; return n; });
     }
   };
-
-  useEffect(function(){
-      setAiLoaded(false);
-    }
-
-  // Auto-search fires once when modal opens — ref prevents re-firing on re-renders
-  useEffect(function(){
-      setFindPartResults([]); setFindPartError(null);
-      findPartSearched.current = null;
-      return;
-    }
-    if (findPartSearched.current === partName) return;
-    findPartSearched.current = partName;
-
-    setFindPartLoading(true); setFindPartError(null); setFindPartResults([]);
-    fetch("/api/find-part", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    }).then(function(r){ return r.json(); }).then(function(data){
-      if (data.error) { setFindPartError(data.error); return; }
-      setFindPartResults(data.results || []);
-      if (data.results && data.results.length === 1) {
-        const r = data.results[0];
-      }
-    }).catch(function(e){ setFindPartError(e.message); })
-    .finally(function(){ setFindPartLoading(false); });
 
   const saveLog = async function(){
     if (!logForm.entry_date) return;
@@ -5718,108 +5687,6 @@ export default function App() {
                   setTimeout(function(){ setProfileSaved(false); }, 3000);
                 } catch(e) { console.error("Profile save error:", e); }
                 finally { setProfileSaving(false); }
-              }} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: profileSaving ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: profileSaving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
-                {profileSaving ? "Saving…" : "Save Settings"}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-            {/* ── Confirm Part Before Adding to List ─────────────────────────── */}
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ padding: "16px 20px 0" }}>
-              <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 16px" }} />
-              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>Add to Shopping List</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
-              </div>
-            </div>
-
-            <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 16px" }}>
-
-              {/* ── Web search results ── */}
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span>SEARCH RESULTS</span>
-                  {!findPartLoading && <button onClick={async function(){
-                    findPartSearched.current = null;
-                    setFindPartLoading(true); setFindPartError(null);
-                    try {
-                      const data = await res.json();
-                      if (data.error) throw new Error(data.error);
-                      setFindPartResults(data.results || []);
-                    } catch(e) { setFindPartError(e.message); }
-                    finally { setFindPartLoading(false); }
-                  }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", fontWeight: 700, cursor: "pointer", padding: 0 }}>↺ Search again</button>}
-                </div>
-
-                {findPartLoading && (
-                  <div style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: "20px 16px", textAlign: "center" }}>
-                    <div style={{ fontSize: 20, marginBottom: 6 }}>🔍</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Searching across marine retailers…</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>Fisheries Supply, Defender, West Marine & more</div>
-                  </div>
-                )}
-
-                {!findPartLoading && findPartError && (
-                  <div style={{ background: "var(--overdue-bg)", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "var(--warn-text)", marginBottom: 8 }}>
-                    {findPartError === "rate_limited"
-                      ? "Too many searches — please wait 30 seconds then tap Search again."
-                      : "Search unavailable — tap Search again or add manually below."}
-                  </div>
-                )}
-
-                {!findPartLoading && findPartResults.length > 0 && (
-                  <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 4 }}>
-                    {findPartResults.map(function(r, i){ return (
-                      <div key={i} onClick={function(){
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{r.vendor}</div>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                          {(function(){ const p = r.price ? parseFloat(r.price) : null; return p && !isNaN(p) ? <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ok-text)", flexShrink: 0 }}>${p.toFixed(2)}</span> : <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>See site</span>; })()}
-                          <a href={r.url} target="_blank" rel="noreferrer" onClick={function(e){ e.stopPropagation(); }}
-                            style={{ fontSize: 10, background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "3px 7px", fontWeight: 600, textDecoration: "none" }}>↗</a>
-                        </div>
-                      </div>
-                    ); })}
-                  </div>
-                )}
-
-                {!findPartLoading && findPartResults.length === 0 && !findPartError && (
-                  <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
-                    No results yet — tap Search again or fill in manually below.
-                  </div>
-                )}
-              </div>
-
-              {/* ── Manual entry — only shown when no results or search failed ── */}
-              {!findPartLoading && (findPartResults.length === 0 || findPartError) && (
-                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>
-                    {findPartResults.length === 0 && !findPartError ? "ADD MANUALLY" : "ADD MANUALLY"}
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 4 }}>PART NAME</div>
-                    style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", marginBottom: 10, fontFamily: "inherit", outline: "none" }} />
-                  <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 4 }}>PRICE</div>
-                        placeholder="e.g. 29.99"
-                        style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 4 }}>VENDOR</div>
-                        placeholder="e.g. Defender"
-                        style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* ── Selected result summary — shown when results exist ── */}
                 <div style={{ background: "var(--ok-bg)", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px", marginTop: 8, fontSize: 12, color: "var(--ok-text)" }}>
                 </div>
