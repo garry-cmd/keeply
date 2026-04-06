@@ -2716,7 +2716,6 @@ export default function App() {
                                   <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
                                     <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
-                                    </button>
                                   </div>
                                 );
                               })}
@@ -2929,7 +2928,6 @@ export default function App() {
                         }}
                           style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                           {t === "info" ? "Vessel ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : "Edit"}
-                        </button>
                       ); })}
                     </div>
                     {/* The actual tab content is rendered inline */}
@@ -3220,7 +3218,6 @@ export default function App() {
                                 finally { setVesselDetailSaving(false); }
                               }} style={{ width: "100%", padding: "8px", border: "none", borderRadius: 8, background: vesselDetailSaved ? "var(--ok-text)" : "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
                                 {vesselDetailSaving ? "Saving…" : vesselDetailSaved ? "✓ Saved" : "Save Vessel Details"}
-                              </button>
                             </>);
                           })()}
                         </div>
@@ -3537,7 +3534,6 @@ export default function App() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                       style={{ fontSize: 10, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--brand)", borderRadius: 6, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
-                    </button>
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
@@ -3587,7 +3583,6 @@ export default function App() {
                               disabled={savingRepairNotes[r.id]}
                               style={{ flex: 2, padding: "7px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                               {savingRepairNotes[r.id] ? "Saving…" : "Save notes"}
-                            </button>
                           </div>
                         )}
                         {!(repairNotesDraft[r.id] !== undefined && repairNotesDraft[r.id] !== (r.notes || "")) && (r.notes || "") === "" && (
@@ -3654,7 +3649,6 @@ export default function App() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                           style={{ fontSize: 10, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", border: "0.5px solid var(--brand)", borderRadius: 6, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
-                        </button>
                         <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }}
                           onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); }}>
                           {isExpanded ? "▾" : "▸"}
@@ -3686,7 +3680,6 @@ export default function App() {
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                                 style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "9px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 700, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                                 🔩 Find parts for this task
-                              </button>
                             </div>
                           );
                           if (pr.loading) return (
@@ -4015,7 +4008,6 @@ export default function App() {
                           setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = isVesselCard ? "info" : "parts"; return n; });
                         }} style={{ width: "100%", padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                           Save Changes
-                        </button>
                         <button onClick={function(){ showConfirm("Delete " + eq.name + "? This will also remove all tasks and repairs linked to it.", function(){ deleteEquipment(eq.id); }); }}
                           style={{ width: "100%", marginTop: 8, padding: 10, border: "1px solid var(--danger-border)", borderRadius: 8, background: "none", color: "var(--danger-text)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
                           🗑 Delete {eq.name}
@@ -4266,7 +4258,6 @@ export default function App() {
                               <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
                                 {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>${part.price}</span>}
                                 {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>↗ Buy</a>}
-                                  </button>
                                 ); })()}
                               </div>
                             </div>
@@ -4717,7 +4708,6 @@ export default function App() {
                         finally { setEquipAiLoading(false); }
                       }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: equipAiLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: equipAiLoading ? "not-allowed" : "pointer", fontWeight: 700 }}>
                         {equipAiLoading ? "Identifying…" : "Identify Equipment →"}
-                      </button>
                     ) : (
                       <button onClick={async function(){
                         setSaving(true);
@@ -4744,7 +4734,6 @@ export default function App() {
                         finally { setSaving(false); }
                       }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: saving ? "var(--brand-deep)" : "var(--ok-text)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
                         {saving ? "Adding…" : "Add to My Boat ✓"}
-                      </button>
                     )}
                   </div>
                 </>) : (<>
@@ -5549,7 +5538,6 @@ export default function App() {
                   finally { setAvLoading(false); setSaving(false); }
                 }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: (avLoading || saving) ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: (avLoading || saving) ? "not-allowed" : "pointer", fontWeight: 700 }}>
                   {avLoading ? "Researching…" : saving ? "Creating…" : "Launch Vessel ⚓"}
-                </button>
               </>)}
             </div>
           </div>
@@ -5690,7 +5678,6 @@ export default function App() {
                   finally { setCheckoutLoading(false); }
                 }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
                   {checkoutLoading ? "Opening checkout…" : "Start Entry — $2.99/mo"}
-                </button>
               </div>
             )}
 
@@ -5718,7 +5705,6 @@ export default function App() {
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
                 {checkoutLoading ? "Opening checkout…" : "Subscribe Monthly — $9.99/mo"}
-              </button>
             </div>
 
             {/* Pro Annual */}
@@ -5746,7 +5732,6 @@ export default function App() {
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
                 {checkoutLoading ? "Opening checkout…" : "Subscribe Annually — $69.99/yr"}
-              </button>
             </div>
 
             {/* Fleet */}
@@ -5773,7 +5758,6 @@ export default function App() {
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid #374151", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
                 {checkoutLoading ? "Opening checkout…" : "Subscribe Fleet — $49.99/mo"}
-              </button>
               <div style={{ marginTop: 10, background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#854d0e", textAlign: "center" }}>
                 🎁 Beta tester? Use code <strong>BETA2026</strong> at checkout for 100% off Fleet.
               </div>
@@ -6044,7 +6028,6 @@ export default function App() {
                 finally { setProfileSaving(false); }
               }} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: profileSaving ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: profileSaving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
                 {profileSaving ? "Saving…" : "Save Settings"}
-              </button>
             </div>
 
           </div>
@@ -6477,7 +6460,6 @@ export default function App() {
                 }}
                 style={{ width: "100%", padding: "13px", border: "none", borderRadius: 10, background: feedbackSending || !feedbackForm.message.trim() ? "var(--bg-subtle)" : "var(--brand)", color: feedbackSending || !feedbackForm.message.trim() ? "var(--text-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: feedbackSending || !feedbackForm.message.trim() ? "default" : "pointer" }}>
                 {feedbackSending ? "Sending…" : "Send Feedback →"}
-              </button>
             </>)}
           </div>
         </div>
