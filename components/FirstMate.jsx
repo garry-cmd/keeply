@@ -50,7 +50,7 @@ async function fetchVesselContext(vesselId) {
   };
 }
 
-export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) {
+export default function FirstMate({ vesselId, vesselName, openPanel, pendingMessage, onMessageSent, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,6 +72,13 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
   useEffect(function() {
     if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(function() {
+    if (!pendingMessage) return;
+    if (!context) return;
+    send(pendingMessage);
+    if (onMessageSent) onMessageSent();
+  }, [pendingMessage, context]);
 
   const send = useCallback(async function(text) {
     const q = (text || input).trim();
@@ -123,7 +130,8 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
 
   return (
     <>
-      {panelOpen && (
+      {/* Response panel — drops below the header pill, shows conversation only */}
+      {(panelOpen && hasMessages) && (
         <div style={{
           position: "fixed",
           top: 112,
@@ -132,7 +140,7 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
           zIndex: 298,
           maxWidth: 480,
           margin: "0 auto",
-          maxHeight: "65vh",
+          maxHeight: "60vh",
           display: "flex",
           flexDirection: "column",
           background: "var(--bg-card)",
@@ -140,63 +148,43 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
           boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
         }}>
 
-          {/* Input — always first, auto-focused */}
-          <div style={{ padding: "10px 14px", borderBottom: hasMessages ? "0.5px solid var(--border)" : "none", flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "7px 10px 7px 12px" }}>
-              <span style={{ fontSize: 13, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={function(e) { setInput(e.target.value); }}
-                onKeyDown={handleKey}
-                placeholder={"Ask about " + (vesselName || "your boat") + "…"}
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit" }}
-              />
-              <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }}>✕</button>
-              <button onClick={function() { send(); }} disabled={!canSend}
-                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: canSend ? "var(--brand)" : "var(--bg-subtle)", color: canSend ? "#fff" : "var(--text-muted)", fontSize: 13, cursor: canSend ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
-            </div>
+          {/* Header row with close */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px 0", flexShrink: 0 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase" }}>First Mate</span>
+            <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "2px 4px", lineHeight: 1 }}>✕</button>
           </div>
 
           {/* Conversation */}
-          {hasMessages && (
-            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", flex: 1 }} ref={messagesRef}>
-              {messages.map(function(msg, i) {
-                const isUser = msg.role === "user";
-                return (
-                  <div key={msg.id || i} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", gap: 8, alignItems: "flex-end" }}>
-                    {!isUser && <span style={{ fontSize: 13, flexShrink: 0 }}>⚓</span>}
-                    <div style={{
-                      maxWidth: "84%", padding: "8px 12px", fontSize: 13, lineHeight: 1.5,
-                      borderRadius: isUser ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
-                      background: isUser ? "var(--brand)" : "var(--bg-subtle)",
-                      color: isUser ? "#fff" : "var(--text-primary)",
-                      border: isUser ? "none" : "0.5px solid var(--border)",
-                    }}>
-                      {msg.loading ? (
-                        <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "2px 0" }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.6 }} />
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.3 }} />
-                        </div>
-                      ) : (
-                        msg.content.split("\n").map(function(line, li) {
-                          return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>;
-                        })
-                      )}
-                    </div>
+          <div style={{ padding: "8px 14px 14px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", flex: 1 }} ref={messagesRef}>
+            {messages.map(function(msg, i) {
+              const isUser = msg.role === "user";
+              return (
+                <div key={msg.id || i} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", gap: 8, alignItems: "flex-end" }}>
+                  {!isUser && <span style={{ fontSize: 13, flexShrink: 0 }}>⚓</span>}
+                  <div style={{
+                    maxWidth: "84%", padding: "8px 12px", fontSize: 13, lineHeight: 1.5,
+                    borderRadius: isUser ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
+                    background: isUser ? "var(--brand)" : "var(--bg-subtle)",
+                    color: isUser ? "#fff" : "var(--text-primary)",
+                    border: isUser ? "none" : "0.5px solid var(--border)",
+                  }}>
+                    {msg.loading ? (
+                      <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "2px 0" }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.6 }} />
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", opacity: 0.3 }} />
+                      </div>
+                    ) : (
+                      msg.content.split("\n").map(function(line, li) {
+                        return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>;
+                      })
+                    )}
                   </div>
-                );
-              })}
-              <div style={{ height: 4 }} />
-            </div>
-          )}
-
-          {/* Backdrop — tap outside to dismiss when no conversation yet */}
-          {!hasMessages && (
-            <div style={{ position: "fixed", inset: 0, top: 112, zIndex: -1 }} onClick={close} />
-          )}
-
+                </div>
+              );
+            })}
+            <div style={{ height: 4 }} />
+          </div>
         </div>
       )}
     </>

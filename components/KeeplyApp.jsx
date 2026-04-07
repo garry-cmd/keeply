@@ -820,6 +820,9 @@ export default function App() {
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
   const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
+  const [fmInputVal, setFmInputVal] = useState("");
+  const [fmPending, setFmPending] = useState("");
+  const fmInputRef = React.useRef(null);
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
   const [findPartResults, setFindPartResults]   = useState([]);
@@ -2473,10 +2476,9 @@ export default function App() {
           </button>
         </div>
       </div>
-      {/* ── First Mate bubble bar ── */}
+      {/* ── First Mate input bar ── */}
       <div style={{ background: "#1a3a5c", padding: "0 12px 12px" }}>
-        <div onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
-          style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+        <div style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "0 14px 0 10px", display: "flex", alignItems: "center", gap: 10, height: 44 }}>
           <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
               <rect x="4" y="1" width="5" height="7" rx="2.5" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2"/>
@@ -2484,10 +2486,33 @@ export default function App() {
               <line x1="6.5" y1="12" x2="6.5" y2="10" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>
           </div>
-          <span style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.55)" }}>Ask <span style={{ color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>First Mate</span>…</span>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 7h8M8 4l3 3-3 3" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <input
+            ref={fmInputRef}
+            value={fmInputVal}
+            onChange={function(e){ setFmInputVal(e.target.value); }}
+            onFocus={function(){ setShowFirstMatePanel(true); }}
+            onKeyDown={function(e){
+              if (e.key === "Enter" && fmInputVal.trim()) {
+                setFmPending(fmInputVal.trim());
+                setFmInputVal("");
+                setShowFirstMatePanel(true);
+              }
+              if (e.key === "Escape") {
+                setShowFirstMatePanel(false);
+                setFmInputVal("");
+                fmInputRef.current && fmInputRef.current.blur();
+              }
+            }}
+            placeholder="Ask First Mate…"
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "#fff", fontFamily: "inherit" }}
+          />
+          {fmInputVal.trim() && (
+            <button onClick={function(){
+              setFmPending(fmInputVal.trim());
+              setFmInputVal("");
+              setShowFirstMatePanel(true);
+            }} style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.9)", color: "#1a3a5c", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 700 }}>↑</button>
+          )}
         </div>
       </div>
 
@@ -4979,6 +5004,8 @@ export default function App() {
             vesselId={activeVesselId}
             vesselName={boatName}
             openPanel={showFirstMatePanel}
+            pendingMessage={fmPending}
+            onMessageSent={function(){ setFmPending(""); }}
             onClose={function(){ setShowFirstMatePanel(false); }}
           />
         )}
