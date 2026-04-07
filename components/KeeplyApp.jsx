@@ -1252,19 +1252,23 @@ export default function App() {
         if (pr.data && pr.data.plan) { livePlan = pr.data.plan; setUserPlan(pr.data.plan); }
       }
     } catch(e) {}
-    if ((livePlan === "free" || !livePlan) && vessels.length >= 1) {
+    const userId = sess && sess.user ? sess.user.id : (session && session.user ? session.user.id : null);
+    const ownedCount = userId
+      ? vessels.filter(function(v){ return vesselMembers.some(function(m){ return m.vessel_id === v.id && m.user_id === userId && m.role === "owner"; }); }).length
+      : vessels.length;
+    if ((livePlan === "free" || !livePlan) && ownedCount >= 1) {
       setUpgradeReason("Entry accounts are limited to 1 vessel. Upgrade to Pro to add more.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
     }
-    if (livePlan === "pro" && vessels.length >= 2) {
+    if (livePlan === "pro" && ownedCount >= 2) {
       setUpgradeReason("Pro includes up to 2 vessels. Upgrade to Fleet for the fleet dashboard and up to 3 vessels.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
     }
-    if (livePlan === "fleet" && vessels.length >= 3) {
+    if (livePlan === "fleet" && ownedCount >= 3) {
       setUpgradeReason("Fleet includes up to 3 vessels. Contact us at support@keeply.boats to discuss an Enterprise plan for larger fleets.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
