@@ -3072,7 +3072,7 @@ export default function App() {
                     onClick={function(e){ e.stopPropagation(); }}>
                     {/* Render the vessel card tabs inline — reuse the same tab state */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["info","docs","admin","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
+                      {["info","docs","admin","haul-out","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
                         <button key={t} onClick={function(){
                           setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
                           if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
@@ -3085,7 +3085,7 @@ export default function App() {
                           }
                         }}
                           style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                          {t === "info" ? "Vessel ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : "Edit"}
+                          {t === "info" ? "ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : t === "haul-out" ? "Haul-out" : "Edit"}
                         </button>
                       ); })}
                     </div>
@@ -3584,17 +3584,13 @@ export default function App() {
               return Math.round((new Date(t.due_date) - today) / 86400000) <= 30;
             });
             const adminDueCount = adminDueTasks.length;
-            const cols = adminDueCount > 0 ? "repeat(4,1fr)" : "repeat(3,1fr)";
             const cards = [
               { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "var(--danger-text)",  bg: "var(--danger-bg)",  border: "1px solid var(--danger-border)"  },
               { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "var(--warn-text)",    bg: "var(--warn-bg)",    border: "1px solid var(--warn-border)"    },
               { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
             ];
-            if (adminDueCount > 0) cards.push(
-              { label: "Admin Due", val: adminDueCount, sub: "Reg, safety & surveys", color: "#7c3aed", bg: "#ede9fe", border: "1px solid #a78bfa" }
-            );
             return (
-              <div style={{ display: "grid", gridTemplateColumns: cols, gap: 10, marginBottom: 20 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 10 }}>
                 {cards.map(function(card){ return (
                   <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
                     style={{ background: card.bg, border: card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
@@ -3606,6 +3602,23 @@ export default function App() {
               </div>
             );
           })()}
+
+
+          {/* ── Actions row — Parts List + Admin Due ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+            <div onClick={function(){ setTab("parts-standalone"); }}
+              style={{ background: "var(--info-bg)", border: "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--info-text)", lineHeight: 1 }}>{cart.length}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--info-text)", marginTop: 2 }}>Parts list</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Items to order</div>
+            </div>
+            <div onClick={function(){ setShowUrgencyPanel("Admin Due"); }}
+              style={{ background: "#faf5ff", border: "0.5px solid #d8b4fe", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "#7c3aed", lineHeight: 1 }}>{adminDueCount}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginTop: 2 }}>Admin due</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Reg, safety &amp; surveys</div>
+            </div>
+          </div>
 
           {/* ── Category filter ── */}
           {(() => {
