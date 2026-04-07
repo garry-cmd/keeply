@@ -990,6 +990,7 @@ export default function App() {
     const { data: listener } = supabase.auth.onAuthStateChange(function(event, sess){
       setSession(sess);
       if (sess && event === "SIGNED_IN") {
+        setTab("boat");
         supabase.from("vessel_members")
           .update({ user_id: sess.user.id })
           .eq("email", sess.user.email)
@@ -1228,6 +1229,17 @@ export default function App() {
     if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone"].includes(t)) setTab(t);
   }, []);
   useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
+
+  // Reset to My Boat on phone wake/resume
+  useEffect(function(){
+    function handleVisibility(){
+      if (document.visibilityState === "visible") {
+        setTab("boat");
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return function(){ document.removeEventListener("visibilitychange", handleVisibility); };
+  }, []);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
   const openAddVessel = function(){
@@ -1563,7 +1575,11 @@ export default function App() {
   };
 
   const completeRepair = async function(id){
-    startCompletingRepair(id);
+    setCompletingRepair(id);
+    setTimeout(async function(){
+      await deleteRepair(id);
+      setCompletingRepair(null);
+    }, 600);
   };
 
   const updateRepair = async function(id, patch){
