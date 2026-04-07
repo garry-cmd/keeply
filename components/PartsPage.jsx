@@ -16,10 +16,9 @@ const s = {
   }),
 };
 
-export default function PartsPage({ equipment, onBack, cart, onAddToCart }) {
+export default function PartsPage({ equipment, onBack }) {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [added, setAdded] = useState({}); // partId -> true for flash feedback
 
   // Flatten all parts across all equipment that have customParts
   const allParts = useMemo(function () {
@@ -64,21 +63,6 @@ export default function PartsPage({ equipment, onBack, cart, onAddToCart }) {
     });
     return Object.values(map);
   }, [visible]);
-
-  function handleAdd(part) {
-    onAddToCart(part, "custom", part._eqName);
-    setAdded(function (prev) {
-      const n = { ...prev, [part.id]: true };
-      setTimeout(function () {
-        setAdded(function (a) { const x = { ...a }; delete x[part.id]; return x; });
-      }, 1500);
-      return n;
-    });
-  }
-
-  const inCart = function (part) {
-    return (cart || []).some(function (i) { return i.name === part.name; });
-  };
 
   const SECTIONS = {
     Engine: "⚙️", Electrical: "⚡", Plumbing: "🚿", Safety: "🛟",
@@ -166,8 +150,6 @@ export default function PartsPage({ equipment, onBack, cart, onAddToCart }) {
             {/* Parts */}
             <div style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
               {group.parts.map(function (part, idx) {
-                const isInCart = inCart(part);
-                const justAdded = added[part.id];
                 const hasUrl = !!part.url;
                 const hasPartNum = !!part.sku;
                 const searchUrl = hasPartNum
@@ -213,18 +195,6 @@ export default function PartsPage({ equipment, onBack, cart, onAddToCart }) {
                         {hasUrl ? "↗ Buy" : "🔍"}
                       </a>
 
-                      {/* Add to cart */}
-                      <button
-                        onClick={function () { if (!isInCart && !justAdded) handleAdd(part); }}
-                        style={{
-                          ...s.btn(true),
-                          background: justAdded ? "var(--ok-text)" : isInCart ? "var(--bg-subtle)" : "var(--brand)",
-                          color: justAdded ? "#fff" : isInCart ? "var(--ok-text)" : "#fff",
-                          border: isInCart && !justAdded ? "0.5px solid var(--ok-text)" : "none",
-                          cursor: isInCart ? "default" : "pointer",
-                        }}>
-                        {justAdded ? "✓ Added!" : isInCart ? "✓ In cart" : "+ Cart"}
-                      </button>
                     </div>
                   </div>
                 );

@@ -52,7 +52,6 @@ export async function POST(request) {
       await supa("maintenance_tasks?" + vesselFilter, { method: "DELETE" });
       await supa("repairs?" + vesselFilter, { method: "DELETE" });
       await supa("logbook?" + vesselFilter, { method: "DELETE" });
-      await supa("cart_items?user_id=eq." + userId, { method: "DELETE" });
       await supa("equipment?" + vesselFilter, { method: "DELETE" });
       await supa("vessel_members?user_id=eq." + userId, { method: "DELETE" });
 

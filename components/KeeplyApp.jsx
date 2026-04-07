@@ -367,7 +367,6 @@ function AdminDashboard({ onClose }) {
         // Repairs completed
         const repairsByDay = function(from, to){ return (repairs||[]).filter(function(r){ return r.status === "closed" && r.date && inRange(r.date, from, to); }).length; };
 
-        // Cart metrics from RPC (reads cart_items across all users)
         // Affiliate click metrics
         const clicks = affiliateClicks || [];
         const clicksByRetailer = {};
@@ -385,11 +384,7 @@ function AdminDashboard({ onClose }) {
         const cmDef = clicksByRetailer["Defender"] || 0;
 
         const cm = partsMetrics || {};
-        const cartTotalQty   = cm.total_qty   || 0;
-        const cartTotalValue = parseFloat(cm.total_value  || 0);
-        const cartTotalLists = cm.total_lists  || 0;
         const cartAOV        = parseFloat(cm.avg_order_value || 0);
-        const cartPartsList  = cm.parts_list  || [];
 
         setMetrics({
           authUsers,
@@ -424,9 +419,6 @@ function AdminDashboard({ onClose }) {
           repairsThisMonth:  repairsByDay(monthAgo, now),
           repairsLastMonth:  repairsByDay(twoMonthsAgo, monthAgo),
           // Cart
-          totalPartsQty: cartTotalQty,
-          totalPartsValue: cartTotalValue.toFixed(2),
-          totalPartsLists: cartTotalLists,
           cartAOV: cartAOV.toFixed(2),
           partsList: cartPartsList,
           totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
@@ -554,10 +546,7 @@ function AdminDashboard({ onClose }) {
       {/* Parts & Shopping Lists */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
-        {stat(m.totalPartsQty, "Total Parts", m.totalPartsLists + " active lists")}
-        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total Cart Value", m.totalPartsQty === 0 ? "no priced parts yet" : "all vessels combined", "var(--ok-text)")}
         {stat("$" + parseFloat(m.cartAOV).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "AOV", "avg order value per vessel", "var(--brand)")}
-        {stat(m.totalPartsLists, "Active Lists", "vessels with items in cart")}
       </div>
 
       {/* ── Affiliate Clicks ── */}
@@ -622,11 +611,6 @@ function AdminDashboard({ onClose }) {
           {m.partsList.length > 20 && (
             <div style={{ padding: "7px 12px", fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>+ {m.partsList.length - 20} more items</div>
           )}
-        </div>
-      )}
-      {m.totalPartsQty === 0 && (
-        <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "var(--text-muted)", marginBottom: 20 }}>
-          No items in any shopping lists yet. Parts are added via the 🔩 Parts tab and ✨ AI suggestions on equipment cards.
         </div>
       )}
 
@@ -878,50 +862,9 @@ export default function App() {
   const [dbError, setDbError]   = useState(null);
   const [saving, setSaving]     = useState(false);
 
-  // ── Cart (persisted to Supabase cart_items table) ──
-  const [cart, setCart]                     = useState([]);
-  const [showCartPanel, setShowCartPanel]   = useState(false);
-  const [cartLoaded, setCartLoaded]         = useState(false);
+  // ── Parts (saved to equipment, no cart) ──
 
-  const loadCart = async function(vesselId) {
-    try {
-      const items = await supa("cart_items", { query: "vessel_id=eq." + vesselId + "&order=created_at.asc" });
-      setCart((items || []).map(function(i){ return { id: i.id, dbId: i.id, name: i.name, vendor: i.vendor || "", price: i.price || "", sku: i.sku || "", url: i.url || "", source: i.source || "manual", equipment_name: i.equipment_name || "", qty: i.qty || 1 }; }));
-      setCartLoaded(true);
-    } catch(e) { console.error("loadCart error:", e); }
-  };
 
-  const addToCart = async function(part, source, equipmentName) {
-    if (!activeVesselId || !session) return;
-    try {
-      const payload = { vessel_id: activeVesselId, user_id: session.user.id, name: part.name, vendor: part.vendor || "", price: part.price || "", sku: part.sku || "", url: part.url || "", source: source || "manual", equipment_name: equipmentName || "", qty: 1 };
-      const created = await supa("cart_items", { method: "POST", body: payload });
-      const newItem = created[0];
-      setCart(function(prev){
-        const ex = prev.find(function(i){ return i.name === part.name && i.source === (source||"manual"); });
-        if (ex) return prev;
-        return [...prev, { id: newItem.id, dbId: newItem.id, name: newItem.name, vendor: newItem.vendor || "", price: newItem.price || "", sku: newItem.sku || "", url: newItem.url || "", source: newItem.source || "manual", equipment_name: newItem.equipment_name || "", qty: 1 }];
-      });
-    } catch(e) { console.error("addToCart error:", e); }
-  };
-
-  const removeFromCart = async function(dbId) {
-    try {
-      await supa("cart_items", { method: "DELETE", query: "id=eq." + dbId, prefer: "return=minimal" });
-      setCart(function(prev){ return prev.filter(function(i){ return i.dbId !== dbId; }); });
-    } catch(e) { console.error("removeFromCart error:", e); }
-  };
-
-  const clearCart = async function() {
-    if (!activeVesselId) return;
-    try {
-      await supa("cart_items", { method: "DELETE", query: "vessel_id=eq." + activeVesselId, prefer: "return=minimal" });
-      setCart([]);
-    } catch(e) { console.error("clearCart error:", e); }
-  };
-
-  const cartTotal = cart.reduce(function(s,i){ return s + (i.price ? parseFloat(i.price) : 0) * i.qty; }, 0);
-  const cartQty   = cart.reduce(function(s,i){ return s + i.qty; }, 0);
 
   // ── Vessels (Supabase) ──
   const [vessels, setVessels]               = useState([]);
@@ -985,7 +928,6 @@ export default function App() {
   const [filterDocUrgency, setFilterDocUrgency] = useState("All");
   const [expandedDoc, setExpandedDoc]       = useState(null);
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
-  const [showCartOnly, setShowCartOnly]     = useState(false);
   const [aiSuggestions, setAiSuggestions]   = useState({});
   const [aiLoading, setAiLoading]           = useState(false);
   const [aiLoaded, setAiLoaded]             = useState(false);
@@ -1091,7 +1033,6 @@ export default function App() {
           ? savedId
           : normalizedVessels[0].id;
         setActiveVesselId(firstId);
-        loadCart(firstId);
 
         // Load equipment for first vessel
         const eq = await supa("equipment", { query: "vessel_id=eq." + firstId + "&order=created_at" });
@@ -1163,9 +1104,7 @@ export default function App() {
     setAiSuggestions({});
     setExpandedEquip(null);
     setExpandedRepair(null);
-      setCart([]);
     try {
-      loadCart(vid);
       const eq = await supa("equipment", { query: "vessel_id=eq." + vid + "&order=created_at" });
       let eqList = (eq || []).map(function(e){
         return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: e.docs || [], logs: e.logs || [], _vesselId: e.vessel_id };
@@ -1938,11 +1877,6 @@ export default function App() {
     }
   };
 
-  useEffect(function(){
-    if (!showCartPanel) {
-      setAiLoaded(false);
-    }
-  }, [showCartPanel]);
 
   // Auto-search fires once when modal opens — ref prevents re-firing on re-renders
   useEffect(function(){
@@ -2807,7 +2741,7 @@ export default function App() {
                                 if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Error. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer" }}>Retry</button></div>;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No parts found.</div>;
                                 return sugg.slice(0, 3).map(function(part){
-                                  const inList = cart.some(function(i){ return i.name === part.name; });
+                                  const inList = false;
                                   const linkedEq = t.equipment_id ? equipment.find(function(e){ return e.id === t.equipment_id; }) : null;
                                   return (
                                     <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
@@ -2865,7 +2799,7 @@ export default function App() {
                               {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>🔩 Find parts</button>}
                               {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                               {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                                const inList = cart.some(function(i){ return i.name === part.name; });
+                                const inList = false;
                                 return (
                                   <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
@@ -4427,7 +4361,7 @@ export default function App() {
                                             {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                                             {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
                                             {sugg && sugg !== "loading" && sugg !== "error" && sugg.filter(function(p){ return !rejectedParts["repair-" + r.id + "-" + p.id]; }).map(function(part){
-                                              const inList = cart.some(function(i){ return i.name === part.name; });
+                                              const inList = false;
                                               return (
                                                 <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -4515,10 +4449,6 @@ export default function App() {
                               }} style={{ flex: 1, padding: "5px 8px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                                 💾 Save
                               </button>
-                              <button onClick={function(){ addToCart(part, "ai-equipment", eq.name); }}
-                                style={{ flex: 1, padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                                + Cart
-                              </button>
                               <a href={buyUrl(part.name, part.url, "fisheries")} target="_blank" rel="noreferrer"
                                 style={{ flex: 1, padding: "5px 8px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center", whiteSpace: "nowrap" }}>
                                 FS ↗
@@ -4553,11 +4483,6 @@ export default function App() {
                               <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
                                 {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>${part.price}</span>}
                                 {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>↗ Buy</a>}
-                                {(function(){ const inList = cart.some(function(i){ return i.name === part.name; }); return (
-                                  <button onClick={function(){ if (!inList) addToCart(part, "custom", eq.name); }} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, border: "none", cursor: inList ? "default" : "pointer", background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff" }}>
-                                    {inList ? "✓ Listed" : "+ List"}
-                                  </button>
-                                ); })()}
                               </div>
                             </div>
                           </div>
@@ -5095,8 +5020,6 @@ export default function App() {
         {view === "customer" && tab === "parts-standalone" && (
           <PartsPage
             equipment={equipment.filter(function(e){ return e._vesselId === activeVesselId; })}
-            cart={cart}
-            onAddToCart={addToCart}
             onBack={function(){ setTab("boat"); }}
           />
         )}
@@ -5218,7 +5141,7 @@ export default function App() {
                         )}
 
                         {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                          const inList = cart.some(function(i){ return i.name === part.name; });
+                          const inList = false;
                           return (
                             <div key={part.name} style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -5396,7 +5319,7 @@ export default function App() {
                                 if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
                                 return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
-                                  const inList = cart.some(function(i){ return i.name === part.name; });
+                                  const inList = false;
                                   return (
                                     <div key={part.name} style={{ padding: "7px 0", borderBottom: "1px solid #f9fafb" }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
@@ -5511,7 +5434,7 @@ export default function App() {
                                 {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
                                 {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>}
                                 {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                                  const inList = cart.some(function(i){ return i.name === part.name; });
+                                  const inList = false;
                                   return (
                                     <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid #f9fafb" }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
@@ -6548,7 +6471,6 @@ export default function App() {
                 Cancel
               </button>
               <button onClick={function(){
-                addToCart(confirmPart.part, confirmPart.source, confirmPart.equipName);
                 setConfirmPart(null); setFindPartResults([]); setFindPartError(null);
               }} style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
                 ✓ Add to Shopping List
@@ -6558,398 +6480,6 @@ export default function App() {
         </div>
       )}
 
-            {showCartPanel && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 200 }} onClick={function(){ setShowCartPanel(false); }}>
-          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 400, background: "var(--bg-app)", boxShadow: "-4px 0 32px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
-
-            {/* Header */}
-            <div style={{ padding: "18px 20px 16px", background: "var(--brand)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>🛒 Shopping List {cartQty > 0 ? "(" + cartQty + ")" : ""}</span>
-              <button onClick={function(){ setShowCartPanel(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
-
-              {/* ── SECTION 1: MY LIST ── */}
-              <div style={{ background: "var(--bg-card)", borderBottom: "3px solid #f4f6f9" }}>
-                <div style={{ padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--brand)", letterSpacing: "0.5px" }}>MY LIST</div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <button onClick={function(){
-                      const name = window.prompt("Part name:");
-                      if (!name || !name.trim()) return;
-                      const price = window.prompt("Price (optional, e.g. 29.99):") || "";
-                      const vendor = window.prompt("Vendor (optional, e.g. West Marine):") || "";
-                      addToCart({ name: name.trim(), price: price, vendor: vendor, sku: "", url: "" }, "manual", "");
-                    }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Add Part</button>
-                    {cart.length > 0 && <button onClick={function(){ showConfirm("Clear your entire shopping list?", clearCart); }} style={{ background: "none", border: "none", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Clear all</button>}
-                  </div>
-                </div>
-
-                {cart.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "20px 24px 24px", color: "var(--text-muted)" }}>
-                    <div style={{ fontSize: 28 }}>🛒</div>
-                    <div style={{ marginTop: 6, fontSize: 12 }}>Add parts from equipment cards</div>
-                  </div>
-                ) : (
-                  <div style={{ padding: "0 20px 14px" }}>
-                    {cart.map(function(item){ return (
-                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>{item.name}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                            {item.equipment_name ? item.equipment_name : ""}
-                            {item.vendor ? (item.equipment_name ? " · " : "") + item.vendor : ""}
-                            {item.price ? " · $" + item.price : ""}
-                          </div>
-                        </div>
-                        <a href={buyUrl(item.name, item.url)} target="_blank" rel="noreferrer"
-                          style={{ background: "var(--ok-text)", color: "#fff", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap" }}>
-                          Buy ↗
-                        </a>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                          <button onClick={function(){ removeFromCart(item.dbId); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
-                          <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
-                          <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
-                        </div>
-                        <button onClick={function(){ showConfirm("Remove " + item.name + "?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
-                      </div>
-                    ); })}
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, paddingTop: 8, borderTop: "1px solid var(--border)", marginBottom: 12 }}>
-                      <span>Estimated total</span>
-                      <span style={{ color: "var(--brand)" }}>${cartTotal.toFixed(2)}</span>
-                    </div>
-                    {/* Shop all CTA — multi-retailer */}
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 8 }}>Shop all {cart.length} item{cart.length !== 1 ? "s" : ""} at</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 4 }}>
-                      {Object.entries(RETAILERS).map(function(entry){
-                        const key = entry[0]; const r = entry[1];
-                        const allNames = cart.map(function(i){ return i.name; }).join(" ");
-                        return (
-                          <a key={key} href={buyUrl(allNames, null, key)} target="_blank" rel="noreferrer"
-                            onClick={function(){ trackAffiliateClick(r.name, allNames.substring(0, 100), "cart-bundle"); }}
-                            style={{ display: "block", textAlign: "center", padding: "9px 6px", background: r.color, color: "#fff", borderRadius: 8, fontSize: 11, fontWeight: 700, textDecoration: "none", lineHeight: 1.3 }}>
-                            {r.name.split(" ")[0]} ↗
-                          </a>
-                        );
-                      })}
-                    </div>
-
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* ── FIRST MATE TOP BAR — always visible below nav ── */}
-      {view === "customer" && (
-        <FirstMate
-          vesselId={activeVesselId}
-          vesselName={boatName}
-          openPanel={showFirstMatePanel}
-          onClose={function(){ setShowFirstMatePanel(false); }}
-        />
-      )}
-      {/* ── SHARE VESSEL PANEL ── */}
-      {showShare && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 400, overflow: "hidden", border: "1px solid var(--border-strong)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            {/* Header */}
-            <div style={{ background: "#0f4c8a", padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Sharing</div>
-                <div style={{ fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: "-0.3px" }}>{boatName}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>
-                  {settings.make ? [settings.year, settings.make, settings.model].filter(Boolean).join(" ") : "Invite crew to access this vessel"}
-                </div>
-              </div>
-              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 30, height: 30, color: "#fff", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
-            </div>
-
-            <div style={{ padding: "20px 20px 0" }}>
-              {/* Current members */}
-              {(function(){
-                const currentMembers = vesselMembers.filter(function(m){ return m.vessel_id === activeVesselId && m.role !== "owner"; });
-                if (currentMembers.length === 0) return null;
-                return (
-                  <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>CURRENT CREW</div>
-                    {currentMembers.map(function(m){
-                      return (
-                        <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: "var(--bg-subtle)", borderRadius: 8, marginBottom: 6, border: "1px solid var(--border)" }}>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{m.email}</div>
-                            <div style={{ fontSize: 11, color: m.user_id ? "var(--ok-text)" : "var(--warn-text)", marginTop: 1 }}>
-                              {m.user_id ? "✓ Active member" : "⏳ Invite pending"}
-                            </div>
-                          </div>
-                          <button onClick={function(){ if (window.confirm("Remove " + m.email + " from this vessel?")) removeMember(m.id); }}
-                            style={{ background: "none", border: "none", color: "var(--danger-text)", fontSize: 13, cursor: "pointer", fontWeight: 700, padding: "4px 8px" }}>Remove</button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-
-              {/* Invite form */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>INVITE BY EMAIL</div>
-              <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
-                onKeyDown={function(e){ if (e.key === "Enter") shareVessel(); }}
-                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 6, background: "var(--bg-subtle)", color: "var(--text-primary)" }} />
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>
-                They must sign up using this exact email to access {boatName}.
-                {vessels.length > 1 && <span style={{ color: "var(--brand)", marginLeft: 4, cursor: "pointer" }} onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>Wrong vessel? Switch first ↗</span>}
-              </div>
-              {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "var(--danger-bg)" : "var(--ok-bg)", color: shareMsg.startsWith("Error") ? "var(--danger-text)" : "var(--ok-text)", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 10 }}>{shareMsg}</div>}
-            </div>
-
-            {/* Footer */}
-            <div style={{ padding: "12px 20px 20px", display: "flex", gap: 8 }}>
-              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-subtle)", color: "var(--text-primary)", cursor: "pointer", fontWeight: 600 }}>Close</button>
-              <button onClick={shareVessel} disabled={shareLoading || !shareEmail.trim()} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: shareLoading ? "default" : "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* LOGBOOK PANEL */}
-      {/* Logbook modal replaced by logbook-standalone page */}
-
-      {/* ADD/EDIT LOG ENTRY */}
-      {showAddLog && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 480, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={function(e){ e.stopPropagation(); }}>
-
-            {/* Header */}
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>{editingLog ? "Edit Log Entry" : "New Log Entry"}</div>
-              <button onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, width: 30, height: 30, fontSize: 14, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
-            </div>
-
-            <div style={{ overflowY: "auto", flex: 1, padding: "16px 20px" }}>
-
-              {/* Type toggle */}
-              <div style={{ display: "flex", background: "var(--bg-subtle)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
-                {["passage", "note"].map(function(t){ return (
-                  <button key={t} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { entry_type: t }); }); }}
-                    style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: (logForm.entry_type || "passage") === t ? "var(--bg-card)" : "transparent", fontSize: 13, fontWeight: 700, cursor: "pointer", color: (logForm.entry_type || "passage") === t ? "var(--brand)" : "var(--text-muted)" }}>
-                    {t === "passage" ? "⛵ Passage" : "📝 Note"}
-                  </button>
-                ); })}
-              </div>
-
-              {/* Date + times */}
-              <div style={{ display: "grid", gridTemplateColumns: (logForm.entry_type || "passage") === "passage" ? "1fr 1fr 1fr" : "1fr", gap: 10, marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DATE *</div>
-                  <input type="date" value={logForm.entry_date || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { entry_date: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                </div>
-                {(logForm.entry_type || "passage") === "passage" && (<>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DEPARTED</div>
-                    <input type="time" value={logForm.departure_time || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { departure_time: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ARRIVED</div>
-                    <input type="time" value={logForm.arrival_time || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { arrival_time: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                </>)}
-              </div>
-
-              {/* From / To or Title */}
-              {(logForm.entry_type || "passage") === "note" ? (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TITLE</div>
-                  <input placeholder="e.g. Marina maintenance day" value={logForm.title || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { title: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                </div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FROM</div>
-                    <input placeholder="Departure port" value={logForm.from_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { from_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TO</div>
-                    <input placeholder="Arrival port" value={logForm.to_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { to_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                </div>
-              )}
-
-              {/* Crew */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>CREW ABOARD</div>
-                <input placeholder="e.g. Garry, Melissa, Tom (or just a count)" value={logForm.crew || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { crew: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-              </div>
-
-              {/* Highlights */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>HIGHLIGHTS</div>
-                <input placeholder="The story hook — saw dolphins, first night passage, new record..." value={logForm.highlights || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { highlights: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-              </div>
-
-              {/* Passage-only core stats */}
-              {(logForm.entry_type || "passage") === "passage" && (<>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DIST nm</div><input type="number" placeholder="0" value={logForm.distance_nm || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { distance_nm: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>HOURS END</div>
-                    <input type="number" placeholder="e.g. 1290" step="0.1" value={logForm.hours_end || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { hours_end: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                </div>
-                {/* Derived: time at sea, avg speed, fuel used */}
-                {(function(){
-                  const dep = logForm.departure_time; const arr = logForm.arrival_time;
-                  const dist = parseFloat(logForm.distance_nm) || 0;
-                  const hoursEnd = parseFloat(logForm.hours_end) || null;
-                  let timeHrs = null;
-                  if (dep && arr) {
-                    const [dh,dm] = dep.split(":").map(Number);
-                    const [ah,am] = arr.split(":").map(Number);
-                    let diff = (ah*60+am) - (dh*60+dm);
-                    if (diff < 0) diff += 1440;
-                    timeHrs = diff / 60;
-                  }
-                  const avgSpd = (timeHrs && dist > 0) ? (dist / timeHrs).toFixed(1) : null;
-                  const lastHoursEnd = (function(){
-                    const prev = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.hours_end && (!editingLog || e.id !== editingLog); })
-                      .sort(function(a,b){ return new Date(b.entry_date+""+(b.departure_time||"00:00")) - new Date(a.entry_date+""+(a.departure_time||"00:00")); });
-                    return prev.length > 0 ? prev[0].hours_end : null;
-                  })();
-                  const runHrs = (hoursEnd && lastHoursEnd && hoursEnd > lastHoursEnd) ? (hoursEnd - lastHoursEnd) : null;
-                  const burnRate = settings.fuelBurnRate || null;
-                  const fuelUsed = (runHrs && burnRate) ? (runHrs * burnRate).toFixed(1) : null;
-                  const timeLabel = timeHrs ? (Math.floor(timeHrs) + "h " + Math.round((timeHrs % 1) * 60) + "m") : "—";
-                  return (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TIME AT SEA</div>
-                        <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{timeLabel}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>AVG SPEED</div>
-                        <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{avgSpd ? avgSpd + " kts" : "—"}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL USED</div>
-                        <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{fuelUsed ? fuelUsed + " gal" : "—"}</div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Wind */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>WIND SPEED kts</div>
-                    <input type="number" placeholder="0" value={logForm.wind_speed || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { wind_speed: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>WIND DIR</div>
-                    <select value={logForm.wind_direction || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { wind_direction: e.target.value }); }); }} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, background: "var(--bg-card)", color: "var(--text-primary)" }}>
-                      <option value="">—</option>
-                      {["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"].map(function(d){ return <option key={d} value={d}>{d}</option>; })}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Sea state pills */}
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>SEA STATE</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
-                    {["Calm", "Light", "Moderate", "Rough", "Heavy"].map(function(s){ return (
-                      <button key={s} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { sea_state: f.sea_state === s ? "" : s }); }); }}
-                        style={{ padding: "5px 12px", border: "1.5px solid " + (logForm.sea_state === s ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.sea_state === s ? "var(--brand-deep)" : "var(--bg-subtle)", color: logForm.sea_state === s ? "var(--brand)" : "var(--text-muted)", cursor: "pointer" }}>{s}</button>
-                    ); })}
-                  </div>
-                </div>
-
-                {/* Conditions pills (sailing angle / motor) */}
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>SAILING CONDITIONS</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
-                    {["Motoring", "Close hauled", "Beam reach", "Broad reach", "Downwind", "Motor sailing"].map(function(c){ return (
-                      <button key={c} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { conditions: f.conditions === c ? "" : c }); }); }}
-                        style={{ padding: "5px 10px", border: "1.5px solid " + (logForm.conditions === c ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.conditions === c ? "var(--brand-deep)" : "var(--bg-subtle)", color: logForm.conditions === c ? "var(--brand)" : "var(--text-muted)", cursor: "pointer" }}>{c}</button>
-                    ); })}
-                  </div>
-                </div>
-              </>)}
-
-              {/* Notes */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>NOTES</div>
-                <textarea placeholder="What happened? Any events, observations, or things to remember..." value={logForm.notes || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { notes: e.target.value }); }); }} rows={3} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, resize: "none" }} />
-              </div>
-
-              {/* More details toggle */}
-              <div style={{ borderTop: "1px solid var(--border)", marginBottom: 12, paddingTop: 12 }}>
-                <button onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { _showMore: !f._showMore }); }); }}
-                  style={{ background: "none", border: "none", fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                  {logForm._showMore ? "▾ Hide details" : "▸ More details"}
-                  <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 400 }}>barometric pressure, visibility, anchor, incident</span>
-                </button>
-              </div>
-
-              {/* Expanded fields */}
-              {logForm._showMore && (<>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>BARO mb</div>
-                    <input type="number" placeholder="1013" value={logForm.barometric_mb || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { barometric_mb: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>VISIBILITY</div>
-                    <select value={logForm.visibility || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { visibility: e.target.value }); }); }} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, background: "var(--bg-card)", color: "var(--text-primary)" }}>
-                      <option value="">—</option>
-                      {["Unlimited", "Good (>5nm)", "Moderate (2–5nm)", "Poor (<2nm)", "Fog", "Rain"].map(function(v){ return <option key={v} value={v}>{v}</option>; })}
-                    </select>
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL ADDED gal</div>
-                    <input type="number" placeholder="0" step="0.1" value={logForm.fuel_added || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { fuel_added: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>MAX SPEED kts</div>
-                    <input type="number" placeholder="0" step="0.1" value={logForm.max_speed_kts || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { max_speed_kts: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ANCHOR LOCATION</div>
-                    <input placeholder="Anchorage name" value={logForm.anchor_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { anchor_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ANCHOR DEPTH ft</div>
-                    <input type="number" placeholder="0" step="0.5" value={logForm.anchor_depth_ft || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { anchor_depth_ft: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>INCIDENT / UNUSUAL EVENT</div>
-                  <textarea placeholder="Any incidents, equipment failures, medical events, or distress calls observed..." value={logForm.incident || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { incident: e.target.value }); }); }} rows={2} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, resize: "none" }} />
-                </div>
-              </>)}
-
-            </div>
-
-            {/* Footer */}
-            <div style={{ padding: "12px 20px 20px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
-              <button onClick={saveLog} disabled={!logForm.entry_date} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: logForm.entry_date ? "var(--brand)" : "var(--brand-deep)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: logForm.entry_date ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
-                {editingLog ? "Save Changes" : "Save Log Entry"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── CONFIRM DIALOG ── */}
       {confirmAction && (
