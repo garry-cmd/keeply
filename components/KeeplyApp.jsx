@@ -822,7 +822,7 @@ export default function App() {
   const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
   const [fmInputVal, setFmInputVal] = useState("");
   const [fmPending, setFmPending] = useState("");
-  const fmInputRef = React.useRef(null);
+  const fmInputRef = useRef(null);
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
   const [findPartResults, setFindPartResults]   = useState([]);
