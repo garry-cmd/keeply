@@ -3612,9 +3612,9 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
             <div onClick={function(){ setTab("parts-standalone"); }}
               style={{ background: "var(--info-bg)", border: "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--info-text)", lineHeight: 1 }}>{cart.length}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--info-text)", marginTop: 2 }}>Parts list</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Items to order</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--info-text)", lineHeight: 1 }}>{equipment.filter(function(e){ return e._vesselId === activeVesselId; }).reduce(function(acc, e){ return acc + (e.customParts || []).length; }, 0)}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--info-text)", marginTop: 2 }}>My Parts</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Saved to equipment</div>
             </div>
             <div onClick={function(){ setShowUrgencyPanel("Admin Due"); }}
               style={{ background: "#faf5ff", border: "0.5px solid #d8b4fe", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
