@@ -975,6 +975,7 @@ export default function App() {
   const [savingRepairNotes, setSavingRepairNotes] = useState({});
   const [uploadingRepairPhoto, setUploadingRepairPhoto] = useState({});
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
+  const [lightboxCaptionEdit, setLightboxCaptionEdit] = useState("");
 
   const [confirmAction, setConfirmAction]     = useState(null);
 
@@ -3740,6 +3741,9 @@ export default function App() {
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.description}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                         {fmt(r.date)}
+                        {(r.photos || []).length > 0 && (
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
+                        )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
                           <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
                         )}
@@ -3763,7 +3767,7 @@ export default function App() {
                       {["parts", "notes", "photos"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
-                          {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
+                          {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
@@ -3888,7 +3892,7 @@ export default function App() {
                         {(r.photos || []).length > 0 && (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
                             {(r.photos || []).map(function(ph, i) { return (
-                              <div key={i} onClick={function(){ setLightboxPhoto(ph); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
+                              <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
                                 <img src={ph.url} alt={ph.caption || "Repair photo"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", padding: "3px 5px", fontSize: 9, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
                               </div>
@@ -4490,7 +4494,7 @@ export default function App() {
                                           {["parts", "notes", "photos"].map(function(t){ return (
                                             <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
                                               style={{ padding: "6px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)" }}>
-                                              {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
+                                              {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
                                             </button>
                                           ); })}
                                         </div>
@@ -4542,7 +4546,7 @@ export default function App() {
                                             {(r.photos || []).length === 0 && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No photos yet.</div>}
                                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                                               {(r.photos || []).map(function(ph, i){ return (
-                                                <div key={i} onClick={function(){ setLightboxPhoto(ph); }} style={{ width: 56, height: 56, borderRadius: 6, overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
+                                                <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ width: 56, height: 56, borderRadius: 6, overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
                                                   <img src={ph.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                                 </div>
                                               ); })}
@@ -5196,6 +5200,9 @@ export default function App() {
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.description}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                         {fmt(r.date)}
+                        {(r.photos || []).length > 0 && (
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
+                        )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
                           <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
                         )}
@@ -5219,7 +5226,7 @@ export default function App() {
                       {["parts", "notes", "photos"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
-                          {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
+                          {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
@@ -5304,7 +5311,7 @@ export default function App() {
                         {(r.photos || []).length > 0 && (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
                             {(r.photos || []).map(function(ph, i) { return (
-                              <div key={i} onClick={function(){ setLightboxPhoto(ph); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
+                              <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
                                 <img src={ph.url} alt={ph.caption || "Repair photo"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", padding: "3px 5px", fontSize: 9, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
                               </div>
@@ -5607,7 +5614,7 @@ export default function App() {
                                   {(r.photos || []).length === 0 && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No photos yet.</div>}
                                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                                     {(r.photos || []).map(function(ph, i){ return (
-                                      <div key={i} onClick={function(){ setLightboxPhoto(ph); }} style={{ width: 60, height: 60, borderRadius: 6, overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
+                                      <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ width: 60, height: 60, borderRadius: 6, overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
                                         <img src={ph.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                       </div>
                                     ); })}
@@ -6051,7 +6058,8 @@ export default function App() {
                     if (!file) return;
                     setUploadingPhoto(true);
                     try {
-                      const url = await uploadToStorage(file, "vessel-photo-" + (editingVesselId || "new") + "-" + Date.now());
+                      const compressedVesselPhoto = await compressImage(file, 1600, 0.85);
+                    const url = await uploadToStorage(compressedVesselPhoto, "vessel-photo-" + (editingVesselId || "new") + "-" + Date.now());
                       setSettingsForm(function(f){ return { ...f, photoUrl: url }; });
                     } catch(err){ setDbError("Photo upload failed: " + err.message); }
                     finally {
@@ -6695,14 +6703,56 @@ export default function App() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.93)", zIndex: 900, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}
           onClick={function(){ setLightboxPhoto(null); }}>
           <img src={lightboxPhoto.url} alt={lightboxPhoto.caption || "Repair photo"}
-            style={{ maxWidth: "100%", maxHeight: "78vh", objectFit: "contain", borderRadius: 10 }}
+            style={{ maxWidth: "100%", maxHeight: "62vh", objectFit: "contain", borderRadius: 10 }}
             onClick={function(e){ e.stopPropagation(); }} />
-          <div style={{ marginTop: 14, color: "#fff", fontSize: 13, fontWeight: 700 }}>{lightboxPhoto.date}</div>
-          {lightboxPhoto.caption && <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 4 }}>{lightboxPhoto.caption}</div>}
-          <button onClick={function(){ setLightboxPhoto(null); }}
-            style={{ marginTop: 18, padding: "8px 28px", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, background: "none", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-            Close
-          </button>
+          <div style={{ marginTop: 12, color: "#fff", fontSize: 12, fontWeight: 600, opacity: 0.7 }}>{lightboxPhoto.date}</div>
+          {/* Caption edit */}
+          <div style={{ marginTop: 10, width: "100%", maxWidth: 400 }} onClick={function(e){ e.stopPropagation(); }}>
+            <input
+              value={lightboxCaptionEdit}
+              onChange={function(e){ setLightboxCaptionEdit(e.target.value); }}
+              placeholder="Add a caption…"
+              style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "7px 12px", fontSize: 12, color: "#fff", outline: "none", boxSizing: "border-box" }}
+            />
+            {lightboxCaptionEdit !== (lightboxPhoto.caption || "") && (
+              <button onClick={async function(e){
+                e.stopPropagation();
+                const repairId = lightboxPhoto._repairId;
+                const photoIdx = lightboxPhoto._photoIndex;
+                if (!repairId && repairId !== 0) return;
+                const repair = repairs.find(function(rr){ return rr.id === repairId; });
+                if (!repair) return;
+                const updatedPhotos = (repair.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
+                await supa("repairs", { method: "PATCH", query: "id=eq." + repairId, body: { photos: updatedPhotos }, prefer: "return=minimal" });
+                setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === repairId ? Object.assign({}, rr, { photos: updatedPhotos }) : rr; }); });
+                setLightboxPhoto(function(prev){ return Object.assign({}, prev, { caption: lightboxCaptionEdit }); });
+              }}
+                style={{ marginTop: 6, width: "100%", padding: "7px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                Save caption
+              </button>
+            )}
+          </div>
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }} onClick={function(e){ e.stopPropagation(); }}>
+            <button onClick={function(){ setLightboxPhoto(null); }}
+              style={{ padding: "8px 24px", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, background: "none", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              Close
+            </button>
+            <button onClick={async function(){
+              const repairId = lightboxPhoto._repairId;
+              const photoIdx = lightboxPhoto._photoIndex;
+              if (!repairId && repairId !== 0) { setLightboxPhoto(null); return; }
+              const repair = repairs.find(function(rr){ return rr.id === repairId; });
+              if (!repair) { setLightboxPhoto(null); return; }
+              const updatedPhotos = (repair.photos || []).filter(function(p, i){ return i !== photoIdx; });
+              await supa("repairs", { method: "PATCH", query: "id=eq." + repairId, body: { photos: updatedPhotos }, prefer: "return=minimal" });
+              setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === repairId ? Object.assign({}, rr, { photos: updatedPhotos }) : rr; }); });
+              setLightboxPhoto(null);
+            }}
+              style={{ padding: "8px 20px", border: "1px solid rgba(220,38,38,0.6)", borderRadius: 20, background: "none", color: "#fca5a5", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              🗑 Delete
+            </button>
+          </div>
         </div>
       )}
 
