@@ -5,14 +5,6 @@ import { supabase } from "./supabase-client";
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
 
-const STARTERS = [
-  "Is the boat ready for this weekend?",
-  "What maintenance is overdue?",
-  "What repairs are open?",
-  "How many nm have we logged?",
-  "When was the impeller last changed?",
-];
-
 function getTaskUrgency(t) {
   if (!t.due_date) return "ok";
   const days = Math.round((new Date(t.due_date) - new Date()) / 86400000);
@@ -131,7 +123,6 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
 
   return (
     <>
-      {/* ── Drop-down panel ── */}
       {panelOpen && (
         <div style={{
           position: "fixed",
@@ -142,16 +133,15 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
           maxWidth: 480,
           margin: "0 auto",
           maxHeight: "65vh",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
           background: "var(--bg-card)",
           borderBottom: "0.5px solid var(--border)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-          display: "flex",
-          flexDirection: "column",
-        }} ref={messagesRef}>
+        }}>
 
-          {/* ── Input row — FIRST, always visible, auto-focused ── */}
-          <div style={{ padding: "10px 14px 10px", borderBottom: "0.5px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
+          {/* Input — always first, auto-focused */}
+          <div style={{ padding: "10px 14px", borderBottom: hasMessages ? "0.5px solid var(--border)" : "none", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "7px 10px 7px 12px" }}>
               <span style={{ fontSize: 13, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
               <input
@@ -164,13 +154,13 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
               />
               <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }}>✕</button>
               <button onClick={function() { send(); }} disabled={!canSend}
-                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: canSend ? "var(--brand)" : "var(--bg-subtle)", color: canSend ? "#fff" : "var(--text-muted)", fontSize: 13, cursor: canSend ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>↑</button>
+                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: canSend ? "var(--brand)" : "var(--bg-subtle)", color: canSend ? "#fff" : "var(--text-muted)", fontSize: 13, cursor: canSend ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
             </div>
           </div>
 
-          {/* ── Conversation ── */}
+          {/* Conversation */}
           {hasMessages && (
-            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", flex: 1 }} ref={messagesRef}>
               {messages.map(function(msg, i) {
                 const isUser = msg.role === "user";
                 return (
@@ -202,24 +192,9 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
             </div>
           )}
 
-          {/* ── Starters — secondary, below input, only before first message ── */}
+          {/* Backdrop — tap outside to dismiss when no conversation yet */}
           {!hasMessages && (
-            <div style={{ padding: "10px 14px 12px", display: "flex", flexWrap: "wrap", gap: 6 }}>
-              <div style={{ width: "100%", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Suggestions</div>
-              {STARTERS.map(function(s) {
-                return (
-                  <button key={s} onClick={function() { send(s); }}
-                    style={{ padding: "5px 10px", border: "0.5px solid var(--border)", borderRadius: 20, background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Backdrop tap to dismiss */}
-          {!hasMessages && (
-            <div style={{ position: "fixed", inset: 0, top: 112, zIndex: -1 }} onClick={function() { close(); }} />
+            <div style={{ position: "fixed", inset: 0, top: 112, zIndex: -1 }} onClick={close} />
           )}
 
         </div>
