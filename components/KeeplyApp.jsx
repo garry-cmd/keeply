@@ -3011,29 +3011,60 @@ export default function App() {
                     <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, flexShrink: 0, paddingLeft: 12 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
-                {/* Vessel card tabs — always visible */}
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", background: "#0f4c8a", borderRadius: "0 0 12px 12px" }}
-                  onClick={function(e){ e.stopPropagation(); }}>
-                  <div style={{ display: "flex" }}>
-                    {["info","docs","admin","haul-out","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
-                      <button key={t} onClick={function(){
-                        setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
-                        if (!isExpanded) { setExpandedEquip(vesselEq.id); }
-                        if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
-                        if (t === "edit") {
-                          let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
-                          setVesselInfoForm(info);
-                          setEditingVesselInfo(true);
-                          const av = vessels.find(function(v){ return v.id === activeVesselId; });
-                          if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
-                        }
-                      }}
-                        style={{ flex: 1, padding: "8px 4px", border: "none", borderRight: "0.5px solid rgba(255,255,255,0.1)", background: "transparent", color: (activeTab)===t ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 700, cursor: "pointer", borderBottom: (activeTab)===t ? "2px solid rgba(255,255,255,0.8)" : "none", textAlign: "center" }}>
-                        {t === "info" ? "ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : t === "haul-out" ? "Haul-out" : "Edit"}
-                      </button>
-                    ); })}
-                  </div>
-                </div>
+                {/* Vessel card action footer — Option B */}
+                {(function(){
+                  const activeTab = equipTab[vesselEq.id] || "info";
+                  const tapTab = function(t) {
+                    setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
+                    if (!isExpanded) { setExpandedEquip(vesselEq.id); }
+                    if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
+                    if (t === "edit") {
+                      let inf = {}; try { inf = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
+                      setVesselInfoForm(inf);
+                      setEditingVesselInfo(true);
+                      const av = vessels.find(function(v){ return v.id === activeVesselId; });
+                      if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
+                    }
+                  };
+                  const pillStyle = function(t) {
+                    const active = activeTab === t;
+                    return {
+                      display: "flex", alignItems: "center", gap: 5,
+                      padding: "5px 11px",
+                      background: active ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
+                      border: "0.5px solid " + (active ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)"),
+                      borderRadius: 20, cursor: "pointer",
+                    };
+                  };
+                  const pillText = function(t) {
+                    return { fontSize: 11, fontWeight: 600, color: activeTab === t ? "#fff" : "rgba(255,255,255,0.6)" };
+                  };
+                  return (
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                      onClick={function(e){ e.stopPropagation(); }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {[["info","ID"],["docs","Docs"],["admin","Admin"]].map(function(pair){
+                          return (
+                            <button key={pair[0]} onClick={function(){ tapTab(pair[0]); }} style={pillStyle(pair[0])}>
+                              <span style={pillText(pair[0])}>{pair[1]}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.15)" }} />
+                        <button onClick={function(){ tapTab(activeTab === "haul-out" ? "info" : "haul-out"); }}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: activeTab === "haul-out" ? "#fff" : "rgba(255,255,255,0.5)", padding: "4px 2px" }}>
+                          Haul
+                        </button>
+                        <button onClick={function(){ tapTab("edit"); }}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: activeTab === "edit" ? "#fff" : "rgba(255,255,255,0.5)", padding: "4px 2px" }}>
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* Expanded tab content */}
                 {isExpanded && (
                   <div style={{ background: "var(--bg-subtle)", padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.1)" }}
