@@ -4163,7 +4163,7 @@ export default function App() {
                         )}
                       </>);
                     })()}
-                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
+                    <button onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ var n = Object.assign({}, prev); n[eq.id] = "edit"; return n; }); }}                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}                      title="Edit equipment">                      ✏️                    </button>                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}
                       title="Delete equipment">
                       <TrashIcon />
@@ -4244,6 +4244,7 @@ export default function App() {
                           <input placeholder="Model (optional)" value={editEquipForm.model !== undefined ? editEquipForm.model : (isVesselCard ? "" : (eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||"")} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                           <input placeholder="Serial No." value={editEquipForm.serial !== undefined ? editEquipForm.serial : (isVesselCard ? "" : (eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||"")} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                         </div>
+                        {!isVesselCard && <input placeholder="Part No. (optional)" value={editEquipForm.partno !== undefined ? editEquipForm.partno : (eq.notes||"").match(/Part: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, partno: e.target.value }; }); }} style={s.inp} />}
                         {!isVesselCard && <input placeholder="Notes (optional)" value={editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim()} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={s.inp} />}
                         <button onClick={function(){
                           const name = editEquipForm.name || eq.name;
@@ -4251,8 +4252,9 @@ export default function App() {
                           const status = editEquipForm.status || eq.status;
                           const model = editEquipForm.model !== undefined ? editEquipForm.model : (isVesselCard ? "" : ((eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||""));
                           const serial = editEquipForm.serial !== undefined ? editEquipForm.serial : (isVesselCard ? "" : ((eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||""));
-                          const baseNotes = isVesselCard ? (eq.notes||"") : (editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim());
-                          const notes = isVesselCard ? baseNotes : [baseNotes, model ? "Model: "+model : "", serial ? "S/N: "+serial : ""].filter(Boolean).join(" | ");
+                          const partno = editEquipForm.partno !== undefined ? editEquipForm.partno : ((eq.notes||"").match(/Part: ([^|]+)/)?.[1]?.trim()||"");
+                          const baseNotes = isVesselCard ? (eq.notes||"") : (editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").replace(/\s*\|?\s*Part: [^|]+/g,"").trim());
+                          const notes = isVesselCard ? baseNotes : [baseNotes, model ? "Model: "+model : "", serial ? "S/N: "+serial : "", partno ? "Part: "+partno : ""].filter(Boolean).join(" | ");
                           updateEquipment(eq.id, { name, category, status, notes });
                           setEditEquipForm({});
                           setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = isVesselCard ? "info" : "parts"; return n; });
