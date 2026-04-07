@@ -3763,7 +3763,7 @@ export default function App() {
                       <SectionBadge section={r.section} />
                       {r.priority && <span style={{ fontSize: 10, fontWeight: 700, background: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].bg : "var(--bg-subtle)", color: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].color : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", textTransform: "uppercase" }}>{r.priority}</span>}
                     </div>
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8 }}>
+                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
                       {["parts", "notes", "photos"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
@@ -4393,9 +4393,9 @@ export default function App() {
                     )}
 
                     {/* tabs */}
-                    <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+                    <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch", msOverflowStyle: "none", scrollbarWidth: "none" }}>
                       {(isVesselCard ? ["info","docs","photos","edit"] : ["maintenance","repairs","parts","docs","log","photos","edit"]).map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                           {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : t === "photos" ? "📷 Photos" : "Edit"}
                         </button>
                       ); })}
@@ -5261,7 +5261,7 @@ export default function App() {
                   <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
 
                     {/* Tab bar */}
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px" }}>
+                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
                       {["parts", "notes", "photos"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
