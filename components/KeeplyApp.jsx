@@ -1820,7 +1820,7 @@ export default function App() {
       ];
       var now2 = today();
       var payloads = eTasks.map(function(t){
-        return { vessel_id: vesselId, task: t.task, section: t.section, interval_days: t.interval_days, interval_hours: t.interval_hours, priority: t.priority, last_service: null, last_service_hours: baseHrs || null, due_date: addDays(now2, t.interval_days), due_hours: baseHrs + t.interval_hours, service_logs: [], attachments: [], photos: [], equipment_id: eqId };
+        return { vessel_id: vesselId, task: t.task, section: t.section, interval_days: t.interval_days, interval_hours: t.interval_hours, priority: t.priority, last_service: null, last_service_hours: null, due_date: addDays(now2, t.interval_days), due_hours: baseHrs + t.interval_hours, service_logs: [], attachments: [], photos: [], equipment_id: eqId };
       });
       var created = await supa("maintenance_tasks", { method: "POST", body: payloads, prefer: "return=representation" });
       if (created && created.length) {
@@ -4609,7 +4609,7 @@ export default function App() {
                                           if (!hb) return null;
                                           return <span style={{ background: hb.bg, color: hb.color, border: "1px solid " + (hb.border||hb.color), borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{hb.label}</span>;
                                         })()}
-                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
+                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", due_hours: t.due_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
                                         <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }}><TrashIcon /></button>
                                       </div>
                                     ) : (
@@ -4633,20 +4633,33 @@ export default function App() {
                                               style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                                           </div>
                                         </div>
-                                        <div style={{ marginBottom: 8 }}>
-                                          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
-                                          <input type="date" value={editTaskForm.dueDate || ""}
-                                            onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { dueDate: e.target.value }); }); }}
-                                            style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                                        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                                          <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE AT (HRS)</div>
+                                            <input type="number" inputMode="numeric" placeholder="e.g. 500" value={editTaskForm.due_hours || ""}
+                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { due_hours: e.target.value }); }); }}
+                                              style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                                            <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3 }}>Override computed hours</div>
+                                          </div>
+                                          <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
+                                            <input type="date" value={editTaskForm.dueDate || ""}
+                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { dueDate: e.target.value }); }); }}
+                                              style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
+                                          </div>
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
                                           <button onClick={function(e){ e.stopPropagation(); setEditingTask(null); }} style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                                           <button onClick={async function(e){
                                             e.stopPropagation();
                                             var newIH = editTaskForm.interval_hours ? parseInt(editTaskForm.interval_hours) : null;
-                                            var avSave = vessels.find(function(v){ return v.id === activeVesselId; });
-                                            var cHSave = avSave ? avSave.engineHours : null;
-                                            var newDueH = (newIH && cHSave != null) ? cHSave + newIH : (newIH && t.last_service_hours != null ? t.last_service_hours + newIH : null);
+                                            // User can override due_hours directly; else compute from interval + current hours
+                                            var newDueH = editTaskForm.due_hours ? parseInt(editTaskForm.due_hours) : null;
+                                            if (!newDueH && newIH) {
+                                              var avSave = vessels.find(function(v){ return v.id === activeVesselId; });
+                                              var cHSave = avSave ? avSave.engineHours : null;
+                                              newDueH = cHSave != null ? cHSave + newIH : (t.last_service_hours != null ? t.last_service_hours + newIH : null);
+                                            }
                                             const patch = { task: editTaskForm.task, interval_days: Math.max(1, parseInt(editTaskForm.interval_days) || 1), due_date: editTaskForm.dueDate || null, interval_hours: newIH, due_hours: newDueH };
                                             await updateTask(t.id, patch);
                                             setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate, interval_hours: newIH, due_hours: newDueH }) : tk; }); });
