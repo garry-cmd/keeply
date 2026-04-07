@@ -1563,11 +1563,7 @@ export default function App() {
   };
 
   const completeRepair = async function(id){
-    setCompletingRepair(id);
-    setTimeout(async function(){
-      await deleteRepair(id);
-      setCompletingRepair(null);
-    }, 600);
+    startCompletingRepair(id);
   };
 
   const updateRepair = async function(id, patch){
