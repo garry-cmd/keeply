@@ -3065,30 +3065,33 @@ export default function App() {
                     <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, flexShrink: 0, paddingLeft: 12 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
-                {!isExpanded && <div style={{ height: 3, background: "linear-gradient(90deg, #5bbcf8 0%, #0e5cc7 100%)" }} />}
-                {/* Expanded — Vessel ID / Docs / Edit tabs inline */}
+                {/* Vessel card tabs — always visible */}
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}
+                  onClick={function(e){ e.stopPropagation(); }}>
+                  <div style={{ display: "flex" }}>
+                    {["info","docs","admin","haul-out","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
+                      <button key={t} onClick={function(){
+                        setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
+                        if (!isExpanded) { setExpandedEquip(vesselEq.id); }
+                        if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
+                        if (t === "edit") {
+                          let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
+                          setVesselInfoForm(info);
+                          setEditingVesselInfo(true);
+                          const av = vessels.find(function(v){ return v.id === activeVesselId; });
+                          if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
+                        }
+                      }}
+                        style={{ flex: 1, padding: "8px 4px", border: "none", borderRight: "0.5px solid rgba(255,255,255,0.1)", background: "transparent", color: (activeTab)===t ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 700, cursor: "pointer", borderBottom: (activeTab)===t ? "2px solid rgba(255,255,255,0.8)" : "none", textAlign: "center" }}>
+                        {t === "info" ? "ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : t === "haul-out" ? "Haul-out" : "Edit"}
+                      </button>
+                    ); })}
+                  </div>
+                </div>
+                {/* Expanded tab content */}
                 {isExpanded && (
-                  <div style={{ background: "var(--bg-subtle)", padding: "14px 16px", borderTop: "2px solid rgba(255,255,255,0.15)" }}
+                  <div style={{ background: "var(--bg-subtle)", padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.1)" }}
                     onClick={function(e){ e.stopPropagation(); }}>
-                    {/* Render the vessel card tabs inline — reuse the same tab state */}
-                    <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {["info","docs","admin","haul-out","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
-                        <button key={t} onClick={function(){
-                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
-                          if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
-                          if (t === "edit") {
-                            let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
-                            setVesselInfoForm(info);
-                            setEditingVesselInfo(true);
-                            const av = vessels.find(function(v){ return v.id === activeVesselId; });
-                            if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
-                          }
-                        }}
-                          style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                          {t === "info" ? "ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : t === "haul-out" ? "Haul-out" : "Edit"}
-                        </button>
-                      ); })}
-                    </div>
                     {/* The actual tab content is rendered inline */}
                     {(equipTab[vesselEq.id] || "info") === "info" && (function(){
                       const hasData = Object.keys(info).length > 0;
@@ -3605,6 +3608,7 @@ export default function App() {
 
 
           {/* ── Actions row — Parts List + Admin Due ── */}
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 8 }}>Actions</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
             <div onClick={function(){ setTab("parts-standalone"); }}
               style={{ background: "var(--info-bg)", border: "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
