@@ -1365,7 +1365,11 @@ export default function App() {
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
         createDefaultAdminTasks(nv.id, userId);  // Pre-populate admin tasks
-        createDefaultEngineTasks(nv.id);          // Pre-populate engine hour tasks
+        (async function(){
+          var freshEq = await supa("equipment", { query: "vessel_id=eq." + nv.id + "&category=eq.Engine&limit=1" }).catch(function(){ return []; });
+          var engId = (freshEq && freshEq[0]) ? freshEq[0].id : null;
+          createDefaultEngineTasks(nv.id, engId);
+        })();
         // If user has other vessels, offer to copy items
         if (vessels.length > 0) {
           setNewVesselId(nv.id);
@@ -1798,10 +1802,11 @@ export default function App() {
     finally { setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: false }; }); }
   };
 
-  const createDefaultEngineTasks = async function(vesselId) {
+  const createDefaultEngineTasks = async function(vesselId, equipmentId) {
     try {
       var vess = vessels.find(function(vv){ return vv.id === vesselId; }) || {};
       var baseHrs = vess.engineHours || 0;
+      var eqId = equipmentId || null;
       var eTasks = [
         { task: "Engine oil & filter change",  section: "Engine", interval_days: 365,  interval_hours: 100,  priority: "critical" },
         { task: "Impeller replacement",         section: "Engine", interval_days: 365,  interval_hours: 300,  priority: "critical" },
@@ -1814,7 +1819,7 @@ export default function App() {
       ];
       var now2 = today();
       var payloads = eTasks.map(function(t){
-        return { vessel_id: vesselId, task: t.task, section: t.section, interval_days: t.interval_days, interval_hours: t.interval_hours, priority: t.priority, last_service: null, last_service_hours: baseHrs || null, due_date: addDays(now2, t.interval_days), due_hours: baseHrs + t.interval_hours, service_logs: [], attachments: [], photos: [] };
+        return { vessel_id: vesselId, task: t.task, section: t.section, interval_days: t.interval_days, interval_hours: t.interval_hours, priority: t.priority, last_service: null, last_service_hours: baseHrs || null, due_date: addDays(now2, t.interval_days), due_hours: baseHrs + t.interval_hours, service_logs: [], attachments: [], photos: [], equipment_id: eqId };
       });
       var created = await supa("maintenance_tasks", { method: "POST", body: payloads, prefer: "return=representation" });
       if (created && created.length) {
@@ -3735,8 +3740,16 @@ export default function App() {
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <button onClick={async function(){
-                    await createDefaultEngineTasks(activeVesselId);
-                    setDismissedEngineTasksBanner(true);
+                    var engineCards = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category === "Engine"; });
+                    if (engineCards.length === 0) {
+                      await createDefaultEngineTasks(activeVesselId, null);
+                      setDismissedEngineTasksBanner(true);
+                    } else if (engineCards.length === 1) {
+                      await createDefaultEngineTasks(activeVesselId, engineCards[0].id);
+                      setDismissedEngineTasksBanner(true);
+                    } else {
+                      setShowEnginePickerModal(true);
+                    }
                   }} style={{ padding: "7px 14px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                     Add Tasks
                   </button>
@@ -6989,6 +7002,41 @@ export default function App() {
             }}
               style={{ width: "100%", padding: "14px", border: "none", borderRadius: 12, background: "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
               Save {updateHoursInput ? parseInt(updateHoursInput).toLocaleString() + " hrs" : ""}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── ENGINE PICKER MODAL ── */}
+      {showEnginePickerModal && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={function(){ setShowEnginePickerModal(false); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>⚙️ Which engine?</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Tasks will be linked to the equipment card you choose. You can change this later.</div>
+            {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category === "Engine"; }).map(function(eq){ return (
+              <button key={eq.id} onClick={async function(){
+                await createDefaultEngineTasks(activeVesselId, eq.id);
+                setDismissedEngineTasksBanner(true);
+                setShowEnginePickerModal(false);
+              }} style={{ width: "100%", padding: "14px 16px", marginBottom: 10, border: "1.5px solid var(--border)", borderRadius: 12, background: "var(--bg-subtle)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 22 }}>⚙️</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{eq.name}</div>
+                  {(eq.notes || "").match(/Model: ([^|]+)/) && (
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{((eq.notes || "").match(/Model: ([^|]+)/) || [])[1].trim()}</div>
+                  )}
+                </div>
+              </button>
+            ); })}
+            <button onClick={async function(){
+              await createDefaultEngineTasks(activeVesselId, null);
+              setDismissedEngineTasksBanner(true);
+              setShowEnginePickerModal(false);
+            }} style={{ width: "100%", padding: "11px", border: "1px solid var(--border)", borderRadius: 12, background: "none", color: "var(--text-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
+              Add without linking to an equipment card
             </button>
           </div>
         </div>
