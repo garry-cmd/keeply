@@ -2731,7 +2731,8 @@ export default function App() {
                       <div key={t.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s" }}>
                         <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                           <button onClick={function(){
-                            toggleTask(t.id);
+                            setNoteSheetTask(t);
+                            setNoteSheetVal("");
                             if (panelTasks.length <= 1) setTimeout(function(){ setFleetPanel(null); }, 600);
                           }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
@@ -3865,8 +3866,8 @@ export default function App() {
                     <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                       <button onClick={function(){
                           if (isCompleting) return;
-                          setCompletingTask(t.id);
-                          setTimeout(function(){ toggleTask(t.id); setCompletingTask(null); }, 500);
+                          setNoteSheetTask(t);
+                          setNoteSheetVal("");
                         }}
                         style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                         {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
@@ -5544,7 +5545,7 @@ export default function App() {
 
                               {/* Task name row */}
                               <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                                <button onClick={function(e){ e.stopPropagation(); toggleTask(t.id); }}
+                                <button onClick={function(e){ e.stopPropagation(); setNoteSheetTask(t); setNoteSheetVal(""); }}
                                   style={{ width: 16, height: 16, borderRadius: "50%", border: "1.5px solid var(--border)", background: "none", cursor: "pointer", flexShrink: 0, marginTop: 2 }} />
                                 <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{t.task}</div>
                               </div>
