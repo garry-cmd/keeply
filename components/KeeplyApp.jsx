@@ -2991,9 +2991,9 @@ export default function App() {
             const makeModel = [activeVessel?.year, activeVessel?.make, activeVessel?.model].filter(Boolean).join(" ");
             const isExpanded = expandedEquip === vesselEq.id;
             return (
-              <div style={{ marginBottom: 16, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)" }}>
+              <div style={{ marginBottom: 16, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)", background: "#1a3a5c" }}>
                 {/* Banner header */}
-                <div style={{ background: "var(--brand)", cursor: "pointer", padding: "18px 20px 16px" }}
+                <div style={{ background: "#1a3a5c", cursor: "pointer", padding: "18px 20px 16px" }}
                   onClick={function(){ setExpandedEquip(isExpanded ? null : vesselEq.id); if (!isExpanded) setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -3040,7 +3040,7 @@ export default function App() {
                     return { fontSize: 11, fontWeight: 600, color: activeTab === t ? "#fff" : "rgba(255,255,255,0.6)" };
                   };
                   return (
-                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.18)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.22)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                       onClick={function(e){ e.stopPropagation(); }}>
                       <div style={{ display: "flex", gap: 6 }}>
                         {[["info","ID"],["docs","Docs"],["admin","Admin"]].map(function(pair){
