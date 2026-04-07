@@ -1094,6 +1094,7 @@ export default function App() {
             dueDate:        t.due_date,
             serviceLogs:    t.service_logs || [],
             attachments:    t.attachments || [],
+            photos:         t.photos || [],
             pendingComment: "",
             _vesselId:      t.vessel_id,
             equipment_id:   t.equipment_id || null,
@@ -1564,7 +1565,7 @@ export default function App() {
       const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null };
       const created = await supa("maintenance_tasks", { method: "POST", body: payload });
       const t = created[0];
-      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
+      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
       setNewTask({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
       setShowAddTask(false);
     } catch(err){ setDbError(err.message); }
@@ -4081,6 +4082,40 @@ export default function App() {
                             </div>
                           );
                         })()}
+
+                        {/* ── Photos ── */}
+                        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
+                          {(t.photos || []).length > 0 && (
+                            <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 8, paddingBottom: 2 }}>
+                              {t.photos.map(function(ph, i){ return (
+                                <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _taskId: t.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }}
+                                  style={{ width: 62, height: 62, borderRadius: 8, overflow: "hidden", flexShrink: 0, cursor: "pointer", position: "relative" }}>
+                                  <img src={ph.url} alt={ph.caption || "Task photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.45)", padding: "2px 4px", fontSize: 8, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
+                                </div>
+                              ); })}
+                            </div>
+                          )}
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[t.id] ? "default" : "pointer", fontSize: 11, fontWeight: 600, color: "var(--brand)", background: "var(--bg-card)" }}>
+                            {uploadingRepairPhoto[t.id] ? "⏳ Uploading…" : "📷 Add Photo"}
+                            {!uploadingRepairPhoto[t.id] && (
+                              <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
+                                var file = e.target.files && e.target.files[0];
+                                if (!file) return;
+                                setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[t.id] = true; return n; });
+                                try {
+                                  var compressed = await compressImage(file, 1200, 0.78);
+                                  var url = await uploadToStorage(compressed, "task-photos/" + t.id);
+                                  var newPhoto = { url: url, date: today(), caption: "" };
+                                  var updatedPhotos = [...(t.photos || []), newPhoto];
+                                  await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + t.id, body: { photos: updatedPhotos }, prefer: "return=minimal" });
+                                  setTasks(function(prev){ return prev.map(function(tt){ return tt.id === t.id ? Object.assign({}, tt, { photos: updatedPhotos }) : tt; }); });
+                                } catch(err){ console.error("Task photo upload failed:", err); }
+                                finally { setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); delete n[t.id]; return n; }); e.target.value = ""; }
+                              }} />
+                            )}
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -6768,6 +6803,12 @@ export default function App() {
                   const up = (eq.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
                   await supa("equipment", { method: "PATCH", query: "id=eq." + lightboxPhoto._equipId, body: { photos: up }, prefer: "return=minimal" });
                   setEquipment(function(prev){ return prev.map(function(e){ return e.id === lightboxPhoto._equipId ? Object.assign({}, e, { photos: up }) : e; }); });
+                } else if (lightboxPhoto._taskId) {
+                  const task = tasks.find(function(tt){ return tt.id === lightboxPhoto._taskId; });
+                  if (!task) return;
+                  const up = (task.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
+                  await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + lightboxPhoto._taskId, body: { photos: up }, prefer: "return=minimal" });
+                  setTasks(function(prev){ return prev.map(function(tt){ return tt.id === lightboxPhoto._taskId ? Object.assign({}, tt, { photos: up }) : tt; }); });
                 }
                 setLightboxPhoto(function(prev){ return Object.assign({}, prev, { caption: lightboxCaptionEdit }); });
               }}
@@ -6796,6 +6837,13 @@ export default function App() {
                   const up = (eq.photos || []).filter(function(p, i){ return i !== photoIdx; });
                   await supa("equipment", { method: "PATCH", query: "id=eq." + lightboxPhoto._equipId, body: { photos: up }, prefer: "return=minimal" });
                   setEquipment(function(prev){ return prev.map(function(e){ return e.id === lightboxPhoto._equipId ? Object.assign({}, e, { photos: up }) : e; }); });
+                }
+              } else if (lightboxPhoto._taskId) {
+                const task = tasks.find(function(tt){ return tt.id === lightboxPhoto._taskId; });
+                if (task) {
+                  const up = (task.photos || []).filter(function(p, i){ return i !== photoIdx; });
+                  await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + lightboxPhoto._taskId, body: { photos: up }, prefer: "return=minimal" });
+                  setTasks(function(prev){ return prev.map(function(tt){ return tt.id === lightboxPhoto._taskId ? Object.assign({}, tt, { photos: up }) : tt; }); });
                 }
               }
               setLightboxPhoto(null);
