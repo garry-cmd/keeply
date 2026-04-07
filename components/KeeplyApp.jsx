@@ -1242,20 +1242,29 @@ export default function App() {
   }, []);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
-  const openAddVessel = function(){
-    if ((userPlan === "free" || !userPlan) && vessels.length >= 1) {
+  const openAddVessel = async function(){
+    // Always fetch fresh plan from DB to avoid stale state after upgrade
+    var livePlan = userPlan;
+    try {
+      var { data: { session: sess } } = await supabase.auth.getSession();
+      if (sess && sess.user) {
+        var pr = await supabase.from("user_profiles").select("plan").eq("id", sess.user.id).single();
+        if (pr.data && pr.data.plan) { livePlan = pr.data.plan; setUserPlan(pr.data.plan); }
+      }
+    } catch(e) {}
+    if ((livePlan === "free" || !livePlan) && vessels.length >= 1) {
       setUpgradeReason("Entry accounts are limited to 1 vessel. Upgrade to Pro to add more.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
     }
-    if (userPlan === "pro" && vessels.length >= 2) {
+    if (livePlan === "pro" && vessels.length >= 2) {
       setUpgradeReason("Pro includes up to 2 vessels. Upgrade to Fleet for the fleet dashboard and up to 3 vessels.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
     }
-    if (userPlan === "fleet" && vessels.length >= 3) {
+    if (livePlan === "fleet" && vessels.length >= 3) {
       setUpgradeReason("Fleet includes up to 3 vessels. Contact us at support@keeply.boats to discuss an Enterprise plan for larger fleets.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
