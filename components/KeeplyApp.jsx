@@ -2991,7 +2991,7 @@ export default function App() {
             const makeModel = [activeVessel?.year, activeVessel?.make, activeVessel?.model].filter(Boolean).join(" ");
             const isExpanded = expandedEquip === vesselEq.id;
             return (
-              <div style={{ marginBottom: 16, borderRadius: "0 0 12px 12px", overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)", background: "#1a3a5c" }}>
+              <div style={{ marginBottom: 16, borderRadius: "0 0 12px 12px", overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)", background: "#1a3a5c", marginLeft: -12, marginRight: -12 }}>
                 {/* Banner header */}
                 <div style={{ background: "#1a3a5c", cursor: "pointer", padding: "18px 20px 16px" }}
                   onClick={function(){ setExpandedEquip(isExpanded ? null : vesselEq.id); if (!isExpanded) setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); }}>
@@ -3495,7 +3495,7 @@ export default function App() {
             const cellStyle = { background: "var(--bg-card)", padding: "11px 12px" };
             const labelStyle = { fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 };
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: "1px", background: "#1a3a5c", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "2px solid #1a3a5c" }}>
 
                 {/* Row 1 Cell 1 — Engine hours (from last logbook hours_end or manual) */}
                 <div style={cellStyle}>

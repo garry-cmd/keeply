@@ -22,7 +22,7 @@ async function fetchEntries(vesselId) {
   return res.json();
 }
 
-const BLANK_FORM = { entry_type: "passage", entry_date: "", from_location: "", to_location: "", departure_time: "", arrival_time: "", crew: "", highlights: "", distance_nm: "", hours_end: "", conditions: "", wind_speed: "", wind_direction: "", sea_state: "", notes: "", _showMore: false, barometric_mb: "", visibility: "", fuel_added: "", max_speed_kts: "", anchor_location: "", anchor_depth_ft: "", incident: "" };
+const BLANK_FORM = { entry_type: "passage", entry_date: "", from_location: "", to_location: "", departure_time: "", arrival_time: "", crew: "", distance_nm: "", hours_end: "", conditions: "", sea_state: "", notes: "" };
 
 const SEA_STATES = ["Calm", "Light chop", "Moderate", "Rough", "Very rough"];
 const CONDITIONS = ["Motoring", "Motor sailing", "Close hauled", "Broad reach", "Downwind", "Drifting"];
@@ -64,22 +64,11 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
       departure_time: entry.departure_time || "",
       arrival_time: entry.arrival_time || "",
       crew: entry.crew || "",
-      highlights: entry.highlights || "",
       distance_nm: entry.distance_nm ? String(entry.distance_nm) : "",
       hours_end: entry.hours_end ? String(entry.hours_end) : "",
       conditions: entry.conditions || "",
-      wind_speed: entry.wind_speed ? String(entry.wind_speed) : "",
-      wind_direction: entry.wind_direction || "",
       sea_state: entry.sea_state || "",
       notes: entry.notes || "",
-      _showMore: false,
-      barometric_mb: entry.barometric_mb ? String(entry.barometric_mb) : "",
-      visibility: entry.visibility || "",
-      fuel_added: entry.fuel_added ? String(entry.fuel_added) : "",
-      max_speed_kts: entry.max_speed_kts ? String(entry.max_speed_kts) : "",
-      anchor_location: entry.anchor_location || "",
-      anchor_depth_ft: entry.anchor_depth_ft ? String(entry.anchor_depth_ft) : "",
-      incident: entry.incident || "",
     });
     setEditingId(entry.id);
     setShowForm(true);
@@ -98,21 +87,12 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
       departure_time: form.departure_time || null,
       arrival_time: form.arrival_time || null,
       crew: form.crew || null,
-      highlights: form.highlights || null,
       distance_nm: form.distance_nm ? parseFloat(form.distance_nm) : null,
       hours_end: form.hours_end ? parseFloat(form.hours_end) : null,
       conditions: form.conditions || null,
-      wind_speed: form.wind_speed ? parseInt(form.wind_speed) : null,
-      wind_direction: form.wind_direction || null,
       sea_state: form.sea_state || null,
       notes: form.notes || null,
-      barometric_mb: form.barometric_mb ? parseFloat(form.barometric_mb) : null,
-      visibility: form.visibility || null,
-      fuel_added: form.fuel_added ? parseFloat(form.fuel_added) : null,
-      max_speed_kts: form.max_speed_kts ? parseFloat(form.max_speed_kts) : null,
-      anchor_location: form.anchor_location || null,
       anchor_depth_ft: form.anchor_depth_ft ? parseFloat(form.anchor_depth_ft) : null,
-      incident: form.incident || null,
     };
     try {
       if (editingId) {
@@ -218,7 +198,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
       </div>
 
       {/* ── Stats strip ── */}
-      <div style={{ display: "flex", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "0.5px solid var(--border)" }}>
+      <div style={{ display: "flex", gap: 1, background: "#1a3a5c", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "2px solid #1a3a5c" }}>
         {[
           { label: "Passages", val: passages.length || "0" },
           { label: "nm logged", val: totalNm > 0 ? Math.round(totalNm).toLocaleString() : "—" },
@@ -279,8 +259,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
               }
 
               const chips = [];
-              if (entry.wind_direction && entry.wind_speed) chips.push({ t: entry.wind_direction + " " + entry.wind_speed + " kts", c: "var(--brand)", bg: "var(--brand-deep)" });
-              else if (entry.wind_speed) chips.push({ t: entry.wind_speed + " kts", c: "var(--brand)", bg: "var(--brand-deep)" });
+
               if (entry.sea_state) chips.push({ t: entry.sea_state, c: "var(--ok-text)", bg: "var(--ok-bg)" });
               if (entry.conditions) chips.push({ t: entry.conditions, c: "var(--text-muted)", bg: "var(--bg-subtle)" });
               if (entry.crew) chips.push({ t: "Crew: " + entry.crew, c: "var(--text-muted)", bg: "var(--bg-subtle)" });
@@ -526,10 +505,6 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                   <span style={s.lbl}>Crew aboard</span>
                   <input placeholder="Names or count" value={form.crew} onChange={function(e) { setF("crew", e.target.value); }} style={s.inp} />
                 </div>
-                <div style={{ marginBottom: 12 }}>
-                  <span style={s.lbl}>Highlights</span>
-                  <input placeholder="The memorable moment…" value={form.highlights} onChange={function(e) { setF("highlights", e.target.value); }} style={s.inp} />
-                </div>
 
                 {/* Dist + Hours */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
@@ -546,22 +521,6 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                   </div>
                 )}
 
-                {/* Wind */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <span style={s.lbl}>Wind speed (kts)</span>
-                    <input type="number" placeholder="0" value={form.wind_speed} onChange={function(e) { setF("wind_speed", e.target.value); }} style={s.inp} />
-                  </div>
-                  <div>
-                    <span style={s.lbl}>Wind direction</span>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 }}>
-                      {WIND_DIRS.map(function(d) { return (
-                        <button key={d} onClick={function() { setF("wind_direction", form.wind_direction === d ? "" : d); }}
-                          style={{ padding: "3px 8px", border: "0.5px solid " + (form.wind_direction === d ? "var(--brand)" : "var(--border)"), borderRadius: 6, fontSize: 11, cursor: "pointer", background: form.wind_direction === d ? "var(--brand-deep)" : "var(--bg-subtle)", color: form.wind_direction === d ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>{d}</button>
-                      ); })}
-                    </div>
-                  </div>
-                </div>
 
                 {/* Sea state pills */}
                 <div style={{ marginBottom: 12 }}>
@@ -591,32 +550,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                 <textarea rows={3} placeholder="Anything worth remembering…" value={form.notes} onChange={function(e) { setF("notes", e.target.value); }} style={{ ...s.inp, resize: "none", lineHeight: 1.5 }} />
               </div>
 
-              {/* More details toggle */}
-              <button onClick={function() { setF("_showMore", !form._showMore); }}
-                style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer", fontWeight: 600, padding: "4px 0", marginBottom: 8 }}>
-                {form._showMore ? "▾ Less details" : "▸ More details"}
-              </button>
 
-              {form._showMore && (
-                <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                    <div><span style={s.lbl}>Barometric mb</span><input type="number" placeholder="1013" value={form.barometric_mb} onChange={function(e) { setF("barometric_mb", e.target.value); }} style={s.inp} /></div>
-                    <div><span style={s.lbl}>Visibility</span><input placeholder="Good / Poor" value={form.visibility} onChange={function(e) { setF("visibility", e.target.value); }} style={s.inp} /></div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                    <div><span style={s.lbl}>Fuel added gal</span><input type="number" step="0.1" placeholder="0" value={form.fuel_added} onChange={function(e) { setF("fuel_added", e.target.value); }} style={s.inp} /></div>
-                    <div><span style={s.lbl}>Max speed kts</span><input type="number" step="0.1" placeholder="0" value={form.max_speed_kts} onChange={function(e) { setF("max_speed_kts", e.target.value); }} style={s.inp} /></div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                    <div><span style={s.lbl}>Anchor location</span><input placeholder="Cove name" value={form.anchor_location} onChange={function(e) { setF("anchor_location", e.target.value); }} style={s.inp} /></div>
-                    <div><span style={s.lbl}>Anchor depth ft</span><input type="number" step="1" placeholder="0" value={form.anchor_depth_ft} onChange={function(e) { setF("anchor_depth_ft", e.target.value); }} style={s.inp} /></div>
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <span style={s.lbl}>Incident / notes</span>
-                    <textarea rows={2} value={form.incident} onChange={function(e) { setF("incident", e.target.value); }} style={{ ...s.inp, resize: "none" }} />
-                  </div>
-                </div>
-              )}
 
             </div>
 
