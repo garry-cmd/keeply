@@ -951,6 +951,7 @@ export default function App() {
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
   const [updateHoursInput, setUpdateHoursInput] = useState("");
   const [dismissedEngineTasksBanner, setDismissedEngineTasksBanner] = useState(false);
+  const [showEnginePickerModal, setShowEnginePickerModal] = useState(false);
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
   // ── Maintenance Tasks (Supabase) ──
