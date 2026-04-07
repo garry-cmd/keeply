@@ -4588,12 +4588,28 @@ export default function App() {
                                         <div style={{ flex: 1 }}>
                                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t.task}</div>
                                           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                                            Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}
+                                            Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}
                                             {t.dueDate && <span style={{ color: badge ? badge.color : "var(--text-muted)", fontWeight: badge ? 700 : 400 }}> · Due: {fmt(t.dueDate)}</span>}
+                                            {(function(){
+                                              if (!t.interval_hours) return null;
+                                              var avH = vessels.find(function(v){ return v.id === activeVesselId; });
+                                              var cH = avH ? avH.engineHours : null;
+                                              var hb = getHoursBadge(t.due_hours, cH, t.interval_hours);
+                                              if (!hb) return cH != null ? <span style={{ color: "var(--text-muted)" }}> · {t.due_hours - cH}h left</span> : null;
+                                              return <span style={{ color: hb.color, fontWeight: 700 }}> · {hb.hours > 0 ? hb.hours + "h left" : Math.abs(hb.hours) + "h over"}</span>;
+                                            })()}
                                           </div>
                                         </div>
                                         {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
-                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
+                                        {(function(){
+                                          if (!t.interval_hours) return null;
+                                          var avH = vessels.find(function(v){ return v.id === activeVesselId; });
+                                          var cH = avH ? avH.engineHours : null;
+                                          var hb = getHoursBadge(t.due_hours, cH, t.interval_hours);
+                                          if (!hb) return null;
+                                          return <span style={{ background: hb.bg, color: hb.color, border: "1px solid " + (hb.border||hb.color), borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{hb.label}</span>;
+                                        })()}
+                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
                                         <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }}><TrashIcon /></button>
                                       </div>
                                     ) : (
@@ -4611,19 +4627,29 @@ export default function App() {
                                               style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                                           </div>
                                           <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
-                                            <input type="date" value={editTaskForm.dueDate || ""}
-                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { dueDate: e.target.value }); }); }}
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>INTERVAL (HRS)</div>
+                                            <input type="number" inputMode="numeric" placeholder="e.g. 100" value={editTaskForm.interval_hours || ""}
+                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { interval_hours: e.target.value }); }); }}
                                               style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                                           </div>
+                                        </div>
+                                        <div style={{ marginBottom: 8 }}>
+                                          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
+                                          <input type="date" value={editTaskForm.dueDate || ""}
+                                            onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { dueDate: e.target.value }); }); }}
+                                            style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
                                           <button onClick={function(e){ e.stopPropagation(); setEditingTask(null); }} style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                                           <button onClick={async function(e){
                                             e.stopPropagation();
-                                            const patch = { task: editTaskForm.task, interval_days: Math.max(1, parseInt(editTaskForm.interval_days) || 1), due_date: editTaskForm.dueDate || null };
+                                            var newIH = editTaskForm.interval_hours ? parseInt(editTaskForm.interval_hours) : null;
+                                            var avSave = vessels.find(function(v){ return v.id === activeVesselId; });
+                                            var cHSave = avSave ? avSave.engineHours : null;
+                                            var newDueH = (newIH && cHSave != null) ? cHSave + newIH : (newIH && t.last_service_hours != null ? t.last_service_hours + newIH : null);
+                                            const patch = { task: editTaskForm.task, interval_days: Math.max(1, parseInt(editTaskForm.interval_days) || 1), due_date: editTaskForm.dueDate || null, interval_hours: newIH, due_hours: newDueH };
                                             await updateTask(t.id, patch);
-                                            setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate }) : tk; }); });
+                                            setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate, interval_hours: newIH, due_hours: newDueH }) : tk; }); });
                                             setEditingTask(null);
                                           }} style={{ flex: 2, padding: "6px 0", border: "none", borderRadius: 7, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save</button>
                                         </div>
