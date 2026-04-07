@@ -2326,7 +2326,7 @@ export default function App() {
   // ─── STYLES ──────────────────────────────────────────────────────────────────
   const s = {
     app:     { fontFamily: "'DM Sans','Helvetica Neue',sans-serif", background: "var(--bg-app)", minHeight: "100vh", color: "var(--text-primary)" },
-    topBar:  { background: "#0f4c8a", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 },
+    topBar:  { background: "#0f4c8a", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexShrink: 0 },
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
@@ -2464,11 +2464,6 @@ export default function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
-          <button onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
-            title="Ask First Mate"
-            style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, padding: "0 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-            ⚓ Ask
-          </button>
           <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Light mode" : "Dark mode"}
             style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, width: 34, color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2476,6 +2471,23 @@ export default function App() {
               <path d="M8 2a6 6 0 0 1 0 12V2Z" fill="rgba(255,255,255,0.9)"/>
             </svg>
           </button>
+        </div>
+      </div>
+      {/* ── First Mate bubble bar ── */}
+      <div style={{ background: "#0f4c8a", padding: "0 12px 12px" }}>
+        <div onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
+          style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <rect x="4" y="1" width="5" height="7" rx="2.5" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2"/>
+              <path d="M1.5 7a5 5 0 0 0 10 0" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="6.5" y1="12" x2="6.5" y2="10" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <span style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.55)" }}>Ask <span style={{ color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>First Mate</span>…</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 7h8M8 4l3 3-3 3" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
       </div>
 
