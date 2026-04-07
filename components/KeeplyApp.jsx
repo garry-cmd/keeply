@@ -3066,7 +3066,7 @@ export default function App() {
                   </div>
                 </div>
                 {/* Vessel card tabs — always visible */}
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", background: "#0f4c8a", borderRadius: "0 0 12px 12px" }}
                   onClick={function(e){ e.stopPropagation(); }}>
                   <div style={{ display: "flex" }}>
                     {["info","docs","admin","haul-out","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
