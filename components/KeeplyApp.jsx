@@ -950,6 +950,7 @@ export default function App() {
   const photoInputRef = useRef(null);
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
   const [updateHoursInput, setUpdateHoursInput] = useState("");
+  const [dismissedEngineTasksBanner, setDismissedEngineTasksBanner] = useState(false);
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
   // ── Maintenance Tasks (Supabase) ──
@@ -1815,7 +1816,15 @@ export default function App() {
       var payloads = eTasks.map(function(t){
         return { vessel_id: vesselId, task: t.task, section: t.section, interval_days: t.interval_days, interval_hours: t.interval_hours, priority: t.priority, last_service: null, last_service_hours: baseHrs || null, due_date: addDays(now2, t.interval_days), due_hours: baseHrs + t.interval_hours, service_logs: [], attachments: [], photos: [] };
       });
-      await supa("maintenance_tasks", { method: "POST", body: payloads, prefer: "return=minimal" });
+      var created = await supa("maintenance_tasks", { method: "POST", body: payloads, prefer: "return=representation" });
+      if (created && created.length) {
+        setTasks(function(prev){
+          var newTasks = created.map(function(t){
+            return { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], interval_hours: t.interval_hours || null, last_service_hours: t.last_service_hours || null, due_hours: t.due_hours || null, pendingComment: "", _vesselId: t.vessel_id, equipment_id: null };
+          });
+          return [...prev, ...newTasks];
+        });
+      }
     } catch(e){ console.error("createDefaultEngineTasks:", e); }
   };
 
@@ -3709,6 +3718,36 @@ export default function App() {
             );
           })()}
 
+
+
+          {/* ── Engine tasks import banner ── */}
+          {(function(){
+            if (dismissedEngineTasksBanner) return null;
+            var vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId && t.section === "Engine"; });
+            var hasHourTasks = vesselTasks.some(function(t){ return t.interval_hours; });
+            if (hasHourTasks) return null; // already set up
+            return (
+              <div style={{ background: "var(--brand-deep)", border: "1px solid var(--brand)", borderRadius: 12, padding: "12px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ fontSize: 22, flexShrink: 0 }}>⚙️</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>Add engine hour tracking</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>8 default tasks (oil, impeller, filters…) with dual calendar + hour triggers</div>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button onClick={async function(){
+                    await createDefaultEngineTasks(activeVesselId);
+                    setDismissedEngineTasksBanner(true);
+                  }} style={{ padding: "7px 14px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    Add Tasks
+                  </button>
+                  <button onClick={function(){ setDismissedEngineTasksBanner(true); }}
+                    style={{ padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "none", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── Actions row — Parts List + Admin Due ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
