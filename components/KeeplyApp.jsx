@@ -3585,7 +3585,6 @@ export default function App() {
 
 
           {/* ── Actions row — Parts List + Admin Due ── */}
-          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 8 }}>Actions</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
             <div onClick={function(){ setTab("parts-standalone"); }}
               style={{ background: "var(--info-bg)", border: "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
@@ -3601,33 +3600,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Category filter ── */}
-          {(() => {
-            const repairSections = [...new Set(repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){ return r.section; }))];
-            const equipCategories = [...new Set(equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return e.category; }))];
-            const allCats = [...new Set([...repairSections, ...equipCategories])].filter(function(c){ return c && c !== "Vessel"; }).sort();
-            if (allCats.length <= 1) return null;
-            return (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.4px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Filter</span>
-                <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
-                  style={{ flex: 1, border: "0.5px solid var(--border)", borderRadius: 20, padding: "6px 14px", fontSize: 13, background: equipSectionFilter !== "All" ? "var(--brand-deep)" : "var(--bg-card)", color: equipSectionFilter !== "All" ? "var(--brand)" : "var(--text-primary)", cursor: "pointer", fontWeight: equipSectionFilter !== "All" ? 600 : 400, appearance: "none", WebkitAppearance: "none" }}>
-                  <option value="All">All categories</option>
-                  {allCats.map(function(cat){
-                    return <option key={cat} value={cat}>{(SECTIONS[cat] || "") + " " + cat}</option>;
-                  })}
-                </select>
-                {equipSectionFilter !== "All" && (
-                  <span onClick={function(){ setEquipSectionFilter("All"); }}
-                    style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer", whiteSpace: "nowrap", padding: "4px 2px" }}>✕ clear</span>
-                )}
-              </div>
-            );
-          })()}
 
           {/* ── Open Repairs divider ── */}
           {(function(){
-            const openCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length;
+            const openCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
             if (openCount === 0) return null;
             return (
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -3638,14 +3614,14 @@ export default function App() {
             );
           })()}
 
-          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length === 0 && (
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length === 0 && (
             <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 10, marginBottom: 16 }}>
               <div style={{ fontSize: 28 }}>✅</div>
               <div style={{ marginTop: 6, fontSize: 12 }}>No open repairs</div>
             </div>
           )}
 
-          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).map(function(r){
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
@@ -4096,7 +4072,7 @@ export default function App() {
                     {!isExpanded && <div style={{ height: 3, background: "linear-gradient(90deg, #5bbcf8 0%, #0e5cc7 100%)" }} />}
                   </div>
                 ) : (
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
@@ -4453,60 +4429,7 @@ export default function App() {
 
                     {/* parts tab */}
                     {activeTab === "parts" && (<>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px" }}>✨ AI SUGGESTED PARTS</div>
-                        <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh</button>
-                      </div>
-                      {equipSuggestions[eq.id] === "loading" && (
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>🤖 Finding parts for {eq.name}…</div>
-                      )}
-                      {equipSuggestions[eq.id] === "error" && (
-                        <div style={{ fontSize: 12, color: "var(--warn-text)", marginBottom: 10 }}>
-                          Couldn't load suggestions right now.
-                          <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ marginLeft: 8, background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Try again</button>
-                        </div>
-                      )}
-                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id] !== "error" && equipSuggestions[eq.id].length === 0 && (
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No parts found. Try refreshing.</div>
-                      )}
-                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id] !== "error" && equipSuggestions[eq.id].length > 0 && (<>
-                        {equipSuggestions[eq.id].filter(function(part){ return !rejectedParts[eq.id + "-" + part.id]; }).map(function(part){ return (
-                          <div key={part.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 13, fontWeight: 700 }}>{part.name}</div>
-                                                <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2 }}>💡 {part.reason}</div>
-                                <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
 
-                                </div>
-                              </div>
-                              <button onClick={function(){
-                                setRejectedParts(function(prev){ const n = Object.assign({}, prev); n[eq.id + "-" + part.id] = true; return n; });
-                                getSuggestionsForEquipment(eq);
-                              }} style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1 }} title="Wrong part — get another suggestion">✕</button>
-                            </div>
-                            <div style={{ display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap" }}>
-                              <button onClick={function(){
-                                saveAiPartToMyParts(eq, part);
-                                setRejectedParts(function(prev){ const n = Object.assign({}, prev); n[eq.id + "-" + part.id] = true; return n; });
-                              }} style={{ flex: 1, padding: "5px 8px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                                💾 Save
-                              </button>
-                              <a href={buyUrl(part.name, part.url, "fisheries")} target="_blank" rel="noreferrer"
-                                style={{ flex: 1, padding: "5px 8px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center", whiteSpace: "nowrap" }}>
-                                FS ↗
-                              </a>
-                              <a href={buyUrl(part.name, null, "westmarine")} target="_blank" rel="noreferrer"
-                                style={{ flex: 1, padding: "5px 8px", borderRadius: 6, background: "#0056a6", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center", whiteSpace: "nowrap" }}>
-                                WM ↗
-                              </a>
-                            </div>
-                          </div>
-                        ); })}
-                      </>)}
-                      {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id] !== "error" && (
-                        <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ marginTop: 6, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh suggestions</button>
-                      )}
                       {(eq.customParts||[]).length > 0 && (<>
                         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginTop: 14, marginBottom: 8 }}>MY PARTS</div>
                         {eq.customParts.map(function(part){ return (
