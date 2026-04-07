@@ -2475,7 +2475,7 @@ export default function App() {
       </div>
       {/* ── First Mate bubble bar ── */}
       <div style={{ background: "#0f4c8a", padding: "0 12px 12px" }}>
-        <div onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
+        <div onClick={function(){ setTab("firstmate-standalone"); }}
           style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
           <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
