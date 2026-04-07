@@ -1842,6 +1842,7 @@ export default function App() {
     { name: "Life raft service & re-cert", category: "safety",        icon: "🔵", interval_months: 36,  notes: "Every 3 years — includes hydrostatic release" },
     { name: "Fire extinguisher inspection",category: "safety",        icon: "🧯", interval_months: 12,  notes: "Annual professional service per NFPA" },
     { name: "PFD inspection & service",    category: "safety",        icon: "🦺", interval_months: 12,  notes: "Inspect inflatables — rearming kit & CO₂ cylinder" },
+    { name: "Bilge pump test",               category: "safety",        icon: "💧", interval_months: 1,   notes: "Test all bilge pumps — manual and automatic" },
     // Surveys & inspections
     { name: "Marine survey",               category: "surveys",       icon: "🔍", interval_months: 60,  notes: "Condition & valuation — required for insurance" },
     { name: "USCG vessel safety check",    category: "surveys",       icon: "⚓", interval_months: 12,  notes: "Free voluntary check — schedule at uscgboating.org" },
