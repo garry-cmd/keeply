@@ -131,41 +131,46 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
 
   return (
     <>
-      {/* ── Drop-down response panel ── */}
+      {/* ── Drop-down panel ── */}
       {panelOpen && (
         <div style={{
           position: "fixed",
-          top: 112, // sits below topBar (56px) + pill bar (~56px)
+          top: 112,
           left: 0,
           right: 0,
           zIndex: 298,
           maxWidth: 480,
           margin: "0 auto",
-          maxHeight: "55vh",
+          maxHeight: "65vh",
           overflowY: "auto",
           background: "var(--bg-card)",
           borderBottom: "0.5px solid var(--border)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+          display: "flex",
+          flexDirection: "column",
         }} ref={messagesRef}>
 
-          {/* Suggested starters — only before first message */}
-          {!hasMessages && (
-            <div style={{ padding: "12px 14px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
-              <div style={{ width: "100%", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 6 }}>Ask First Mate</div>
-              {STARTERS.map(function(s) {
-                return (
-                  <button key={s} onClick={function() { send(s); }}
-                    style={{ padding: "6px 12px", border: "0.5px solid var(--border)", borderRadius: 20, background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    {s}
-                  </button>
-                );
-              })}
+          {/* ── Input row — FIRST, always visible, auto-focused ── */}
+          <div style={{ padding: "10px 14px 10px", borderBottom: "0.5px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "7px 10px 7px 12px" }}>
+              <span style={{ fontSize: 13, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={function(e) { setInput(e.target.value); }}
+                onKeyDown={handleKey}
+                placeholder={"Ask about " + (vesselName || "your boat") + "…"}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit" }}
+              />
+              <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }}>✕</button>
+              <button onClick={function() { send(); }} disabled={!canSend}
+                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: canSend ? "var(--brand)" : "var(--bg-subtle)", color: canSend ? "#fff" : "var(--text-muted)", fontSize: 13, cursor: canSend ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>↑</button>
             </div>
-          )}
+          </div>
 
-          {/* Conversation */}
+          {/* ── Conversation ── */}
           {hasMessages && (
-            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
               {messages.map(function(msg, i) {
                 const isUser = msg.role === "user";
                 return (
@@ -197,30 +202,26 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
             </div>
           )}
 
-          {/* Backdrop tap to dismiss when only starters shown */}
+          {/* ── Starters — secondary, below input, only before first message ── */}
           {!hasMessages && (
-            <div style={{ position: "fixed", inset: 0, top: 56, zIndex: -1 }} onClick={function() { close(); }} />
+            <div style={{ padding: "10px 14px 12px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <div style={{ width: "100%", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 }}>Suggestions</div>
+              {STARTERS.map(function(s) {
+                return (
+                  <button key={s} onClick={function() { send(s); }}
+                    style={{ padding: "5px 10px", border: "0.5px solid var(--border)", borderRadius: 20, background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
           )}
 
-          {/* Input row — always at bottom of panel */}
-          <div style={{ padding: "8px 14px 12px", borderTop: hasMessages ? "0.5px solid var(--border)" : "none", background: "var(--bg-card)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "7px 10px 7px 12px" }}>
-              <span style={{ fontSize: 13, color: "var(--brand)", flexShrink: 0 }}>⚓</span>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={function(e) { setInput(e.target.value); }}
-                onKeyDown={handleKey}
-                placeholder={"Ask about " + (vesselName || "your boat") + "…"}
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit" }}
-              />
-              {hasMessages && (
-                <button onClick={close} style={{ background: "none", border: "none", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }}>✕</button>
-              )}
-              <button onClick={function() { send(); }} disabled={!canSend}
-                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: canSend ? "var(--brand)" : "var(--bg-subtle)", color: canSend ? "#fff" : "var(--text-muted)", fontSize: 13, cursor: canSend ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>↑</button>
-            </div>
-          </div>
+          {/* Backdrop tap to dismiss */}
+          {!hasMessages && (
+            <div style={{ position: "fixed", inset: 0, top: 112, zIndex: -1 }} onClick={function() { close(); }} />
+          )}
+
         </div>
       )}
     </>
