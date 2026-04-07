@@ -1068,13 +1068,13 @@ export default function App() {
         // Load equipment for first vessel
         const eq = await supa("equipment", { query: "vessel_id=eq." + firstId + "&order=created_at" });
         let eqList0 = (eq || []).map(function(e){
-          return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: safeJsonbArray(e.docs), logs: safeJsonbArray(e.logs), _vesselId: e.vessel_id };
+          return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: safeJsonbArray(e.docs), logs: safeJsonbArray(e.logs), photos: safeJsonbArray(e.photos), _vesselId: e.vessel_id };
         });
         if (!eqList0.some(function(e){ return e.category === "Vessel"; })) {
           try {
             const vname0 = normalizedVessels[0] ? normalizedVessels[0].vesselName : "My Vessel";
             const vc0 = await supa("equipment", { method: "POST", body: { vessel_id: firstId, name: vname0, category: "Vessel", status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
-            if (vc0 && vc0[0]) eqList0 = [{ id: vc0[0].id, name: vc0[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: firstId }, ...eqList0];
+            if (vc0 && vc0[0]) eqList0 = [{ id: vc0[0].id, name: vc0[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], photos: [], _vesselId: firstId }, ...eqList0];
           } catch(e) { /* vessel card exists already */ }
         }
         eqList0 = [...eqList0.filter(function(e){ return e.category === "Vessel"; }), ...eqList0.filter(function(e){ return e.category !== "Vessel"; })];
@@ -1148,7 +1148,7 @@ export default function App() {
           const vname = (vs && vs[0] && vs[0].vessel_name) ? vs[0].vessel_name : "My Vessel";
           const created = await supa("equipment", { method: "POST", body: { vessel_id: vid, name: vname, category: "Vessel", status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
           if (created && created[0]) {
-            eqList = [{ id: created[0].id, name: created[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: vid }, ...eqList];
+            eqList = [{ id: created[0].id, name: created[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], photos: [], _vesselId: vid }, ...eqList];
           }
         } catch(e) { /* vessel card auto-create skipped */ }
       }
@@ -2157,7 +2157,7 @@ export default function App() {
         for (let i = 0; i < payloads.length; i++) {
           const created = await supa("equipment", { method: "POST", body: payloads[i] });
           const e = created[0];
-          setEquipment(function(prev){ return [...prev, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: [], docs: [], logs: [], _vesselId: e.vessel_id }]; });
+          setEquipment(function(prev){ return [...prev, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: [], docs: [], logs: [], photos: [], _vesselId: e.vessel_id }]; });
           done++;
           setImportDone(done);
         }
@@ -3742,7 +3742,7 @@ export default function App() {
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                         {fmt(r.date)}
                         {(r.photos || []).length > 0 && (
-                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
                         )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
                           <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
@@ -4317,6 +4317,45 @@ export default function App() {
                       </div>
                     )}
 
+                    {/* Photos tab */}
+                    {activeTab === "photos" && (
+                      <div style={{ padding: "14px 16px" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>CONDITION PHOTOS</div>
+                        {(eq.photos || []).length === 0 && (
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet — document this equipment’s condition over time.</div>
+                        )}
+                        {(eq.photos || []).length > 0 && (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
+                            {(eq.photos || []).map(function(ph, i) { return (
+                              <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _equipId: eq.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
+                                <img src={ph.url} alt={ph.caption || "Equipment photo"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", padding: "3px 5px", fontSize: 9, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
+                              </div>
+                            ); })}
+                          </div>
+                        )}
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[eq.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
+                          {uploadingRepairPhoto[eq.id] ? "⏳ Uploading…" : "📷 Add Photo"}
+                          {!uploadingRepairPhoto[eq.id] && (
+                            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
+                              var file = e.target.files && e.target.files[0];
+                              if (!file) return;
+                              setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[eq.id] = true; return n; });
+                              try {
+                                var compressed = await compressImage(file, 1200, 0.78);
+                                var url = await uploadToStorage(compressed, "equip-photos/" + eq.id);
+                                var newPhoto = { url: url, date: today(), caption: "" };
+                                var updatedPhotos = [...(eq.photos || []), newPhoto];
+                                await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { photos: updatedPhotos }, prefer: "return=minimal" });
+                                setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? Object.assign({}, e, { photos: updatedPhotos }) : e; }); });
+                              } catch(err){ console.error("Equipment photo upload failed:", err); }
+                              finally { setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); delete n[eq.id]; return n; }); e.target.value = ""; }
+                            }} />
+                          )}
+                        </label>
+                      </div>
+                    )}
+
                     {/* Edit tab */}
                     {activeTab === "edit" && (
                       <div>
@@ -4355,9 +4394,9 @@ export default function App() {
 
                     {/* tabs */}
                     <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                      {(isVesselCard ? ["info","docs","edit"] : ["maintenance","repairs","parts","docs","log","edit"]).map(function(t){ return (
+                      {(isVesselCard ? ["info","docs","photos","edit"] : ["maintenance","repairs","parts","docs","log","photos","edit"]).map(function(t){ return (
                         <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}
+                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : t === "photos" ? "📷 Photos" : "Edit"}
                         </button>
                       ); })}
                     </div>
@@ -5043,7 +5082,7 @@ export default function App() {
                           const payload = { vessel_id: activeVesselId, name: equipAiResult.name, category: equipAiResult.category, status: "good", notes: aiNotes, custom_parts: [], docs: [], logs: [] };
                           const created = await supa("equipment", { method: "POST", body: payload });
                           const eq = created[0];
-                          setEquipment(function(prev){ return [...prev, { id: eq.id, name: eq.name, category: eq.category, status: eq.status, lastService: eq.last_service, notes: eq.notes || "", customParts: safeJsonbArray(eq.custom_parts), docs: eq.docs || [], logs: [], _vesselId: eq.vessel_id }]; });
+                          setEquipment(function(prev){ return [...prev, { id: eq.id, name: eq.name, category: eq.category, status: eq.status, lastService: eq.last_service, notes: eq.notes || "", customParts: safeJsonbArray(eq.custom_parts), docs: eq.docs || [], logs: [], photos: [], _vesselId: eq.vessel_id }]; });
                           if (equipAiResult.tasks && equipAiResult.tasks.length > 0) {
                             const today = new Date().toISOString().split("T")[0];
                             const taskRows = equipAiResult.tasks.map(function(t){
@@ -5201,7 +5240,7 @@ export default function App() {
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                         {fmt(r.date)}
                         {(r.photos || []).length > 0 && (
-                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
                         )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
                           <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
@@ -6702,11 +6741,10 @@ export default function App() {
       {lightboxPhoto && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.93)", zIndex: 900, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}
           onClick={function(){ setLightboxPhoto(null); }}>
-          <img src={lightboxPhoto.url} alt={lightboxPhoto.caption || "Repair photo"}
+          <img src={lightboxPhoto.url} alt={lightboxPhoto.caption || "Photo"}
             style={{ maxWidth: "100%", maxHeight: "62vh", objectFit: "contain", borderRadius: 10 }}
             onClick={function(e){ e.stopPropagation(); }} />
           <div style={{ marginTop: 12, color: "#fff", fontSize: 12, fontWeight: 600, opacity: 0.7 }}>{lightboxPhoto.date}</div>
-          {/* Caption edit */}
           <div style={{ marginTop: 10, width: "100%", maxWidth: 400 }} onClick={function(e){ e.stopPropagation(); }}>
             <input
               value={lightboxCaptionEdit}
@@ -6717,14 +6755,20 @@ export default function App() {
             {lightboxCaptionEdit !== (lightboxPhoto.caption || "") && (
               <button onClick={async function(e){
                 e.stopPropagation();
-                const repairId = lightboxPhoto._repairId;
                 const photoIdx = lightboxPhoto._photoIndex;
-                if (!repairId && repairId !== 0) return;
-                const repair = repairs.find(function(rr){ return rr.id === repairId; });
-                if (!repair) return;
-                const updatedPhotos = (repair.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
-                await supa("repairs", { method: "PATCH", query: "id=eq." + repairId, body: { photos: updatedPhotos }, prefer: "return=minimal" });
-                setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === repairId ? Object.assign({}, rr, { photos: updatedPhotos }) : rr; }); });
+                if (lightboxPhoto._repairId) {
+                  const repair = repairs.find(function(rr){ return rr.id === lightboxPhoto._repairId; });
+                  if (!repair) return;
+                  const up = (repair.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
+                  await supa("repairs", { method: "PATCH", query: "id=eq." + lightboxPhoto._repairId, body: { photos: up }, prefer: "return=minimal" });
+                  setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === lightboxPhoto._repairId ? Object.assign({}, rr, { photos: up }) : rr; }); });
+                } else if (lightboxPhoto._equipId) {
+                  const eq = equipment.find(function(e){ return e.id === lightboxPhoto._equipId; });
+                  if (!eq) return;
+                  const up = (eq.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
+                  await supa("equipment", { method: "PATCH", query: "id=eq." + lightboxPhoto._equipId, body: { photos: up }, prefer: "return=minimal" });
+                  setEquipment(function(prev){ return prev.map(function(e){ return e.id === lightboxPhoto._equipId ? Object.assign({}, e, { photos: up }) : e; }); });
+                }
                 setLightboxPhoto(function(prev){ return Object.assign({}, prev, { caption: lightboxCaptionEdit }); });
               }}
                 style={{ marginTop: 6, width: "100%", padding: "7px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
@@ -6732,21 +6776,28 @@ export default function App() {
               </button>
             )}
           </div>
-          {/* Actions */}
           <div style={{ display: "flex", gap: 10, marginTop: 14 }} onClick={function(e){ e.stopPropagation(); }}>
             <button onClick={function(){ setLightboxPhoto(null); }}
               style={{ padding: "8px 24px", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, background: "none", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
               Close
             </button>
             <button onClick={async function(){
-              const repairId = lightboxPhoto._repairId;
               const photoIdx = lightboxPhoto._photoIndex;
-              if (!repairId && repairId !== 0) { setLightboxPhoto(null); return; }
-              const repair = repairs.find(function(rr){ return rr.id === repairId; });
-              if (!repair) { setLightboxPhoto(null); return; }
-              const updatedPhotos = (repair.photos || []).filter(function(p, i){ return i !== photoIdx; });
-              await supa("repairs", { method: "PATCH", query: "id=eq." + repairId, body: { photos: updatedPhotos }, prefer: "return=minimal" });
-              setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === repairId ? Object.assign({}, rr, { photos: updatedPhotos }) : rr; }); });
+              if (lightboxPhoto._repairId) {
+                const repair = repairs.find(function(rr){ return rr.id === lightboxPhoto._repairId; });
+                if (repair) {
+                  const up = (repair.photos || []).filter(function(p, i){ return i !== photoIdx; });
+                  await supa("repairs", { method: "PATCH", query: "id=eq." + lightboxPhoto._repairId, body: { photos: up }, prefer: "return=minimal" });
+                  setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === lightboxPhoto._repairId ? Object.assign({}, rr, { photos: up }) : rr; }); });
+                }
+              } else if (lightboxPhoto._equipId) {
+                const eq = equipment.find(function(e){ return e.id === lightboxPhoto._equipId; });
+                if (eq) {
+                  const up = (eq.photos || []).filter(function(p, i){ return i !== photoIdx; });
+                  await supa("equipment", { method: "PATCH", query: "id=eq." + lightboxPhoto._equipId, body: { photos: up }, prefer: "return=minimal" });
+                  setEquipment(function(prev){ return prev.map(function(e){ return e.id === lightboxPhoto._equipId ? Object.assign({}, e, { photos: up }) : e; }); });
+                }
+              }
               setLightboxPhoto(null);
             }}
               style={{ padding: "8px 20px", border: "1px solid rgba(220,38,38,0.6)", borderRadius: 20, background: "none", color: "#fca5a5", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
