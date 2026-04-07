@@ -188,9 +188,8 @@ function getDueBadge(dueDate, intervalDays) {
 function getHoursBadge(dueHours, currentHours, intervalHours) {
   if (dueHours == null || currentHours == null) return null;
   var hoursLeft = dueHours - currentHours;
-  if (hoursLeft <= -20) return { label: "🔴 Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
-  if (hoursLeft < 0)   return { label: "🟠 Overdue",  color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)",  hours: hoursLeft };
-  var dueSoon = intervalHours ? Math.min(Math.floor(intervalHours * 0.15), 25) : 10;
+  if (hoursLeft < 0) return { label: "🔴 Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
+  var dueSoon = intervalHours ? Math.floor(intervalHours * 0.25) : 25;
   if (hoursLeft <= dueSoon) return { label: "🟡 Due Soon", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "var(--duesoon-border)", hours: hoursLeft };
   return null;
 }
@@ -873,6 +872,7 @@ export default function App() {
   const [equipAiError, setEquipAiError]       = useState(null);
   const [showAddVesselAI, setShowAddVesselAI] = useState(false);
   const [avStep, setAvStep]                   = useState(1);
+  const [avEngineTaskEdits, setAvEngineTaskEdits] = useState({});
   const [avName, setAvName]                   = useState("");
   const [avOwner, setAvOwner]                 = useState("");
   const [avPort, setAvPort]                   = useState("");
@@ -6144,12 +6144,12 @@ export default function App() {
           <div style={{ background: "var(--bg-card)", borderRadius: 20, width: "100%", maxWidth: 460, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }} onClick={function(e){ e.stopPropagation(); }}>
             <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontWeight: 800, fontSize: 16 }}>
-                {avStep === 1 ? "Add Vessel" : "Tell us about your boat"}
+                {avStep === 1 ? "Add Vessel" : avStep === 2 ? "Tell us about your boat" : "Engine hours setup"}
               </div>
               <button onClick={function(){ setShowAddVesselAI(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
             </div>
             <div style={{ display: "flex", gap: 5, padding: "12px 20px 0" }}>
-              {[1,2].map(function(n){ return (
+              {[1,2,3].map(function(n){ return (
                 <div key={n} style={{ flex: 1, height: 3, borderRadius: 3, background: avStep >= n ? "var(--brand)" : "var(--border)" }} />
               ); })}
             </div>
@@ -6193,6 +6193,47 @@ export default function App() {
                   </div>
                 )}
               </>)}
+              {avStep === 3 && (() => {
+                var engineTasks3 = tasks.filter(function(t){ return t.interval_hours && t._vesselId === vessels[vessels.length - 1]?.id; });
+                var curHrs3 = avEngineHours ? parseFloat(avEngineHours) : null;
+                return (<>
+                  <div style={{ background: "var(--brand-deep)", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 12px", marginBottom: 14, fontSize: 13, color: "var(--brand)" }}>
+                    <strong>⚙️ Set your next service hours</strong>
+                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, color: "var(--text-muted)" }}>We estimated based on your current hours ({curHrs3 != null ? curHrs3 + " hrs" : "not set"}). Correct any you know — you can always update later.</div>
+                  </div>
+                  {curHrs3 == null && (
+                    <div style={{ background: "var(--warn-bg)", border: "1px solid var(--warn-border)", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "var(--warn-text)" }}>
+                      No engine hours entered — <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>add them now</span> for accurate tracking.
+                    </div>
+                  )}
+                  {engineTasks3.length === 0 && (
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "20px 0" }}>No hour-tracked tasks found — engine tasks will appear in your Maintenance tab.</div>
+                  )}
+                  {engineTasks3.map(function(t){
+                    var computed = curHrs3 != null ? curHrs3 + t.interval_hours : null;
+                    var editVal = avEngineTaskEdits[t.id] !== undefined ? avEngineTaskEdits[t.id] : (computed != null ? String(computed) : "");
+                    return (
+                      <div key={t.id} style={{ borderBottom: "1px solid var(--border)", padding: "10px 0", display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t.task}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>Every {t.interval_hours} hrs</div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600 }}>DUE AT</div>
+                          <input
+                            type="number"
+                            value={editVal}
+                            onChange={function(e){ setAvEngineTaskEdits(function(prev){ var n = Object.assign({}, prev); n[t.id] = e.target.value; return n; }); }}
+                            style={{ width: 80, border: "1px solid var(--border)", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 700, textAlign: "right", outline: "none", boxSizing: "border-box" }}
+                          />
+                          <div style={{ fontSize: 10, color: "var(--text-muted)" }}>hrs</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>);
+              })()}
+
             </div>
             <div style={{ padding: "12px 20px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 10 }}>
               {avStep === 1 && (<>
@@ -6201,6 +6242,36 @@ export default function App() {
                   if (!avName.trim()) { setAvError("Please enter a vessel name."); return; }
                   setAvError(null); setAvStep(2);
                 }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Next →</button>
+              </>)}
+              {avStep === 3 && (<>
+                <button onClick={async function(){
+                  // Apply any due_hours overrides the user edited
+                  var editedIds = Object.keys(avEngineTaskEdits);
+                  for (var i = 0; i < editedIds.length; i++) {
+                    var tid = editedIds[i];
+                    var newDH = parseInt(avEngineTaskEdits[tid]);
+                    if (!isNaN(newDH)) {
+                      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + tid, body: { due_hours: newDH }, prefer: "return=minimal" });
+                      setTasks(function(prev){ return prev.map(function(tk){ return tk.id === tid ? Object.assign({}, tk, { due_hours: newDH }) : tk; }); });
+                    }
+                  }
+                  setShowAddVesselAI(false);
+                  setAvStep(1);
+                }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>Skip</button>
+                <button onClick={async function(){
+                  var editedIds = Object.keys(avEngineTaskEdits);
+                  for (var i = 0; i < editedIds.length; i++) {
+                    var tid = editedIds[i];
+                    var newDH = parseInt(avEngineTaskEdits[tid]);
+                    if (!isNaN(newDH)) {
+                      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + tid, body: { due_hours: newDH }, prefer: "return=minimal" });
+                      setTasks(function(prev){ return prev.map(function(tk){ return tk.id === tid ? Object.assign({}, tk, { due_hours: newDH }) : tk; }); });
+                    }
+                  }
+                  setShowAddVesselAI(false);
+                  setAvStep(1);
+                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>👍 Looks good
+                </button>
               </>)}
               {avStep === 2 && (<>
                 <button onClick={function(){ setAvStep(1); }} disabled={avLoading || saving} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>← Back</button>
@@ -6236,8 +6307,11 @@ export default function App() {
                         await supa("maintenance_tasks", { method: "POST", body: taskRows });
                       }
                     }
-                    setShowAddVesselAI(false);
                     switchVessel(nv.id);
+                    // Go to step 3 for engine hours confirmation
+                    setSaving(false);
+                    setAvEngineTaskEdits({});
+                    setAvStep(3);
                     setView("customer");
                   } catch(e) { setAvError("Couldn't create vessel: " + e.message); }
                   finally { setAvLoading(false); setSaving(false); }
