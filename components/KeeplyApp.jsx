@@ -771,7 +771,6 @@ export default function App() {
   const [logEntries, setLogEntries]   = useState([]);
   const [logStats, setLogStats]         = useState({ passages: 0, totalNm: 0, avgSpeed: null });
   const [showAddLog, setShowAddLog]     = useState(false);
-  const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
   const [editingLog, setEditingLog]     = useState(null);
   const [logForm, setLogForm]           = useState({});
   const [shareEmail, setShareEmail] = useState("");
@@ -1220,7 +1219,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("panel")) return; // panel handler will set tab instead
     const t = localStorage.getItem("keeply_tab");
-    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone","firstmate-standalone"].includes(t)) setTab(t);
+    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone"].includes(t)) setTab(t);
   }, []);
   useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
 
@@ -2475,8 +2474,8 @@ export default function App() {
       </div>
       {/* ── First Mate bubble bar ── */}
       <div style={{ background: "#0f4c8a", padding: "0 12px 12px" }}>
-        <div onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
-          style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+        <div onClick={function(){ setTab("firstmate-standalone"); }}
+          style={{ background: tab === "firstmate-standalone" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
           <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
               <rect x="4" y="1" width="5" height="7" rx="2.5" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2"/>
