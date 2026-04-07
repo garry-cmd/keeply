@@ -819,6 +819,7 @@ export default function App() {
   const [profileSaved, setProfileSaved]       = useState(false);
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
+  const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
   const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
   const [findPartResults, setFindPartResults]   = useState([]);
@@ -2474,8 +2475,8 @@ export default function App() {
       </div>
       {/* ── First Mate bubble bar ── */}
       <div style={{ background: "#0f4c8a", padding: "0 12px 12px" }}>
-        <div onClick={function(){ setTab("firstmate-standalone"); }}
-          style={{ background: tab === "firstmate-standalone" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+        <div onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
+          style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
           <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
               <rect x="4" y="1" width="5" height="7" rx="2.5" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2"/>
@@ -5018,14 +5019,13 @@ export default function App() {
           />
         )}
 
-        {/* ── FIRST MATE ── */}
-        {view === "customer" && tab === "firstmate-standalone" && (
+        {/* ── FIRST MATE inline panel overlay ── */}
+        {view === "customer" && (
           <FirstMate
             vesselId={activeVesselId}
             vesselName={boatName}
-            openPanel={true}
-            onClose={function(){ setTab("boat"); }}
-            onBack={function(){ setTab("boat"); }}
+            openPanel={showFirstMatePanel}
+            onClose={function(){ setShowFirstMatePanel(false); }}
           />
         )}
 

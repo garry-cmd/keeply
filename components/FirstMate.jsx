@@ -135,7 +135,7 @@ export default function FirstMate({ vesselId, vesselName, openPanel, onClose }) 
       {panelOpen && (
         <div style={{
           position: "fixed",
-          top: 56, // sits directly below topBar
+          top: 112, // sits below topBar (56px) + pill bar (~56px)
           left: 0,
           right: 0,
           zIndex: 298,
