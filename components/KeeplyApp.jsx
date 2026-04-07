@@ -820,6 +820,8 @@ export default function App() {
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
   const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
+  const [noteSheetTask, setNoteSheetTask] = useState(null);
+  const [noteSheetVal, setNoteSheetVal] = useState("");
   const [fmInputVal, setFmInputVal] = useState("");
   const [fmPending, setFmPending] = useState("");
   const fmInputRef = useRef(null);
@@ -1459,17 +1461,17 @@ export default function App() {
   };
 
   // ─── MAINTENANCE TASK CRUD ───────────────────────────────────────────────────
-  const toggleTask = async function(id){
+  const toggleTask = async function(id, noteOverride){
     setCompletingTask(id);
     setTimeout(function(){ setCompletingTask(null); }, 600);
     const t = tasks.find(function(tk){ return tk.id === id; });
     if (!t) return;
     const serviceDate = today();
     const days = (t.interval_days && t.interval_days > 0) ? t.interval_days : intervalToDays(t.interval || "30 days");
-    // Fall back to 30 days if we still can't determine interval
     const effectiveDays = days > 0 ? days : 30;
     const newDue = addDays(serviceDate, effectiveDays);
-    const log = { date: serviceDate, comment: (t.pendingComment || "").trim() || "Service completed" };
+    const commentText = noteOverride !== undefined ? noteOverride.trim() : (t.pendingComment || "").trim();
+    const log = { date: serviceDate, comment: commentText || null };
     const updatedLogs = [...(t.serviceLogs || []), log];
     // Optimistic update — update UI immediately, sync DB in background
     setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? { ...tk, lastService: serviceDate, dueDate: newDue, serviceLogs: updatedLogs, pendingComment: "" } : tk; }); });
@@ -1478,7 +1480,7 @@ export default function App() {
       if (t.equipment_id) {
         const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
         if (eq) {
-          const eqLogEntry = { date: serviceDate, text: "Service: " + t.task, type: "service" };
+          const eqLogEntry = { date: serviceDate, text: "Service: " + t.task + (commentText ? " — " + commentText : ""), type: "service" };
           const updatedEqLogs = [...(eq.logs || []), eqLogEntry];
           await supa("equipment", { method: "PATCH", query: "id=eq." + t.equipment_id, body: { logs: updatedEqLogs }, prefer: "return=minimal" });
           setEquipment(function(prev){ return prev.map(function(e){ return e.id === t.equipment_id ? { ...e, logs: updatedEqLogs } : e; }); });
@@ -4290,11 +4292,8 @@ export default function App() {
                                         <div onClick={function(e){
                                             e.stopPropagation();
                                             if (completingTask === t.id) return;
-                                            setCompletingTask(t.id);
-                                            setTimeout(function(){
-                                              toggleTask(t.id);
-                                              setCompletingTask(null);
-                                            }, 600);
+                                            setNoteSheetTask(t);
+                                            setNoteSheetVal("");
                                           }}
                                           style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingTask === t.id ? "var(--ok-text)" : "var(--border)"), background: completingTask === t.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
                                           {completingTask === t.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
@@ -5246,7 +5245,8 @@ export default function App() {
                       <div key={t.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
                         <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                           <button onClick={function(){
-                            toggleTask(t.id);
+                            setNoteSheetTask(t);
+                            setNoteSheetVal("");
                             if (panelTasks.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600);
                           }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
@@ -5288,11 +5288,14 @@ export default function App() {
                             {t.serviceLogs && t.serviceLogs.length > 0 && (
                               <div style={{ marginBottom: 10 }}>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>SERVICE HISTORY</div>
-                                {t.serviceLogs.slice(-3).reverse().map(function(log, i){
+                                {t.serviceLogs.slice().reverse().map(function(log, i){
                                   return (
-                                    <div key={i} style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>
-                                      <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>{fmt(log.date)}</span>
-                                      <span>{log.comment || "Service completed"}</span>
+                                    <div key={i} style={{ marginBottom: 6 }}>
+                                      <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                                        <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: "var(--text-muted)", flexShrink: 0 }}>{fmt(log.date)}</span>
+                                        {!log.comment && <span style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>done</span>}
+                                      </div>
+                                      {log.comment && <div style={{ fontSize: 12, color: "var(--text-primary)", marginTop: 1, lineHeight: 1.4 }}>{log.comment}</div>}
                                     </div>
                                   );
                                 })}
@@ -6474,6 +6477,55 @@ export default function App() {
         </div>
       )}
 
+
+      {/* ── COMPLETION NOTE SHEET ── */}
+      {noteSheetTask && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 450, display: "flex", alignItems: "flex-end" }}
+          onClick={function(){ setNoteSheetTask(null); setNoteSheetVal(""); }}>
+          <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: "var(--bg-card)", borderRadius: "16px 16px 0 0", padding: "20px 20px 32px" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 16px" }} />
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 4 }}>Mark as done</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>{noteSheetTask.task}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>Note <span style={{ fontWeight: 400 }}>(optional)</span></div>
+            <input
+              autoFocus
+              value={noteSheetVal}
+              onChange={function(e){ setNoteSheetVal(e.target.value); }}
+              onKeyDown={function(e){
+                if (e.key === "Enter") {
+                  var tid = noteSheetTask.id;
+                  var note = noteSheetVal;
+                  setNoteSheetTask(null);
+                  setNoteSheetVal("");
+                  toggleTask(tid, note);
+                }
+              }}
+              placeholder={"e.g. just below full marker, replaced impeller…"}
+              style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", background: "var(--bg-subtle)", color: "var(--text-primary)", marginBottom: 14 }}
+            />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={function(){
+                var tid = noteSheetTask.id;
+                setNoteSheetTask(null);
+                setNoteSheetVal("");
+                toggleTask(tid, "");
+              }} style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Skip note
+              </button>
+              <button onClick={function(){
+                var tid = noteSheetTask.id;
+                var note = noteSheetVal;
+                setNoteSheetTask(null);
+                setNoteSheetVal("");
+                toggleTask(tid, note);
+              }} style={{ flex: 2, padding: "11px 0", borderRadius: 10, border: "none", background: "var(--brand)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Mark Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── CONFIRM DIALOG ── */}
       {confirmAction && (

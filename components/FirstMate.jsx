@@ -42,7 +42,8 @@ async function fetchVesselContext(vesselId) {
       fuelBurnRate: v.fuel_burn_rate, homePort: v.home_port,
     },
     tasks: (tasks || []).map(function(t) {
-      return { task: t.task, section: t.section, interval: t.interval_days ? t.interval_days + " days" : null, interval_days: t.interval_days, lastService: t.last_service, dueDate: t.due_date, urgency: getTaskUrgency(t) };
+      const recentLogs = (t.service_logs || []).slice(-5).reverse().filter(function(l){ return l.comment; }).map(function(l){ return l.date + ": " + l.comment; });
+      return { task: t.task, section: t.section, interval: t.interval_days ? t.interval_days + " days" : null, interval_days: t.interval_days, lastService: t.last_service, dueDate: t.due_date, urgency: getTaskUrgency(t), recentNotes: recentLogs.length > 0 ? recentLogs : undefined };
     }),
     repairs: repairs || [],
     logbook: logbook || [],
