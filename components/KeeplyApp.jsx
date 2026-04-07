@@ -3700,9 +3700,15 @@ export default function App() {
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                         </select>
+                        <select value={editRepairForm._equipmentId || ""}
+                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
+                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          <option value="">— No equipment linked —</option>
+                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
+                        </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
-                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section }); }}
+                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section, equipment_id: editRepairForm._equipmentId || null }); }}
                             style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
                         </div>
                       </div>
@@ -3717,7 +3723,7 @@ export default function App() {
                     </>)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
+                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
                     <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "▾" : "▸"}</span>
@@ -5101,9 +5107,15 @@ export default function App() {
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                         </select>
+                        <select value={editRepairForm._equipmentId || ""}
+                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
+                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          <option value="">— No equipment linked —</option>
+                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
+                        </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
-                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section }); }}
+                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section, equipment_id: editRepairForm._equipmentId || null }); }}
                             style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
                         </div>
                       </div>
@@ -5118,7 +5130,7 @@ export default function App() {
                     </>)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
+                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
                     <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
@@ -5204,7 +5216,7 @@ export default function App() {
                         <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
                           {r.description || "No additional notes."}
                         </div>
-                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
+                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
                           style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>
                           ✏️ Edit repair
                         </button>
