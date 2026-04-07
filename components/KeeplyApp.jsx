@@ -185,6 +185,16 @@ function getDueBadge(dueDate, intervalDays) {
   return null;
 }
 
+function getHoursBadge(dueHours, currentHours, intervalHours) {
+  if (dueHours == null || currentHours == null) return null;
+  var hoursLeft = dueHours - currentHours;
+  if (hoursLeft <= -20) return { label: "🔴 Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
+  if (hoursLeft < 0)   return { label: "🟠 Overdue",  color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)",  hours: hoursLeft };
+  var dueSoon = intervalHours ? Math.min(Math.floor(intervalHours * 0.15), 25) : 10;
+  if (hoursLeft <= dueSoon) return { label: "🟡 Due Soon", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "var(--duesoon-border)", hours: hoursLeft };
+  return null;
+}
+
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
 
@@ -938,6 +948,8 @@ export default function App() {
   const [uploadingDoc, setUploadingDoc]     = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef(null);
+  const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
+  const [updateHoursInput, setUpdateHoursInput] = useState("");
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
   // ── Maintenance Tasks (Supabase) ──
@@ -950,7 +962,7 @@ export default function App() {
   const [showAddTask, setShowAddTask]       = useState(false);
   const [editingTask, setEditingTask]       = useState(null);
   const [editTaskForm, setEditTaskForm]     = useState({});
-  const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
+  const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", interval_hours: "", priority: "medium", _equipmentId: null });
   const [showAddDoc, setShowAddDoc]         = useState(false);
   const [filterDocUrgency, setFilterDocUrgency] = useState("All");
   const [expandedDoc, setExpandedDoc]       = useState(null);
@@ -1095,6 +1107,9 @@ export default function App() {
             serviceLogs:    t.service_logs || [],
             attachments:    t.attachments || [],
             photos:         t.photos || [],
+            interval_hours:      t.interval_hours || null,
+            last_service_hours:  t.last_service_hours || null,
+            due_hours:           t.due_hours || null,
             pendingComment: "",
             _vesselId:      t.vessel_id,
             equipment_id:   t.equipment_id || null,
@@ -1349,6 +1364,7 @@ export default function App() {
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
         createDefaultAdminTasks(nv.id, userId);  // Pre-populate admin tasks
+        createDefaultEngineTasks(nv.id);          // Pre-populate engine hour tasks
         // If user has other vessels, offer to copy items
         if (vessels.length > 0) {
           setNewVesselId(nv.id);
@@ -1537,7 +1553,13 @@ export default function App() {
           setEquipment(function(prev){ return prev.map(function(e){ return e.id === t.equipment_id ? { ...e, logs: updatedEqLogs } : e; }); });
         }
       }
-      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + id, body: { last_service: serviceDate, due_date: newDue, service_logs: updatedLogs }, prefer: "return=minimal" });
+      var activeVH = vessels.find(function(v){ return v.id === activeVesselId; });
+      var curEngHrs = activeVH ? activeVH.engineHours : null;
+      var hoursPatch = (t.interval_hours && curEngHrs != null) ? { last_service_hours: curEngHrs, due_hours: curEngHrs + t.interval_hours } : {};
+      if (hoursPatch.due_hours) {
+        setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? Object.assign({}, tk, hoursPatch) : tk; }); });
+      }
+      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + id, body: Object.assign({ last_service: serviceDate, due_date: newDue, service_logs: updatedLogs }, hoursPatch), prefer: "return=minimal" });
     } catch(err){
       console.error("toggleTask DB error:", err);
       // Rollback optimistic update on failure
@@ -1562,10 +1584,14 @@ export default function App() {
     const due  = newTask.dueDate || (days > 0 ? addDays(today(), days) : "");
     setSaving(true);
     try {
-      const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null };
+      var taskIH = newTask.interval_hours ? parseInt(newTask.interval_hours) : null;
+      var activeVNew = vessels.find(function(v){ return v.id === activeVesselId; });
+      var curHNew = activeVNew ? activeVNew.engineHours : null;
+      var dueHrsNew = (taskIH && curHNew != null) ? curHNew + taskIH : null;
+      const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null, interval_hours: taskIH, last_service_hours: curHNew, due_hours: dueHrsNew };
       const created = await supa("maintenance_tasks", { method: "POST", body: payload });
       const t = created[0];
-      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
+      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], interval_hours: t.interval_hours || null, last_service_hours: t.last_service_hours || null, due_hours: t.due_hours || null, pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
       setNewTask({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
       setShowAddTask(false);
     } catch(err){ setDbError(err.message); }
@@ -1769,6 +1795,28 @@ export default function App() {
       setVesselAdminTasks(function(prev){ return { ...prev, [vesselId]: tasks || [] }; });
     } catch(e) { console.error("Admin tasks load error:", e); }
     finally { setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: false }; }); }
+  };
+
+  const createDefaultEngineTasks = async function(vesselId) {
+    try {
+      var vess = vessels.find(function(vv){ return vv.id === vesselId; }) || {};
+      var baseHrs = vess.engineHours || 0;
+      var eTasks = [
+        { task: "Engine oil & filter change",  section: "Engine", interval_days: 365,  interval_hours: 100,  priority: "critical" },
+        { task: "Impeller replacement",         section: "Engine", interval_days: 365,  interval_hours: 300,  priority: "critical" },
+        { task: "Fuel filter (primary)",        section: "Engine", interval_days: 365,  interval_hours: 250,  priority: "high"     },
+        { task: "Transmission fluid change",    section: "Engine", interval_days: 730,  interval_hours: 300,  priority: "high"     },
+        { task: "Engine zincs / anode check",   section: "Engine", interval_days: 365,  interval_hours: 200,  priority: "high"     },
+        { task: "Raw water strainer clean",     section: "Engine", interval_days: 30,   interval_hours: 50,   priority: "medium"   },
+        { task: "Belts & hoses inspection",     section: "Engine", interval_days: 365,  interval_hours: 200,  priority: "medium"   },
+        { task: "Injector service",             section: "Engine", interval_days: 1095, interval_hours: 1000, priority: "high"     },
+      ];
+      var now2 = today();
+      var payloads = eTasks.map(function(t){
+        return { vessel_id: vesselId, task: t.task, section: t.section, interval_days: t.interval_days, interval_hours: t.interval_hours, priority: t.priority, last_service: null, last_service_hours: baseHrs || null, due_date: addDays(now2, t.interval_days), due_hours: baseHrs + t.interval_hours, service_logs: [], attachments: [], photos: [] };
+      });
+      await supa("maintenance_tasks", { method: "POST", body: payloads, prefer: "return=minimal" });
+    } catch(e){ console.error("createDefaultEngineTasks:", e); }
   };
 
   const createDefaultAdminTasks = async function(vesselId, userId) {
@@ -2171,7 +2219,7 @@ export default function App() {
         for (let i = 0; i < payloads.length; i++) {
           const created = await supa("maintenance_tasks", { method: "POST", body: payloads[i] });
           const t = created[0];
-          setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
+          setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], interval_hours: t.interval_hours || null, last_service_hours: t.last_service_hours || null, due_hours: t.due_hours || null, pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
           done++;
           setImportDone(done);
         }
@@ -2311,9 +2359,15 @@ export default function App() {
 
     // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
-    const b = getDueBadge(t.dueDate || t.due_date, t.interval_days);
-    if (!b) return "ok";
-    return b.label.indexOf("Critical") >= 0 ? "critical" : b.label.indexOf("Overdue") >= 0 ? "overdue" : "due-soon";
+    var activeV2 = vessels.find(function(v){ return v.id === activeVesselId; });
+    var curHrs2 = activeV2 ? activeV2.engineHours : null;
+    var hb = getHoursBadge(t.due_hours, curHrs2, t.interval_hours);
+    var b  = getDueBadge(t.dueDate || t.due_date, t.interval_days);
+    var hurgency = hb ? (hb.label.indexOf("Critical") >= 0 ? "critical" : hb.label.indexOf("Overdue") >= 0 ? "overdue" : "due-soon") : null;
+    var durgency = b  ? (b.label.indexOf("Critical")  >= 0 ? "critical" : b.label.indexOf("Overdue")  >= 0 ? "overdue" : "due-soon") : null;
+    var rank = { "critical": 3, "overdue": 2, "due-soon": 1 };
+    var best = ((rank[hurgency] || 0) >= (rank[durgency] || 0)) ? hurgency : durgency;
+    return best || "ok";
   };
 
   const maintTasks = tasks.filter(function(t){ return t.section !== "Paperwork"; });
@@ -3563,15 +3617,7 @@ export default function App() {
               .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0] || null;
             const totalNm   = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
             const totalEngHrs = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.engine_hours) || 0); }, 0);
-            const updateHours = function(){
-              const hrs = prompt("Current engine hours:");
-              if (!hrs || isNaN(hrs)) return;
-              const parsed = parseInt(hrs);
-              const dated = today();
-              setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
-              supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
-                .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
-            };
+            var updateHours = function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); };
             const cellStyle = { background: "var(--bg-card)", padding: "11px 12px" };
             const labelStyle = { fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 };
             return (
@@ -3581,11 +3627,11 @@ export default function App() {
                 <div style={cellStyle}>
                   <div style={labelStyle}>Engine hrs</div>
                   {(lastLogWithHours || engineHours) ? (<>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>
+                    <div onClick={updateHours} style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1, cursor: "pointer" }}>
                       {(lastLogWithHours ? lastLogWithHours.hours_end : engineHours).toLocaleString()}
                     </div>
                     <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>
-                      {lastLogWithHours ? "from log · " + fmt(lastLogWithHours.entry_date) : "manually entered"}
+                      {lastLogWithHours ? "from log · " + fmt(lastLogWithHours.entry_date) : "manually entered"} · <span onClick={updateHours} style={{ color: "var(--brand)", cursor: "pointer" }}>update</span>
                     </div>
                   </>) : (<>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Not logged</div>
@@ -3990,21 +4036,35 @@ export default function App() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, paddingLeft: 38 }}>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "—"}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "—"}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.lastService ? fmt(t.lastService) : "Never"}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.lastService ? fmt(t.lastService) : "Never"}{t.last_service_hours ? " · " + t.last_service_hours + "h" : ""}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
                             <div style={{ fontSize: 12, fontWeight: 600, color: badge ? badge.color : "var(--text-primary)" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
-                            <div style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{t.priority || "medium"}</div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>{t.due_hours ? "DUE AT HRS" : "PRIORITY"}</div>
+                            {t.due_hours ? (function(){
+                              var avH = vessels.find(function(v){ return v.id === activeVesselId; });
+                              var cH = avH ? avH.engineHours : null;
+                              var hbg = getHoursBadge(t.due_hours, cH, t.interval_hours);
+                              return (<div style={{ fontSize: 12, fontWeight: 700, color: hbg ? hbg.color : "var(--text-primary)" }}>{t.due_hours}h{cH != null ? " (" + (t.due_hours - cH > 0 ? (t.due_hours - cH) + " to go" : Math.abs(t.due_hours - cH) + " over") + ")" : ""}</div>);
+                            })() : <div style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{t.priority || "medium"}</div>}
                           </div>
                         </div>
+                        {(function(){
+                          if (!t.interval_hours) return null;
+                          var avH2 = vessels.find(function(v){ return v.id === activeVesselId; });
+                          var cH2 = avH2 ? avH2.engineHours : null;
+                          if (cH2 == null) return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 10, color: "var(--text-muted)", fontStyle: "italic" }}>⚙️ <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>Log engine hours</span> to activate hour tracking</span></div>);
+                          var hbg2 = getHoursBadge(t.due_hours, cH2, t.interval_hours);
+                          if (!hbg2) return null;
+                          return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 11, fontWeight: 700, background: hbg2.bg, color: hbg2.color, border: "1px solid " + (hbg2.border || hbg2.color), borderRadius: 5, padding: "2px 8px" }}>{hbg2.label} · {hbg2.hours > 0 ? hbg2.hours + " hrs remaining" : Math.abs(hbg2.hours) + " hrs overdue"}</span></div>);
+                        })()}
                         {/* ── Find Part (unified inline) ── */}
                         {(function(){
                           const pr = inlinePartResults[t.id];
@@ -4967,6 +5027,9 @@ export default function App() {
                 <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
                   {["30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
                 </select>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 12 }}>⚙️ ENGINE HOURS INTERVAL (optional)</div>
+                <input type="number" placeholder="e.g. 100 (every 100 engine hours)" value={newTask.interval_hours} onChange={function(e){ setNewTask(function(t){ return { ...t, interval_hours: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} min="1" />
+                <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 4, marginTop: 3 }}>For engine/generator tasks tracked by hours</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 4 }}>DUE DATE (optional — overrides interval)</div>
                 <input type="date" value={newTask.dueDate || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, dueDate: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -6850,6 +6913,43 @@ export default function App() {
             }}
               style={{ padding: "8px 20px", border: "1px solid rgba(220,38,38,0.6)", borderRadius: 20, background: "none", color: "#fca5a5", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
               🗑 Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── UPDATE ENGINE HOURS MODAL ── */}
+      {showUpdateHoursModal && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={function(){ setShowUpdateHoursModal(false); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>⚙️ Update Engine Hours</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Enter current hours from your engine panel</div>
+            <input type="number" placeholder="e.g. 1450" value={updateHoursInput}
+              onChange={function(e){ setUpdateHoursInput(e.target.value); }}
+              style={{ width: "100%", border: "2px solid var(--brand)", borderRadius: 10, padding: "12px 16px", fontSize: 20, fontWeight: 700, outline: "none", boxSizing: "border-box", textAlign: "center", color: "var(--text-primary)", background: "var(--bg-subtle)", marginBottom: 14 }} />
+            {(function(){
+              var avp = vessels.find(function(v){ return v.id === activeVesselId; });
+              var prev = avp ? avp.engineHours : null;
+              if (prev && updateHoursInput && !isNaN(updateHoursInput)) {
+                var diff2 = parseInt(updateHoursInput) - prev;
+                if (diff2 > 0) return <div style={{ fontSize: 12, color: "var(--ok-text)", textAlign: "center", marginBottom: 10 }}>+{diff2} hrs since last update</div>;
+              }
+              return null;
+            })()}
+            <button onClick={async function(){
+              var parsed2 = parseInt(updateHoursInput);
+              if (!updateHoursInput || isNaN(parsed2) || parsed2 < 0) return;
+              var dated2 = today();
+              setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? Object.assign({}, v, { engineHours: parsed2, engineHoursDate: dated2 }) : v; }); });
+              try { await supabase.from("vessels").update({ engine_hours: parsed2, engine_hours_date: dated2 }).eq("id", activeVesselId); }
+              catch(e2){ console.error("Engine hours save:", e2); }
+              setShowUpdateHoursModal(false);
+            }}
+              style={{ width: "100%", padding: "14px", border: "none", borderRadius: 12, background: "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
+              Save {updateHoursInput ? parseInt(updateHoursInput).toLocaleString() + " hrs" : ""}
             </button>
           </div>
         </div>
