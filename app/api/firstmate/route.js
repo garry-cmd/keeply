@@ -2,25 +2,32 @@ function buildSystemPrompt(ctx) {
   const { vessel, tasks, repairs, logbook, equipment } = ctx;
   const today = new Date().toISOString().split("T")[0];
 
-  const overdue = tasks.filter(function(t){ return t.urgency === "critical" || t.urgency === "overdue"; });
-  const dueSoon = tasks.filter(function(t){ return t.urgency === "due-soon"; });
-  const ok      = tasks.filter(function(t){ return t.urgency === "ok"; });
+  const overdue  = tasks.filter(function(t){ return t.urgency === "critical" || t.urgency === "overdue"; });
+  const dueSoon  = tasks.filter(function(t){ return t.urgency === "due-soon"; });
+  const ok       = tasks.filter(function(t){ return t.urgency === "ok"; });
+
+  // Tasks that have completion notes — the trend data
+  const withNotes = tasks.filter(function(t){ return t.recentNotes && t.recentNotes.length > 0; });
 
   const fmt = function(t) {
-    return "- " + t.task + " (" + t.section + ", every " + (t.interval || "?") + ")" +
+    let line = "- " + t.task + " (" + t.section + ", every " + (t.interval || "?") + ")" +
       (t.dueDate ? ", due " + t.dueDate : "") +
       (t.lastService ? ", last done " + t.lastService : ", never serviced");
+    if (t.recentNotes && t.recentNotes.length > 0) {
+      line += "\n  Completion notes: " + t.recentNotes.join(" | ");
+    }
+    return line;
   };
 
   const totalNm = (logbook || [])
     .filter(function(e){ return e.entry_type === "passage"; })
     .reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
 
-  const recentLog = (logbook || []).slice(0, 8);
+  const recentLog  = (logbook || []).slice(0, 8);
   const openRepairs = (repairs || []).filter(function(r){ return r.status !== "closed"; });
   const equipIssues = (equipment || []).filter(function(e){ return e.status === "needs-service" || e.status === "watch"; });
 
-  return "You are First Mate, the AI assistant for " + vessel.prefix + " " + vessel.name + ". You speak like an experienced sailor — direct, practical, no-nonsense. You know this vessel intimately.\n\n" +
+  let prompt = "You are First Mate, the AI assistant for " + vessel.prefix + " " + vessel.name + ". You speak like an experienced sailor — direct, practical, no-nonsense. You know this vessel intimately.\n\n" +
     "Today is " + today + ".\n\n" +
     "== VESSEL ==\n" +
     "Name: " + vessel.prefix + " " + vessel.name + "\n" +
@@ -31,9 +38,24 @@ function buildSystemPrompt(ctx) {
     "\n== MAINTENANCE ==\n" +
     (overdue.length > 0 ? "OVERDUE (" + overdue.length + "):\n" + overdue.map(fmt).join("\n") + "\n\n" : "No overdue tasks.\n\n") +
     (dueSoon.length > 0 ? "DUE SOON (" + dueSoon.length + "):\n" + dueSoon.map(fmt).join("\n") + "\n\n" : "Nothing due soon.\n\n") +
-    (ok.length > 0 ? "UP TO DATE (" + ok.length + " tasks):\n" + ok.map(fmt).join("\n") + "\n\n" : "") +
+    (ok.length > 0 ? "UP TO DATE (" + ok.length + " tasks):\n" + ok.map(fmt).join("\n") + "\n\n" : "");
+
+  // Dedicated section for tasks with notes — makes trends explicit
+  if (withNotes.length > 0) {
+    prompt += "== COMPLETION NOTES & TRENDS ==\n" +
+      "These tasks have notes recorded when marked done. Look for patterns, deterioration, or anomalies:\n" +
+      withNotes.map(function(t){
+        return "- " + t.task + " (" + t.section + "):\n  " + t.recentNotes.join("\n  ");
+      }).join("\n") + "\n\n";
+  }
+
+  prompt +=
     "== OPEN REPAIRS (" + openRepairs.length + ") ==\n" +
-    (openRepairs.length > 0 ? openRepairs.map(function(r){ return "- " + r.section + ": " + r.description + " (opened " + r.date + ")"; }).join("\n") : "No open repairs.") + "\n\n" +
+    (openRepairs.length > 0 ? openRepairs.map(function(r){
+      let line = "- " + r.section + ": " + r.description + " (opened " + r.date + ")";
+      if (r.notes) line += "\n  Notes: " + r.notes;
+      return line;
+    }).join("\n") : "No open repairs.") + "\n\n" +
     "== LOGBOOK ==\n" +
     "Total: " + Math.round(totalNm) + " nm across " + (logbook || []).filter(function(e){ return e.entry_type === "passage"; }).length + " passages\n" +
     (recentLog.length > 0 ? recentLog.map(function(e){
@@ -43,7 +65,6 @@ function buildSystemPrompt(ctx) {
         if (e.distance_nm) line += " (" + e.distance_nm + " nm)";
       }
       if (e.title) line += " — " + e.title;
-      if (e.highlights) line += " — highlights: " + e.highlights;
       if (e.notes) line += " — notes: " + e.notes;
       if (e.incident) line += " — INCIDENT: " + e.incident;
       if (e.conditions) line += " [" + e.conditions + "]";
@@ -53,8 +74,20 @@ function buildSystemPrompt(ctx) {
     "== EQUIPMENT ==\n" +
     (equipIssues.length > 0 ? "Issues:\n" + equipIssues.map(function(e){ return "- " + e.name + ": " + e.status; }).join("\n") : "No issues flagged.") + "\n\n" +
     "== INSTRUCTIONS ==\n" +
-    "Answer questions about this vessel concisely. When asked if the boat is ready, check overdue tasks, repairs, and equipment issues. Use bullets for lists. Never invent data. Speak casually to the owner.\n\n" +
-    "IMPORTANT: Actively scan logbook notes and highlights for anomalies — unusual sounds, performance issues, smells, handling changes, anything that sounds like a developing problem. If you spot one, flag it proactively and recommend a specific action. Examples: 'transmission felt odd' → check fluid level and mounts; 'engine running rough' → fuel filter or impeller; 'bilge pump cycling frequently' → potential leak. Connect logbook observations to relevant equipment and maintenance tasks when possible.";
+    "Answer questions about this vessel concisely. Use bullets for lists. Never invent data. Speak casually to the owner.\n\n" +
+    "When asked if the boat is ready: check overdue tasks, repairs, and equipment issues.\n\n" +
+    "TREND ANALYSIS: The 'COMPLETION NOTES & TRENDS' section contains notes the owner recorded each time they completed a task. " +
+    "Actively look for: deteriorating readings (e.g. oil level trending low, coolant changing color), " +
+    "recurring issues (same problem appearing across multiple entries), " +
+    "anomalies that suggest a developing problem. " +
+    "When you spot a trend, say so explicitly and recommend action. Examples: " +
+    "'oil consistently below full → check for consumption or leak'; " +
+    "'impeller missing blades → inspect raw water system for damage, shorten service interval'; " +
+    "'milky oil → possible water intrusion, check immediately'.\n\n" +
+    "LOGBOOK SCANNING: Scan logbook notes for anomalies — unusual sounds, performance issues, smells, handling changes. " +
+    "Cross-reference with maintenance tasks and completion notes. Flag anything that sounds like a developing problem and recommend a specific action.";
+
+  return prompt;
 }
 
 export async function POST(request) {
@@ -70,7 +103,6 @@ export async function POST(request) {
 
     const systemPrompt = buildSystemPrompt(vesselContext);
 
-    // Non-streaming — same pattern as other routes in this project
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -80,7 +112,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
+        max_tokens: 2048,
         system: systemPrompt,
         messages: messages.map(function(m){ return { role: m.role, content: m.content }; }),
       }),
