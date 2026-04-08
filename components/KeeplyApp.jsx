@@ -962,6 +962,9 @@ export default function App() {
   const photoInputRef = useRef(null);
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
   const [updateHoursInput, setUpdateHoursInput] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetPasswordMsg, setResetPasswordMsg] = useState(null);
   const [dismissedEngineTasksBanner, setDismissedEngineTasksBanner] = useState(false);
   const [showPartsNeeded, setShowPartsNeeded] = useState(false);
   const [showEnginePickerModal, setShowEnginePickerModal] = useState(false);
@@ -1041,6 +1044,10 @@ export default function App() {
     });
     const { data: listener } = supabase.auth.onAuthStateChange(function(event, sess){
       setSession(sess);
+      if (event === "PASSWORD_RECOVERY") {
+        setShowResetPassword(true);
+        return;
+      }
       if (sess && event === "SIGNED_IN") {
         setTab("boat");
         supabase.from("vessel_members")
@@ -7293,6 +7300,53 @@ export default function App() {
               setShowEnginePickerModal(false);
             }} style={{ width: "100%", padding: "11px", border: "1px solid var(--border)", borderRadius: 12, background: "none", color: "var(--text-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
               Add without linking to an equipment card
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESET PASSWORD MODAL ── */}
+      {showResetPassword && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: 20, padding: "32px 28px", width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Set new password</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6 }}>Choose a strong password for your account.</div>
+            </div>
+            {resetPasswordMsg && (
+              <div style={{ background: resetPasswordMsg.ok ? "var(--ok-bg)" : "var(--danger-bg)", border: "1px solid " + (resetPasswordMsg.ok ? "var(--ok-border)" : "var(--danger-border)"), borderRadius: 10, padding: "10px 14px", fontSize: 13, color: resetPasswordMsg.ok ? "var(--ok-text)" : "var(--danger-text)", marginBottom: 16 }}>
+                {resetPasswordMsg.text}
+              </div>
+            )}
+            <input
+              type="password"
+              placeholder="New password (min 6 characters)"
+              value={resetNewPassword}
+              onChange={function(e){ setResetNewPassword(e.target.value); }}
+              style={{ width: "100%", border: "1.5px solid var(--border)", borderRadius: 10, padding: "12px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit", marginBottom: 14 }}
+            />
+            <button onClick={async function(){
+              if (!resetNewPassword || resetNewPassword.length < 6) {
+                setResetPasswordMsg({ ok: false, text: "Password must be at least 6 characters." });
+                return;
+              }
+              try {
+                var res = await supabase.auth.updateUser({ password: resetNewPassword });
+                if (res.error) throw res.error;
+                setResetPasswordMsg({ ok: true, text: "Password updated! You are now logged in." });
+                setResetNewPassword("");
+                setTimeout(function(){ setShowResetPassword(false); setResetPasswordMsg(null); }, 2000);
+              } catch(err) {
+                setResetPasswordMsg({ ok: false, text: err.message || "Failed to update password. Try requesting a new reset link." });
+              }
+            }}
+              style={{ width: "100%", padding: "13px", border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}>
+              Update password
+            </button>
+            <button onClick={function(){ setShowResetPassword(false); setResetNewPassword(""); setResetPasswordMsg(null); }}
+              style={{ width: "100%", padding: "10px", border: "1px solid var(--border)", borderRadius: 10, background: "none", color: "var(--text-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              Cancel
             </button>
           </div>
         </div>
