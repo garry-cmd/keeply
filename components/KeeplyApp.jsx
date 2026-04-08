@@ -38,7 +38,19 @@ function retailerLinks(partName) {
     return { name: r.name, color: r.color, url: buyUrl(partName, null, key) };
   });
 }
-// ─────────────────────────────────────────────────────────────────────────────
+// Context-aware retailer links — engine parts skip West Marine, add OEM search
+function retailerLinksForPart(partName, equipCategory) {
+  var isEngine = equipCategory === "Engine" || equipCategory === "Generator";
+  if (isEngine) {
+    return [
+      { name: "Defender",          color: RETAILERS.defender.color,   url: buyUrl(partName, null, "defender")   },
+      { name: "Fisheries Supply",  color: RETAILERS.fisheries.color,  url: buyUrl(partName, null, "fisheries")  },
+      { name: "Search by make ↗", color: "#374151", url: "https://www.google.com/search?q=" + encodeURIComponent(partName + " marine engine part") },
+    ];
+  }
+  return retailerLinks(partName);
+}
+// ────────────────────────────────────────────────────────────────────────────────
 
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
@@ -951,6 +963,7 @@ export default function App() {
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
   const [updateHoursInput, setUpdateHoursInput] = useState("");
   const [dismissedEngineTasksBanner, setDismissedEngineTasksBanner] = useState(false);
+  const [showPartsNeeded, setShowPartsNeeded] = useState(false);
   const [showEnginePickerModal, setShowEnginePickerModal] = useState(false);
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
@@ -3763,21 +3776,149 @@ export default function App() {
             );
           })()}
 
-          {/* ── Actions row — Parts List + Admin Due ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
-            <div onClick={function(){ setTab("parts-standalone"); }}
-              style={{ background: "var(--info-bg)", border: "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--info-text)", lineHeight: 1 }}>{equipment.filter(function(e){ return e._vesselId === activeVesselId; }).reduce(function(acc, e){ return acc + (e.customParts || []).length; }, 0)}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--info-text)", marginTop: 2 }}>My Parts</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Saved to equipment</div>
-            </div>
-            <div onClick={function(){ setShowUrgencyPanel("Admin Due"); }}
-              style={{ background: "#faf5ff", border: "0.5px solid #d8b4fe", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-              <div style={{ fontSize: 26, fontWeight: 800, color: "#7c3aed", lineHeight: 1 }}>{(function(){ var t = new Date(); t.setHours(0,0,0,0); return (vesselAdminTasks[activeVesselId]||[]).filter(function(a){ return a.due_date && Math.round((new Date(a.due_date)-t)/86400000)<=30; }).length; })()}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginTop: 2 }}>Admin due</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Reg, safety &amp; surveys</div>
-            </div>
-          </div>
+          {/* ── Actions row — Parts Needed + Admin Due ── */}
+          {(function(){
+            var openRepairIds = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){ return r.id; });
+            var urgentTaskIds = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).map(function(t){ return t.id; });
+            var repairPartsCount = openRepairIds.reduce(function(acc, id){ var s = aiSuggestions[id]; return acc + (Array.isArray(s) ? s.length : 0); }, 0);
+            var taskPartsCount   = urgentTaskIds.reduce(function(acc, id){ var r = inlinePartResults[id]; return acc + (r && r.results ? r.results.length : 0); }, 0);
+            var totalParts = repairPartsCount + taskPartsCount;
+            var repairUnfetched = openRepairIds.filter(function(id){ return !aiSuggestions[id] || aiSuggestions[id] === "loading"; }).length;
+            var taskUnfetched   = urgentTaskIds.filter(function(id){ return !inlinePartResults[id] || inlinePartResults[id].loading; }).length;
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: showPartsNeeded ? 10 : 20 }}>
+                <div onClick={function(){ setShowPartsNeeded(function(v){ return !v; }); }}
+                  style={{ background: "var(--info-bg)", border: showPartsNeeded ? "2px solid var(--brand)" : "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "var(--info-text)", lineHeight: 1 }}>{totalParts + repairUnfetched + taskUnfetched}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--info-text)", marginTop: 2 }}>Parts needed</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
+                    {repairPartsCount > 0 ? repairPartsCount + " from repairs" : ""}
+                    {repairPartsCount > 0 && taskPartsCount > 0 ? " · " : ""}
+                    {taskPartsCount > 0 ? taskPartsCount + " from tasks" : ""}
+                    {totalParts === 0 && (repairUnfetched + taskUnfetched) > 0 ? "Tap to search" : ""}
+                    {totalParts === 0 && repairUnfetched + taskUnfetched === 0 ? "All clear" : ""}
+                  </div>
+                </div>
+                <div onClick={function(){ setShowUrgencyPanel("Admin Due"); }}
+                  style={{ background: "#faf5ff", border: "0.5px solid #d8b4fe", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "#7c3aed", lineHeight: 1 }}>{(function(){ var t = new Date(); t.setHours(0,0,0,0); return (vesselAdminTasks[activeVesselId]||[]).filter(function(a){ return a.due_date && Math.round((new Date(a.due_date)-t)/86400000)<=30; }).length; })()}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginTop: 2 }}>Admin due</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Reg, safety &amp; surveys</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Parts Needed expanded panel ── */}
+          {showPartsNeeded && (function(){
+            var vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; });
+            var urgentTasks   = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
+            var repairFetched = vesselRepairs.filter(function(r){ return Array.isArray(aiSuggestions[r.id]) && aiSuggestions[r.id].length > 0; });
+            var repairUnfetched = vesselRepairs.filter(function(r){ return !aiSuggestions[r.id] || aiSuggestions[r.id] === "loading"; });
+            var taskFetched   = urgentTasks.filter(function(t){ return inlinePartResults[t.id] && inlinePartResults[t.id].results && inlinePartResults[t.id].results.length > 0; });
+            var taskUnfetched = urgentTasks.filter(function(t){ return !inlinePartResults[t.id] || inlinePartResults[t.id].loading; });
+            var hasAnything   = repairFetched.length > 0 || taskFetched.length > 0 || repairUnfetched.length > 0 || taskUnfetched.length > 0;
+            if (!hasAnything) return (
+              <div style={{ ...s.card, padding: "14px 16px", marginBottom: 20, textAlign: "center", fontSize: 12, color: "var(--text-muted)" }}>
+                No open repairs or due tasks right now. ✔
+              </div>
+            );
+            return (
+              <div style={{ ...s.card, marginBottom: 20, overflow: "hidden" }}>
+
+                {/* ── Repairs section ── */}
+                {(repairFetched.length > 0 || repairUnfetched.length > 0) && (
+                  <div style={{ padding: "10px 14px 2px", display: "flex", alignItems: "center", gap: 6, borderBottom: "0.5px solid var(--border)" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--warn-text)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>OPEN REPAIRS</span>
+                  </div>
+                )}
+                {repairFetched.map(function(r){
+                  var parts = aiSuggestions[r.id] || [];
+                  var eq = equipment.find(function(e){ return e.id === r.equipment_id; });
+                  var eqCat = eq ? eq.category : r.section;
+                  return parts.map(function(part, pi){
+                    return (
+                      <div key={r.id + "-" + pi} style={{ padding: "9px 14px", borderBottom: "0.5px solid var(--border)" }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{part.name}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "2px 0 6px" }}>{r.section} · {r.description.length > 40 ? r.description.slice(0, 40) + "…" : r.description}</div>
+                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                          {retailerLinksForPart(part.name, eqCat).map(function(rl){ return (
+                            <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
+                              onClick={function(){ trackAffiliateClick(rl.name, part.name, r.description); }}
+                              style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: rl.color, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+                              {rl.name} ↗
+                            </a>
+                          ); })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })}
+                {repairUnfetched.length > 0 && (
+                  <div style={{ padding: "9px 14px", borderBottom: taskFetched.length > 0 || taskUnfetched.length > 0 ? "0.5px solid var(--border)" : "none" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 4 }}>
+                      {repairUnfetched.length} repair{repairUnfetched.length !== 1 ? "s" : ""} not yet searched
+                    </div>
+                    <button onClick={function(){
+                      repairUnfetched.forEach(function(r){ getSuggestionsForRepair(r); });
+                    }} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "var(--brand)", cursor: "pointer", padding: 0 }}>
+                      Find parts for all open repairs →
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Maintenance section ── */}
+                {(taskFetched.length > 0 || taskUnfetched.length > 0) && (
+                  <div style={{ padding: "10px 14px 2px", display: "flex", alignItems: "center", gap: 6, borderBottom: "0.5px solid var(--border)" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--danger-text)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>OVERDUE / DUE SOON</span>
+                  </div>
+                )}
+                {taskFetched.map(function(t){
+                  var pr = inlinePartResults[t.id];
+                  var parts = pr ? pr.results : [];
+                  var eq = equipment.find(function(e){ return e.id === t.equipment_id; });
+                  var eqCat = eq ? eq.category : t.section;
+                  var urgency = getTaskUrgency(t);
+                  var badge = urgency === "critical" ? { label: "Critical", bg: "var(--critical-bg)", color: "var(--critical-text)" } : { label: "Due soon", bg: "var(--duesoon-bg)", color: "var(--duesoon-text)" };
+                  return parts.map(function(part, pi){
+                    return (
+                      <div key={t.id + "-" + pi} style={{ padding: "9px 14px", borderBottom: "0.5px solid var(--border)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", flex: 1, minWidth: 0 }}>{part.name}</div>
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: badge.bg, color: badge.color, flexShrink: 0 }}>{badge.label}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 6px" }}>{eq ? eq.name : t.section} · {t.task.length > 35 ? t.task.slice(0,35) + "…" : t.task}</div>
+                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                          {retailerLinksForPart(part.name, eqCat).map(function(rl){ return (
+                            <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
+                              onClick={function(){ trackAffiliateClick(rl.name, part.name, t.task); }}
+                              style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: rl.color, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+                              {rl.name} ↗
+                            </a>
+                          ); })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })}
+                {taskUnfetched.length > 0 && (
+                  <div style={{ padding: "9px 14px" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 4 }}>
+                      {taskUnfetched.length} task{taskUnfetched.length !== 1 ? "s" : ""} not yet searched
+                    </div>
+                    <button onClick={function(){
+                      taskUnfetched.forEach(function(t){ findPartsInline(t.id, t.task, t.equipment_id, t.section); });
+                    }} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "var(--brand)", cursor: "pointer", padding: 0 }}>
+                      Find parts for all due tasks →
+                    </button>
+                  </div>
+                )}
+
+              </div>
+            );
+          })()}
 
 
           {/* ── Open Repairs divider ── */}
