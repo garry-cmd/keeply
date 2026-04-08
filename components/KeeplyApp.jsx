@@ -3177,6 +3177,7 @@ export default function App() {
                 {(function(){
                   const activeTab = equipTab[vesselEq.id] || "info";
                   const tapTab = function(t) {
+                    if (isExpanded && activeTab === t) { setExpandedEquip(null); return; }
                     setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
                     if (!isExpanded) { setExpandedEquip(vesselEq.id); }
                     if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
