@@ -8,49 +8,14 @@ import LogbookPage from "./LogbookPage";
 import PartsPage from "./PartsPage";
 import FirstMate from "./FirstMate";
 
-// ── Affiliate link helpers ────────────────────────────────────────────────────
-// Enroll at avantlink.com → get approved for Fisheries Supply (mi=10234)
-// Then paste your website ID below. Leave empty = direct links (no commission)
-// Set NEXT_PUBLIC_AVANTLINK_ID in Vercel env vars — get your publisher ID from avantlink.com
-const AVANTLINK_ID = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_AVANTLINK_ID) || "";
-
-// Retailer search bases
-const RETAILERS = {
-  fisheries: { name: "Fisheries Supply", base: "https://www.fisheriessupply.com/search#q=", mi: "10234", color: "#1a7f4b" },
-  westmarine: { name: "West Marine",      base: "https://www.westmarine.com/search?q=",    mi: "15506", color: "#0056a6" },
-  defender:   { name: "Defender",         base: "https://defender.com/en_us/catalogsearch/result/?q=", mi: "14521", color: "#c0392b" },
-};
-
-function buyUrl(query, directUrl, retailerKey) {
-  const retailer = RETAILERS[retailerKey || "fisheries"];
-  const target = directUrl || (retailer.base + encodeURIComponent(query));
-  if (AVANTLINK_ID) {
-    return "https://www.avantlink.com/click.php?tt=cl&mi=" + retailer.mi + "&pw=" + AVANTLINK_ID + "&url=" + encodeURIComponent(target);
-  }
-  return target;
+// ── Part search helpers ──────────────────────────────────────────────────────
+function googleSearchUrl(query) {
+  return "https://www.google.com/search?q=" + encodeURIComponent(query + " buy marine");
 }
-
-// Returns array of {name, url, color} for all retailer buttons
-// Always builds search URLs — never uses a direct URL that could belong to a competitor
-function retailerLinks(partName) {
-  return Object.entries(RETAILERS).map(function(entry) {
-    const key = entry[0]; const r = entry[1];
-    return { name: r.name, color: r.color, url: buyUrl(partName, null, key) };
-  });
+function ebaySearchUrl(query) {
+  return "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(query) + "&_sacat=26429";
 }
-// Context-aware retailer links — engine parts skip West Marine, add OEM search
-function retailerLinksForPart(partName, equipCategory) {
-  var isEngine = equipCategory === "Engine" || equipCategory === "Generator";
-  if (isEngine) {
-    return [
-      { name: "Defender",          color: RETAILERS.defender.color,   url: buyUrl(partName, null, "defender")   },
-      { name: "Fisheries Supply",  color: RETAILERS.fisheries.color,  url: buyUrl(partName, null, "fisheries")  },
-      { name: "Search by make ↗", color: "#374151", url: "https://www.google.com/search?q=" + encodeURIComponent(partName + " marine engine part") },
-    ];
-  }
-  return retailerLinks(partName);
-}
-// ────────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
@@ -1956,21 +1921,7 @@ export default function App() {
     return "ok";
   };
 
-  // ── Affiliate click tracking — fire-and-forget, non-blocking ────────────────
-  const trackAffiliateClick = function(retailer, partName, context) {
-    if (!session?.user?.id) return;
-    supa("affiliate_clicks", {
-      method: "POST",
-      body: {
-        user_id:    session.user.id,
-        vessel_id:  activeVesselId || null,
-        retailer:   retailer,
-        part_name:  (partName || "").substring(0, 200),
-        context:    (context || "").substring(0, 200),
-      },
-      prefer: "return=minimal"
-    }).catch(function(){});  // silent — never block the user
-  };
+
 
 
   // ── Default vessel admin tasks ────────────────────────────────────────────
@@ -3999,13 +3950,14 @@ export default function App() {
                                   {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                 </div>
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                  {retailerLinks(part.name).map(function(rl){ return (
-                                    <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                                      onClick={function(){ trackAffiliateClick(rl.name, part.name, part.reason || ""); }}
-                                      style={{ padding: "4px 10px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                      {rl.name.split(" ")[0]} ↗
-                                    </a>
-                                  ); })}
+                                  <a href={googleSearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                    🔍 Google ↗
+                                  </a>
+                                  <a href={ebaySearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                    eBay ↗
+                                  </a>
                                   {repairEq && (function(){
                                     const sk = repairEq.id + "-" + part.name;
                                     const st = savedParts[sk];
@@ -4022,12 +3974,14 @@ export default function App() {
                             ); })}
                             {pr.results.length === 0 && (
                               <div style={{ display: "flex", gap: 5 }}>
-                                {retailerLinks(r.description + " marine").map(function(rl){ return (
-                                  <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                                    style={{ flex: 1, padding: "6px", borderRadius: 6, background: rl.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                    {rl.name.split(" ")[0]} ↗
-                                  </a>
-                                ); })}
+                                <a href={googleSearchUrl(r.description + " marine")} target="_blank" rel="noreferrer"
+                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                  🔍 Google ↗
+                                </a>
+                                <a href={ebaySearchUrl(r.description)} target="_blank" rel="noreferrer"
+                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                  eBay ↗
+                                </a>
                               </div>
                             )}
                           </>);
@@ -4246,13 +4200,14 @@ export default function App() {
                                     {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                   </div>
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                    {retailerLinks(part.name).map(function(r){ return (
-                                      <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
-                                        onClick={function(){ trackAffiliateClick(r.name, part.name, part.reason || ""); }}
-                                        style={{ padding: "4px 10px", borderRadius: 6, background: r.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                        {r.name.split(" ")[0]} ↗
-                                      </a>
-                                    ); })}
+                                    <a href={googleSearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                    🔍 Google ↗
+                                  </a>
+                                  <a href={ebaySearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                    eBay ↗
+                                  </a>
                                     {eq && (function(){
                                       const sk = eq.id + "-" + part.name;
                                       const st = savedParts[sk];
@@ -4269,13 +4224,14 @@ export default function App() {
                               ); })}
                               {pr.results.length === 0 && (
                                 <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
-                                  {retailerLinks(t.task + " marine").map(function(r){ return (
-                                    <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
-                                      onClick={function(){ trackAffiliateClick(r.name, t.task, "no-results-fallback"); }}
-                                      style={{ flex: 1, padding: "6px", borderRadius: 6, background: r.color, color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                      {r.name.split(" ")[0]} ↗
-                                    </a>
-                                  ); })}
+                                  <a href={googleSearchUrl(t.task + " marine")} target="_blank" rel="noreferrer"
+                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                  🔍 Google ↗
+                                </a>
+                                <a href={ebaySearchUrl(t.task)} target="_blank" rel="noreferrer"
+                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+                                  eBay ↗
+                                </a>
                                 </div>
                               )}
                             </div>
