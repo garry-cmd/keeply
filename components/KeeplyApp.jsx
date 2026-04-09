@@ -3968,11 +3968,11 @@ export default function App() {
                                   {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
                                 </div>
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                  <a href={googleSearchUrl(partSearchQuery(part.name, repairEq, settings))} target="_blank" rel="noreferrer"
+                                  <a href={googleSearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     🔍 Google ↗
                                   </a>
-                                  <a href={ebaySearchUrl(partSearchQuery(part.name, repairEq, settings))} target="_blank" rel="noreferrer"
+                                  <a href={ebaySearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     eBay ↗
                                   </a>
@@ -4218,11 +4218,11 @@ export default function App() {
                                     {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
                                   </div>
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                    <a href={googleSearchUrl(partSearchQuery(part.name, eq, settings))} target="_blank" rel="noreferrer"
+                                    <a href={googleSearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     🔍 Google ↗
                                   </a>
-                                  <a href={ebaySearchUrl(partSearchQuery(part.name, eq, settings))} target="_blank" rel="noreferrer"
+                                  <a href={ebaySearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     eBay ↗
                                   </a>
