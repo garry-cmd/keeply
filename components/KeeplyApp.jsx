@@ -1130,6 +1130,12 @@ export default function App() {
           setRepairs([]);
         }
 
+        // Load logbook for first vessel (needed for engine hours KPI on My Boat)
+        try {
+          const lg = await supa("logbook", { query: "vessel_id=eq." + firstId + "&order=entry_date.desc,created_at.desc" });
+          setLogEntries(lg || []);
+        } catch(e) { setLogEntries([]); }
+
         // Load admin tasks for all vessels upfront so urgency cards show immediately
         try {
           const allVesselIds = normalizedVessels.map(function(v){ return v.id; });
@@ -2089,6 +2095,32 @@ export default function App() {
         }
       }
       setShowAddLog(false); setEditingLog(null); setLogForm({});
+      // Refresh logStats so KPI nm/speed update immediately without a reload
+      try {
+        const sess2 = await supabase.auth.getSession();
+        const tok2 = (sess2?.data?.session?.access_token) || SUPA_KEY;
+        const statRes = await fetch(
+          SUPA_URL + "/rest/v1/logbook?vessel_id=eq." + activeVesselId + "&entry_type=eq.passage&select=distance_nm,departure_time,arrival_time",
+          { headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + tok2 } }
+        );
+        if (statRes.ok) {
+          const rows2 = await statRes.json();
+          const totalNm2 = rows2.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm)||0); }, 0);
+          let totalTime2 = 0; let timedNm2 = 0;
+          rows2.forEach(function(e){
+            if (e.departure_time && e.arrival_time && e.distance_nm) {
+              const dp = e.departure_time.split(":").map(Number);
+              const ap = e.arrival_time.split(":").map(Number);
+              var diff = (ap[0]*60+ap[1]) - (dp[0]*60+dp[1]);
+              if (diff < 0) diff += 1440;
+              totalTime2 += diff/60;
+              timedNm2 += parseFloat(e.distance_nm);
+            }
+          });
+          const avgSpeed2 = (totalTime2 > 0 && timedNm2 > 0) ? (timedNm2/totalTime2) : null;
+          setLogStats({ passages: rows2.length, totalNm: totalNm2, avgSpeed: avgSpeed2 });
+        }
+      } catch(e2) { /* silent */ }
     } catch(e){ console.error("Log save error:", e); }
   };
 
