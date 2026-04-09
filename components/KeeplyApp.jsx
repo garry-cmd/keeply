@@ -7322,7 +7322,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ── UPDATE ENGINE HOURS MODAL ── */
+      {/* ── UPDATE ENGINE HOURS MODAL ── */}
       {showUpdateHoursModal && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowUpdateHoursModal(false); }}>
