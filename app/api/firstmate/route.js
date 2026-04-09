@@ -91,6 +91,15 @@ function buildSystemPrompt(ctx) {
     }).join("\n") : "No entries.") + "\n\n" +
     "== EQUIPMENT ==\n" +
     (equipIssues.length > 0 ? "Issues:\n" + equipIssues.map(function(e){ return "- " + e.name + ": " + e.status; }).join("\n") : "No issues flagged.") + "\n\n" +
+    "== EQUIPMENT LOGS ==\n" +
+    (function(){
+      var withLogs = (equipment || []).filter(function(e){ return e.recentLogs && e.recentLogs.length > 0; });
+      if (withLogs.length === 0) return "No equipment log entries.\n\n";
+      return withLogs.map(function(e){
+        var info = e.notes ? " [" + e.notes.replace(/\n/g, " ").slice(0, 80) + "]" : "";
+        return "- " + e.name + " (" + e.category + ")" + info + ":\n  " + e.recentLogs.join("\n  ");
+      }).join("\n") + "\n\n";
+    })() +
     "== INSTRUCTIONS ==\n" +
     "Answer questions about this vessel concisely. Use bullets for lists. Never invent data. Speak casually to the owner.\n\n" +
     "When asked if the boat is ready: check overdue tasks, repairs, and equipment issues.\n\n" +
@@ -103,7 +112,10 @@ function buildSystemPrompt(ctx) {
     "'impeller missing blades → inspect raw water system for damage, shorten service interval'; " +
     "'milky oil → possible water intrusion, check immediately'.\n\n" +
     "LOGBOOK SCANNING: Scan logbook notes for anomalies — unusual sounds, performance issues, smells, handling changes. " +
-    "Cross-reference with maintenance tasks and completion notes. Flag anything that sounds like a developing problem and recommend a specific action.";
+    "Cross-reference with maintenance tasks and completion notes. Flag anything that sounds like a developing problem and recommend a specific action.\n\n" +
+    "EQUIPMENT LOGS: The 'EQUIPMENT LOGS' section contains free-text notes logged by the owner on each equipment card. " +
+    "These are the most candid observations — look for: unusual readings, observations about condition, one-off notes about odd behaviour. " +
+    "Cross-reference with maintenance completion notes and open repairs. If an equipment log mentions something concerning, call it out.";
 
   return prompt;
 }

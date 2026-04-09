@@ -27,7 +27,7 @@ async function fetchVesselContext(vesselId) {
     fetch(`${SUPA_URL}/rest/v1/maintenance_tasks?vessel_id=eq.${vesselId}&select=*`, { headers: h }),
     fetch(`${SUPA_URL}/rest/v1/repairs?vessel_id=eq.${vesselId}&order=date.desc&select=*`, { headers: h }),
     fetch(`${SUPA_URL}/rest/v1/logbook?vessel_id=eq.${vesselId}&order=entry_date.desc&limit=20&select=*`, { headers: h }),
-    fetch(`${SUPA_URL}/rest/v1/equipment?vessel_id=eq.${vesselId}&select=id,name,category,status`, { headers: h }),
+    fetch(`${SUPA_URL}/rest/v1/equipment?vessel_id=eq.${vesselId}&select=id,name,category,status,notes,logs`, { headers: h }),
   ]);
 
   const [vessels, tasks, repairs, logbook, equipment] = await Promise.all([
@@ -50,7 +50,20 @@ async function fetchVesselContext(vesselId) {
     }),
     repairs: repairs || [],
     logbook: logbook || [],
-    equipment: (equipment || []).map(function(e) { return { name: e.name, category: e.category, status: e.status }; }),
+    equipment: (equipment || []).map(function(e) {
+      // Parse recent log entries (last 10, most recent first)
+      var rawLogs = Array.isArray(e.logs) ? e.logs : (typeof e.logs === "string" ? JSON.parse(e.logs || "[]") : []);
+      var recentLogs = rawLogs.slice(-10).reverse().map(function(l) {
+        return (l.date || "") + ": " + (l.text || l.note || l.entry || JSON.stringify(l));
+      }).filter(function(s) { return s.trim().length > 2; });
+      return {
+        name:       e.name,
+        category:   e.category,
+        status:     e.status,
+        notes:      e.notes || null,
+        recentLogs: recentLogs.length > 0 ? recentLogs : undefined,
+      };
+    }),
   };
 }
 
