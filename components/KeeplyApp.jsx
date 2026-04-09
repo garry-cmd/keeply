@@ -9,6 +9,15 @@ import PartsPage from "./PartsPage";
 import FirstMate from "./FirstMate";
 
 // ── Part search helpers ──────────────────────────────────────────────────────
+// Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
+function partSearchQuery(partName, equipObj, vesselObj) {
+  const parts = [
+    vesselObj ? [vesselObj.year, vesselObj.make, vesselObj.model].filter(Boolean).join(" ") : "",
+    equipObj ? equipObj.name : "",
+    partName,
+  ].filter(Boolean);
+  return parts.join(" ");
+}
 function googleSearchUrl(query) {
   return "https://www.google.com/search?q=" + encodeURIComponent(query + " buy marine");
 }
@@ -3950,11 +3959,11 @@ export default function App() {
                                   {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                 </div>
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                  <a href={googleSearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                  <a href={googleSearchUrl(partSearchQuery(part.name, repairEq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     🔍 Google ↗
                                   </a>
-                                  <a href={ebaySearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                  <a href={ebaySearchUrl(partSearchQuery(part.name, repairEq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     eBay ↗
                                   </a>
@@ -3974,11 +3983,11 @@ export default function App() {
                             ); })}
                             {pr.results.length === 0 && (
                               <div style={{ display: "flex", gap: 5 }}>
-                                <a href={googleSearchUrl(r.description + " marine")} target="_blank" rel="noreferrer"
+                                <a href={googleSearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
                                   🔍 Google ↗
                                 </a>
-                                <a href={ebaySearchUrl(r.description)} target="_blank" rel="noreferrer"
+                                <a href={ebaySearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
                                   eBay ↗
                                 </a>
@@ -4200,11 +4209,11 @@ export default function App() {
                                     {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
                                   </div>
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                    <a href={googleSearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                    <a href={googleSearchUrl(partSearchQuery(part.name, eq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     🔍 Google ↗
                                   </a>
-                                  <a href={ebaySearchUrl(part.name)} target="_blank" rel="noreferrer"
+                                  <a href={ebaySearchUrl(partSearchQuery(part.name, eq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                                     eBay ↗
                                   </a>
@@ -4224,11 +4233,11 @@ export default function App() {
                               ); })}
                               {pr.results.length === 0 && (
                                 <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
-                                  <a href={googleSearchUrl(t.task + " marine")} target="_blank" rel="noreferrer"
+                                  <a href={googleSearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
                                   🔍 Google ↗
                                 </a>
-                                <a href={ebaySearchUrl(t.task)} target="_blank" rel="noreferrer"
+                                <a href={ebaySearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
                                   eBay ↗
                                 </a>
