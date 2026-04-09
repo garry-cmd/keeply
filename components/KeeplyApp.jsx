@@ -4812,7 +4812,19 @@ export default function App() {
                     {activeTab === "repairs" && (
                       <div>
                         {repairs.filter(function(r){ return r._vesselId === activeVesselId && (r.equipment_id === eq.id || (!r.equipment_id && eq.id === "general")); }).length === 0 ? (
-                          <div style={{ textAlign: "center", padding: "12px 0", color: "var(--text-muted)", fontSize: 12 }}>No repairs logged.</div>
+                          <div style={{ textAlign: "center", padding: "12px 0", color: "var(--text-muted)", fontSize: 12 }}>
+                            No repairs logged.
+                            <button onClick={function(){
+                              const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
+                              if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
+                                setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
+                                setShowUpgradeModal(true);
+                                return;
+                              }
+                              setNewRepair(function(nr){ return Object.assign({}, nr, { section: eq.category, _equipmentId: eq.id }); });
+                              setShowAddRepair(true);
+                            }} style={{ display: "block", margin: "8px auto 0", background: "none", border: "1.5px dashed var(--border)", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>+ Log Repair</button>
+                          </div>
                         ) : (
                           <div>
                             {repairs.filter(function(r){ return r._vesselId === activeVesselId && (r.equipment_id === eq.id || (!r.equipment_id && eq.id === "general")); })
@@ -4910,6 +4922,16 @@ export default function App() {
                                   </div>
                                 );
                               })}
+                          <button onClick={function(){
+                            const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
+                            if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
+                              setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
+                              setShowUpgradeModal(true);
+                              return;
+                            }
+                            setNewRepair(function(nr){ return Object.assign({}, nr, { section: eq.category, _equipmentId: eq.id }); });
+                            setShowAddRepair(true);
+                          }} style={{ marginTop: 8, background: "none", border: "1.5px dashed var(--border)", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", width: "100%" }}>+ Log Repair</button>
                           </div>
                         )}
                       </div>
