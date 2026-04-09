@@ -4671,33 +4671,28 @@ export default function App() {
                               })
                               .map(function(t){
                                 const badge = getDueBadge(t.dueDate);
+                                const isExpanded = expandedTask === t.id;
+                                const isCompleting = completingTask === t.id;
                                 return (
-                                  <div key={t.id} style={{ borderBottom: "1px solid var(--border)", opacity: completingTask === t.id ? 0 : 1, transform: completingTask === t.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                                  <div key={t.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0 : 1, transform: isCompleting ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                                     {/* Task row */}
                                     {editingTask !== t.id ? (
-                                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0" }}>
+                                      <>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
                                         <div onClick={function(e){
                                             e.stopPropagation();
-                                            if (completingTask === t.id) return;
+                                            if (isCompleting) return;
                                             setNoteSheetTask(t);
                                             setNoteSheetVal("");
                                           }}
-                                          style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingTask === t.id ? "var(--ok-text)" : "var(--border)"), background: completingTask === t.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
-                                          {completingTask === t.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                                          style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
+                                          {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                                         </div>
-                                        <div style={{ flex: 1 }}>
+                                        <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
                                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t.task}</div>
                                           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
                                             Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}
                                             {t.dueDate && <span style={{ color: badge ? badge.color : "var(--text-muted)", fontWeight: badge ? 700 : 400 }}> · Due: {fmt(t.dueDate)}</span>}
-                                            {(function(){
-                                              if (!t.interval_hours) return null;
-                                              var avH = vessels.find(function(v){ return v.id === activeVesselId; });
-                                              var cH = avH ? avH.engineHours : null;
-                                              var hb = getHoursBadge(t.due_hours, cH, t.interval_hours);
-                                              if (!hb) return cH != null ? <span style={{ color: "var(--text-muted)" }}> · {t.due_hours - cH}h left</span> : null;
-                                              return <span style={{ color: hb.color, fontWeight: 700 }}> · {hb.hours > 0 ? hb.hours + "h left" : Math.abs(hb.hours) + "h over"}</span>;
-                                            })()}
                                           </div>
                                         </div>
                                         {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
@@ -4709,9 +4704,78 @@ export default function App() {
                                           if (!hb) return null;
                                           return <span style={{ background: hb.bg, color: hb.color, border: "1px solid " + (hb.border||hb.color), borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{hb.label}</span>;
                                         })()}
-                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", due_hours: t.due_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
-                                        <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }}><TrashIcon /></button>
+                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer", flexShrink: 0 }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>{isExpanded ? "▾" : "▸"}</span>
                                       </div>
+                                      {isExpanded && (
+                                        <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", padding: "12px 0 14px 32px" }}>
+                                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                                            <div>
+                                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
+                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval || (t.interval_days ? t.interval_days + " days" : "—")}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}</div>
+                                            </div>
+                                            <div>
+                                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
+                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.lastService ? fmt(t.lastService) : "Never"}</div>
+                                            </div>
+                                            <div>
+                                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
+                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
+                                            </div>
+                                            <div>
+                                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
+                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", textTransform: "capitalize" }}>{t.priority || "medium"}</div>
+                                            </div>
+                                          </div>
+                                          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                                            <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", due_hours: t.due_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "5px 12px", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>✏️ Edit</button>
+                                            <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "5px 12px", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><TrashIcon /> Delete</button>
+                                          </div>
+                                          {t.serviceLogs && t.serviceLogs.length > 0 && (
+                                            <div style={{ marginBottom: 10 }}>
+                                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>SERVICE HISTORY</div>
+                                              {t.serviceLogs.slice().reverse().map(function(log, i){
+                                                return (
+                                                  <div key={i} style={{ marginBottom: 6 }}>
+                                                    <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                                                      <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: "var(--text-muted)", flexShrink: 0 }}>{fmt(log.date)}</span>
+                                                      {!log.comment && <span style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>done</span>}
+                                                    </div>
+                                                    {log.comment && <div style={{ fontSize: 12, color: "var(--text-primary)", marginTop: 1, lineHeight: 1.4 }}>{log.comment}</div>}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>✨ Suggested parts</div>
+                                            {(function(){
+                                              const sugg = aiSuggestions[t.id];
+                                              if (!sugg) return (
+                                                <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}
+                                                  style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
+                                                  ✨ Find parts for this task
+                                                </button>
+                                              );
+                                              if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
+                                              if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
+                                              if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
+                                              return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
+                                                return (
+                                                  <div key={part.name} style={{ padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
+                                                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
+                                                    <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
+                                                    <button onClick={function(){ setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: eq.name, repairContext: t.task + " " + t.section }); }}
+                                                      style={{ marginTop: 5, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                                      🔍 Find Part
+                                                    </button>
+                                                  </div>
+                                                );
+                                              });
+                                            })()}
+                                          </div>
+                                        </div>
+                                      )}
+                                      </>
                                     ) : (
                                       /* Inline edit form */
                                       <div style={{ padding: "10px 0 12px" }} onClick={function(e){ e.stopPropagation(); }}>
