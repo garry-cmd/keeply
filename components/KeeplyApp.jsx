@@ -1195,8 +1195,11 @@ export default function App() {
           }
         } catch(e) { /* vessel card auto-create skipped */ }
       }
-      // Auto-load admin tasks for this vessel
-      loadVesselAdminTasks(vid);
+      // Auto-load admin tasks for this vessel (inlined to avoid stale useCallback closure)
+      try {
+        const adminTasks = await supa("vessel_admin_tasks", { query: "vessel_id=eq." + vid + "&order=category.asc,name.asc" });
+        setVesselAdminTasks(function(prev){ return { ...prev, [vid]: adminTasks || [] }; });
+      } catch(e) { console.error("Admin tasks preload error:", e); }
       // Pin Vessel card first
       eqList = [...eqList.filter(function(e){ return e.category === "Vessel"; }), ...eqList.filter(function(e){ return e.category !== "Vessel"; })];
       setEquipment(eqList);
