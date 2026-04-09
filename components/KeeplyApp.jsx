@@ -6545,14 +6545,12 @@ export default function App() {
               )}
             </div>
             <div style={{ padding: "16px 20px", borderTop: "1px solid var(--border)" }}>
-              {editingVesselId && vessels.length > 1 && (
-                {(function(){
-                  var uid = session && session.user ? session.user.id : null;
-                  var isOwner = vesselMembers.some(function(m){ return m.vessel_id === editingVesselId && m.user_id === uid && m.role === "owner"; });
-                  if (!isOwner) return null;
-                  return <button onClick={function(){ deleteVessel(editingVesselId); }} style={{ width: "100%", padding: 10, border: "1px solid #fca5a5", borderRadius: 8, background: "var(--bg-card)", color: "var(--danger-text)", cursor: "pointer", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>🗑 Remove This Vessel</button>;
-                })()}
-              )}
+              {editingVesselId && vessels.length > 1 && (function(){
+                var uid = session && session.user ? session.user.id : null;
+                var isOwner = vesselMembers.some(function(m){ return m.vessel_id === editingVesselId && m.user_id === uid && m.role === "owner"; });
+                if (!isOwner) return null;
+                return <button onClick={function(){ deleteVessel(editingVesselId); }} style={{ width: "100%", padding: 10, border: "1px solid #fca5a5", borderRadius: 8, background: "var(--bg-card)", color: "var(--danger-text)", cursor: "pointer", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>🗑 Remove This Vessel</button>;
+              })()}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={function(){ setShowSettings(false); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
                 <button onClick={saveVessel} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
