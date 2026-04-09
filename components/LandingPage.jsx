@@ -454,15 +454,9 @@ export default function LandingPage() {
               </button>
             )}
 
-            {!signupEmail && (
-              <button onClick={function(){ setShowAuth(false); setSignupEmail(null); }}
-                style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
-            )}
-            {signupEmail && (
-              <button onClick={function(){ setShowAuth(false); setSignupEmail(null); }}
-                style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
-            )}
-          </></>) }
+            <button onClick={function(){ setShowAuth(false); setSignupEmail(null); }}
+              style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
+          </>)}
         </div>
         </div>
       )}
