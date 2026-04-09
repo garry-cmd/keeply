@@ -176,7 +176,7 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
       {/* Chat sheet — slides up from bottom */}
       <div style={{
         position: "fixed",
-        left: 0, right: 0, bottom: 0,
+        left: 0, right: 0, bottom: 60,
         zIndex: 300,
         maxWidth: 480,
         margin: "0 auto",
@@ -286,7 +286,7 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
         </div>
 
         {/* Input — always at bottom */}
-        <div style={{ padding: "10px 12px 16px", borderTop: "0.5px solid var(--border)", flexShrink: 0, background: "var(--bg-card)" }}>
+        <div style={{ padding: "10px 12px 16px", borderTop: "0.5px solid var(--border)", flexShrink: 0, background: "var(--bg-card)", paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8, background: "var(--bg-subtle)", borderRadius: 16, border: "1px solid var(--border)", padding: "8px 8px 8px 14px" }}>
             <textarea
               ref={inputRef}
