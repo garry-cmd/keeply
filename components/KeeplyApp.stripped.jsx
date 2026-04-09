@@ -8,49 +8,6 @@ import LogbookPage from "./LogbookPage";
 import PartsPage from "./PartsPage";
 import FirstMate from "./FirstMate";
 
-// ── Affiliate link helpers ────────────────────────────────────────────────────
-// Enroll at avantlink.com → get approved for Fisheries Supply (mi=10234)
-// Then paste your website ID below. Leave empty = direct links (no commission)
-// Set NEXT_PUBLIC_AVANTLINK_ID in Vercel env vars — get your publisher ID from avantlink.com
-const AVANTLINK_ID = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_AVANTLINK_ID) || "";
-
-// Retailer search bases
-const RETAILERS = {
-  fisheries: { name: "Fisheries Supply", base: "https://www.fisheriessupply.com/search#q=", mi: "10234", color: "#1a7f4b" },
-  westmarine: { name: "West Marine",      base: "https://www.westmarine.com/search?q=",    mi: "15506", color: "#0056a6" },
-  defender:   { name: "Defender",         base: "https://defender.com/en_us/catalogsearch/result/?q=", mi: "14521", color: "#c0392b" },
-};
-
-function buyUrl(query, directUrl, retailerKey) {
-  const retailer = RETAILERS[retailerKey || "fisheries"];
-  const target = directUrl || (retailer.base + encodeURIComponent(query));
-  if (AVANTLINK_ID) {
-    return "https://www.avantlink.com/click.php?tt=cl&mi=" + retailer.mi + "&pw=" + AVANTLINK_ID + "&url=" + encodeURIComponent(target);
-  }
-  return target;
-}
-
-// Returns array of {name, url, color} for all retailer buttons
-// Always builds search URLs — never uses a direct URL that could belong to a competitor
-function retailerLinks(partName) {
-  return Object.entries(RETAILERS).map(function(entry) {
-    const key = entry[0]; const r = entry[1];
-    return { name: r.name, color: r.color, url: buyUrl(partName, null, key) };
-  });
-}
-// Context-aware retailer links — engine parts skip West Marine, add OEM search
-function retailerLinksForPart(partName, equipCategory) {
-  var isEngine = equipCategory === "Engine" || equipCategory === "Generator";
-  if (isEngine) {
-    return [
-      { name: "Defender",          color: RETAILERS.defender.color,   url: buyUrl(partName, null, "defender")   },
-      { name: "Fisheries Supply",  color: RETAILERS.fisheries.color,  url: buyUrl(partName, null, "fisheries")  },
-      { name: "Search by make ↗", color: "#374151", url: "https://www.google.com/search?q=" + encodeURIComponent(partName + " marine engine part") },
-    ];
-  }
-  return retailerLinks(partName);
-}
-// ────────────────────────────────────────────────────────────────────────────────
 
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
@@ -128,28 +85,6 @@ async function uploadToStorage(file, eqId) {
   return "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/public/equipment-docs/" + path;
 }
 
-// ─── IMAGE COMPRESSION ──────────────────────────────────────────────────────────────
-async function compressImage(file, maxWidth, quality) {
-  return new Promise(function(resolve) {
-    var reader = new FileReader();
-    reader.onload = function(ev) {
-      var img = new Image();
-      img.onload = function() {
-        var w = img.width; var h = img.height;
-        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-        var canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        canvas.toBlob(function(blob) {
-          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
-        }, "image/jpeg", quality || 0.78);
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function today() { return new Date().toISOString().split("T")[0]; }
 
@@ -192,17 +127,8 @@ function getDueBadge(dueDate, intervalDays) {
   if (diff <= -10) return { label: "🔴 Critical",  color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)" };
   if (diff <= -5)  return { label: "🟠 Overdue",   color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)"  };
   // Due Soon window = half the interval, capped at 10 days
-  const dueSoonDays = intervalDays ? Math.min(Math.floor(intervalDays / 2), 21) : 21;
+  const dueSoonDays = intervalDays ? Math.min(Math.floor(intervalDays / 2), 10) : 10;
   if (diff <= dueSoonDays) return { label: "🟡 Due Soon",  color: "var(--duesoon-text)",  bg: "var(--duesoon-bg)",  border: "var(--duesoon-border)"  };
-  return null;
-}
-
-function getHoursBadge(dueHours, currentHours, intervalHours) {
-  if (dueHours == null || currentHours == null) return null;
-  var hoursLeft = dueHours - currentHours;
-  if (hoursLeft < 0) return { label: "🔴 Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
-  var dueSoon = intervalHours ? Math.floor(intervalHours * 0.25) : 25;
-  if (hoursLeft <= dueSoon) return { label: "🟡 Due Soon", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "var(--duesoon-border)", hours: hoursLeft };
   return null;
 }
 
@@ -410,6 +336,7 @@ function AdminDashboard({ onClose }) {
         // Repairs completed
         const repairsByDay = function(from, to){ return (repairs||[]).filter(function(r){ return r.status === "closed" && r.date && inRange(r.date, from, to); }).length; };
 
+        // Cart metrics from RPC (reads cart_items across all users)
         // Affiliate click metrics
         const clicks = affiliateClicks || [];
         const clicksByRetailer = {};
@@ -427,7 +354,11 @@ function AdminDashboard({ onClose }) {
         const cmDef = clicksByRetailer["Defender"] || 0;
 
         const cm = partsMetrics || {};
+        const cartTotalQty   = cm.total_qty   || 0;
+        const cartTotalValue = parseFloat(cm.total_value  || 0);
+        const cartTotalLists = cm.total_lists  || 0;
         const cartAOV        = parseFloat(cm.avg_order_value || 0);
+        const cartPartsList  = cm.parts_list  || [];
 
         setMetrics({
           authUsers,
@@ -462,6 +393,9 @@ function AdminDashboard({ onClose }) {
           repairsThisMonth:  repairsByDay(monthAgo, now),
           repairsLastMonth:  repairsByDay(twoMonthsAgo, monthAgo),
           // Cart
+          totalPartsQty: cartTotalQty,
+          totalPartsValue: cartTotalValue.toFixed(2),
+          totalPartsLists: cartTotalLists,
           cartAOV: cartAOV.toFixed(2),
           partsList: cartPartsList,
           totalDocs: (equipment||[]).reduce(function(s, e){ return s + ((e.docs||[]).length); }, 0),
@@ -589,7 +523,10 @@ function AdminDashboard({ onClose }) {
       {/* Parts & Shopping Lists */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>PARTS & SHOPPING LISTS</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
+        {stat(m.totalPartsQty, "Total Parts", m.totalPartsLists + " active lists")}
+        {stat("$" + parseFloat(m.totalPartsValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "Total Cart Value", m.totalPartsQty === 0 ? "no priced parts yet" : "all vessels combined", "var(--ok-text)")}
         {stat("$" + parseFloat(m.cartAOV).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "AOV", "avg order value per vessel", "var(--brand)")}
+        {stat(m.totalPartsLists, "Active Lists", "vessels with items in cart")}
       </div>
 
       {/* ── Affiliate Clicks ── */}
@@ -656,6 +593,11 @@ function AdminDashboard({ onClose }) {
           )}
         </div>
       )}
+      {m.totalPartsQty === 0 && (
+        <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "var(--text-muted)", marginBottom: 20 }}>
+          No items in any shopping lists yet. Parts are added via the 🔩 Parts tab and ✨ AI suggestions on equipment cards.
+        </div>
+      )}
 
       {/* Engagement */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>ENGAGEMENT</div>
@@ -690,7 +632,7 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
   const [activeTab, setActiveTab] = useState("log");
   const [editForm, setEditForm] = useState(null);
   const [logInput, setLogInput] = useState("");
-  const badge = getDueBadge(task.dueDate || task.due_date, task.interval_days);
+  const badge = getDueBadge(task.dueDate || task.due_date);
   const dueDate = task.dueDate || task.due_date;
   const lastService = task.lastService || task.last_service;
   const logs = task.serviceLogs || task.service_logs || [];
@@ -814,6 +756,7 @@ export default function App() {
   const [logEntries, setLogEntries]   = useState([]);
   const [logStats, setLogStats]         = useState({ passages: 0, totalNm: 0, avgSpeed: null });
   const [showAddLog, setShowAddLog]     = useState(false);
+  const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
   const [editingLog, setEditingLog]     = useState(null);
   const [logForm, setLogForm]           = useState({});
   const [shareEmail, setShareEmail] = useState("");
@@ -862,29 +805,13 @@ export default function App() {
   const [profileSaved, setProfileSaved]       = useState(false);
   const [showFab, setShowFab]                 = useState(false);
   const [equipAiMode, setEquipAiMode]         = useState(false);
-  const [showFirstMatePanel, setShowFirstMatePanel] = useState(false);
-  const [noteSheetTask, setNoteSheetTask] = useState(null);
-  const [noteSheetVal, setNoteSheetVal] = useState("");
-  const [fmInputVal, setFmInputVal] = useState("");
-  const [fmPending, setFmPending] = useState("");
-  const fmInputRef = useRef(null);
-  const [confirmPart, setConfirmPart]         = useState(null);  // { part, source, equipName, repairContext }
   const [repairTab, setRepairTab]               = useState({});    // { [repairId]: "parts"|"notes"|"log" }
-  const [findPartResults, setFindPartResults]   = useState([]);
-  const [inlinePartResults, setInlinePartResults] = useState({});
-  const [savedParts, setSavedParts] = useState({});
-  const savingPartsRef = useRef({});
-  const [findPartLoading, setFindPartLoading]   = useState(false);
-  const [findPartError, setFindPartError]       = useState(null);
-  const findPartSearched                        = useRef(null);
-  const [rejectedParts, setRejectedParts]     = useState({});    // { [eqId+partId]: true }
   const [equipAiDesc, setEquipAiDesc]         = useState("");
   const [equipAiResult, setEquipAiResult]     = useState(null);
   const [equipAiLoading, setEquipAiLoading]   = useState(false);
   const [equipAiError, setEquipAiError]       = useState(null);
   const [showAddVesselAI, setShowAddVesselAI] = useState(false);
   const [avStep, setAvStep]                   = useState(1);
-  const [avEngineTaskEdits, setAvEngineTaskEdits] = useState({});
   const [avName, setAvName]                   = useState("");
   const [avOwner, setAvOwner]                 = useState("");
   const [avPort, setAvPort]                   = useState("");
@@ -911,9 +838,45 @@ export default function App() {
   const [dbError, setDbError]   = useState(null);
   const [saving, setSaving]     = useState(false);
 
-  // ── Parts (saved to equipment, no cart) ──
+  // ── Cart (persisted to Supabase cart_items table) ──
 
+ {
+    try {
+      const items = await supa("cart_items", { query: "vessel_id=eq." + vesselId + "&order=created_at.asc" });
+      setCart((items || []).map(function(i){ return { id: i.id, dbId: i.id, name: i.name, vendor: i.vendor || "", price: i.price || "", sku: i.sku || "", url: i.url || "", source: i.source || "manual", equipment_name: i.equipment_name || "", qty: i.qty || 1 }; }));
+      setCartLoaded(true);
+    } catch(e) { console.error("loadCart error:", e); }
+  };
 
+ {
+    if (!activeVesselId || !session) return;
+    try {
+      const payload = { vessel_id: activeVesselId, user_id: session.user.id, name: part.name, vendor: part.vendor || "", price: part.price || "", sku: part.sku || "", url: part.url || "", source: source || "manual", equipment_name: equipmentName || "", qty: 1 };
+      const created = await supa("cart_items", { method: "POST", body: payload });
+      const newItem = created[0];
+      setCart(function(prev){
+        const ex = prev.find(function(i){ return i.name === part.name && i.source === (source||"manual"); });
+        if (ex) return prev;
+        return [...prev, { id: newItem.id, dbId: newItem.id, name: newItem.name, vendor: newItem.vendor || "", price: newItem.price || "", sku: newItem.sku || "", url: newItem.url || "", source: newItem.source || "manual", equipment_name: newItem.equipment_name || "", qty: 1 }];
+      });
+    } catch(e) { console.error("addToCart error:", e); }
+  };
+
+ {
+    try {
+      await supa("cart_items", { method: "DELETE", query: "id=eq." + dbId, prefer: "return=minimal" });
+      setCart(function(prev){ return prev.filter(function(i){ return i.dbId !== dbId; }); });
+    } catch(e) { console.error("removeFromCart error:", e); }
+  };
+
+ {
+    if (!activeVesselId) return;
+    try {
+      await supa("cart_items", { method: "DELETE", query: "vessel_id=eq." + activeVesselId, prefer: "return=minimal" });
+    } catch(e) { console.error("clearCart error:", e); }
+  };
+
+  const cartQty   = cart.reduce(function(s,i){ return s + i.qty; }, 0);
 
   // ── Vessels (Supabase) ──
   const [vessels, setVessels]               = useState([]);
@@ -960,14 +923,6 @@ export default function App() {
   const [uploadingDoc, setUploadingDoc]     = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef(null);
-  const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
-  const [updateHoursInput, setUpdateHoursInput] = useState("");
-  const [showResetPassword, setShowResetPassword] = useState(false);
-  const [resetNewPassword, setResetNewPassword] = useState("");
-  const [resetPasswordMsg, setResetPasswordMsg] = useState(null);
-  const [dismissedEngineTasksBanner, setDismissedEngineTasksBanner] = useState(false);
-  const [showPartsNeeded, setShowPartsNeeded] = useState(false);
-  const [showEnginePickerModal, setShowEnginePickerModal] = useState(false);
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
   // ── Maintenance Tasks (Supabase) ──
@@ -980,15 +935,11 @@ export default function App() {
   const [showAddTask, setShowAddTask]       = useState(false);
   const [editingTask, setEditingTask]       = useState(null);
   const [editTaskForm, setEditTaskForm]     = useState({});
-  const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", interval_hours: "", priority: "medium", _equipmentId: null });
+  const [newTask, setNewTask]               = useState({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
   const [showAddDoc, setShowAddDoc]         = useState(false);
   const [filterDocUrgency, setFilterDocUrgency] = useState("All");
   const [expandedDoc, setExpandedDoc]       = useState(null);
   const [newDoc, setNewDoc]                 = useState({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" });
-  const [aiSuggestions, setAiSuggestions]   = useState({});
-  const [aiLoading, setAiLoading]           = useState(false);
-  const [aiLoaded, setAiLoaded]             = useState(false);
-  const [equipSuggestions, setEquipSuggestions] = useState({});
 
   // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
@@ -1003,9 +954,6 @@ export default function App() {
   const [editRepairForm, setEditRepairForm] = useState({ description: "", section: "Engine", _equipmentId: null });
   const [repairNotesDraft, setRepairNotesDraft] = useState({});
   const [savingRepairNotes, setSavingRepairNotes] = useState({});
-  const [uploadingRepairPhoto, setUploadingRepairPhoto] = useState({});
-  const [lightboxPhoto, setLightboxPhoto] = useState(null);
-  const [lightboxCaptionEdit, setLightboxCaptionEdit] = useState("");
 
   const [confirmAction, setConfirmAction]     = useState(null);
 
@@ -1044,12 +992,7 @@ export default function App() {
     });
     const { data: listener } = supabase.auth.onAuthStateChange(function(event, sess){
       setSession(sess);
-      if (event === "PASSWORD_RECOVERY") {
-        setShowResetPassword(true);
-        return;
-      }
       if (sess && event === "SIGNED_IN") {
-        setTab("boat");
         supabase.from("vessel_members")
           .update({ user_id: sess.user.id })
           .eq("email", sess.user.email)
@@ -1102,13 +1045,13 @@ export default function App() {
         // Load equipment for first vessel
         const eq = await supa("equipment", { query: "vessel_id=eq." + firstId + "&order=created_at" });
         let eqList0 = (eq || []).map(function(e){
-          return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: safeJsonbArray(e.docs), logs: safeJsonbArray(e.logs), photos: safeJsonbArray(e.photos), _vesselId: e.vessel_id };
+          return { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: safeJsonbArray(e.custom_parts), docs: safeJsonbArray(e.docs), logs: safeJsonbArray(e.logs), _vesselId: e.vessel_id };
         });
         if (!eqList0.some(function(e){ return e.category === "Vessel"; })) {
           try {
             const vname0 = normalizedVessels[0] ? normalizedVessels[0].vesselName : "My Vessel";
             const vc0 = await supa("equipment", { method: "POST", body: { vessel_id: firstId, name: vname0, category: "Vessel", status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
-            if (vc0 && vc0[0]) eqList0 = [{ id: vc0[0].id, name: vc0[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], photos: [], _vesselId: firstId }, ...eqList0];
+            if (vc0 && vc0[0]) eqList0 = [{ id: vc0[0].id, name: vc0[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: firstId }, ...eqList0];
           } catch(e) { /* vessel card exists already */ }
         }
         eqList0 = [...eqList0.filter(function(e){ return e.category === "Vessel"; }), ...eqList0.filter(function(e){ return e.category !== "Vessel"; })];
@@ -1128,10 +1071,6 @@ export default function App() {
             dueDate:        t.due_date,
             serviceLogs:    t.service_logs || [],
             attachments:    t.attachments || [],
-            photos:         t.photos || [],
-            interval_hours:      t.interval_hours || null,
-            last_service_hours:  t.last_service_hours || null,
-            due_hours:           t.due_hours || null,
             pendingComment: "",
             _vesselId:      t.vessel_id,
             equipment_id:   t.equipment_id || null,
@@ -1141,7 +1080,7 @@ export default function App() {
         // Load repairs for first vessel
         try {
           const rp = await supa("repairs", { query: "vessel_id=eq." + firstId + "&order=date.desc" });
-          setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, notes: r.notes || "", photos: r.photos || [], due_date: r.due_date || null, priority: r.priority || null, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
+          setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, notes: r.notes || "", due_date: r.due_date || null, priority: r.priority || null, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
         } catch(e) {
           setRepairs([]);
         }
@@ -1186,7 +1125,7 @@ export default function App() {
           const vname = (vs && vs[0] && vs[0].vessel_name) ? vs[0].vessel_name : "My Vessel";
           const created = await supa("equipment", { method: "POST", body: { vessel_id: vid, name: vname, category: "Vessel", status: "good", notes: "", custom_parts: [], docs: [], logs: [] } });
           if (created && created[0]) {
-            eqList = [{ id: created[0].id, name: created[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], photos: [], _vesselId: vid }, ...eqList];
+            eqList = [{ id: created[0].id, name: created[0].name, category: "Vessel", status: "good", lastService: null, notes: "", customParts: [], docs: [], logs: [], _vesselId: vid }, ...eqList];
           }
         } catch(e) { /* vessel card auto-create skipped */ }
       }
@@ -1201,7 +1140,7 @@ export default function App() {
       }));
       try {
         const rp = await supa("repairs", { query: "vessel_id=eq." + vid + "&order=date.desc" });
-        setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, notes: r.notes || "", photos: r.photos || [], due_date: r.due_date || null, priority: r.priority || null, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
+        setRepairs((rp || []).map(function(r){ return { id: r.id, date: r.date, section: r.section, description: r.description, status: r.status, notes: r.notes || "", due_date: r.due_date || null, priority: r.priority || null, _vesselId: r.vessel_id, equipment_id: r.equipment_id || null }; }));
       } catch(e) { setRepairs([]); }
       try {
         const lg = await supa("logbook", { query: "vessel_id=eq." + vid + "&order=entry_date.desc,created_at.desc" });
@@ -1289,49 +1228,25 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("panel")) return; // panel handler will set tab instead
     const t = localStorage.getItem("keeply_tab");
-    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone"].includes(t)) setTab(t);
+    if (["boat","logbook-standalone","equipment-standalone","repairs-standalone","maintenance-standalone","parts-standalone","firstmate-standalone"].includes(t)) setTab(t);
   }, []);
   useEffect(function(){ localStorage.setItem("keeply_tab", tab); }, [tab]);
 
-  // Reset to My Boat on phone wake/resume
-  useEffect(function(){
-    function handleVisibility(){
-      if (document.visibilityState === "visible") {
-        setTab("boat");
-      }
-    }
-    document.addEventListener("visibilitychange", handleVisibility);
-    return function(){ document.removeEventListener("visibilitychange", handleVisibility); };
-  }, []);
-
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
-  const openAddVessel = async function(){
-    // Always fetch fresh plan from DB to avoid stale state after upgrade
-    var livePlan = userPlan;
-    try {
-      var { data: { session: sess } } = await supabase.auth.getSession();
-      if (sess && sess.user) {
-        var pr = await supabase.from("user_profiles").select("plan").eq("id", sess.user.id).single();
-        if (pr.data && pr.data.plan) { livePlan = pr.data.plan; setUserPlan(pr.data.plan); }
-      }
-    } catch(e) {}
-    const userId = sess && sess.user ? sess.user.id : (session && session.user ? session.user.id : null);
-    const ownedCount = userId
-      ? vessels.filter(function(v){ return vesselMembers.some(function(m){ return m.vessel_id === v.id && m.user_id === userId && m.role === "owner"; }); }).length
-      : vessels.length;
-    if ((livePlan === "free" || !livePlan) && ownedCount >= 1) {
+  const openAddVessel = function(){
+    if ((userPlan === "free" || !userPlan) && vessels.length >= 1) {
       setUpgradeReason("Entry accounts are limited to 1 vessel. Upgrade to Pro to add more.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
     }
-    if (livePlan === "pro" && ownedCount >= 2) {
+    if (userPlan === "pro" && vessels.length >= 2) {
       setUpgradeReason("Pro includes up to 2 vessels. Upgrade to Fleet for the fleet dashboard and up to 3 vessels.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
     }
-    if (livePlan === "fleet" && ownedCount >= 3) {
+    if (userPlan === "fleet" && vessels.length >= 3) {
       setUpgradeReason("Fleet includes up to 3 vessels. Contact us at support@keeply.boats to discuss an Enterprise plan for larger fleets.");
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
@@ -1386,11 +1301,6 @@ export default function App() {
         setVessels(function(vs){ return [...vs, normalized]; });
         switchVessel(nv.id);
         createDefaultAdminTasks(nv.id, userId);  // Pre-populate admin tasks
-        (async function(){
-          var freshEq = await supa("equipment", { query: "vessel_id=eq." + nv.id + "&category=eq.Engine&limit=1" }).catch(function(){ return []; });
-          var engId = (freshEq && freshEq[0]) ? freshEq[0].id : null;
-          createDefaultEngineTasks(nv.id, engId);
-        })();
         // If user has other vessels, offer to copy items
         if (vessels.length > 0) {
           setNewVesselId(nv.id);
@@ -1463,11 +1373,11 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
-  const normalizePart = function(name) {
+ {
     return (name || "").toLowerCase().replace(/[™®©\s\-,\.]+/g, " ").trim();
   };
 
-  const saveAiPartToMyParts = async function(eq, part) {
+ {
     if (!eq || !eq.id) { console.error("saveAiPartToMyParts: no equipment"); return; }
     const saveKey = eq.id + "-" + (part.name || part.id);
     // Block concurrent saves of the same part
@@ -1554,17 +1464,17 @@ export default function App() {
   };
 
   // ─── MAINTENANCE TASK CRUD ───────────────────────────────────────────────────
-  const toggleTask = async function(id, noteOverride){
+  const toggleTask = async function(id){
     setCompletingTask(id);
     setTimeout(function(){ setCompletingTask(null); }, 600);
     const t = tasks.find(function(tk){ return tk.id === id; });
     if (!t) return;
     const serviceDate = today();
     const days = (t.interval_days && t.interval_days > 0) ? t.interval_days : intervalToDays(t.interval || "30 days");
+    // Fall back to 30 days if we still can't determine interval
     const effectiveDays = days > 0 ? days : 30;
     const newDue = addDays(serviceDate, effectiveDays);
-    const commentText = noteOverride !== undefined ? noteOverride.trim() : (t.pendingComment || "").trim();
-    const log = { date: serviceDate, comment: commentText || null };
+    const log = { date: serviceDate, comment: (t.pendingComment || "").trim() || "Service completed" };
     const updatedLogs = [...(t.serviceLogs || []), log];
     // Optimistic update — update UI immediately, sync DB in background
     setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? { ...tk, lastService: serviceDate, dueDate: newDue, serviceLogs: updatedLogs, pendingComment: "" } : tk; }); });
@@ -1573,19 +1483,13 @@ export default function App() {
       if (t.equipment_id) {
         const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
         if (eq) {
-          const eqLogEntry = { date: serviceDate, text: "Service: " + t.task + (commentText ? " — " + commentText : ""), type: "service" };
+          const eqLogEntry = { date: serviceDate, text: "Service: " + t.task, type: "service" };
           const updatedEqLogs = [...(eq.logs || []), eqLogEntry];
           await supa("equipment", { method: "PATCH", query: "id=eq." + t.equipment_id, body: { logs: updatedEqLogs }, prefer: "return=minimal" });
           setEquipment(function(prev){ return prev.map(function(e){ return e.id === t.equipment_id ? { ...e, logs: updatedEqLogs } : e; }); });
         }
       }
-      var activeVH = vessels.find(function(v){ return v.id === activeVesselId; });
-      var curEngHrs = activeVH ? activeVH.engineHours : null;
-      var hoursPatch = (t.interval_hours && curEngHrs != null) ? { last_service_hours: curEngHrs, due_hours: curEngHrs + t.interval_hours } : {};
-      if (hoursPatch.due_hours) {
-        setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? Object.assign({}, tk, hoursPatch) : tk; }); });
-      }
-      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + id, body: Object.assign({ last_service: serviceDate, due_date: newDue, service_logs: updatedLogs }, hoursPatch), prefer: "return=minimal" });
+      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + id, body: { last_service: serviceDate, due_date: newDue, service_logs: updatedLogs }, prefer: "return=minimal" });
     } catch(err){
       console.error("toggleTask DB error:", err);
       // Rollback optimistic update on failure
@@ -1610,14 +1514,10 @@ export default function App() {
     const due  = newTask.dueDate || (days > 0 ? addDays(today(), days) : "");
     setSaving(true);
     try {
-      var taskIH = newTask.interval_hours ? parseInt(newTask.interval_hours) : null;
-      var activeVNew = vessels.find(function(v){ return v.id === activeVesselId; });
-      var curHNew = activeVNew ? activeVNew.engineHours : null;
-      var dueHrsNew = (taskIH && curHNew != null) ? curHNew + taskIH : null;
-      const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null, interval_hours: taskIH, last_service_hours: curHNew, due_hours: dueHrsNew };
+      const payload = { vessel_id: activeVesselId, task: newTask.task, section: newTask.section, interval_days: days, priority: newTask.priority, last_service: today(), due_date: due, service_logs: [], equipment_id: newTask._equipmentId || null };
       const created = await supa("maintenance_tasks", { method: "POST", body: payload });
       const t = created[0];
-      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], interval_hours: t.interval_hours || null, last_service_hours: t.last_service_hours || null, due_hours: t.due_hours || null, pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
+      setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
       setNewTask({ task: "", section: "General", interval: "30 days", priority: "medium", _equipmentId: null });
       setShowAddTask(false);
     } catch(err){ setDbError(err.message); }
@@ -1710,7 +1610,7 @@ export default function App() {
     }, 600);
   };
 
-  const getSuggestionsForRepair = async function(repair){
+{
     const repairId = repair.id;
     setAiSuggestions(function(prev){ const n = Object.assign({}, prev); n[repairId] = "loading"; return n; });
     try {
@@ -1823,37 +1723,6 @@ export default function App() {
     finally { setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: false }; }); }
   };
 
-  const createDefaultEngineTasks = async function(vesselId, equipmentId) {
-    try {
-      var vess = vessels.find(function(vv){ return vv.id === vesselId; }) || {};
-      var baseHrs = vess.engineHours || 0;
-      var eqId = equipmentId || null;
-      var eTasks = [
-        { task: "Engine oil & filter change",  section: "Engine", interval_days: 365,  interval_hours: 100,  priority: "critical" },
-        { task: "Impeller replacement",         section: "Engine", interval_days: 365,  interval_hours: 300,  priority: "critical" },
-        { task: "Fuel filter (primary)",        section: "Engine", interval_days: 365,  interval_hours: 250,  priority: "high"     },
-        { task: "Transmission fluid change",    section: "Engine", interval_days: 730,  interval_hours: 300,  priority: "high"     },
-        { task: "Engine zincs / anode check",   section: "Engine", interval_days: 365,  interval_hours: 200,  priority: "high"     },
-        { task: "Raw water strainer clean",     section: "Engine", interval_days: 30,   interval_hours: 50,   priority: "medium"   },
-        { task: "Belts & hoses inspection",     section: "Engine", interval_days: 365,  interval_hours: 200,  priority: "medium"   },
-        { task: "Injector service",             section: "Engine", interval_days: 1095, interval_hours: 1000, priority: "high"     },
-      ];
-      var now2 = today();
-      var payloads = eTasks.map(function(t){
-        return { vessel_id: vesselId, task: t.task, section: t.section, interval_days: t.interval_days, interval_hours: t.interval_hours, priority: t.priority, last_service: null, last_service_hours: null, due_date: addDays(now2, t.interval_days), due_hours: baseHrs + t.interval_hours, service_logs: [], attachments: [], photos: [], equipment_id: eqId };
-      });
-      var created = await supa("maintenance_tasks", { method: "POST", body: payloads, prefer: "return=representation" });
-      if (created && created.length) {
-        setTasks(function(prev){
-          var newTasks = created.map(function(t){
-            return { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], interval_hours: t.interval_hours || null, last_service_hours: t.last_service_hours || null, due_hours: t.due_hours || null, pendingComment: "", _vesselId: t.vessel_id, equipment_id: null };
-          });
-          return [...prev, ...newTasks];
-        });
-      }
-    } catch(e){ console.error("createDefaultEngineTasks:", e); }
-  };
-
   const createDefaultAdminTasks = async function(vesselId, userId) {
     if (!vesselId || !userId) return;
     try {
@@ -1934,7 +1803,7 @@ export default function App() {
   };
 
   // ── Affiliate click tracking — fire-and-forget, non-blocking ────────────────
-  const trackAffiliateClick = function(retailer, partName, context) {
+ {
     if (!session?.user?.id) return;
     supa("affiliate_clicks", {
       method: "POST",
@@ -1964,7 +1833,6 @@ export default function App() {
     { name: "Life raft service & re-cert", category: "safety",        icon: "🔵", interval_months: 36,  notes: "Every 3 years — includes hydrostatic release" },
     { name: "Fire extinguisher inspection",category: "safety",        icon: "🧯", interval_months: 12,  notes: "Annual professional service per NFPA" },
     { name: "PFD inspection & service",    category: "safety",        icon: "🦺", interval_months: 12,  notes: "Inspect inflatables — rearming kit & CO₂ cylinder" },
-    { name: "Bilge pump test",               category: "safety",        icon: "💧", interval_months: 1,   notes: "Test all bilge pumps — manual and automatic" },
     // Surveys & inspections
     { name: "Marine survey",               category: "surveys",       icon: "🔍", interval_months: 60,  notes: "Condition & valuation — required for insurance" },
     { name: "USCG vessel safety check",    category: "surveys",       icon: "⚓", interval_months: 12,  notes: "Free voluntary check — schedule at uscgboating.org" },
@@ -1972,7 +1840,7 @@ export default function App() {
   ];
 
   // ── Unified inline part finder — calls find-part with full vessel+equipment context ──
-  const findPartsInline = async function(id, taskDescription, equipmentId, section) {
+ {
     const eq = equipment.find(function(e){ return e.id === equipmentId; });
     const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
     const equipContext = eq
@@ -1998,9 +1866,9 @@ export default function App() {
     }
   };
 
-  const getAISuggestions = function(){};
+{};
 
-  const getSuggestionsForEquipment = async function(eq){
+{
     const eqId = eq.id;
     setEquipSuggestions(function(prev){ const n = Object.assign({}, prev); n[eqId] = "loading"; return n; });
     try {
@@ -2017,33 +1885,10 @@ export default function App() {
     }
   };
 
+;
 
   // Auto-search fires once when modal opens — ref prevents re-firing on re-renders
-  useEffect(function(){
-    if (!confirmPart) {
-      setFindPartResults([]); setFindPartError(null);
-      findPartSearched.current = null;
-      return;
-    }
-    const partName = confirmPart.part.name;
-    if (findPartSearched.current === partName) return;
-    findPartSearched.current = partName;
-
-    setFindPartLoading(true); setFindPartError(null); setFindPartResults([]);
-    fetch("/api/find-part", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ partName: partName, equipmentName: confirmPart.equipName, repairContext: confirmPart.repairContext || null }),
-    }).then(function(r){ return r.json(); }).then(function(data){
-      if (data.error) { setFindPartError(data.error); return; }
-      setFindPartResults(data.results || []);
-      if (data.results && data.results.length === 1) {
-        const r = data.results[0];
-        setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: r.name, vendor: r.vendor, price: r.price || prev.part.price, url: r.url }) }); });
-      }
-    }).catch(function(e){ setFindPartError(e.message); })
-    .finally(function(){ setFindPartLoading(false); });
-  }, [!!confirmPart]);
+;
 
   const saveLog = async function(){
     if (!logForm.entry_date) return;
@@ -2241,7 +2086,7 @@ export default function App() {
         for (let i = 0; i < payloads.length; i++) {
           const created = await supa("equipment", { method: "POST", body: payloads[i] });
           const e = created[0];
-          setEquipment(function(prev){ return [...prev, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: [], docs: [], logs: [], photos: [], _vesselId: e.vessel_id }]; });
+          setEquipment(function(prev){ return [...prev, { id: e.id, name: e.name, category: e.category, status: e.status, lastService: e.last_service, notes: e.notes || "", customParts: [], docs: [], logs: [], _vesselId: e.vessel_id }]; });
           done++;
           setImportDone(done);
         }
@@ -2254,7 +2099,7 @@ export default function App() {
         for (let i = 0; i < payloads.length; i++) {
           const created = await supa("maintenance_tasks", { method: "POST", body: payloads[i] });
           const t = created[0];
-          setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], photos: [], interval_hours: t.interval_hours || null, last_service_hours: t.last_service_hours || null, due_hours: t.due_hours || null, pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
+          setTasks(function(prev){ return [...prev, { id: t.id, section: t.section, task: t.task, interval: t.interval_days + " days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null }]; });
           done++;
           setImportDone(done);
         }
@@ -2394,15 +2239,9 @@ export default function App() {
 
     // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
-    var activeV2 = vessels.find(function(v){ return v.id === activeVesselId; });
-    var curHrs2 = activeV2 ? activeV2.engineHours : null;
-    var hb = getHoursBadge(t.due_hours, curHrs2, t.interval_hours);
-    var b  = getDueBadge(t.dueDate || t.due_date, t.interval_days);
-    var hurgency = hb ? (hb.label.indexOf("Critical") >= 0 ? "critical" : hb.label.indexOf("Overdue") >= 0 ? "overdue" : "due-soon") : null;
-    var durgency = b  ? (b.label.indexOf("Critical")  >= 0 ? "critical" : b.label.indexOf("Overdue")  >= 0 ? "overdue" : "due-soon") : null;
-    var rank = { "critical": 3, "overdue": 2, "due-soon": 1 };
-    var best = ((rank[hurgency] || 0) >= (rank[durgency] || 0)) ? hurgency : durgency;
-    return best || "ok";
+    const b = getDueBadge(t.dueDate || t.due_date, t.interval_days);
+    if (!b) return "ok";
+    return b.label.indexOf("Critical") >= 0 ? "critical" : b.label.indexOf("Overdue") >= 0 ? "overdue" : "due-soon";
   };
 
   const maintTasks = tasks.filter(function(t){ return t.section !== "Paperwork"; });
@@ -2472,11 +2311,11 @@ export default function App() {
   // ─── STYLES ──────────────────────────────────────────────────────────────────
   const s = {
     app:     { fontFamily: "'DM Sans','Helvetica Neue',sans-serif", background: "var(--bg-app)", minHeight: "100vh", color: "var(--text-primary)" },
-    topBar:  { background: "#1a3a5c", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexShrink: 0 },
+    topBar:  { background: "#0f4c8a", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 },
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
-    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 0, paddingBottom: 80 },
+    main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 72, paddingBottom: 80 },
     card:    { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
     pill:    function(a,c){ return { padding: "4px 11px", borderRadius: 20, border: a ? "1.5px solid " + (c || "var(--brand)") : "1.5px solid var(--border)", background: a ? (c || "var(--brand-deep)") : "transparent", color: a ? (c || "var(--brand)") : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }; },
     plusBtn: { background: "var(--brand)", color: "var(--text-on-brand)", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 22, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -2610,6 +2449,11 @@ export default function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
+          <button onClick={function(){ setShowFirstMatePanel(function(v){ return !v; }); }}
+            title="Ask First Mate"
+            style={{ background: showFirstMatePanel ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, padding: "0 10px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+            ⚓ Ask
+          </button>
           <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Light mode" : "Dark mode"}
             style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, width: 34, color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2617,45 +2461,6 @@ export default function App() {
               <path d="M8 2a6 6 0 0 1 0 12V2Z" fill="rgba(255,255,255,0.9)"/>
             </svg>
           </button>
-        </div>
-      </div>
-      {/* ── First Mate input bar ── */}
-      <div style={{ background: "#1a3a5c", padding: "0 12px 12px" }}>
-        <div style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "0 14px 0 10px", display: "flex", alignItems: "center", gap: 10, height: 44 }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <rect x="4" y="1" width="5" height="7" rx="2.5" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2"/>
-              <path d="M1.5 7a5 5 0 0 0 10 0" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="6.5" y1="12" x2="6.5" y2="10" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <input
-            ref={fmInputRef}
-            value={fmInputVal}
-            onChange={function(e){ setFmInputVal(e.target.value); }}
-            onFocus={function(){ setShowFirstMatePanel(true); }}
-            onKeyDown={function(e){
-              if (e.key === "Enter" && fmInputVal.trim()) {
-                setFmPending(fmInputVal.trim());
-                setFmInputVal("");
-                setShowFirstMatePanel(true);
-              }
-              if (e.key === "Escape") {
-                setShowFirstMatePanel(false);
-                setFmInputVal("");
-                fmInputRef.current && fmInputRef.current.blur();
-              }
-            }}
-            placeholder="Ask First Mate…"
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "#fff", fontFamily: "inherit" }}
-          />
-          {fmInputVal.trim() && (
-            <button onClick={function(){
-              setFmPending(fmInputVal.trim());
-              setFmInputVal("");
-              setShowFirstMatePanel(true);
-            }} style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.9)", color: "#1a3a5c", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 700 }}>↑</button>
-          )}
         </div>
       </div>
 
@@ -2872,8 +2677,7 @@ export default function App() {
                       <div key={t.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s" }}>
                         <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                           <button onClick={function(){
-                            setNoteSheetTask(t);
-                            setNoteSheetVal("");
+                            toggleTask(t.id);
                             if (panelTasks.length <= 1) setTimeout(function(){ setFleetPanel(null); }, 600);
                           }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
@@ -2922,7 +2726,7 @@ export default function App() {
                                 if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Error. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer" }}>Retry</button></div>;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No parts found.</div>;
                                 return sugg.slice(0, 3).map(function(part){
-                                  const inList = false;
+                                  const inList = cart.some(function(i){ return i.name === part.name; });
                                   const linkedEq = t.equipment_id ? equipment.find(function(e){ return e.id === t.equipment_id; }) : null;
                                   return (
                                     <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
@@ -2980,7 +2784,7 @@ export default function App() {
                               {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>🔩 Find parts</button>}
                               {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                               {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                                const inList = false;
+                                const inList = cart.some(function(i){ return i.name === part.name; });
                                 return (
                                   <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
@@ -3160,9 +2964,9 @@ export default function App() {
             const makeModel = [activeVessel?.year, activeVessel?.make, activeVessel?.model].filter(Boolean).join(" ");
             const isExpanded = expandedEquip === vesselEq.id;
             return (
-              <div style={{ marginBottom: 16, borderRadius: "0 0 12px 12px", overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)", background: "#1a3a5c", marginLeft: -12, marginRight: -12 }}>
+              <div style={{ marginBottom: 16, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)" }}>
                 {/* Banner header */}
-                <div style={{ background: "#1a3a5c", cursor: "pointer", padding: "18px 20px 16px" }}
+                <div style={{ background: "var(--brand)", cursor: "pointer", padding: "18px 20px 16px" }}
                   onClick={function(){ setExpandedEquip(isExpanded ? null : vesselEq.id); if (!isExpanded) setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -3180,65 +2984,30 @@ export default function App() {
                     <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, flexShrink: 0, paddingLeft: 12 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
-                {/* Vessel card action footer — Option B */}
-                {(function(){
-                  const activeTab = equipTab[vesselEq.id] || "info";
-                  const tapTab = function(t) {
-                    if (isExpanded && activeTab === t) { setExpandedEquip(null); return; }
-                    setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
-                    if (!isExpanded) { setExpandedEquip(vesselEq.id); }
-                    if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
-                    if (t === "edit") {
-                      let inf = {}; try { inf = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
-                      setVesselInfoForm(inf);
-                      setEditingVesselInfo(true);
-                      const av = vessels.find(function(v){ return v.id === activeVesselId; });
-                      if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
-                    }
-                  };
-                  const pillStyle = function(t) {
-                    const active = activeTab === t;
-                    return {
-                      display: "flex", alignItems: "center", gap: 5,
-                      padding: "5px 11px",
-                      background: active ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
-                      border: "0.5px solid " + (active ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)"),
-                      borderRadius: 20, cursor: "pointer",
-                    };
-                  };
-                  const pillText = function(t) {
-                    return { fontSize: 11, fontWeight: 600, color: activeTab === t ? "#fff" : "rgba(255,255,255,0.6)" };
-                  };
-                  return (
-                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.22)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
-                      onClick={function(e){ e.stopPropagation(); }}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {[["info","ID"],["docs","Docs"],["admin","Admin"]].map(function(pair){
-                          return (
-                            <button key={pair[0]} onClick={function(){ tapTab(pair[0]); }} style={pillStyle(pair[0])}>
-                              <span style={pillText(pair[0])}>{pair[1]}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.15)" }} />
-                        <button onClick={function(){ tapTab(activeTab === "haul-out" ? "info" : "haul-out"); }}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: activeTab === "haul-out" ? "#fff" : "rgba(255,255,255,0.5)", padding: "4px 2px" }}>
-                          Haul
-                        </button>
-                        <button onClick={function(){ tapTab("edit"); }}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: activeTab === "edit" ? "#fff" : "rgba(255,255,255,0.5)", padding: "4px 2px" }}>
-                          Edit
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-                {/* Expanded tab content */}
+                {!isExpanded && <div style={{ height: 3, background: "linear-gradient(90deg, #5bbcf8 0%, #0e5cc7 100%)" }} />}
+                {/* Expanded — Vessel ID / Docs / Edit tabs inline */}
                 {isExpanded && (
-                  <div style={{ background: "var(--bg-subtle)", padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.1)" }}
+                  <div style={{ background: "var(--bg-subtle)", padding: "14px 16px", borderTop: "2px solid rgba(255,255,255,0.15)" }}
                     onClick={function(e){ e.stopPropagation(); }}>
+                    {/* Render the vessel card tabs inline — reuse the same tab state */}
+                    <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+                      {["info","docs","admin","edit"].map(function(t){ const activeTab = equipTab[vesselEq.id] || "info"; return (
+                        <button key={t} onClick={function(){
+                          setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = t; return n; });
+                          if (t === "admin" && vesselAdminTasks[vesselEq._vesselId] === undefined) { loadVesselAdminTasks(vesselEq._vesselId); }
+                          if (t === "edit") {
+                            let info = {}; try { info = JSON.parse(vesselEq.notes || "{}"); } catch(er) {}
+                            setVesselInfoForm(info);
+                            setEditingVesselInfo(true);
+                            const av = vessels.find(function(v){ return v.id === activeVesselId; });
+                            if (av) setVesselDetailForm({ vesselName: av.vesselName || "", make: av.make || "", model: av.model || "", year: av.year || "" });
+                          }
+                        }}
+                          style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: (activeTab)===t ? "var(--brand)" : "var(--bg-subtle)", color: (activeTab)===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                          {t === "info" ? "Vessel ID" : t === "docs" ? "Docs" : t === "admin" ? "Admin" : "Edit"}
+                        </button>
+                      ); })}
+                    </div>
                     {/* The actual tab content is rendered inline */}
                     {(equipTab[vesselEq.id] || "info") === "info" && (function(){
                       const hasData = Object.keys(info).length > 0;
@@ -3653,21 +3422,29 @@ export default function App() {
               .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0] || null;
             const totalNm   = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
             const totalEngHrs = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.engine_hours) || 0); }, 0);
-            var updateHours = function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); };
+            const updateHours = function(){
+              const hrs = prompt("Current engine hours:");
+              if (!hrs || isNaN(hrs)) return;
+              const parsed = parseInt(hrs);
+              const dated = today();
+              setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? { ...v, engineHours: parsed, engineHoursDate: dated } : v; }); });
+              supabase.from("vessels").update({ engine_hours: parsed, engine_hours_date: dated }).eq("id", activeVesselId)
+                .then(function(res){ if (res.error) console.error("Engine hours save failed:", res.error); });
+            };
             const cellStyle = { background: "var(--bg-card)", padding: "11px 12px" };
             const labelStyle = { fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 };
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: "1px", background: "#1a3a5c", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "2px solid #1a3a5c" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: "1px", background: "var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "1px solid var(--border)" }}>
 
                 {/* Row 1 Cell 1 — Engine hours (from last logbook hours_end or manual) */}
                 <div style={cellStyle}>
                   <div style={labelStyle}>Engine hrs</div>
                   {(lastLogWithHours || engineHours) ? (<>
-                    <div onClick={updateHours} style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1, cursor: "pointer" }}>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>
                       {(lastLogWithHours ? lastLogWithHours.hours_end : engineHours).toLocaleString()}
                     </div>
                     <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>
-                      {lastLogWithHours ? "from log · " + fmt(lastLogWithHours.entry_date) : "manually entered"} · <span onClick={updateHours} style={{ color: "var(--brand)", cursor: "pointer" }}>update</span>
+                      {lastLogWithHours ? "from log · " + fmt(lastLogWithHours.entry_date) : "manually entered"}
                     </div>
                   </>) : (<>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Not logged</div>
@@ -3726,13 +3503,17 @@ export default function App() {
               return Math.round((new Date(t.due_date) - today) / 86400000) <= 30;
             });
             const adminDueCount = adminDueTasks.length;
+            const cols = adminDueCount > 0 ? "repeat(4,1fr)" : "repeat(3,1fr)";
             const cards = [
               { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "var(--danger-text)",  bg: "var(--danger-bg)",  border: "1px solid var(--danger-border)"  },
               { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "var(--warn-text)",    bg: "var(--warn-bg)",    border: "1px solid var(--warn-border)"    },
               { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
             ];
+            if (adminDueCount > 0) cards.push(
+              { label: "Admin Due", val: adminDueCount, sub: "Reg, safety & surveys", color: "#7c3aed", bg: "#ede9fe", border: "1px solid #a78bfa" }
+            );
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: cols, gap: 10, marginBottom: 20 }}>
                 {cards.map(function(card){ return (
                   <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
                     style={{ background: card.bg, border: card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
@@ -3745,193 +3526,33 @@ export default function App() {
             );
           })()}
 
-
-
-          {/* ── Engine tasks import banner ── */}
-          {(function(){
-            if (dismissedEngineTasksBanner) return null;
-            var vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId && t.section === "Engine"; });
-            var hasHourTasks = vesselTasks.some(function(t){ return t.interval_hours; });
-            if (hasHourTasks) return null; // already set up
+          {/* ── Category filter ── */}
+          {(() => {
+            const repairSections = [...new Set(repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){ return r.section; }))];
+            const equipCategories = [...new Set(equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return e.category; }))];
+            const allCats = [...new Set([...repairSections, ...equipCategories])].filter(function(c){ return c && c !== "Vessel"; }).sort();
+            if (allCats.length <= 1) return null;
             return (
-              <div style={{ background: "var(--brand-deep)", border: "1px solid var(--brand)", borderRadius: 12, padding: "12px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 22, flexShrink: 0 }}>⚙️</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>Add engine hour tracking</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>8 default tasks (oil, impeller, filters…) with dual calendar + hour triggers</div>
-                </div>
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button onClick={async function(){
-                    var engineCards = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category === "Engine"; });
-                    if (engineCards.length === 0) {
-                      await createDefaultEngineTasks(activeVesselId, null);
-                      setDismissedEngineTasksBanner(true);
-                    } else if (engineCards.length === 1) {
-                      await createDefaultEngineTasks(activeVesselId, engineCards[0].id);
-                      setDismissedEngineTasksBanner(true);
-                    } else {
-                      setShowEnginePickerModal(true);
-                    }
-                  }} style={{ padding: "7px 14px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    Add Tasks
-                  </button>
-                  <button onClick={function(){ setDismissedEngineTasksBanner(true); }}
-                    style={{ padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "none", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
-                    ✕
-                  </button>
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.4px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Filter</span>
+                <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
+                  style={{ flex: 1, border: "0.5px solid var(--border)", borderRadius: 20, padding: "6px 14px", fontSize: 13, background: equipSectionFilter !== "All" ? "var(--brand-deep)" : "var(--bg-card)", color: equipSectionFilter !== "All" ? "var(--brand)" : "var(--text-primary)", cursor: "pointer", fontWeight: equipSectionFilter !== "All" ? 600 : 400, appearance: "none", WebkitAppearance: "none" }}>
+                  <option value="All">All categories</option>
+                  {allCats.map(function(cat){
+                    return <option key={cat} value={cat}>{(SECTIONS[cat] || "") + " " + cat}</option>;
+                  })}
+                </select>
+                {equipSectionFilter !== "All" && (
+                  <span onClick={function(){ setEquipSectionFilter("All"); }}
+                    style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer", whiteSpace: "nowrap", padding: "4px 2px" }}>✕ clear</span>
+                )}
               </div>
             );
           })()}
-
-          {/* ── Actions row — Parts Needed + Admin Due ── */}
-          {(function(){
-            var openRepairIds = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){ return r.id; });
-            var urgentTaskIds = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).map(function(t){ return t.id; });
-            var repairPartsCount = openRepairIds.reduce(function(acc, id){ var s = aiSuggestions[id]; return acc + (Array.isArray(s) ? s.length : 0); }, 0);
-            var taskPartsCount   = urgentTaskIds.reduce(function(acc, id){ var r = inlinePartResults[id]; return acc + (r && r.results ? r.results.length : 0); }, 0);
-            var totalParts = repairPartsCount + taskPartsCount;
-            var repairUnfetched = openRepairIds.filter(function(id){ return !aiSuggestions[id] || aiSuggestions[id] === "loading"; }).length;
-            var taskUnfetched   = urgentTaskIds.filter(function(id){ return !inlinePartResults[id] || inlinePartResults[id].loading; }).length;
-            return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: showPartsNeeded ? 10 : 20 }}>
-                <div onClick={function(){ setShowPartsNeeded(function(v){ return !v; }); }}
-                  style={{ background: "var(--info-bg)", border: showPartsNeeded ? "2px solid var(--brand)" : "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: "var(--info-text)", lineHeight: 1 }}>{totalParts + repairUnfetched + taskUnfetched}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--info-text)", marginTop: 2 }}>Parts needed</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
-                    {repairPartsCount > 0 ? repairPartsCount + " from repairs" : ""}
-                    {repairPartsCount > 0 && taskPartsCount > 0 ? " · " : ""}
-                    {taskPartsCount > 0 ? taskPartsCount + " from tasks" : ""}
-                    {totalParts === 0 && (repairUnfetched + taskUnfetched) > 0 ? "Tap to search" : ""}
-                    {totalParts === 0 && repairUnfetched + taskUnfetched === 0 ? "All clear" : ""}
-                  </div>
-                </div>
-                <div onClick={function(){ setShowUrgencyPanel("Admin Due"); }}
-                  style={{ background: "#faf5ff", border: "0.5px solid #d8b4fe", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: "#7c3aed", lineHeight: 1 }}>{(function(){ var t = new Date(); t.setHours(0,0,0,0); return (vesselAdminTasks[activeVesselId]||[]).filter(function(a){ return a.due_date && Math.round((new Date(a.due_date)-t)/86400000)<=30; }).length; })()}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginTop: 2 }}>Admin due</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Reg, safety &amp; surveys</div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ── Parts Needed expanded panel ── */}
-          {showPartsNeeded && (function(){
-            var vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; });
-            var urgentTasks   = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
-            var repairFetched = vesselRepairs.filter(function(r){ return Array.isArray(aiSuggestions[r.id]) && aiSuggestions[r.id].length > 0; });
-            var repairUnfetched = vesselRepairs.filter(function(r){ return !aiSuggestions[r.id] || aiSuggestions[r.id] === "loading"; });
-            var taskFetched   = urgentTasks.filter(function(t){ return inlinePartResults[t.id] && inlinePartResults[t.id].results && inlinePartResults[t.id].results.length > 0; });
-            var taskUnfetched = urgentTasks.filter(function(t){ return !inlinePartResults[t.id] || inlinePartResults[t.id].loading; });
-            var hasAnything   = repairFetched.length > 0 || taskFetched.length > 0 || repairUnfetched.length > 0 || taskUnfetched.length > 0;
-            if (!hasAnything) return (
-              <div style={{ ...s.card, padding: "14px 16px", marginBottom: 20, textAlign: "center", fontSize: 12, color: "var(--text-muted)" }}>
-                No open repairs or due tasks right now. ✔
-              </div>
-            );
-            return (
-              <div style={{ ...s.card, marginBottom: 20, overflow: "hidden" }}>
-
-                {/* ── Repairs section ── */}
-                {(repairFetched.length > 0 || repairUnfetched.length > 0) && (
-                  <div style={{ padding: "10px 14px 2px", display: "flex", alignItems: "center", gap: 6, borderBottom: "0.5px solid var(--border)" }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--warn-text)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>OPEN REPAIRS</span>
-                  </div>
-                )}
-                {repairFetched.map(function(r){
-                  var parts = aiSuggestions[r.id] || [];
-                  var eq = equipment.find(function(e){ return e.id === r.equipment_id; });
-                  var eqCat = eq ? eq.category : r.section;
-                  return parts.map(function(part, pi){
-                    return (
-                      <div key={r.id + "-" + pi} style={{ padding: "9px 14px", borderBottom: "0.5px solid var(--border)" }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{part.name}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "2px 0 6px" }}>{r.section} · {r.description.length > 40 ? r.description.slice(0, 40) + "…" : r.description}</div>
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                          {retailerLinksForPart(part.name, eqCat).map(function(rl){ return (
-                            <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                              onClick={function(){ trackAffiliateClick(rl.name, part.name, r.description); }}
-                              style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: rl.color, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
-                              {rl.name} ↗
-                            </a>
-                          ); })}
-                        </div>
-                      </div>
-                    );
-                  });
-                })}
-                {repairUnfetched.length > 0 && (
-                  <div style={{ padding: "9px 14px", borderBottom: taskFetched.length > 0 || taskUnfetched.length > 0 ? "0.5px solid var(--border)" : "none" }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 4 }}>
-                      {repairUnfetched.length} repair{repairUnfetched.length !== 1 ? "s" : ""} not yet searched
-                    </div>
-                    <button onClick={function(){
-                      repairUnfetched.forEach(function(r){ getSuggestionsForRepair(r); });
-                    }} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "var(--brand)", cursor: "pointer", padding: 0 }}>
-                      Find parts for all open repairs →
-                    </button>
-                  </div>
-                )}
-
-                {/* ── Maintenance section ── */}
-                {(taskFetched.length > 0 || taskUnfetched.length > 0) && (
-                  <div style={{ padding: "10px 14px 2px", display: "flex", alignItems: "center", gap: 6, borderBottom: "0.5px solid var(--border)" }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--danger-text)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>OVERDUE / DUE SOON</span>
-                  </div>
-                )}
-                {taskFetched.map(function(t){
-                  var pr = inlinePartResults[t.id];
-                  var parts = pr ? pr.results : [];
-                  var eq = equipment.find(function(e){ return e.id === t.equipment_id; });
-                  var eqCat = eq ? eq.category : t.section;
-                  var urgency = getTaskUrgency(t);
-                  var badge = urgency === "critical" ? { label: "Critical", bg: "var(--critical-bg)", color: "var(--critical-text)" } : { label: "Due soon", bg: "var(--duesoon-bg)", color: "var(--duesoon-text)" };
-                  return parts.map(function(part, pi){
-                    return (
-                      <div key={t.id + "-" + pi} style={{ padding: "9px 14px", borderBottom: "0.5px solid var(--border)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", flex: 1, minWidth: 0 }}>{part.name}</div>
-                          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: badge.bg, color: badge.color, flexShrink: 0 }}>{badge.label}</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 6px" }}>{eq ? eq.name : t.section} · {t.task.length > 35 ? t.task.slice(0,35) + "…" : t.task}</div>
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                          {retailerLinksForPart(part.name, eqCat).map(function(rl){ return (
-                            <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                              onClick={function(){ trackAffiliateClick(rl.name, part.name, t.task); }}
-                              style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: rl.color, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
-                              {rl.name} ↗
-                            </a>
-                          ); })}
-                        </div>
-                      </div>
-                    );
-                  });
-                })}
-                {taskUnfetched.length > 0 && (
-                  <div style={{ padding: "9px 14px" }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 4 }}>
-                      {taskUnfetched.length} task{taskUnfetched.length !== 1 ? "s" : ""} not yet searched
-                    </div>
-                    <button onClick={function(){
-                      taskUnfetched.forEach(function(t){ findPartsInline(t.id, t.task, t.equipment_id, t.section); });
-                    }} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "var(--brand)", cursor: "pointer", padding: 0 }}>
-                      Find parts for all due tasks →
-                    </button>
-                  </div>
-                )}
-
-              </div>
-            );
-          })()}
-
 
           {/* ── Open Repairs divider ── */}
           {(function(){
-            const openCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+            const openCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length;
             if (openCount === 0) return null;
             return (
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -3942,14 +3563,14 @@ export default function App() {
             );
           })()}
 
-          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length === 0 && (
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).length === 0 && (
             <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 10, marginBottom: 16 }}>
               <div style={{ fontSize: 28 }}>✅</div>
               <div style={{ marginTop: 6, fontSize: 12 }}>No open repairs</div>
             </div>
           )}
 
-          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){
+          {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && (equipSectionFilter === "All" || r.section === equipSectionFilter); }).map(function(r){
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
@@ -3974,15 +3595,9 @@ export default function App() {
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                         </select>
-                        <select value={editRepairForm._equipmentId || ""}
-                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
-                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
-                          <option value="">— No equipment linked —</option>
-                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
-                        </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
-                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section, equipment_id: editRepairForm._equipmentId || null }); }}
+                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section }); }}
                             style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
                         </div>
                       </div>
@@ -3990,9 +3605,6 @@ export default function App() {
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.description}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                         {fmt(r.date)}
-                        {(r.photos || []).length > 0 && (
-                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
-                        )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
                           <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
                         )}
@@ -4000,7 +3612,7 @@ export default function App() {
                     </>)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
+                                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
                     <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "▾" : "▸"}</span>
@@ -4012,11 +3624,11 @@ export default function App() {
                       <SectionBadge section={r.section} />
                       {r.priority && <span style={{ fontSize: 10, fontWeight: 700, background: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].bg : "var(--bg-subtle)", color: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].color : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", textTransform: "uppercase" }}>{r.priority}</span>}
                     </div>
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
-                      {["parts", "notes", "photos"].map(function(t){ return (
+                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8 }}>
+                      {["notes"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}
-                          style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
-                          {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
+                          style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "notes") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "notes") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
+                          {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
@@ -4132,43 +3744,6 @@ export default function App() {
                         )}
                       </div>
                     )}
-                    {(repairTab[r.id] || "parts") === "photos" && (
-                      <div style={{ padding: "14px 16px" }} onClick={function(e){ e.stopPropagation(); }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>PHOTOS</div>
-                        {(r.photos || []).length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet — tap the camera button to document this repair over time.</div>
-                        )}
-                        {(r.photos || []).length > 0 && (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
-                            {(r.photos || []).map(function(ph, i) { return (
-                              <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
-                                <img src={ph.url} alt={ph.caption || "Repair photo"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", padding: "3px 5px", fontSize: 9, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
-                              </div>
-                            ); })}
-                          </div>
-                        )}
-                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[r.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
-                          {uploadingRepairPhoto[r.id] ? "⏳ Uploading…" : "📷 Add Photo"}
-                          {!uploadingRepairPhoto[r.id] && (
-                            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
-                              var file = e.target.files && e.target.files[0];
-                              if (!file) return;
-                              setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[r.id] = true; return n; });
-                              try {
-                                var compressed = await compressImage(file, 1200, 0.78);
-                                var url = await uploadToStorage(compressed, "repairs/" + r.id);
-                                var newPhoto = { url: url, date: today(), caption: "" };
-                                var updatedPhotos = [...(r.photos || []), newPhoto];
-                                await supa("repairs", { method: "PATCH", query: "id=eq." + r.id, body: { photos: updatedPhotos }, prefer: "return=minimal" });
-                                setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === r.id ? Object.assign({}, rr, { photos: updatedPhotos }) : rr; }); });
-                              } catch(err){ console.error("Photo upload failed:", err); }
-                              finally { setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); delete n[r.id]; return n; }); e.target.value = ""; }
-                            }} />
-                          )}
-                        </label>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -4212,8 +3787,8 @@ export default function App() {
                     <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                       <button onClick={function(){
                           if (isCompleting) return;
-                          setNoteSheetTask(t);
-                          setNoteSheetVal("");
+                          setCompletingTask(t.id);
+                          setTimeout(function(){ toggleTask(t.id); setCompletingTask(null); }, 500);
                         }}
                         style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                         {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
@@ -4227,7 +3802,7 @@ export default function App() {
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }}
+                                                <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }}
                           onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
                           {isExpanded ? "▾" : "▸"}
                         </span>
@@ -4238,35 +3813,21 @@ export default function App() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, paddingLeft: 38 }}>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "—"}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "—"}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.lastService ? fmt(t.lastService) : "Never"}{t.last_service_hours ? " · " + t.last_service_hours + "h" : ""}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.lastService ? fmt(t.lastService) : "Never"}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
                             <div style={{ fontSize: 12, fontWeight: 600, color: badge ? badge.color : "var(--text-primary)" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>{t.due_hours ? "DUE AT HRS" : "PRIORITY"}</div>
-                            {t.due_hours ? (function(){
-                              var avH = vessels.find(function(v){ return v.id === activeVesselId; });
-                              var cH = avH ? avH.engineHours : null;
-                              var hbg = getHoursBadge(t.due_hours, cH, t.interval_hours);
-                              return (<div style={{ fontSize: 12, fontWeight: 700, color: hbg ? hbg.color : "var(--text-primary)" }}>{t.due_hours}h{cH != null ? " (" + (t.due_hours - cH > 0 ? (t.due_hours - cH) + " to go" : Math.abs(t.due_hours - cH) + " over") + ")" : ""}</div>);
-                            })() : <div style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{t.priority || "medium"}</div>}
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, textTransform: "capitalize" }}>{t.priority || "medium"}</div>
                           </div>
                         </div>
-                        {(function(){
-                          if (!t.interval_hours) return null;
-                          var avH2 = vessels.find(function(v){ return v.id === activeVesselId; });
-                          var cH2 = avH2 ? avH2.engineHours : null;
-                          if (cH2 == null) return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 10, color: "var(--text-muted)", fontStyle: "italic" }}>⚙️ <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>Log engine hours</span> to activate hour tracking</span></div>);
-                          var hbg2 = getHoursBadge(t.due_hours, cH2, t.interval_hours);
-                          if (!hbg2) return null;
-                          return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 11, fontWeight: 700, background: hbg2.bg, color: hbg2.color, border: "1px solid " + (hbg2.border || hbg2.color), borderRadius: 5, padding: "2px 8px" }}>{hbg2.label} · {hbg2.hours > 0 ? hbg2.hours + " hrs remaining" : Math.abs(hbg2.hours) + " hrs overdue"}</span></div>);
-                        })()}
                         {/* ── Find Part (unified inline) ── */}
                         {(function(){
                           const pr = inlinePartResults[t.id];
@@ -4344,40 +3905,6 @@ export default function App() {
                             </div>
                           );
                         })()}
-
-                        {/* ── Photos ── */}
-                        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
-                          {(t.photos || []).length > 0 && (
-                            <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 8, paddingBottom: 2 }}>
-                              {t.photos.map(function(ph, i){ return (
-                                <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _taskId: t.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }}
-                                  style={{ width: 62, height: 62, borderRadius: 8, overflow: "hidden", flexShrink: 0, cursor: "pointer", position: "relative" }}>
-                                  <img src={ph.url} alt={ph.caption || "Task photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.45)", padding: "2px 4px", fontSize: 8, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
-                                </div>
-                              ); })}
-                            </div>
-                          )}
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[t.id] ? "default" : "pointer", fontSize: 11, fontWeight: 600, color: "var(--brand)", background: "var(--bg-card)" }}>
-                            {uploadingRepairPhoto[t.id] ? "⏳ Uploading…" : "📷 Add Photo"}
-                            {!uploadingRepairPhoto[t.id] && (
-                              <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
-                                var file = e.target.files && e.target.files[0];
-                                if (!file) return;
-                                setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[t.id] = true; return n; });
-                                try {
-                                  var compressed = await compressImage(file, 1200, 0.78);
-                                  var url = await uploadToStorage(compressed, "task-photos/" + t.id);
-                                  var newPhoto = { url: url, date: today(), caption: "" };
-                                  var updatedPhotos = [...(t.photos || []), newPhoto];
-                                  await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + t.id, body: { photos: updatedPhotos }, prefer: "return=minimal" });
-                                  setTasks(function(prev){ return prev.map(function(tt){ return tt.id === t.id ? Object.assign({}, tt, { photos: updatedPhotos }) : tt; }); });
-                                } catch(err){ console.error("Task photo upload failed:", err); }
-                                finally { setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); delete n[t.id]; return n; }); e.target.value = ""; }
-                              }} />
-                            )}
-                          </label>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -4494,7 +4021,7 @@ export default function App() {
                     {!isExpanded && <div style={{ height: 3, background: "linear-gradient(90deg, #5bbcf8 0%, #0e5cc7 100%)" }} />}
                   </div>
                 ) : (
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { const s = equipSuggestions[eq.id]; const loaded = Array.isArray(s) && s.length > 0; if (!loaded) getSuggestionsForEquipment(eq); setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
@@ -4545,7 +4072,7 @@ export default function App() {
                         )}
                       </>);
                     })()}
-                    <button onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ var n = Object.assign({}, prev); n[eq.id] = "edit"; return n; }); }}                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}                      title="Edit equipment">                      ✏️                    </button>                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}
                       title="Delete equipment">
                       <TrashIcon />
@@ -4614,45 +4141,6 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* Photos tab */}
-                    {activeTab === "photos" && (
-                      <div style={{ padding: "14px 16px" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>CONDITION PHOTOS</div>
-                        {(eq.photos || []).length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet — document this equipment’s condition over time.</div>
-                        )}
-                        {(eq.photos || []).length > 0 && (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
-                            {(eq.photos || []).map(function(ph, i) { return (
-                              <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _equipId: eq.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
-                                <img src={ph.url} alt={ph.caption || "Equipment photo"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", padding: "3px 5px", fontSize: 9, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
-                              </div>
-                            ); })}
-                          </div>
-                        )}
-                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[eq.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
-                          {uploadingRepairPhoto[eq.id] ? "⏳ Uploading…" : "📷 Add Photo"}
-                          {!uploadingRepairPhoto[eq.id] && (
-                            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
-                              var file = e.target.files && e.target.files[0];
-                              if (!file) return;
-                              setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[eq.id] = true; return n; });
-                              try {
-                                var compressed = await compressImage(file, 1200, 0.78);
-                                var url = await uploadToStorage(compressed, "equip-photos/" + eq.id);
-                                var newPhoto = { url: url, date: today(), caption: "" };
-                                var updatedPhotos = [...(eq.photos || []), newPhoto];
-                                await supa("equipment", { method: "PATCH", query: "id=eq." + eq.id, body: { photos: updatedPhotos }, prefer: "return=minimal" });
-                                setEquipment(function(prev){ return prev.map(function(e){ return e.id === eq.id ? Object.assign({}, e, { photos: updatedPhotos }) : e; }); });
-                              } catch(err){ console.error("Equipment photo upload failed:", err); }
-                              finally { setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); delete n[eq.id]; return n; }); e.target.value = ""; }
-                            }} />
-                          )}
-                        </label>
-                      </div>
-                    )}
-
                     {/* Edit tab */}
                     {activeTab === "edit" && (
                       <div>
@@ -4665,7 +4153,6 @@ export default function App() {
                           <input placeholder="Model (optional)" value={editEquipForm.model !== undefined ? editEquipForm.model : (isVesselCard ? "" : (eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||"")} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, model: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                           <input placeholder="Serial No." value={editEquipForm.serial !== undefined ? editEquipForm.serial : (isVesselCard ? "" : (eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||"")} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, serial: e.target.value }; }); }} style={{ ...s.inp, flex: 1 }} />
                         </div>
-                        {!isVesselCard && <input placeholder="Part No. (optional)" value={editEquipForm.partno !== undefined ? editEquipForm.partno : (eq.notes||"").match(/Part: ([^|]+)/)?.[1]?.trim()||""} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, partno: e.target.value }; }); }} style={s.inp} />}
                         {!isVesselCard && <input placeholder="Notes (optional)" value={editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim()} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, notes: e.target.value }; }); }} style={s.inp} />}
                         <button onClick={function(){
                           const name = editEquipForm.name || eq.name;
@@ -4673,9 +4160,8 @@ export default function App() {
                           const status = editEquipForm.status || eq.status;
                           const model = editEquipForm.model !== undefined ? editEquipForm.model : (isVesselCard ? "" : ((eq.notes||"").match(/Model: ([^|]+)/)?.[1]?.trim()||""));
                           const serial = editEquipForm.serial !== undefined ? editEquipForm.serial : (isVesselCard ? "" : ((eq.notes||"").match(/S\/N: ([^|]+)/)?.[1]?.trim()||""));
-                          const partno = editEquipForm.partno !== undefined ? editEquipForm.partno : ((eq.notes||"").match(/Part: ([^|]+)/)?.[1]?.trim()||"");
-                          const baseNotes = isVesselCard ? (eq.notes||"") : (editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").replace(/\s*\|?\s*Part: [^|]+/g,"").trim());
-                          const notes = isVesselCard ? baseNotes : [baseNotes, model ? "Model: "+model : "", serial ? "S/N: "+serial : "", partno ? "Part: "+partno : ""].filter(Boolean).join(" | ");
+                          const baseNotes = isVesselCard ? (eq.notes||"") : (editEquipForm.notes !== undefined ? editEquipForm.notes : (eq.notes||"").replace(/\s*\|?\s*Model: [^|]+/g,"").replace(/\s*\|?\s*S\/N: [^|]+/g,"").trim());
+                          const notes = isVesselCard ? baseNotes : [baseNotes, model ? "Model: "+model : "", serial ? "S/N: "+serial : ""].filter(Boolean).join(" | ");
                           updateEquipment(eq.id, { name, category, status, notes });
                           setEditEquipForm({});
                           setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = isVesselCard ? "info" : "parts"; return n; });
@@ -4690,10 +4176,10 @@ export default function App() {
                     )}
 
                     {/* tabs */}
-                    <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch", msOverflowStyle: "none", scrollbarWidth: "none" }}>
-                      {(isVesselCard ? ["info","docs","photos","edit"] : ["maintenance","repairs","parts","docs","log","photos","edit"]).map(function(t){ return (
-                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : t === "photos" ? "📷 Photos" : "Edit"}
+                    <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+                      {(isVesselCard ? ["info","docs","edit"] : ["maintenance","repairs","docs","log","edit"]).map(function(t){ return (
+                        <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : "Edit"}
                         </button>
                       ); })}
                     </div>
@@ -4728,8 +4214,11 @@ export default function App() {
                                         <div onClick={function(e){
                                             e.stopPropagation();
                                             if (completingTask === t.id) return;
-                                            setNoteSheetTask(t);
-                                            setNoteSheetVal("");
+                                            setCompletingTask(t.id);
+                                            setTimeout(function(){
+                                              toggleTask(t.id);
+                                              setCompletingTask(null);
+                                            }, 600);
                                           }}
                                           style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingTask === t.id ? "var(--ok-text)" : "var(--border)"), background: completingTask === t.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
                                           {completingTask === t.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
@@ -4737,28 +4226,12 @@ export default function App() {
                                         <div style={{ flex: 1 }}>
                                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t.task}</div>
                                           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                                            Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}
+                                            Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}
                                             {t.dueDate && <span style={{ color: badge ? badge.color : "var(--text-muted)", fontWeight: badge ? 700 : 400 }}> · Due: {fmt(t.dueDate)}</span>}
-                                            {(function(){
-                                              if (!t.interval_hours) return null;
-                                              var avH = vessels.find(function(v){ return v.id === activeVesselId; });
-                                              var cH = avH ? avH.engineHours : null;
-                                              var hb = getHoursBadge(t.due_hours, cH, t.interval_hours);
-                                              if (!hb) return cH != null ? <span style={{ color: "var(--text-muted)" }}> · {t.due_hours - cH}h left</span> : null;
-                                              return <span style={{ color: hb.color, fontWeight: 700 }}> · {hb.hours > 0 ? hb.hours + "h left" : Math.abs(hb.hours) + "h over"}</span>;
-                                            })()}
                                           </div>
                                         </div>
                                         {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
-                                        {(function(){
-                                          if (!t.interval_hours) return null;
-                                          var avH = vessels.find(function(v){ return v.id === activeVesselId; });
-                                          var cH = avH ? avH.engineHours : null;
-                                          var hb = getHoursBadge(t.due_hours, cH, t.interval_hours);
-                                          if (!hb) return null;
-                                          return <span style={{ background: hb.bg, color: hb.color, border: "1px solid " + (hb.border||hb.color), borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{hb.label}</span>;
-                                        })()}
-                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", due_hours: t.due_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
+                                        <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit task">✏️</button>
                                         <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }}><TrashIcon /></button>
                                       </div>
                                     ) : (
@@ -4776,21 +4249,6 @@ export default function App() {
                                               style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
                                           </div>
                                           <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>INTERVAL (HRS)</div>
-                                            <input type="number" inputMode="numeric" placeholder="e.g. 100" value={editTaskForm.interval_hours || ""}
-                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { interval_hours: e.target.value }); }); }}
-                                              style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
-                                          </div>
-                                        </div>
-                                        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                                          <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE AT (HRS)</div>
-                                            <input type="number" inputMode="numeric" placeholder="e.g. 500" value={editTaskForm.due_hours || ""}
-                                              onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { due_hours: e.target.value }); }); }}
-                                              style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "7px 10px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
-                                            <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3 }}>Override computed hours</div>
-                                          </div>
-                                          <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>DUE DATE</div>
                                             <input type="date" value={editTaskForm.dueDate || ""}
                                               onChange={function(e){ setEditTaskForm(function(f){ return Object.assign({}, f, { dueDate: e.target.value }); }); }}
@@ -4801,17 +4259,9 @@ export default function App() {
                                           <button onClick={function(e){ e.stopPropagation(); setEditingTask(null); }} style={{ flex: 1, padding: "6px 0", border: "1px solid var(--border)", borderRadius: 7, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                                           <button onClick={async function(e){
                                             e.stopPropagation();
-                                            var newIH = editTaskForm.interval_hours ? parseInt(editTaskForm.interval_hours) : null;
-                                            // User can override due_hours directly; else compute from interval + current hours
-                                            var newDueH = editTaskForm.due_hours ? parseInt(editTaskForm.due_hours) : null;
-                                            if (!newDueH && newIH) {
-                                              var avSave = vessels.find(function(v){ return v.id === activeVesselId; });
-                                              var cHSave = avSave ? avSave.engineHours : null;
-                                              newDueH = cHSave != null ? cHSave + newIH : (t.last_service_hours != null ? t.last_service_hours + newIH : null);
-                                            }
-                                            const patch = { task: editTaskForm.task, interval_days: Math.max(1, parseInt(editTaskForm.interval_days) || 1), due_date: editTaskForm.dueDate || null, interval_hours: newIH, due_hours: newDueH };
+                                            const patch = { task: editTaskForm.task, interval_days: Math.max(1, parseInt(editTaskForm.interval_days) || 1), due_date: editTaskForm.dueDate || null };
                                             await updateTask(t.id, patch);
-                                            setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate, interval_hours: newIH, due_hours: newDueH }) : tk; }); });
+                                            setTasks(function(prev){ return prev.map(function(tk){ return tk.id === t.id ? Object.assign({}, tk, { task: editTaskForm.task, interval_days: editTaskForm.interval_days, interval: editTaskForm.interval_days + " days", dueDate: editTaskForm.dueDate || tk.dueDate }) : tk; }); });
                                             setEditingTask(null);
                                           }} style={{ flex: 2, padding: "6px 0", border: "none", borderRadius: 7, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Save</button>
                                         </div>
@@ -4866,10 +4316,10 @@ export default function App() {
                                     {isExpanded && (
                                       <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", marginLeft: 30 }}>
                                         <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 8px" }}>
-                                          {["parts", "notes", "photos"].map(function(t){ return (
+                                          {["notes"].map(function(t){ return (
                                             <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
-                                              style={{ padding: "6px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)" }}>
-                                              {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
+                                              style={{ padding: "6px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "notes") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "notes") === t ? "var(--brand)" : "var(--text-muted)" }}>
+                                              {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
                                             </button>
                                           ); })}
                                         </div>
@@ -4879,7 +4329,7 @@ export default function App() {
                                             {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                                             {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
                                             {sugg && sugg !== "loading" && sugg !== "error" && sugg.filter(function(p){ return !rejectedParts["repair-" + r.id + "-" + p.id]; }).map(function(part){
-                                              const inList = false;
+                                              const inList = cart.some(function(i){ return i.name === part.name; });
                                               return (
                                                 <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -4916,18 +4366,6 @@ export default function App() {
                                             {r.description || "No additional notes."}
                                           </div>
                                         )}
-                                        {(repairTab[r.id] || "parts") === "photos" && (
-                                          <div style={{ padding: "10px 12px" }}>
-                                            {(r.photos || []).length === 0 && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No photos yet.</div>}
-                                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                              {(r.photos || []).map(function(ph, i){ return (
-                                                <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ width: 56, height: 56, borderRadius: 6, overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
-                                                  <img src={ph.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                                </div>
-                                              ); })}
-                                            </div>
-                                          </div>
-                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -4939,8 +4377,9 @@ export default function App() {
                     )}
 
                     {/* parts tab */}
-                    {activeTab === "parts" && (<>
-
+                                          {equipSuggestions[eq.id] && equipSuggestions[eq.id] !== "loading" && equipSuggestions[eq.id] !== "error" && (
+                        <button onClick={function(){ getSuggestionsForEquipment(eq); }} style={{ marginTop: 6, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>↺ Refresh suggestions</button>
+                      )}
                       {(eq.customParts||[]).length > 0 && (<>
                         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginTop: 14, marginBottom: 8 }}>MY PARTS</div>
                         {eq.customParts.map(function(part){ return (
@@ -4960,6 +4399,11 @@ export default function App() {
                               <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
                                 {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>${part.price}</span>}
                                 {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>↗ Buy</a>}
+                                {(function(){ const inList = cart.some(function(i){ return i.name === part.name; }); return (
+                                  <button onClick={function(){ if (!inList) addToCart(part, "custom", eq.name); }} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, border: "none", cursor: inList ? "default" : "pointer", background: inList ? "var(--ok-bg)" : "var(--brand)", color: inList ? "var(--ok-text)" : "#fff" }}>
+                                    {inList ? "✓ Listed" : "+ List"}
+                                  </button>
+                                ); })()}
                               </div>
                             </div>
                           </div>
@@ -5268,9 +4712,6 @@ export default function App() {
                 <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
                   {["30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
                 </select>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 12 }}>⚙️ ENGINE HOURS INTERVAL (optional)</div>
-                <input type="number" placeholder="e.g. 100 (every 100 engine hours)" value={newTask.interval_hours} onChange={function(e){ setNewTask(function(t){ return { ...t, interval_hours: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} min="1" />
-                <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 4, marginTop: 3 }}>For engine/generator tasks tracked by hours</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 4 }}>DUE DATE (optional — overrides interval)</div>
                 <input type="date" value={newTask.dueDate || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, dueDate: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -5421,7 +4862,7 @@ export default function App() {
                           const payload = { vessel_id: activeVesselId, name: equipAiResult.name, category: equipAiResult.category, status: "good", notes: aiNotes, custom_parts: [], docs: [], logs: [] };
                           const created = await supa("equipment", { method: "POST", body: payload });
                           const eq = created[0];
-                          setEquipment(function(prev){ return [...prev, { id: eq.id, name: eq.name, category: eq.category, status: eq.status, lastService: eq.last_service, notes: eq.notes || "", customParts: safeJsonbArray(eq.custom_parts), docs: eq.docs || [], logs: [], photos: [], _vesselId: eq.vessel_id }]; });
+                          setEquipment(function(prev){ return [...prev, { id: eq.id, name: eq.name, category: eq.category, status: eq.status, lastService: eq.last_service, notes: eq.notes || "", customParts: safeJsonbArray(eq.custom_parts), docs: eq.docs || [], logs: [], _vesselId: eq.vessel_id }]; });
                           if (equipAiResult.tasks && equipAiResult.tasks.length > 0) {
                             const today = new Date().toISOString().split("T")[0];
                             const taskRows = equipAiResult.tasks.map(function(t){
@@ -5487,16 +4928,12 @@ export default function App() {
           />
         )}
 
-        {/* ── FIRST MATE inline panel overlay ── */}
-        {view === "customer" && (
+        {/* ── FIRST MATE ── */}
+        {view === "customer" && tab === "firstmate-standalone" && (
           <FirstMate
             vesselId={activeVesselId}
             vesselName={boatName}
-            openPanel={showFirstMatePanel}
-            pendingMessage={fmPending}
-            onMessageSent={function(){ setFmPending(""); }}
-            onClose={function(){ setShowFirstMatePanel(false); }}
-            userPlan={userPlan}
+            onBack={function(){ setTab("boat"); }}
           />
         )}
 
@@ -5504,6 +4941,8 @@ export default function App() {
         {view === "customer" && tab === "parts-standalone" && (
           <PartsPage
             equipment={equipment.filter(function(e){ return e._vesselId === activeVesselId; })}
+            cart={cart}
+            onAddToCart={addToCart}
             onBack={function(){ setTab("boat"); }}
           />
         )}
@@ -5563,15 +5002,9 @@ export default function App() {
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                         </select>
-                        <select value={editRepairForm._equipmentId || ""}
-                          onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
-                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
-                          <option value="">— No equipment linked —</option>
-                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
-                        </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
-                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section, equipment_id: editRepairForm._equipmentId || null }); }}
+                          <button onClick={function(){ updateRepair(r.id, { description: editRepairForm.description, section: editRepairForm.section }); }}
                             style={{ flex: 2, padding: "5px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>Save</button>
                         </div>
                       </div>
@@ -5579,9 +5012,6 @@ export default function App() {
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.description}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                         {fmt(r.date)}
-                        {(r.photos || []).length > 0 && (
-                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
-                        )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
                           <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
                         )}
@@ -5589,7 +5019,7 @@ export default function App() {
                     </>)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
+                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
                     <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
@@ -5601,11 +5031,11 @@ export default function App() {
                   <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
 
                     {/* Tab bar */}
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
-                      {["parts", "notes", "photos"].map(function(t){ return (
+                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px" }}>
+                      {["notes"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
-                          style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
-                          {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
+                          style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "notes") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "notes") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
+                          {t === "parts" ? "🔩 Parts needed" : "📝 Notes"}
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
@@ -5634,7 +5064,7 @@ export default function App() {
                         )}
 
                         {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                          const inList = false;
+                          const inList = cart.some(function(i){ return i.name === part.name; });
                           return (
                             <div key={part.name} style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -5675,47 +5105,10 @@ export default function App() {
                         <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
                           {r.description || "No additional notes."}
                         </div>
-                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
+                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section }); setExpandedRepair(null); }}
                           style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>
                           ✏️ Edit repair
                         </button>
-                      </div>
-                    )}
-                    {(repairTab[r.id] || "parts") === "photos" && (
-                      <div style={{ padding: "14px 16px" }} onClick={function(e){ e.stopPropagation(); }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>PHOTOS</div>
-                        {(r.photos || []).length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet — tap the camera button to document this repair over time.</div>
-                        )}
-                        {(r.photos || []).length > 0 && (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
-                            {(r.photos || []).map(function(ph, i) { return (
-                              <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", aspectRatio: "1", background: "var(--bg-subtle)", position: "relative" }}>
-                                <img src={ph.url} alt={ph.caption || "Repair photo"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", padding: "3px 5px", fontSize: 9, color: "#fff", fontWeight: 600 }}>{ph.date}</div>
-                              </div>
-                            ); })}
-                          </div>
-                        )}
-                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[r.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
-                          {uploadingRepairPhoto[r.id] ? "⏳ Uploading…" : "📷 Add Photo"}
-                          {!uploadingRepairPhoto[r.id] && (
-                            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
-                              var file = e.target.files && e.target.files[0];
-                              if (!file) return;
-                              setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[r.id] = true; return n; });
-                              try {
-                                var compressed = await compressImage(file, 1200, 0.78);
-                                var url = await uploadToStorage(compressed, "repairs/" + r.id);
-                                var newPhoto = { url: url, date: today(), caption: "" };
-                                var updatedPhotos = [...(r.photos || []), newPhoto];
-                                await supa("repairs", { method: "PATCH", query: "id=eq." + r.id, body: { photos: updatedPhotos }, prefer: "return=minimal" });
-                                setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === r.id ? Object.assign({}, rr, { photos: updatedPhotos }) : rr; }); });
-                              } catch(err){ console.error("Photo upload failed:", err); }
-                              finally { setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); delete n[r.id]; return n; }); e.target.value = ""; }
-                            }} />
-                          )}
-                        </label>
                       </div>
                     )}
                   </div>
@@ -5782,8 +5175,7 @@ export default function App() {
                       <div key={t.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
                         <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                           <button onClick={function(){
-                            setNoteSheetTask(t);
-                            setNoteSheetVal("");
+                            toggleTask(t.id);
                             if (panelTasks.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600);
                           }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
@@ -5825,14 +5217,11 @@ export default function App() {
                             {t.serviceLogs && t.serviceLogs.length > 0 && (
                               <div style={{ marginBottom: 10 }}>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>SERVICE HISTORY</div>
-                                {t.serviceLogs.slice().reverse().map(function(log, i){
+                                {t.serviceLogs.slice(-3).reverse().map(function(log, i){
                                   return (
-                                    <div key={i} style={{ marginBottom: 6 }}>
-                                      <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                                        <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: "var(--text-muted)", flexShrink: 0 }}>{fmt(log.date)}</span>
-                                        {!log.comment && <span style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>done</span>}
-                                      </div>
-                                      {log.comment && <div style={{ fontSize: 12, color: "var(--text-primary)", marginTop: 1, lineHeight: 1.4 }}>{log.comment}</div>}
+                                    <div key={i} style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>
+                                      <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>{fmt(log.date)}</span>
+                                      <span>{log.comment || "Service completed"}</span>
                                     </div>
                                   );
                                 })}
@@ -5853,7 +5242,7 @@ export default function App() {
                                 if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
                                 return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
-                                  const inList = false;
+                                  const inList = cart.some(function(i){ return i.name === part.name; });
                                   return (
                                     <div key={part.name} style={{ padding: "7px 0", borderBottom: "1px solid #f9fafb" }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
@@ -5954,9 +5343,9 @@ export default function App() {
                         {isExpanded && (
                           <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
                             <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 12px" }}>
-                              {["parts","notes","photos"].map(function(tt){ return (
+                              {["parts","notes"].map(function(tt){ return (
                                 <button key={tt} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = tt; return n; }); if (tt === "parts" && !sugg) getSuggestionsForRepair(r); }}
-                                  style={{ padding: "8px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === tt ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === tt ? "var(--brand)" : "var(--text-muted)" }}>
+                                  style={{ padding: "8px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "notes") === tt ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "notes") === tt ? "var(--brand)" : "var(--text-muted)" }}>
                                   {tt === "parts" ? "🔩 Parts" : "📝 Notes"}
                                   {tt === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && <span style={{ marginLeft: 4, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 4px", fontSize: 10 }}>{sugg.length}</span>}
                                 </button>
@@ -5968,7 +5357,7 @@ export default function App() {
                                 {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
                                 {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>}
                                 {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
-                                  const inList = false;
+                                  const inList = cart.some(function(i){ return i.name === part.name; });
                                   return (
                                     <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid #f9fafb" }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
@@ -5988,18 +5377,6 @@ export default function App() {
                                 <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>{r.description || "No additional notes."}</div>
                               </div>
                             )}
-                              {(repairTab[r.id] || "parts") === "photos" && (
-                                <div style={{ padding: "12px 14px" }}>
-                                  {(r.photos || []).length === 0 && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No photos yet.</div>}
-                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                    {(r.photos || []).map(function(ph, i){ return (
-                                      <div key={i} onClick={function(){ setLightboxPhoto(Object.assign({}, ph, { _repairId: r.id, _photoIndex: i })); setLightboxCaptionEdit(ph.caption || ""); }} style={{ width: 60, height: 60, borderRadius: 6, overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
-                                        <img src={ph.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                      </div>
-                                    ); })}
-                                  </div>
-                                </div>
-                              )}
                           </div>
                         )}
                       </div>
@@ -6093,7 +5470,7 @@ export default function App() {
 
                               {/* Task name row */}
                               <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                                <button onClick={function(e){ e.stopPropagation(); setNoteSheetTask(t); setNoteSheetVal(""); }}
+                                <button onClick={function(e){ e.stopPropagation(); toggleTask(t.id); }}
                                   style={{ width: 16, height: 16, borderRadius: "50%", border: "1.5px solid var(--border)", background: "none", cursor: "pointer", flexShrink: 0, marginTop: 2 }} />
                                 <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{t.task}</div>
                               </div>
@@ -6294,12 +5671,12 @@ export default function App() {
           <div style={{ background: "var(--bg-card)", borderRadius: 20, width: "100%", maxWidth: 460, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }} onClick={function(e){ e.stopPropagation(); }}>
             <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontWeight: 800, fontSize: 16 }}>
-                {avStep === 1 ? "Add Vessel" : avStep === 2 ? "Tell us about your boat" : "Engine hours setup"}
+                {avStep === 1 ? "Add Vessel" : "Tell us about your boat"}
               </div>
               <button onClick={function(){ setShowAddVesselAI(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
             </div>
             <div style={{ display: "flex", gap: 5, padding: "12px 20px 0" }}>
-              {[1,2,3].map(function(n){ return (
+              {[1,2].map(function(n){ return (
                 <div key={n} style={{ flex: 1, height: 3, borderRadius: 3, background: avStep >= n ? "var(--brand)" : "var(--border)" }} />
               ); })}
             </div>
@@ -6343,47 +5720,6 @@ export default function App() {
                   </div>
                 )}
               </>)}
-              {avStep === 3 && (() => {
-                var engineTasks3 = tasks.filter(function(t){ return t.interval_hours && t._vesselId === vessels[vessels.length - 1]?.id; });
-                var curHrs3 = avEngineHours ? parseFloat(avEngineHours) : null;
-                return (<>
-                  <div style={{ background: "var(--brand-deep)", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 12px", marginBottom: 14, fontSize: 13, color: "var(--brand)" }}>
-                    <strong>⚙️ Set your next service hours</strong>
-                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, color: "var(--text-muted)" }}>We estimated based on your current hours ({curHrs3 != null ? curHrs3 + " hrs" : "not set"}). Correct any you know — you can always update later.</div>
-                  </div>
-                  {curHrs3 == null && (
-                    <div style={{ background: "var(--warn-bg)", border: "1px solid var(--warn-border)", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "var(--warn-text)" }}>
-                      No engine hours entered — <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>add them now</span> for accurate tracking.
-                    </div>
-                  )}
-                  {engineTasks3.length === 0 && (
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "20px 0" }}>No hour-tracked tasks found — engine tasks will appear in your Maintenance tab.</div>
-                  )}
-                  {engineTasks3.map(function(t){
-                    var computed = curHrs3 != null ? curHrs3 + t.interval_hours : null;
-                    var editVal = avEngineTaskEdits[t.id] !== undefined ? avEngineTaskEdits[t.id] : (computed != null ? String(computed) : "");
-                    return (
-                      <div key={t.id} style={{ borderBottom: "1px solid var(--border)", padding: "10px 0", display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t.task}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>Every {t.interval_hours} hrs</div>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                          <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600 }}>DUE AT</div>
-                          <input
-                            type="number"
-                            value={editVal}
-                            onChange={function(e){ setAvEngineTaskEdits(function(prev){ var n = Object.assign({}, prev); n[t.id] = e.target.value; return n; }); }}
-                            style={{ width: 80, border: "1px solid var(--border)", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 700, textAlign: "right", outline: "none", boxSizing: "border-box" }}
-                          />
-                          <div style={{ fontSize: 10, color: "var(--text-muted)" }}>hrs</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </>);
-              })()}
-
             </div>
             <div style={{ padding: "12px 20px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 10 }}>
               {avStep === 1 && (<>
@@ -6392,36 +5728,6 @@ export default function App() {
                   if (!avName.trim()) { setAvError("Please enter a vessel name."); return; }
                   setAvError(null); setAvStep(2);
                 }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Next →</button>
-              </>)}
-              {avStep === 3 && (<>
-                <button onClick={async function(){
-                  // Apply any due_hours overrides the user edited
-                  var editedIds = Object.keys(avEngineTaskEdits);
-                  for (var i = 0; i < editedIds.length; i++) {
-                    var tid = editedIds[i];
-                    var newDH = parseInt(avEngineTaskEdits[tid]);
-                    if (!isNaN(newDH)) {
-                      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + tid, body: { due_hours: newDH }, prefer: "return=minimal" });
-                      setTasks(function(prev){ return prev.map(function(tk){ return tk.id === tid ? Object.assign({}, tk, { due_hours: newDH }) : tk; }); });
-                    }
-                  }
-                  setShowAddVesselAI(false);
-                  setAvStep(1);
-                }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>Skip</button>
-                <button onClick={async function(){
-                  var editedIds = Object.keys(avEngineTaskEdits);
-                  for (var i = 0; i < editedIds.length; i++) {
-                    var tid = editedIds[i];
-                    var newDH = parseInt(avEngineTaskEdits[tid]);
-                    if (!isNaN(newDH)) {
-                      await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + tid, body: { due_hours: newDH }, prefer: "return=minimal" });
-                      setTasks(function(prev){ return prev.map(function(tk){ return tk.id === tid ? Object.assign({}, tk, { due_hours: newDH }) : tk; }); });
-                    }
-                  }
-                  setShowAddVesselAI(false);
-                  setAvStep(1);
-                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>👍 Looks good
-                </button>
               </>)}
               {avStep === 2 && (<>
                 <button onClick={function(){ setAvStep(1); }} disabled={avLoading || saving} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>← Back</button>
@@ -6457,11 +5763,8 @@ export default function App() {
                         await supa("maintenance_tasks", { method: "POST", body: taskRows });
                       }
                     }
+                    setShowAddVesselAI(false);
                     switchVessel(nv.id);
-                    // Go to step 3 for engine hours confirmation
-                    setSaving(false);
-                    setAvEngineTaskEdits({});
-                    setAvStep(3);
                     setView("customer");
                   } catch(e) { setAvError("Couldn't create vessel: " + e.message); }
                   finally { setAvLoading(false); setSaving(false); }
@@ -6511,8 +5814,7 @@ export default function App() {
                     if (!file) return;
                     setUploadingPhoto(true);
                     try {
-                      const compressedVesselPhoto = await compressImage(file, 1600, 0.85);
-                    const url = await uploadToStorage(compressedVesselPhoto, "vessel-photo-" + (editingVesselId || "new") + "-" + Date.now());
+                      const url = await uploadToStorage(file, "vessel-photo-" + (editingVesselId || "new") + "-" + Date.now());
                       setSettingsForm(function(f){ return { ...f, photoUrl: url }; });
                     } catch(err){ setDbError("Photo upload failed: " + err.message); }
                     finally {
@@ -6971,384 +6273,395 @@ export default function App() {
       )}
 
             {/* ── Confirm Part Before Adding to List ─────────────────────────── */}
-      {confirmPart && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-          onClick={function(){ setConfirmPart(null); setFindPartResults([]); setFindPartError(null); }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ padding: "16px 20px 0" }}>
-              <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 16px" }} />
-              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>Add to Shopping List</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
-                {confirmPart.repairContext ? "Repair: " + confirmPart.repairContext.substring(0, 60) + (confirmPart.repairContext.length > 60 ? "…" : "") : confirmPart.equipName ? "For: " + confirmPart.equipName : "Review part details before adding"}
-              </div>
+       && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 200 }} onClick={function(){ setShowCartPanel(false); }}>
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 400, background: "var(--bg-app)", boxShadow: "-4px 0 32px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
+
+            {/* Header */}
+            <div style={{ padding: "18px 20px 16px", background: "var(--brand)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>🛒 Shopping List {cartQty > 0 ? "(" + cartQty + ")" : ""}</span>
+              <button onClick={function(){ setShowCartPanel(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
             </div>
 
-            <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 16px" }}>
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
 
-              {/* ── Web search results ── */}
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span>SEARCH RESULTS</span>
-                  {!findPartLoading && <button onClick={async function(){
-                    findPartSearched.current = null;
-                    setFindPartLoading(true); setFindPartError(null);
-                    try {
-                      const res = await fetch("/api/find-part", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partName: confirmPart.part.name, equipmentName: confirmPart.equipName, repairContext: confirmPart.repairContext || null }) });
-                      const data = await res.json();
-                      if (data.error) throw new Error(data.error);
-                      setFindPartResults(data.results || []);
-                    } catch(e) { setFindPartError(e.message); }
-                    finally { setFindPartLoading(false); }
-                  }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", fontWeight: 700, cursor: "pointer", padding: 0 }}>↺ Search again</button>}
+              {/* ── SECTION 1: MY LIST ── */}
+              <div style={{ background: "var(--bg-card)", borderBottom: "3px solid #f4f6f9" }}>
+                <div style={{ padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--brand)", letterSpacing: "0.5px" }}>MY LIST</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button onClick={function(){
+                      const name = window.prompt("Part name:");
+                      if (!name || !name.trim()) return;
+                      const price = window.prompt("Price (optional, e.g. 29.99):") || "";
+                      const vendor = window.prompt("Vendor (optional, e.g. West Marine):") || "";
+                      addToCart({ name: name.trim(), price: price, vendor: vendor, sku: "", url: "" }, "manual", "");
+                    }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Add Part</button>
+                    {cart.length > 0 && <button onClick={function(){ showConfirm("Clear your entire shopping list?", clearCart); }} style={{ background: "none", border: "none", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>Clear all</button>}
+                  </div>
                 </div>
 
-                {findPartLoading && (
-                  <div style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: "20px 16px", textAlign: "center" }}>
-                    <div style={{ fontSize: 20, marginBottom: 6 }}>🔍</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Searching across marine retailers…</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>Fisheries Supply, Defender, West Marine & more</div>
+                {cart.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "20px 24px 24px", color: "var(--text-muted)" }}>
+                    <div style={{ fontSize: 28 }}>🛒</div>
+                    <div style={{ marginTop: 6, fontSize: 12 }}>Add parts from equipment cards</div>
                   </div>
-                )}
-
-                {!findPartLoading && findPartError && (
-                  <div style={{ background: "var(--overdue-bg)", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "var(--warn-text)", marginBottom: 8 }}>
-                    {findPartError === "rate_limited"
-                      ? "Too many searches — please wait 30 seconds then tap Search again."
-                      : "Search unavailable — tap Search again or add manually below."}
-                  </div>
-                )}
-
-                {!findPartLoading && findPartResults.length > 0 && (
-                  <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 4 }}>
-                    {findPartResults.map(function(r, i){ return (
-                      <div key={i} onClick={function(){
-                        setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: r.name, vendor: r.vendor, price: r.price || prev.part.price, url: r.url }) }); });
-                      }} style={{ padding: "10px 12px", borderBottom: i < findPartResults.length-1 ? "1px solid var(--border)" : "none", cursor: "pointer", background: confirmPart.part.url === r.url ? "var(--brand-deep)" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                ) : (
+                  <div style={{ padding: "0 20px 14px" }}>
+                    {cart.map(function(item){ return (
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{r.vendor}</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>{item.name}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                            {item.equipment_name ? item.equipment_name : ""}
+                            {item.vendor ? (item.equipment_name ? " · " : "") + item.vendor : ""}
+                            {item.price ? " · $" + item.price : ""}
+                          </div>
                         </div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                          {(function(){ const p = r.price ? parseFloat(r.price) : null; return p && !isNaN(p) ? <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ok-text)", flexShrink: 0 }}>${p.toFixed(2)}</span> : <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>See site</span>; })()}
-                          <a href={r.url} target="_blank" rel="noreferrer" onClick={function(e){ e.stopPropagation(); }}
-                            style={{ fontSize: 10, background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "3px 7px", fontWeight: 600, textDecoration: "none" }}>↗</a>
+                        <a href={buyUrl(item.name, item.url)} target="_blank" rel="noreferrer"
+                          style={{ background: "var(--ok-text)", color: "#fff", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap" }}>
+                          Buy ↗
+                        </a>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                          <button onClick={function(){ removeFromCart(item.dbId); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>−</button>
+                          <span style={{ fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{item.qty}</span>
+                          <button onClick={function(){ addToCart(item); }} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>+</button>
                         </div>
+                        <button onClick={function(){ showConfirm("Remove " + item.name + "?", function(){ removeFromCart(item.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "1px 2px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                       </div>
                     ); })}
-                  </div>
-                )}
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, paddingTop: 8, borderTop: "1px solid var(--border)", marginBottom: 12 }}>
+                      <span>Estimated total</span>
+                      <span style={{ color: "var(--brand)" }}>${cartTotal.toFixed(2)}</span>
+                    </div>
+                    {/* Shop all CTA — multi-retailer */}
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 8 }}>Shop all {cart.length} item{cart.length !== 1 ? "s" : ""} at</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 4 }}>
+                      {Object.entries(RETAILERS).map(function(entry){
+                        const key = entry[0]; const r = entry[1];
+                        const allNames = cart.map(function(i){ return i.name; }).join(" ");
+                        return (
+                          <a key={key} href={buyUrl(allNames, null, key)} target="_blank" rel="noreferrer"
+                            onClick={function(){ trackAffiliateClick(r.name, allNames.substring(0, 100), "cart-bundle"); }}
+                            style={{ display: "block", textAlign: "center", padding: "9px 6px", background: r.color, color: "#fff", borderRadius: 8, fontSize: 11, fontWeight: 700, textDecoration: "none", lineHeight: 1.3 }}>
+                            {r.name.split(" ")[0]} ↗
+                          </a>
+                        );
+                      })}
+                    </div>
 
-                {!findPartLoading && findPartResults.length === 0 && !findPartError && (
-                  <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
-                    No results yet — tap Search again or fill in manually below.
                   </div>
                 )}
               </div>
 
-              {/* ── Manual entry — only shown when no results or search failed ── */}
-              {!findPartLoading && (findPartResults.length === 0 || findPartError) && (
-                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>
-                    {findPartResults.length === 0 && !findPartError ? "ADD MANUALLY" : "ADD MANUALLY"}
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 4 }}>PART NAME</div>
-                  <input value={confirmPart.part.name}
-                    onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { name: e.target.value }) }); }); }}
-                    style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", marginBottom: 10, fontFamily: "inherit", outline: "none" }} />
-                  <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 4 }}>PRICE</div>
-                      <input value={confirmPart.part.price || ""}
-                        onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { price: e.target.value }) }); }); }}
-                        placeholder="e.g. 29.99"
-                        style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 4 }}>VENDOR</div>
-                      <input value={confirmPart.part.vendor || ""}
-                        onChange={function(e){ setConfirmPart(function(prev){ return Object.assign({}, prev, { part: Object.assign({}, prev.part, { vendor: e.target.value }) }); }); }}
-                        placeholder="e.g. Defender"
-                        style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
-                    </div>
-                  </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
+      {/* ── FIRST MATE TOP BAR — always visible below nav ── */}
+      {view === "customer" && (
+        <FirstMate
+          vesselId={activeVesselId}
+          vesselName={boatName}
+          openPanel={showFirstMatePanel}
+          onClose={function(){ setShowFirstMatePanel(false); }}
+        />
+      )}
+      {/* ── SHARE VESSEL PANEL ── */}
+      {showShare && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 400, overflow: "hidden", border: "1px solid var(--border-strong)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            {/* Header */}
+            <div style={{ background: "#0f4c8a", padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Sharing</div>
+                <div style={{ fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: "-0.3px" }}>{boatName}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>
+                  {settings.make ? [settings.year, settings.make, settings.model].filter(Boolean).join(" ") : "Invite crew to access this vessel"}
                 </div>
-              )}
-
-              {/* ── Selected result summary — shown when results exist ── */}
-              {!findPartLoading && findPartResults.length > 0 && confirmPart.part.url && (
-                <div style={{ background: "var(--ok-bg)", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px", marginTop: 8, fontSize: 12, color: "var(--ok-text)" }}>
-                  ✓ Selected: <strong>{confirmPart.part.name}</strong>
-                  {confirmPart.part.price && <span> · ${parseFloat(confirmPart.part.price).toFixed(2)}</span>}
-                  {confirmPart.part.vendor && <span> from {confirmPart.part.vendor}</span>}
-                </div>
-              )}
-
+              </div>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 30, height: 30, color: "#fff", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
             </div>
 
-            <div style={{ padding: "12px 20px 28px", borderTop: "1px solid var(--border)", display: "flex", gap: 10 }}>
-              <button onClick={function(){ setConfirmPart(null); setFindPartResults([]); setFindPartError(null); }}
-                style={{ flex: 1, padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-                Cancel
-              </button>
-              <button onClick={function(){
-                setConfirmPart(null); setFindPartResults([]); setFindPartError(null);
-              }} style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-                ✓ Add to Shopping List
-              </button>
+            <div style={{ padding: "20px 20px 0" }}>
+              {/* Current members */}
+              {(function(){
+                const currentMembers = vesselMembers.filter(function(m){ return m.vessel_id === activeVesselId && m.role !== "owner"; });
+                if (currentMembers.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>CURRENT CREW</div>
+                    {currentMembers.map(function(m){
+                      return (
+                        <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: "var(--bg-subtle)", borderRadius: 8, marginBottom: 6, border: "1px solid var(--border)" }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{m.email}</div>
+                            <div style={{ fontSize: 11, color: m.user_id ? "var(--ok-text)" : "var(--warn-text)", marginTop: 1 }}>
+                              {m.user_id ? "✓ Active member" : "⏳ Invite pending"}
+                            </div>
+                          </div>
+                          <button onClick={function(){ if (window.confirm("Remove " + m.email + " from this vessel?")) removeMember(m.id); }}
+                            style={{ background: "none", border: "none", color: "var(--danger-text)", fontSize: 13, cursor: "pointer", fontWeight: 700, padding: "4px 8px" }}>Remove</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Invite form */}
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>INVITE BY EMAIL</div>
+              <input placeholder="crew@example.com" value={shareEmail} onChange={function(e){ setShareEmail(e.target.value); }}
+                onKeyDown={function(e){ if (e.key === "Enter") shareVessel(); }}
+                style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 6, background: "var(--bg-subtle)", color: "var(--text-primary)" }} />
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>
+                They must sign up using this exact email to access {boatName}.
+                {vessels.length > 1 && <span style={{ color: "var(--brand)", marginLeft: 4, cursor: "pointer" }} onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }}>Wrong vessel? Switch first ↗</span>}
+              </div>
+              {shareMsg && <div style={{ background: shareMsg.startsWith("Error") ? "var(--danger-bg)" : "var(--ok-bg)", color: shareMsg.startsWith("Error") ? "var(--danger-text)" : "var(--ok-text)", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 10 }}>{shareMsg}</div>}
             </div>
-          </div>
-        </div>
-      )}
 
-
-      {/* ── COMPLETION NOTE SHEET ── */}
-      {noteSheetTask && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 450, display: "flex", alignItems: "flex-end" }}
-          onClick={function(){ setNoteSheetTask(null); setNoteSheetVal(""); }}>
-          <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: "var(--bg-card)", borderRadius: "16px 16px 0 0", padding: "20px 20px 32px" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 16px" }} />
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 4 }}>Mark as done</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>{noteSheetTask.task}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>Note <span style={{ fontWeight: 400 }}>(optional)</span></div>
-            <input
-              autoFocus
-              value={noteSheetVal}
-              onChange={function(e){ setNoteSheetVal(e.target.value); }}
-              onKeyDown={function(e){
-                if (e.key === "Enter") {
-                  var tid = noteSheetTask.id;
-                  var note = noteSheetVal;
-                  setNoteSheetTask(null);
-                  setNoteSheetVal("");
-                  toggleTask(tid, note);
-                }
-              }}
-              placeholder={"e.g. just below full marker, replaced impeller…"}
-              style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", background: "var(--bg-subtle)", color: "var(--text-primary)", marginBottom: 14 }}
-            />
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={function(){
-                var tid = noteSheetTask.id;
-                setNoteSheetTask(null);
-                setNoteSheetVal("");
-                toggleTask(tid, "");
-              }} style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Skip note
-              </button>
-              <button onClick={function(){
-                var tid = noteSheetTask.id;
-                var note = noteSheetVal;
-                setNoteSheetTask(null);
-                setNoteSheetVal("");
-                toggleTask(tid, note);
-              }} style={{ flex: 2, padding: "11px 0", borderRadius: 10, border: "none", background: "var(--brand)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                Mark Done
-              </button>
+            {/* Footer */}
+            <div style={{ padding: "12px 20px 20px", display: "flex", gap: 8 }}>
+              <button onClick={function(){ setShowShare(false); setShareMsg(null); setShareEmail(""); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-subtle)", color: "var(--text-primary)", cursor: "pointer", fontWeight: 600 }}>Close</button>
+              <button onClick={shareVessel} disabled={shareLoading || !shareEmail.trim()} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: shareLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: shareLoading ? "default" : "pointer", fontWeight: 700 }}>{shareLoading ? "Sending…" : "Send Invite"}</button>
             </div>
           </div>
         </div>
       )}
 
-            {/* ── PHOTO LIGHTBOX ── */}
-      {lightboxPhoto && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.93)", zIndex: 900, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}
-          onClick={function(){ setLightboxPhoto(null); }}>
-          <img src={lightboxPhoto.url} alt={lightboxPhoto.caption || "Photo"}
-            style={{ maxWidth: "100%", maxHeight: "62vh", objectFit: "contain", borderRadius: 10 }}
-            onClick={function(e){ e.stopPropagation(); }} />
-          <div style={{ marginTop: 12, color: "#fff", fontSize: 12, fontWeight: 600, opacity: 0.7 }}>{lightboxPhoto.date}</div>
-          <div style={{ marginTop: 10, width: "100%", maxWidth: 400 }} onClick={function(e){ e.stopPropagation(); }}>
-            <input
-              value={lightboxCaptionEdit}
-              onChange={function(e){ setLightboxCaptionEdit(e.target.value); }}
-              placeholder="Add a caption…"
-              style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "7px 12px", fontSize: 12, color: "#fff", outline: "none", boxSizing: "border-box" }}
-            />
-            {lightboxCaptionEdit !== (lightboxPhoto.caption || "") && (
-              <button onClick={async function(e){
-                e.stopPropagation();
-                const photoIdx = lightboxPhoto._photoIndex;
-                if (lightboxPhoto._repairId) {
-                  const repair = repairs.find(function(rr){ return rr.id === lightboxPhoto._repairId; });
-                  if (!repair) return;
-                  const up = (repair.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
-                  await supa("repairs", { method: "PATCH", query: "id=eq." + lightboxPhoto._repairId, body: { photos: up }, prefer: "return=minimal" });
-                  setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === lightboxPhoto._repairId ? Object.assign({}, rr, { photos: up }) : rr; }); });
-                } else if (lightboxPhoto._equipId) {
-                  const eq = equipment.find(function(e){ return e.id === lightboxPhoto._equipId; });
-                  if (!eq) return;
-                  const up = (eq.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
-                  await supa("equipment", { method: "PATCH", query: "id=eq." + lightboxPhoto._equipId, body: { photos: up }, prefer: "return=minimal" });
-                  setEquipment(function(prev){ return prev.map(function(e){ return e.id === lightboxPhoto._equipId ? Object.assign({}, e, { photos: up }) : e; }); });
-                } else if (lightboxPhoto._taskId) {
-                  const task = tasks.find(function(tt){ return tt.id === lightboxPhoto._taskId; });
-                  if (!task) return;
-                  const up = (task.photos || []).map(function(p, i){ return i === photoIdx ? Object.assign({}, p, { caption: lightboxCaptionEdit }) : p; });
-                  await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + lightboxPhoto._taskId, body: { photos: up }, prefer: "return=minimal" });
-                  setTasks(function(prev){ return prev.map(function(tt){ return tt.id === lightboxPhoto._taskId ? Object.assign({}, tt, { photos: up }) : tt; }); });
-                }
-                setLightboxPhoto(function(prev){ return Object.assign({}, prev, { caption: lightboxCaptionEdit }); });
-              }}
-                style={{ marginTop: 6, width: "100%", padding: "7px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-                Save caption
-              </button>
-            )}
-          </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 14 }} onClick={function(e){ e.stopPropagation(); }}>
-            <button onClick={function(){ setLightboxPhoto(null); }}
-              style={{ padding: "8px 24px", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, background: "none", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-              Close
-            </button>
-            <button onClick={async function(){
-              const photoIdx = lightboxPhoto._photoIndex;
-              if (lightboxPhoto._repairId) {
-                const repair = repairs.find(function(rr){ return rr.id === lightboxPhoto._repairId; });
-                if (repair) {
-                  const up = (repair.photos || []).filter(function(p, i){ return i !== photoIdx; });
-                  await supa("repairs", { method: "PATCH", query: "id=eq." + lightboxPhoto._repairId, body: { photos: up }, prefer: "return=minimal" });
-                  setRepairs(function(prev){ return prev.map(function(rr){ return rr.id === lightboxPhoto._repairId ? Object.assign({}, rr, { photos: up }) : rr; }); });
-                }
-              } else if (lightboxPhoto._equipId) {
-                const eq = equipment.find(function(e){ return e.id === lightboxPhoto._equipId; });
-                if (eq) {
-                  const up = (eq.photos || []).filter(function(p, i){ return i !== photoIdx; });
-                  await supa("equipment", { method: "PATCH", query: "id=eq." + lightboxPhoto._equipId, body: { photos: up }, prefer: "return=minimal" });
-                  setEquipment(function(prev){ return prev.map(function(e){ return e.id === lightboxPhoto._equipId ? Object.assign({}, e, { photos: up }) : e; }); });
-                }
-              } else if (lightboxPhoto._taskId) {
-                const task = tasks.find(function(tt){ return tt.id === lightboxPhoto._taskId; });
-                if (task) {
-                  const up = (task.photos || []).filter(function(p, i){ return i !== photoIdx; });
-                  await supa("maintenance_tasks", { method: "PATCH", query: "id=eq." + lightboxPhoto._taskId, body: { photos: up }, prefer: "return=minimal" });
-                  setTasks(function(prev){ return prev.map(function(tt){ return tt.id === lightboxPhoto._taskId ? Object.assign({}, tt, { photos: up }) : tt; }); });
-                }
-              }
-              setLightboxPhoto(null);
-            }}
-              style={{ padding: "8px 20px", border: "1px solid rgba(220,38,38,0.6)", borderRadius: 20, background: "none", color: "#fca5a5", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-              🗑 Delete
-            </button>
-          </div>
-        </div>
-      )}
+      {/* LOGBOOK PANEL */}
+      {/* Logbook modal replaced by logbook-standalone page */}
 
-      {/* ── UPDATE ENGINE HOURS MODAL ── */}
-      {showUpdateHoursModal && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-          onClick={function(){ setShowUpdateHoursModal(false); }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>⚙️ Update Engine Hours</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Enter current hours from your engine panel</div>
-            <input type="number" placeholder="e.g. 1450" value={updateHoursInput}
-              onChange={function(e){ setUpdateHoursInput(e.target.value); }}
-              style={{ width: "100%", border: "2px solid var(--brand)", borderRadius: 10, padding: "12px 16px", fontSize: 20, fontWeight: 700, outline: "none", boxSizing: "border-box", textAlign: "center", color: "var(--text-primary)", background: "var(--bg-subtle)", marginBottom: 14 }} />
-            {(function(){
-              var avp = vessels.find(function(v){ return v.id === activeVesselId; });
-              var prev = avp ? avp.engineHours : null;
-              if (prev && updateHoursInput && !isNaN(updateHoursInput)) {
-                var diff2 = parseInt(updateHoursInput) - prev;
-                if (diff2 > 0) return <div style={{ fontSize: 12, color: "var(--ok-text)", textAlign: "center", marginBottom: 10 }}>+{diff2} hrs since last update</div>;
-              }
-              return null;
-            })()}
-            <button onClick={async function(){
-              var parsed2 = parseInt(updateHoursInput);
-              if (!updateHoursInput || isNaN(parsed2) || parsed2 < 0) return;
-              var dated2 = today();
-              setVessels(function(vs){ return vs.map(function(v){ return v.id === activeVesselId ? Object.assign({}, v, { engineHours: parsed2, engineHoursDate: dated2 }) : v; }); });
-              try { await supabase.from("vessels").update({ engine_hours: parsed2, engine_hours_date: dated2 }).eq("id", activeVesselId); }
-              catch(e2){ console.error("Engine hours save:", e2); }
-              setShowUpdateHoursModal(false);
-            }}
-              style={{ width: "100%", padding: "14px", border: "none", borderRadius: 12, background: "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
-              Save {updateHoursInput ? parseInt(updateHoursInput).toLocaleString() + " hrs" : ""}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ADD/EDIT LOG ENTRY */}
+      {showAddLog && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 480, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={function(e){ e.stopPropagation(); }}>
 
-      {/* ── ENGINE PICKER MODAL ── */}
-      {showEnginePickerModal && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-          onClick={function(){ setShowEnginePickerModal(false); }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
-            onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>⚙️ Which engine?</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Tasks will be linked to the equipment card you choose. You can change this later.</div>
-            {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category === "Engine"; }).map(function(eq){ return (
-              <button key={eq.id} onClick={async function(){
-                await createDefaultEngineTasks(activeVesselId, eq.id);
-                setDismissedEngineTasksBanner(true);
-                setShowEnginePickerModal(false);
-              }} style={{ width: "100%", padding: "14px 16px", marginBottom: 10, border: "1.5px solid var(--border)", borderRadius: 12, background: "var(--bg-subtle)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 22 }}>⚙️</span>
+            {/* Header */}
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)" }}>{editingLog ? "Edit Log Entry" : "New Log Entry"}</div>
+              <button onClick={function(){ setShowAddLog(false); setEditingLog(null); setLogForm({}); }} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, width: 30, height: 30, fontSize: 14, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, padding: "16px 20px" }}>
+
+              {/* Type toggle */}
+              <div style={{ display: "flex", background: "var(--bg-subtle)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
+                {["passage", "note"].map(function(t){ return (
+                  <button key={t} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { entry_type: t }); }); }}
+                    style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: (logForm.entry_type || "passage") === t ? "var(--bg-card)" : "transparent", fontSize: 13, fontWeight: 700, cursor: "pointer", color: (logForm.entry_type || "passage") === t ? "var(--brand)" : "var(--text-muted)" }}>
+                    {t === "passage" ? "⛵ Passage" : "📝 Note"}
+                  </button>
+                ); })}
+              </div>
+
+              {/* Date + times */}
+              <div style={{ display: "grid", gridTemplateColumns: (logForm.entry_type || "passage") === "passage" ? "1fr 1fr 1fr" : "1fr", gap: 10, marginBottom: 12 }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{eq.name}</div>
-                  {(eq.notes || "").match(/Model: ([^|]+)/) && (
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{((eq.notes || "").match(/Model: ([^|]+)/) || [])[1].trim()}</div>
-                  )}
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DATE *</div>
+                  <input type="date" value={logForm.entry_date || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { entry_date: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
                 </div>
-              </button>
-            ); })}
-            <button onClick={async function(){
-              await createDefaultEngineTasks(activeVesselId, null);
-              setDismissedEngineTasksBanner(true);
-              setShowEnginePickerModal(false);
-            }} style={{ width: "100%", padding: "11px", border: "1px solid var(--border)", borderRadius: 12, background: "none", color: "var(--text-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
-              Add without linking to an equipment card
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── RESET PASSWORD MODAL ── */}
-      {showResetPassword && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: 20, padding: "32px 28px", width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
-            <div style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Set new password</div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6 }}>Choose a strong password for your account.</div>
-            </div>
-            {resetPasswordMsg && (
-              <div style={{ background: resetPasswordMsg.ok ? "var(--ok-bg)" : "var(--danger-bg)", border: "1px solid " + (resetPasswordMsg.ok ? "var(--ok-border)" : "var(--danger-border)"), borderRadius: 10, padding: "10px 14px", fontSize: 13, color: resetPasswordMsg.ok ? "var(--ok-text)" : "var(--danger-text)", marginBottom: 16 }}>
-                {resetPasswordMsg.text}
+                {(logForm.entry_type || "passage") === "passage" && (<>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DEPARTED</div>
+                    <input type="time" value={logForm.departure_time || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { departure_time: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ARRIVED</div>
+                    <input type="time" value={logForm.arrival_time || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { arrival_time: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </>)}
               </div>
-            )}
-            <input
-              type="password"
-              placeholder="New password (min 6 characters)"
-              value={resetNewPassword}
-              onChange={function(e){ setResetNewPassword(e.target.value); }}
-              style={{ width: "100%", border: "1.5px solid var(--border)", borderRadius: 10, padding: "12px 14px", fontSize: 15, boxSizing: "border-box", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit", marginBottom: 14 }}
-            />
-            <button onClick={async function(){
-              if (!resetNewPassword || resetNewPassword.length < 6) {
-                setResetPasswordMsg({ ok: false, text: "Password must be at least 6 characters." });
-                return;
-              }
-              try {
-                var res = await supabase.auth.updateUser({ password: resetNewPassword });
-                if (res.error) throw res.error;
-                setResetPasswordMsg({ ok: true, text: "Password updated! You are now logged in." });
-                setResetNewPassword("");
-                setTimeout(function(){ setShowResetPassword(false); setResetPasswordMsg(null); }, 2000);
-              } catch(err) {
-                setResetPasswordMsg({ ok: false, text: err.message || "Failed to update password. Try requesting a new reset link." });
-              }
-            }}
-              style={{ width: "100%", padding: "13px", border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}>
-              Update password
-            </button>
-            <button onClick={function(){ setShowResetPassword(false); setResetNewPassword(""); setResetPasswordMsg(null); }}
-              style={{ width: "100%", padding: "10px", border: "1px solid var(--border)", borderRadius: 10, background: "none", color: "var(--text-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-              Cancel
-            </button>
+
+              {/* From / To or Title */}
+              {(logForm.entry_type || "passage") === "note" ? (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TITLE</div>
+                  <input placeholder="e.g. Marina maintenance day" value={logForm.title || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { title: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FROM</div>
+                    <input placeholder="Departure port" value={logForm.from_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { from_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TO</div>
+                    <input placeholder="Arrival port" value={logForm.to_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { to_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Crew */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>CREW ABOARD</div>
+                <input placeholder="e.g. Garry, Melissa, Tom (or just a count)" value={logForm.crew || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { crew: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+              </div>
+
+              {/* Highlights */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>HIGHLIGHTS</div>
+                <input placeholder="The story hook — saw dolphins, first night passage, new record..." value={logForm.highlights || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { highlights: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+              </div>
+
+              {/* Passage-only core stats */}
+              {(logForm.entry_type || "passage") === "passage" && (<>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div><div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DIST nm</div><input type="number" placeholder="0" value={logForm.distance_nm || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { distance_nm: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} /></div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>HOURS END</div>
+                    <input type="number" placeholder="e.g. 1290" step="0.1" value={logForm.hours_end || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { hours_end: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </div>
+                {/* Derived: time at sea, avg speed, fuel used */}
+                {(function(){
+                  const dep = logForm.departure_time; const arr = logForm.arrival_time;
+                  const dist = parseFloat(logForm.distance_nm) || 0;
+                  const hoursEnd = parseFloat(logForm.hours_end) || null;
+                  let timeHrs = null;
+                  if (dep && arr) {
+                    const [dh,dm] = dep.split(":").map(Number);
+                    const [ah,am] = arr.split(":").map(Number);
+                    let diff = (ah*60+am) - (dh*60+dm);
+                    if (diff < 0) diff += 1440;
+                    timeHrs = diff / 60;
+                  }
+                  const avgSpd = (timeHrs && dist > 0) ? (dist / timeHrs).toFixed(1) : null;
+                  const lastHoursEnd = (function(){
+                    const prev = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.hours_end && (!editingLog || e.id !== editingLog); })
+                      .sort(function(a,b){ return new Date(b.entry_date+""+(b.departure_time||"00:00")) - new Date(a.entry_date+""+(a.departure_time||"00:00")); });
+                    return prev.length > 0 ? prev[0].hours_end : null;
+                  })();
+                  const runHrs = (hoursEnd && lastHoursEnd && hoursEnd > lastHoursEnd) ? (hoursEnd - lastHoursEnd) : null;
+                  const burnRate = settings.fuelBurnRate || null;
+                  const fuelUsed = (runHrs && burnRate) ? (runHrs * burnRate).toFixed(1) : null;
+                  const timeLabel = timeHrs ? (Math.floor(timeHrs) + "h " + Math.round((timeHrs % 1) * 60) + "m") : "—";
+                  return (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>TIME AT SEA</div>
+                        <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{timeLabel}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>AVG SPEED</div>
+                        <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{avgSpd ? avgSpd + " kts" : "—"}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL USED</div>
+                        <div style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "DM Mono, monospace" }}>{fuelUsed ? fuelUsed + " gal" : "—"}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Wind */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>WIND SPEED kts</div>
+                    <input type="number" placeholder="0" value={logForm.wind_speed || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { wind_speed: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>WIND DIR</div>
+                    <select value={logForm.wind_direction || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { wind_direction: e.target.value }); }); }} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                      <option value="">—</option>
+                      {["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"].map(function(d){ return <option key={d} value={d}>{d}</option>; })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Sea state pills */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>SEA STATE</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                    {["Calm", "Light", "Moderate", "Rough", "Heavy"].map(function(s){ return (
+                      <button key={s} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { sea_state: f.sea_state === s ? "" : s }); }); }}
+                        style={{ padding: "5px 12px", border: "1.5px solid " + (logForm.sea_state === s ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.sea_state === s ? "var(--brand-deep)" : "var(--bg-subtle)", color: logForm.sea_state === s ? "var(--brand)" : "var(--text-muted)", cursor: "pointer" }}>{s}</button>
+                    ); })}
+                  </div>
+                </div>
+
+                {/* Conditions pills (sailing angle / motor) */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>SAILING CONDITIONS</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                    {["Motoring", "Close hauled", "Beam reach", "Broad reach", "Downwind", "Motor sailing"].map(function(c){ return (
+                      <button key={c} onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { conditions: f.conditions === c ? "" : c }); }); }}
+                        style={{ padding: "5px 10px", border: "1.5px solid " + (logForm.conditions === c ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 11, fontWeight: 600, background: logForm.conditions === c ? "var(--brand-deep)" : "var(--bg-subtle)", color: logForm.conditions === c ? "var(--brand)" : "var(--text-muted)", cursor: "pointer" }}>{c}</button>
+                    ); })}
+                  </div>
+                </div>
+              </>)}
+
+              {/* Notes */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>NOTES</div>
+                <textarea placeholder="What happened? Any events, observations, or things to remember..." value={logForm.notes || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { notes: e.target.value }); }); }} rows={3} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, resize: "none" }} />
+              </div>
+
+              {/* More details toggle */}
+              <div style={{ borderTop: "1px solid var(--border)", marginBottom: 12, paddingTop: 12 }}>
+                <button onClick={function(){ setLogForm(function(f){ return Object.assign({}, f, { _showMore: !f._showMore }); }); }}
+                  style={{ background: "none", border: "none", fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                  {logForm._showMore ? "▾ Hide details" : "▸ More details"}
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 400 }}>barometric pressure, visibility, anchor, incident</span>
+                </button>
+              </div>
+
+              {/* Expanded fields */}
+              {logForm._showMore && (<>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>BARO mb</div>
+                    <input type="number" placeholder="1013" value={logForm.barometric_mb || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { barometric_mb: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>VISIBILITY</div>
+                    <select value={logForm.visibility || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { visibility: e.target.value }); }); }} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                      <option value="">—</option>
+                      {["Unlimited", "Good (>5nm)", "Moderate (2–5nm)", "Poor (<2nm)", "Fog", "Rain"].map(function(v){ return <option key={v} value={v}>{v}</option>; })}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL ADDED gal</div>
+                    <input type="number" placeholder="0" step="0.1" value={logForm.fuel_added || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { fuel_added: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>MAX SPEED kts</div>
+                    <input type="number" placeholder="0" step="0.1" value={logForm.max_speed_kts || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { max_speed_kts: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ANCHOR LOCATION</div>
+                    <input placeholder="Anchorage name" value={logForm.anchor_location || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { anchor_location: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>ANCHOR DEPTH ft</div>
+                    <input type="number" placeholder="0" step="0.5" value={logForm.anchor_depth_ft || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { anchor_depth_ft: e.target.value }); }); }} style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>INCIDENT / UNUSUAL EVENT</div>
+                  <textarea placeholder="Any incidents, equipment failures, medical events, or distress calls observed..." value={logForm.incident || ""} onChange={function(e){ setLogForm(function(f){ return Object.assign({}, f, { incident: e.target.value }); }); }} rows={2} style={{ ...{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "inherit" }, resize: "none" }} />
+                </div>
+              </>)}
+
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: "12px 20px 20px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
+              <button onClick={saveLog} disabled={!logForm.entry_date} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: logForm.entry_date ? "var(--brand)" : "var(--brand-deep)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: logForm.entry_date ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                {editingLog ? "Save Changes" : "Save Log Entry"}
+              </button>
+            </div>
           </div>
         </div>
       )}

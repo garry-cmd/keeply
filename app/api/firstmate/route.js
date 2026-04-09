@@ -1,3 +1,23 @@
+import { createClient } from "@supabase/supabase-js";
+
+// ── Admin client (service role — never exposed to browser) ────────────────────
+function getAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+// ── Plan limits (-1 = unlimited) ──────────────────────────────────────────────
+const FM_LIMITS = {
+  free:       5,
+  entry:      5,
+  pro:        30,
+  captain:    -1,
+  fleet:      -1,
+  enterprise: -1,
+};
+
 function buildSystemPrompt(ctx) {
   const { vessel, tasks, repairs, logbook, equipment } = ctx;
   const today = new Date().toISOString().split("T")[0];
@@ -6,7 +26,6 @@ function buildSystemPrompt(ctx) {
   const dueSoon  = tasks.filter(function(t){ return t.urgency === "due-soon"; });
   const ok       = tasks.filter(function(t){ return t.urgency === "ok"; });
 
-  // Tasks that have completion notes — the trend data
   const withNotes = tasks.filter(function(t){ return t.recentNotes && t.recentNotes.length > 0; });
 
   const fmt = function(t) {
@@ -23,7 +42,7 @@ function buildSystemPrompt(ctx) {
     .filter(function(e){ return e.entry_type === "passage"; })
     .reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
 
-  const recentLog  = (logbook || []).slice(0, 8);
+  const recentLog   = (logbook || []).slice(0, 8);
   const openRepairs = (repairs || []).filter(function(r){ return r.status !== "closed"; });
   const equipIssues = (equipment || []).filter(function(e){ return e.status === "needs-service" || e.status === "watch"; });
 
@@ -40,7 +59,6 @@ function buildSystemPrompt(ctx) {
     (dueSoon.length > 0 ? "DUE SOON (" + dueSoon.length + "):\n" + dueSoon.map(fmt).join("\n") + "\n\n" : "Nothing due soon.\n\n") +
     (ok.length > 0 ? "UP TO DATE (" + ok.length + " tasks):\n" + ok.map(fmt).join("\n") + "\n\n" : "");
 
-  // Dedicated section for tasks with notes — makes trends explicit
   if (withNotes.length > 0) {
     prompt += "== COMPLETION NOTES & TRENDS ==\n" +
       "These tasks have notes recorded when marked done. Look for patterns, deterioration, or anomalies:\n" +
@@ -101,20 +119,68 @@ export async function POST(request) {
       return Response.json({ error: "API key not configured" }, { status: 500 });
     }
 
+    // ── Auth + usage gating ───────────────────────────────────────────────────
+    const authHeader = request.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "").trim();
+
+    if (token) {
+      const admin = getAdmin();
+
+      // Verify token and get user
+      const { data: { user }, error: authErr } = await admin.auth.getUser(token);
+
+      if (!authErr && user) {
+        // Get plan
+        const { data: profile } = await admin
+          .from("user_profiles")
+          .select("plan")
+          .eq("id", user.id)
+          .single();
+        const plan = profile?.plan || "free";
+        const limit = FM_LIMITS[plan] !== undefined ? FM_LIMITS[plan] : 10;
+
+        if (limit > 0) {
+          const monthKey = new Date().toISOString().slice(0, 7); // "2026-04"
+
+          const { data: usage } = await admin
+            .from("firstmate_usage")
+            .select("count")
+            .eq("user_id", user.id)
+            .eq("month_key", monthKey)
+            .single();
+
+          const currentCount = usage?.count || 0;
+
+          // Always send — soft nudge model
+          // Increment usage
+          await admin.from("firstmate_usage").upsert({
+            user_id:    user.id,
+            month_key:  monthKey,
+            count:      currentCount + 1,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id,month_key" });
+
+          // Attach usage info to request so response can include nudge
+          request._fmUsage = { count: currentCount + 1, limit, plan };
+        }
+      }
+    }
+
+    // ── Call Anthropic ────────────────────────────────────────────────────────
     const systemPrompt = buildSystemPrompt(vesselContext);
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "Content-Type":      "application/json",
+        "x-api-key":         process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model:      "claude-sonnet-4-20250514",
         max_tokens: 2048,
-        system: systemPrompt,
-        messages: messages.map(function(m){ return { role: m.role, content: m.content }; }),
+        system:     systemPrompt,
+        messages:   messages.map(function(m){ return { role: m.role, content: m.content }; }),
       }),
     });
 
@@ -126,7 +192,9 @@ export async function POST(request) {
     const data = await anthropicRes.json();
     const text = (data.content || []).map(function(b){ return b.text || ""; }).join("");
 
-    return Response.json({ response: text });
+    // Build usage metadata for soft nudge
+    const usageMeta = request._fmUsage || null;
+    return Response.json({ response: text, usage: usageMeta });
 
   } catch (e) {
     console.error("First Mate error:", e);
