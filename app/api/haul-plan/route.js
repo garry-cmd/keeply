@@ -1,4 +1,4 @@
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(request) {
   try {
@@ -23,12 +23,9 @@ export async function POST(request) {
     const openRepairs  = (repairs || []).filter(function(r){ return r.status !== "closed"; });
     const haulTask     = (adminTasks || []).find(function(t){ return t.name && t.name.toLowerCase().includes("haul"); });
 
-    const systemPrompt = `You are an expert marine surveyor and yard manager helping a boat owner plan their haul out.
-Generate a comprehensive, vessel-specific haul-out project plan in clean HTML format suitable for email.
-Be specific to this vessel — reference their actual maintenance records, open repairs, and equipment.
-Structure: 1) Pre-haul prep (parts to order in advance), 2) On the hard (tasks while out of water), 3) Launch prep, 4) Post-launch checks.
-For each task give: task name, why it matters for this vessel, estimated time, and any notes.
-Use <h2> for sections, <ul>/<li> for tasks. Keep it practical, not generic.`;
+    const systemPrompt = `You are a marine yard manager. Generate a concise vessel-specific haul-out plan in HTML.
+Use <h2> for 4 sections: Pre-Haul (parts to order), On The Hard, Launch Prep, Post-Launch.
+Use <ul><li> for tasks. Each item: task name + one-line note specific to this vessel. No preamble. Output HTML only.`;
 
     const userPrompt = `Generate a haul-out project plan for ${vesselName}.
 
@@ -61,8 +58,8 @@ Generate a practical haul-out plan. Include standard items (bottom paint, zincs,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 3000,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1800,
         messages: [{ role: "user", content: userPrompt }],
         system: systemPrompt,
       }),
