@@ -3211,10 +3211,6 @@ export default function App() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.15)" }} />
-                        <button onClick={function(){ tapTab(activeTab === "haul-out" ? "info" : "haul-out"); }}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: activeTab === "haul-out" ? "#fff" : "rgba(255,255,255,0.5)", padding: "4px 2px" }}>
-                          Haul
-                        </button>
                         <button onClick={function(){ tapTab("edit"); }}
                           style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: activeTab === "edit" ? "#fff" : "rgba(255,255,255,0.5)", padding: "4px 2px" }}>
                           Edit
@@ -3253,14 +3249,34 @@ export default function App() {
                             style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add Vessel ID</button>
                         </div>
                       );
+                      var haulTask = (vesselAdminTasks[activeVesselId] || []).find(function(t){ return t.name && t.name.toLowerCase().includes("haul"); });
                       return (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-                          {infoFields.filter(function(f){ return info[f.key]; }).map(function(f){ return (
-                            <div key={f.key} style={{ padding: "7px 0", borderBottom: "0.5px solid var(--border)" }}>
-                              <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 2 }}>{f.label}</div>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", fontFamily: ["hin","uscg_doc","mmsi","call_sign","policy_no","state_reg"].includes(f.key) ? "DM Mono, monospace" : "inherit" }}>{info[f.key]}</div>
+                        <div>
+                          {/* Haul dates — sourced from admin task */}
+                          {haulTask && (
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
+                              <div style={{ padding: "7px 0" }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 2 }}>LAST HAUL</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>
+                                  {haulTask.last_completed ? fmt(haulTask.last_completed) : "Not recorded"}
+                                </div>
+                              </div>
+                              <div style={{ padding: "7px 0" }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 2 }}>NEXT SCHEDULED</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: (function(){ if (!haulTask.due_date) return "var(--text-primary)"; var d = Math.round((new Date(haulTask.due_date)-new Date())/86400000); return d < 0 ? "var(--danger-text)" : d < 60 ? "var(--warn-text)" : "var(--text-primary)"; })() }}>
+                                  {haulTask.due_date ? fmt(haulTask.due_date) : "Not scheduled"}
+                                </div>
+                              </div>
                             </div>
-                          ); })}
+                          )}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                            {infoFields.filter(function(f){ return info[f.key]; }).map(function(f){ return (
+                              <div key={f.key} style={{ padding: "7px 0", borderBottom: "0.5px solid var(--border)" }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 2 }}>{f.label}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", fontFamily: ["hin","uscg_doc","mmsi","call_sign","policy_no","state_reg"].includes(f.key) ? "DM Mono, monospace" : "inherit" }}>{info[f.key]}</div>
+                              </div>
+                            ); })}
+                          </div>
                         </div>
                       );
                     })()}
