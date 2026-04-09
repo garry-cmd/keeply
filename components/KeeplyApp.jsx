@@ -7234,7 +7234,95 @@ export default function App() {
         </div>
       )}
 
-      {/* ── UPDATE ENGINE HOURS MODAL ── */}
+      {/* ── SHARE VESSEL MODAL ── */}
+      {showShare && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={function(){ setShowShare(false); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)", maxHeight: "80vh", overflowY: "auto" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>👥 Share Vessel</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 20 }}>
+              {(vessels.find(function(v){ return v.id === activeVesselId; }) || {}).vesselName || "This vessel"} · invite by email
+            </div>
+
+            {/* Email input + Send */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <input
+                type="email"
+                placeholder="crew@example.com"
+                value={shareEmail}
+                onChange={function(e){ setShareEmail(e.target.value); }}
+                onKeyDown={function(e){ if (e.key === "Enter") shareVessel(); }}
+                style={{ flex: 1, border: "1.5px solid var(--border)", borderRadius: 10, padding: "11px 12px", fontSize: 14, outline: "none", boxSizing: "border-box", background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }}
+              />
+              <button onClick={shareVessel} disabled={shareLoading || !shareEmail.trim()}
+                style={{ padding: "11px 18px", border: "none", borderRadius: 10, background: shareEmail.trim() && !shareLoading ? "var(--brand)" : "var(--border)", color: shareEmail.trim() && !shareLoading ? "#fff" : "var(--text-muted)", fontWeight: 700, fontSize: 13, cursor: shareEmail.trim() && !shareLoading ? "pointer" : "default", whiteSpace: "nowrap", transition: "background 0.15s", fontFamily: "inherit" }}>
+                {shareLoading ? "Sending…" : "Invite"}
+              </button>
+            </div>
+
+            {/* Status message */}
+            {shareMsg && (
+              <div style={{ fontSize: 12, padding: "9px 12px", borderRadius: 8, marginBottom: 14,
+                background: shareMsg.startsWith("Error") ? "var(--danger-bg)" : "var(--ok-bg)",
+                color: shareMsg.startsWith("Error") ? "var(--danger-text)" : "var(--ok-text)",
+                border: "0.5px solid " + (shareMsg.startsWith("Error") ? "var(--danger-border)" : "var(--ok-border)"),
+              }}>
+                {shareMsg}
+              </div>
+            )}
+
+            {/* Current members list */}
+            {(function(){
+              var members = vesselMembers.filter(function(m){ return m.vessel_id === activeVesselId; });
+              if (members.length === 0) return null;
+              var uid = session && session.user ? session.user.id : null;
+              var isOwner = members.some(function(m){ return m.user_id === uid && m.role === "owner"; });
+              return (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>
+                    WHO HAS ACCESS
+                  </div>
+                  {members.map(function(m){
+                    var isMe = m.user_id === uid;
+                    var isThisOwner = m.role === "owner";
+                    return (
+                      <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "0.5px solid var(--border)" }}>
+                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: isThisOwner ? "var(--brand)" : "var(--bg-subtle)", border: "1.5px solid " + (isThisOwner ? "var(--brand)" : "var(--border)"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <span style={{ fontSize: 14, color: isThisOwner ? "#fff" : "var(--text-muted)" }}>{isThisOwner ? "⚓" : "👤"}</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {m.email || (isMe ? (session.user.email || "You") : "Invited user")}
+                            {isMe && <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6 }}>(you)</span>}
+                          </div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1, textTransform: "capitalize" }}>
+                            {isThisOwner ? "Owner" : m.user_id ? "Member · joined" : "Member · invite pending"}
+                          </div>
+                        </div>
+                        {/* Remove button — owner can remove non-owners, can't remove self */}
+                        {isOwner && !isThisOwner && (
+                          <button onClick={function(){ removeMember(m.id); }}
+                            style={{ background: "none", border: "1px solid var(--danger-border)", borderRadius: 7, padding: "4px 10px", fontSize: 11, fontWeight: 600, color: "var(--danger-text)", cursor: "pointer" }}>
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 16, lineHeight: 1.5 }}>
+              Shared members can view and edit vessel data. Only the owner can delete the vessel or remove members.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── UPDATE ENGINE HOURS MODAL ── */
       {showUpdateHoursModal && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowUpdateHoursModal(false); }}>
