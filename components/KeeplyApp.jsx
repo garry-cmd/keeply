@@ -963,6 +963,8 @@ export default function App() {
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
   const [updateHoursInput, setUpdateHoursInput] = useState("");
   const [showEquipNote, setShowEquipNote] = useState(false);
+  const [haulPlanLoading, setHaulPlanLoading] = useState(false);
+  const [haulPlanMsg, setHaulPlanMsg] = useState(null);
   const [equipNoteEqId, setEquipNoteEqId] = useState("");
   const [equipNoteText, setEquipNoteText] = useState("");
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -3455,6 +3457,68 @@ export default function App() {
                           {tasks.length === 0 && (
                             <div style={{ textAlign: "center", padding: "16px 0", fontSize: 12, color: "var(--text-muted)" }}>No admin tasks yet</div>
                           )}
+                          {/* Generate haul plan — Pro feature */}
+                          {(function(){
+                            var isPro = userPlan === "pro" || userPlan === "captain" || userPlan === "fleet" || userPlan === "enterprise";
+                            return (
+                              <div style={{ margin: "14px 0 6px" }}>
+                                {haulPlanMsg && (
+                                  <div style={{ fontSize: 12, padding: "8px 10px", borderRadius: 8, marginBottom: 8,
+                                    background: haulPlanMsg.ok ? "var(--ok-bg)" : "var(--danger-bg)",
+                                    color: haulPlanMsg.ok ? "var(--ok-text)" : "var(--danger-text)",
+                                    border: "0.5px solid " + (haulPlanMsg.ok ? "var(--ok-border)" : "var(--danger-border)"),
+                                  }}>{haulPlanMsg.text}</div>
+                                )}
+                                <button
+                                  disabled={haulPlanLoading || !isPro}
+                                  onClick={async function(){
+                                    if (!isPro) return;
+                                    setHaulPlanLoading(true); setHaulPlanMsg(null);
+                                    try {
+                                      var userEmail = session && session.user ? session.user.email : null;
+                                      if (!userEmail) throw new Error("Not logged in");
+                                      var v = vessels.find(function(vv){ return vv.id === activeVesselId; }) || {};
+                                      var vCtx = {
+                                        vessel: { name: v.vesselName || "vessel", type: v.vesselType, year: v.year, make: v.make, model: v.model, engineHours: v.engineHours, homePort: v.address },
+                                        tasks: tasks.filter(function(t){ return t._vesselId === activeVesselId; }).map(function(t){ return { task: t.task, section: t.section, urgency: getTaskUrgency(t), lastService: t.lastService, dueDate: t.dueDate }; }),
+                                        repairs: repairs.filter(function(r){ return r._vesselId === activeVesselId; }),
+                                        equipment: equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return { name: e.name, category: e.category, status: e.status }; }),
+                                        adminTasks: vesselAdminTasks[activeVesselId] || [],
+                                      };
+                                      var res = await fetch("/api/haul-plan", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ vesselContext: vCtx, userEmail: userEmail, userName: profilePrefs.displayName || userEmail }),
+                                      });
+                                      var data = await res.json();
+                                      if (data.error) throw new Error(data.error);
+                                      setHaulPlanMsg({ ok: true, text: "Plan sent to " + userEmail + " ✓" });
+                                    } catch(e) {
+                                      setHaulPlanMsg({ ok: false, text: "Error: " + e.message });
+                                    } finally {
+                                      setHaulPlanLoading(false);
+                                    }
+                                  }}
+                                  style={{
+                                    width: "100%", padding: "10px 0",
+                                    background: isPro ? (haulPlanLoading ? "var(--brand-deep)" : "var(--brand)") : "var(--bg-subtle)",
+                                    color: isPro ? "#fff" : "var(--text-muted)",
+                                    border: isPro ? "none" : "1px solid var(--border)",
+                                    borderRadius: 10, fontSize: 13, fontWeight: 700,
+                                    cursor: isPro && !haulPlanLoading ? "pointer" : "default",
+                                    fontFamily: "inherit", transition: "background 0.15s",
+                                  }}>
+                                  {haulPlanLoading ? "Generating plan…" : isPro ? "⛵ Email my haul-out plan" : "⛵ Email haul-out plan (Pro)"}
+                                </button>
+                                {!isPro && (
+                                  <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 5 }}>
+                                    Pro feature — <a href="/#pricing" style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}>upgrade →</a>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
                           {showAddAdminTask === vesselEq._vesselId ? (
                             <div style={{ padding: "10px 0 4px" }}>
                               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 5 }}>NAME</div>
