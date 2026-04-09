@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase-client";
 import AuthScreen from "./AuthScreen";
@@ -6651,7 +6651,7 @@ export default function App() {
                   setCheckoutLoading(true);
                   try {
                     const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ priceId: "price_1TIeLpA726uGRX5et6I8xTAE", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                      body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eqmN6Rwr4", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                     const data = await res.json();
                     if (data.url) window.location.href = data.url;
                   } catch(e) { alert("Error starting checkout: " + e.message); }
@@ -6679,7 +6679,7 @@ export default function App() {
                 setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TIWK2A726uGRX5e93qsNEDD", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    body: JSON.stringify({ priceId: "price_1TKJ3TA726uGRX5epzWsSkbN", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
@@ -6707,7 +6707,7 @@ export default function App() {
                 setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TIe58A726uGRX5eCugFA44l", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    body: JSON.stringify({ priceId: "price_1TKJ3kA726uGRX5eRna7Gr4P", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
@@ -6734,7 +6734,7 @@ export default function App() {
                 setCheckoutLoading(true);
                 try {
                   const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TIWK0A726uGRX5ea2FiNpyw", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                    body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eroj4WEUp", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                   const data = await res.json();
                   if (data.url) window.location.href = data.url;
                 } catch(e) { alert("Error starting checkout: " + e.message); }
