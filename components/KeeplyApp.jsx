@@ -4065,7 +4065,7 @@ export default function App() {
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[r.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
                           {uploadingRepairPhoto[r.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                           {!uploadingRepairPhoto[r.id] && (
-                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={async function(e){
+                            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                               var file = e.target.files && e.target.files[0];
                               if (!file) return;
                               setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[r.id] = true; return n; });
@@ -4277,7 +4277,7 @@ export default function App() {
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[t.id] ? "default" : "pointer", fontSize: 11, fontWeight: 600, color: "var(--brand)", background: "var(--bg-card)" }}>
                             {uploadingRepairPhoto[t.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                             {!uploadingRepairPhoto[t.id] && (
-                              <input type="file" accept="image/*" style={{ display: "none" }} onChange={async function(e){
+                              <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                                 var file = e.target.files && e.target.files[0];
                                 if (!file) return;
                                 setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[t.id] = true; return n; });
@@ -4562,7 +4562,7 @@ export default function App() {
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[eq.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
                           {uploadingRepairPhoto[eq.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                           {!uploadingRepairPhoto[eq.id] && (
-                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={async function(e){
+                            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                               var file = e.target.files && e.target.files[0];
                               if (!file) return;
                               setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[eq.id] = true; return n; });
@@ -5721,7 +5721,7 @@ export default function App() {
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[r.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
                           {uploadingRepairPhoto[r.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                           {!uploadingRepairPhoto[r.id] && (
-                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={async function(e){
+                            <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                               var file = e.target.files && e.target.files[0];
                               if (!file) return;
                               setUploadingRepairPhoto(function(prev){ var n = Object.assign({}, prev); n[r.id] = true; return n; });
