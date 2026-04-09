@@ -5849,8 +5849,11 @@ export default function App() {
                       var catLabels = { registrations: "Registrations", safety: "Safety", surveys: "Surveys" };
                       var catLabel = catLabels[at.category] || at.category;
                       return (
-                        <div key={at.id} style={{ borderBottom: "1px solid var(--border)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ width: 20, height: 20, borderRadius: "50%", border: "1.5px solid var(--border)", flexShrink: 0 }} />
+                        <div key={at.id} style={{ borderBottom: "1px solid var(--border)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 10, opacity: completingAdminTask === at.id ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
+                          <button onClick={function(){ if (completingAdminTask === at.id) return; completeAdminTask(at, activeVesselId); }}
+                            style={{ width: 20, height: 20, borderRadius: "50%", border: "1.5px solid " + (completingAdminTask === at.id ? "var(--ok-text)" : "var(--border)"), background: completingAdminTask === at.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.2s", padding: 0 }}>
+                            {completingAdminTask === at.id && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                          </button>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{at.icon || "📋"} {at.name}</div>
                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
