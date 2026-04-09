@@ -1216,7 +1216,7 @@ export default function App() {
       setEquipment(eqList);
       const ts = await supa("maintenance_tasks", { query: "vessel_id=eq." + vid + "&order=section,priority" });
       setTasks((ts || []).map(function(t){
-        return { id: t.id, section: t.section, task: t.task, interval: t.interval_days ? t.interval_days + " days" : "30 days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: t.service_logs || [], pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null };
+        return { id: t.id, section: t.section, task: t.task, interval: t.interval_days ? t.interval_days + " days" : "30 days", interval_days: t.interval_days, priority: t.priority, lastService: t.last_service, dueDate: t.due_date, serviceLogs: t.service_logs || [], attachments: t.attachments || [], photos: t.photos || [], interval_hours: t.interval_hours || null, last_service_hours: t.last_service_hours || null, due_hours: t.due_hours || null, pendingComment: "", _vesselId: t.vessel_id, equipment_id: t.equipment_id || null };
       }));
       try {
         const rp = await supa("repairs", { query: "vessel_id=eq." + vid + "&order=date.desc" });
