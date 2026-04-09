@@ -962,6 +962,9 @@ export default function App() {
   const photoInputRef = useRef(null);
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
   const [updateHoursInput, setUpdateHoursInput] = useState("");
+  const [showEquipNote, setShowEquipNote] = useState(false);
+  const [equipNoteEqId, setEquipNoteEqId] = useState("");
+  const [equipNoteText, setEquipNoteText] = useState("");
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState("");
   const [resetPasswordMsg, setResetPasswordMsg] = useState(null);
@@ -5326,6 +5329,15 @@ export default function App() {
                     }
                     setShowAddRepair(true); setShowFab(false);
                   } },
+                { label: "Equipment Note", icon: "📝", action: function(){
+                    // Default to most urgent equipment card on this vessel
+                    var vesselEq = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; });
+                    var urgent = vesselEq.find(function(e){ return e.status === "needs-service"; }) || vesselEq.find(function(e){ return e.status === "watch"; }) || vesselEq[0];
+                    setEquipNoteEqId(urgent ? urgent.id : (vesselEq[0] ? vesselEq[0].id : ""));
+                    setEquipNoteText("");
+                    setShowEquipNote(true);
+                    setShowFab(false);
+                  } },
                 { label: "Log Entry", icon: "🗺️", action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
               ].map(function(item){ return (
                 <div key={item.label} onClick={item.action}
@@ -7348,6 +7360,72 @@ export default function App() {
             <button onClick={function(){ setShowResetPassword(false); setResetNewPassword(""); setResetPasswordMsg(null); }}
               style={{ width: "100%", padding: "10px", border: "1px solid var(--border)", borderRadius: 10, background: "none", color: "var(--text-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
               Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── EQUIPMENT NOTE MODAL ── */}
+      {showEquipNote && (
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={function(){ setShowEquipNote(false); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
+            onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>📝 Equipment Note</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Quick observation — First Mate will see this</div>
+
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT</div>
+            <select value={equipNoteEqId} onChange={function(e){ setEquipNoteEqId(e.target.value); }}
+              style={{ width: "100%", border: "1.5px solid var(--border)", borderRadius: 10, padding: "11px 12px", fontSize: 14, background: "var(--bg-card)", color: "var(--text-primary)", marginBottom: 14, boxSizing: "border-box", outline: "none" }}>
+              <option value="">— Select equipment —</option>
+              {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; })
+                .sort(function(a, b){
+                  var rank = { "needs-service": 0, "watch": 1, "good": 2 };
+                  return (rank[a.status] || 2) - (rank[b.status] || 2);
+                })
+                .map(function(eq){
+                  var statusIcon = eq.status === "needs-service" ? "🔴 " : eq.status === "watch" ? "🟡 " : "";
+                  return <option key={eq.id} value={eq.id}>{statusIcon}{eq.name}</option>;
+                })}
+            </select>
+
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>NOTE</div>
+            <textarea
+              autoFocus
+              placeholder={"e.g. slight vibration at high RPM, oil looked dark, zincs 50% gone…"}
+              value={equipNoteText}
+              onChange={function(e){ setEquipNoteText(e.target.value); }}
+              rows={4}
+              style={{ width: "100%", border: "1.5px solid var(--border)", borderRadius: 10, padding: "11px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", resize: "none", fontFamily: "inherit", lineHeight: 1.5, background: "var(--bg-card)", color: "var(--text-primary)", marginBottom: 16 }}
+            />
+
+            {equipNoteEqId && (function(){
+              var eq = equipment.find(function(e){ return e.id === equipNoteEqId; });
+              var recent = eq && (eq.logs || []).slice(-2).reverse();
+              if (!recent || recent.length === 0) return null;
+              return (
+                <div style={{ marginBottom: 16, padding: "10px 12px", background: "var(--bg-subtle)", borderRadius: 8, border: "0.5px solid var(--border)" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>RECENT NOTES</div>
+                  {recent.map(function(l, i){
+                    return (
+                      <div key={i} style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: i < recent.length - 1 ? 4 : 0 }}>
+                        <span style={{ color: "var(--text-muted)", marginRight: 6 }}>{l.date}</span>{l.text}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <button onClick={async function(){
+              if (!equipNoteEqId || !equipNoteText.trim()) return;
+              await addEquipLog(equipNoteEqId, equipNoteText.trim());
+              setShowEquipNote(false);
+              setEquipNoteText("");
+            }}
+              style={{ width: "100%", padding: "14px", border: "none", borderRadius: 12, background: equipNoteText.trim() && equipNoteEqId ? "var(--brand)" : "var(--border)", color: equipNoteText.trim() && equipNoteEqId ? "#fff" : "var(--text-muted)", fontSize: 15, fontWeight: 800, cursor: equipNoteText.trim() && equipNoteEqId ? "pointer" : "default", fontFamily: "inherit", transition: "background 0.15s" }}>
+              Save Note
             </button>
           </div>
         </div>
