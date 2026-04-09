@@ -17,6 +17,7 @@ export default function LandingPage() {
   const [showAuth, setShowAuth]       = useState(false);
   const [signupEmail, setSignupEmail] = useState(null);
   const [scrolled, setScrolled]       = useState(false);
+  const [annual, setAnnual]           = useState(false);
 
   useEffect(function () {
     const onScroll = function () { setScrolled(window.scrollY > 40); };
@@ -56,77 +57,82 @@ export default function LandingPage() {
     }
   };
 
-  // ── Plan data ────────────────────────────────────────────────────────────
+  // ── Plan data ─────────────────────────────────────────────────────────────
   const PLANS = [
     {
       name: "Basic",
-      price: "Free",
+      monthly: "Free", annual: "Free",
       period: "",
-      annual: "",
-      badge: null,
-      highlight: false,
+      annualSub: "",
+      badge: null, highlight: false,
       trial: "No credit card required",
       cta: "Get started free",
       features: [
-        { text: "1 asset",                      yes: true  },
-        { text: "Unlimited maintenance tasks",   yes: true  },
-        { text: "3 equipment cards",             yes: true  },
-        { text: "3 repair tasks",                yes: true  },
-        { text: "Parts catalog",                 yes: true  },
-        { text: "Engine hours tracking",         yes: true  },
-        { text: "250MB document storage",        yes: true  },
-        { text: "Repair log & logbook",          yes: false },
-        { text: "First Mate AI",                 yes: false },
-        { text: "AI vessel setup",               yes: false },
+        { text: "1 asset",                    yes: true  },
+        { text: "Unlimited maintenance tasks", yes: true  },
+        { text: "3 equipment cards",           yes: true  },
+        { text: "3 repair tasks",              yes: true  },
+        { text: "Parts catalog",               yes: true  },
+        { text: "Engine hours tracking",       yes: true  },
+        { text: "250MB document storage",      yes: true  },
+        { text: "Repair log & logbook",        yes: false },
+        { text: "First Mate AI",               yes: false },
+        { text: "AI vessel setup",             yes: false },
       ],
     },
     {
       name: "Standard",
-      price: "$15",
+      monthly: "$15", annual: "$12",
       period: "/mo",
-      annual: "or $144/yr — save $36",
-      badge: "Most popular",
-      highlight: true,
+      annualSub: "or $144/yr — save $36",
+      badge: "Most popular", highlight: true,
       trial: "No credit card required",
       cta: "Start 14-day free trial",
       features: [
-        { text: "1 asset",                           yes: true },
-        { text: "Unlimited maintenance tasks",        yes: true },
-        { text: "10 equipment cards",                 yes: true },
-        { text: "Unlimited repair tasks",             yes: true },
-        { text: "Parts catalog & ordering",           yes: true },
-        { text: "Engine hours tracking",              yes: true },
-        { text: "Repair log & logbook",               yes: true },
-        { text: "1GB document storage",               yes: true },
-        { text: "First Mate AI — 10 queries/mo",      yes: true, bold: true },
-        { text: "AI vessel setup",                    yes: true, bold: true },
+        { text: "1 asset",                         yes: true },
+        { text: "Unlimited maintenance tasks",      yes: true },
+        { text: "10 equipment cards",               yes: true },
+        { text: "Unlimited repair tasks",           yes: true },
+        { text: "Parts catalog & ordering",         yes: true },
+        { text: "Engine hours tracking",            yes: true },
+        { text: "Repair log & logbook",             yes: true },
+        { text: "1GB document storage",             yes: true },
+        { text: "First Mate AI — 10 queries/mo",    yes: true, bold: true },
+        { text: "AI vessel setup",                  yes: true, bold: true },
       ],
     },
     {
       name: "Pro",
-      price: "$25",
+      monthly: "$25", annual: "$20",
       period: "/mo",
-      annual: "or $240/yr — save $60",
-      badge: null,
-      highlight: false,
+      annualSub: "or $240/yr — save $60",
+      badge: null, highlight: false,
       trial: "",
       cta: "Get Pro",
       features: [
-        { text: "2 assets",                               yes: true, bold: true },
-        { text: "Unlimited maintenance tasks",             yes: true },
-        { text: "Unlimited equipment cards",               yes: true, bold: true },
-        { text: "Unlimited repair tasks",                  yes: true },
-        { text: "Parts catalog & ordering",                yes: true },
-        { text: "Engine hours tracking",                   yes: true },
-        { text: "Repair log & logbook",                    yes: true },
-        { text: "Unlimited document storage",              yes: true, bold: true },
-        { text: "First Mate AI — 50 queries/mo",           yes: true, bold: true },
-        { text: "AI-enriched logbook",                     yes: true, bold: true },
+        { text: "2 assets",                          yes: true, bold: true },
+        { text: "Unlimited maintenance tasks",        yes: true },
+        { text: "Unlimited equipment cards",          yes: true, bold: true },
+        { text: "Unlimited repair tasks",             yes: true },
+        { text: "Parts catalog & ordering",           yes: true },
+        { text: "Engine hours tracking",              yes: true },
+        { text: "Repair log & logbook",               yes: true },
+        { text: "Unlimited document storage",         yes: true, bold: true },
+        { text: "First Mate AI — 50 queries/mo",      yes: true, bold: true },
+        { text: "AI-enriched logbook",                yes: true, bold: true },
       ],
     },
   ];
 
-  // ── Styles ────────────────────────────────────────────────────────────────
+  const FEATURES = [
+    { emoji: "🔧", title: "Maintenance scheduling",  body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, or coming up — so nothing slips through the cracks." },
+    { emoji: "📦", title: "Equipment tracker",        body: "Log every piece of gear with service dates, photos, and manuals. One place for everything on your vessel." },
+    { emoji: "⏱",  title: "Engine hours tracking",   body: "Dual-trigger consumables tracked by time AND engine hours. Keeply knows when your oil change is due based on how hard you've run." },
+    { emoji: "📓", title: "Logbook",                  body: "Log passages and daily entries. Pro users get AI-enriched logbook entries with weather, GPS, and engine hours auto-populated." },
+    { emoji: "🔩", title: "Repair log",               body: "Document repairs with photos, dates, and costs. A running record for insurance, resale value, and haul-out conversations." },
+    { emoji: "🛒", title: "Parts catalog & ordering", body: "Browse parts matched to your equipment. First Mate suggests what you need before you run out and links to top marine retailers." },
+  ];
+
   const navBg = scrolled ? "rgba(7,30,61,0.97)" : "transparent";
 
   return (
@@ -135,24 +141,30 @@ export default function LandingPage() {
       {/* ── Nav ── */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 56, background: navBg, backdropFilter: scrolled ? "blur(12px)" : "none", transition: "background 0.3s" }}>
         <a href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 3L33 10V20C33 27 26 32 18 34C10 32 3 27 3 20V10L18 3Z" fill={BRAND} stroke={BRAND_LIGHT} strokeWidth="1.5"/>
             <path d="M13 18L16.5 21.5L23.5 14.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="18" cy="18" r="6" stroke="white" strokeWidth="1.5" fill="none" strokeDasharray="3 2"/>
           </svg>
           <span style={{ fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>Keeply</span>
         </a>
-        <button
-          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.3)", color: "rgba(255,255,255,0.85)", padding: "7px 18px", borderRadius: 7, fontSize: 13, cursor: "pointer" }}
-          onClick={function () { setMode("login"); setShowAuth(true); }}>
-          Log in
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", padding: "7px 18px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            onClick={function () { setMode("signup"); setShowAuth(true); }}>
+            Try for free
+          </button>
+          <button
+            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.75)", padding: "7px 18px", borderRadius: 7, fontSize: 13, cursor: "pointer" }}
+            onClick={function () { setMode("login"); setShowAuth(true); }}>
+            Log in
+          </button>
+        </div>
       </nav>
 
       {/* ── Hero ── */}
       <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg,#071e3d 0%,#0f3460 55%,#f8fafc 100%)", textAlign: "center", padding: "100px 24px 80px", position: "relative", overflow: "hidden" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 20, padding: "5px 14px", marginBottom: 24 }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: GOLD, display: "inline-block" }}></span>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: GOLD, display: "inline-block", flexShrink: 0 }}></span>
           <span style={{ fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: "0.5px" }}>FREE PLAN · 14-DAY TRIAL ON STANDARD</span>
         </div>
         <h1 style={{ fontSize: "clamp(40px,7vw,80px)", fontWeight: 800, color: "#fff", lineHeight: 1.05, letterSpacing: "-2.5px", margin: "0 0 20px" }}>
@@ -176,6 +188,61 @@ export default function LandingPage() {
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 6 }}>Free plan available · cancel anytime</p>
       </section>
 
+      {/* ── First Mate AI spotlight ── */}
+      <section style={{ background: NAVY_DEEP, padding: "80px 24px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 14 }}>AI Vessel Intelligence</div>
+            <h2 style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 800, color: "#fff", letterSpacing: "-1.5px", lineHeight: 1.15, margin: "0 0 20px" }}>
+              Ask your First Mate anything
+            </h2>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.65)", lineHeight: 1.7, margin: "0 0 28px" }}>
+              First Mate knows your vessel's full maintenance history, open repairs, logbook, and equipment. Ask in plain English — get answers that matter.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                "What maintenance is overdue?",
+                "When did I last change the impeller?",
+                "What should I order before my offshore passage?",
+                "Generate a haul-out checklist for my 42-foot sloop.",
+              ].map(function (q) {
+                return (
+                  <div key={q} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 14px" }}>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", flexShrink: 0 }}>Q</span>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", fontStyle: "italic" }}>{q}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* Chat mockup */}
+          <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: BRAND, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>⚓</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>First Mate</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Knows your vessel · Always on watch</div>
+              </div>
+            </div>
+            {[
+              { role: "user",      text: "What's due before my offshore trip Friday?" },
+              { role: "assistant", text: "Based on your service records and engine hours, here's what needs attention:\n\n🔴 Raw water impeller — overdue 3 months\n🟡 Engine zincs — 87% through interval\n🟡 Fuel filter — 250hrs since last change\n\nWant me to add these to your parts list?" },
+              { role: "user",      text: "Yes please, and create a departure checklist." },
+              { role: "assistant", text: "Done — 3 parts added. Your departure checklist is ready with 14 items. EPIRB registration also expires in 6 weeks — reminder set." },
+            ].map(function (msg, idx) {
+              const isUser = msg.role === "user";
+              return (
+                <div key={idx} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", marginBottom: 10 }}>
+                  <div style={{ maxWidth: "85%", background: isUser ? BRAND : "rgba(255,255,255,0.08)", borderRadius: 12, borderBottomRightRadius: isUser ? 3 : 12, borderBottomLeftRadius: isUser ? 12 : 3, padding: "10px 14px", fontSize: 13, color: isUser ? "#fff" : "rgba(255,255,255,0.85)", lineHeight: 1.55, whiteSpace: "pre-line" }}>
+                    {msg.text}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ── How it works ── */}
       <section style={{ background: "#fff", padding: "80px 24px" }}>
         <div style={{ maxWidth: 840, margin: "0 auto", textAlign: "center" }}>
@@ -183,7 +250,7 @@ export default function LandingPage() {
           <p style={{ fontSize: 16, color: "#6b7280", margin: "0 0 56px" }}>Your boat's brain, online in three steps.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32 }}>
             {[
-              { n: "1", title: "Add your vessel",  desc: "Photo or description — AI identifies your make, model, and pre-loads the right equipment and maintenance schedule." },
+              { n: "1", title: "Add your vessel",   desc: "Photo or description — AI identifies your make, model, and pre-loads the right equipment and maintenance schedule." },
               { n: "2", title: "Log what you know", desc: "Add existing maintenance history, current engine hours, open repairs. First Mate fills in the gaps." },
               { n: "3", title: "Ask anything",      desc: "From departure readiness to parts ordering — First Mate knows your boat and has the answers." },
             ].map(function (step) {
@@ -192,6 +259,27 @@ export default function LandingPage() {
                   <div style={{ width: 48, height: 48, borderRadius: "50%", background: BRAND, color: "#fff", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>{step.n}</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 8 }}>{step.title}</div>
                   <div style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.65 }}>{step.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features grid ── */}
+      <section style={{ background: "#f8fafc", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <h2 style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 800, color: "#111", letterSpacing: "-1px", margin: "0 0 12px" }}>Everything your vessel needs</h2>
+            <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>Not just a checklist. A complete maintenance platform.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+            {FEATURES.map(function (f) {
+              return (
+                <div key={f.title} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "24px 22px" }}>
+                  <div style={{ fontSize: 28, marginBottom: 14 }}>{f.emoji}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#111", marginBottom: 8 }}>{f.title}</div>
+                  <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.65 }}>{f.body}</div>
                 </div>
               );
             })}
@@ -214,13 +302,15 @@ export default function LandingPage() {
             <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>Start free. Upgrade when you're ready.</p>
           </div>
 
-          {/* Annual toggle */}
+          {/* Annual toggle — now clickable */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 40 }}>
-            <span style={{ fontSize: 13, color: "#6b7280" }}>Monthly</span>
-            <div style={{ width: 40, height: 22, background: "#2563eb", borderRadius: 11, position: "relative", cursor: "pointer" }}>
-              <div style={{ position: "absolute", width: 16, height: 16, background: "#fff", borderRadius: "50%", top: 3, right: 3, boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}></div>
+            <span style={{ fontSize: 13, color: annual ? "#9ca3af" : "#111", fontWeight: annual ? 400 : 600 }}>Monthly</span>
+            <div
+              onClick={function () { setAnnual(function (a) { return !a; }); }}
+              style={{ width: 44, height: 24, background: annual ? "#2563eb" : "#d1d5db", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
+              <div style={{ position: "absolute", width: 18, height: 18, background: "#fff", borderRadius: "50%", top: 3, left: annual ? 23 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}></div>
             </div>
-            <span style={{ fontSize: 13, color: "#6b7280" }}>Annual</span>
+            <span style={{ fontSize: 13, color: annual ? "#111" : "#9ca3af", fontWeight: annual ? 600 : 400 }}>Annual</span>
             <span style={{ background: "#dcfce7", border: "1px solid #bbf7d0", color: "#166534", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20 }}>Save 20%</span>
           </div>
 
@@ -228,6 +318,8 @@ export default function LandingPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {PLANS.map(function (plan) {
               const hl = plan.highlight;
+              const displayPrice = plan.monthly === "Free" ? "Free" : (annual ? plan.annual : plan.monthly);
+              const displaySub   = annual ? plan.annualSub : "";
               return (
                 <div key={plan.name} style={{ background: hl ? NAVY_DEEP : "#fff", border: hl ? "1px solid #1e4080" : "1px solid #e5e7eb", borderRadius: 18, padding: "28px 22px", position: "relative", display: "flex", flexDirection: "column", boxShadow: hl ? "0 8px 32px rgba(7,30,61,0.3)" : "none" }}>
                   {plan.badge && (
@@ -237,23 +329,21 @@ export default function LandingPage() {
                   )}
                   <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.2px", textTransform: "uppercase", color: hl ? "#4da6ff" : "#9ca3af", marginBottom: 8 }}>{plan.name}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginBottom: 2 }}>
-                    {plan.price !== "Free" && <span style={{ fontSize: 18, fontWeight: 600, color: hl ? "#fff" : "#111", alignSelf: "flex-start", marginTop: 6 }}>$</span>}
+                    {displayPrice !== "Free" && <span style={{ fontSize: 18, fontWeight: 600, color: hl ? "#fff" : "#111", alignSelf: "flex-start", marginTop: 6 }}>$</span>}
                     <span style={{ fontSize: 42, fontWeight: 800, color: hl ? "#fff" : "#111", lineHeight: 1 }}>
-                      {plan.price === "Free" ? "Free" : plan.price.replace("$", "")}
+                      {displayPrice === "Free" ? "Free" : displayPrice.replace("$", "")}
                     </span>
-                    {plan.period && <span style={{ fontSize: 14, color: hl ? "rgba(255,255,255,0.5)" : "#9ca3af" }}>{plan.period}</span>}
+                    {plan.period && displayPrice !== "Free" && <span style={{ fontSize: 14, color: hl ? "rgba(255,255,255,0.5)" : "#9ca3af" }}>{plan.period}</span>}
                   </div>
                   <div style={{ fontSize: 12, color: hl ? "#4ade80" : "#16a34a", fontWeight: 500, minHeight: 18, marginBottom: 20 }}>
-                    {plan.annual || "\u00a0"}
+                    {displaySub || "\u00a0"}
                   </div>
                   <div style={{ borderTop: hl ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb", marginBottom: 20 }}></div>
                   <div style={{ flex: 1, marginBottom: 24 }}>
                     {plan.features.map(function (f) {
                       return (
                         <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 9, opacity: f.yes ? 1 : 0.38 }}>
-                          <span style={{ fontSize: 12, color: f.yes ? (hl ? "#4da6ff" : "#16a34a") : "#9ca3af", marginTop: 2, flexShrink: 0 }}>
-                            {f.yes ? "✓" : "✗"}
-                          </span>
+                          <span style={{ fontSize: 12, color: f.yes ? (hl ? "#4da6ff" : "#16a34a") : "#9ca3af", marginTop: 2, flexShrink: 0 }}>{f.yes ? "✓" : "✗"}</span>
                           <span style={{ fontSize: 13, color: hl ? "rgba(255,255,255,0.8)" : "#4b5563", textDecoration: f.yes ? "none" : "line-through", fontWeight: f.bold ? 600 : 400 }}>
                             {f.text}
                           </span>
