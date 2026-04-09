@@ -6423,7 +6423,22 @@ export default function App() {
                   style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", marginBottom: 6, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }}
                 />
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12 }}>Year, make, and model is all we need. More detail = better results.</div>
-                {avError && <div style={{ background: "var(--danger-bg)", color: "var(--danger-text)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginBottom: 12 }}>{avError}</div>}
+                {avError && (function(){
+                  if (avError === "__ai_busy__") return (
+                    <div style={{ background: "var(--warn-bg)", border: "0.5px solid var(--warn-border)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginBottom: 12 }}>
+                      <div style={{ fontWeight: 700, color: "var(--warn-text)", marginBottom: 3 }}>Our AI is busy right now</div>
+                      <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>We\'re getting a lot of requests. Give it 30 seconds and try again — your description is saved.</div>
+                      <button onClick={function(){ setAvError(null); }} style={{ marginTop: 8, background: "none", border: "1px solid var(--warn-border)", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 600, color: "var(--warn-text)", cursor: "pointer" }}>Try again</button>
+                    </div>
+                  );
+                  return (
+                    <div style={{ background: "var(--danger-bg)", border: "0.5px solid var(--danger-border)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginBottom: 12 }}>
+                      <div style={{ fontWeight: 700, color: "var(--danger-text)", marginBottom: 3 }}>Something went wrong</div>
+                      <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>Please try again. If it keeps happening email support@keeply.boats.</div>
+                      <button onClick={function(){ setAvError(null); }} style={{ marginTop: 8, background: "none", border: "1px solid var(--danger-border)", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 600, color: "var(--danger-text)", cursor: "pointer" }}>Try again</button>
+                    </div>
+                  );
+                })()}
                 {(avLoading || saving) && (
                   <div style={{ textAlign: "center", padding: "16px 0" }}>
                     <div style={{ fontSize: 22, marginBottom: 6 }}>⚙️</div>
@@ -6552,7 +6567,10 @@ export default function App() {
                     setAvEngineTaskEdits({});
                     setAvStep(3);
                     setView("customer");
-                  } catch(e) { setAvError("Couldn't create vessel: " + e.message); }
+                  } catch(e) {
+                    if (e.message === "__ai_busy__") { setAvError("__ai_busy__"); }
+                    else { setAvError("__ai_error__"); }
+                  }
                   finally { setAvLoading(false); setSaving(false); }
                 }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: (avLoading || saving) ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: (avLoading || saving) ? "not-allowed" : "pointer", fontWeight: 700 }}>
                   {avLoading ? "Researching…" : saving ? "Creating…" : "Launch Vessel ⚓"}

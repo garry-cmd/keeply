@@ -52,7 +52,17 @@ Include 12-22 items, each with 2-5 tasks and realistic intervals (365=annual, 18
     });
 
     const data = await res.json();
-    if (data.error) return Response.json({ error: data.error.message }, { status: 500 });
+    if (data.error) {
+      const errType = data.error.type || "";
+      const errMsg  = data.error.message || "";
+      // Rate limit / capacity errors — don't expose internals
+      if (errType === "rate_limit_error" || errType === "overloaded_error" ||
+          errMsg.includes("rate limit") || errMsg.includes("overloaded") ||
+          errMsg.includes("token") || errMsg.includes("capacity") || errMsg.includes("quota")) {
+        return Response.json({ error: "ai_busy", errorType: "capacity" }, { status: 503 });
+      }
+      return Response.json({ error: "ai_error", errorType: errType }, { status: 500 });
+    }
 
     const raw = data.content[0].text.trim()
       .replace(/^```(?:json)?\n?/, "")
