@@ -2632,33 +2632,14 @@ export default function App() {
               <line x1="6.5" y1="12" x2="6.5" y2="10" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>
           </div>
-          <input
-            ref={fmInputRef}
-            value={fmInputVal}
-            onChange={function(e){ setFmInputVal(e.target.value); }}
-            onFocus={function(){ setShowFirstMatePanel(true); }}
-            onKeyDown={function(e){
-              if (e.key === "Enter" && fmInputVal.trim()) {
-                setFmPending(fmInputVal.trim());
-                setFmInputVal("");
-                setShowFirstMatePanel(true);
-              }
-              if (e.key === "Escape") {
-                setShowFirstMatePanel(false);
-                setFmInputVal("");
-                fmInputRef.current && fmInputRef.current.blur();
-              }
-            }}
-            placeholder="Ask First Mate…"
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: "#fff", fontFamily: "inherit" }}
-          />
-          {fmInputVal.trim() && (
-            <button onClick={function(){
-              setFmPending(fmInputVal.trim());
-              setFmInputVal("");
-              setShowFirstMatePanel(true);
-            }} style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.9)", color: "#1a3a5c", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 700 }}>↑</button>
-          )}
+          <div onClick={function(){ setShowFirstMatePanel(true); }}
+            style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.55)", cursor: "pointer", userSelect: "none" }}>
+            Ask First Mate…
+          </div>
+          <div onClick={function(){ setShowFirstMatePanel(true); }}
+            style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }}>
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 15, fontWeight: 700 }}>↑</span>
+          </div>
         </div>
       </div>
 
