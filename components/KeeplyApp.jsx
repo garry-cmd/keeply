@@ -1151,6 +1151,17 @@ export default function App() {
           setRepairs([]);
         }
 
+        // Load admin tasks for all vessels upfront so urgency cards show immediately
+        try {
+          const allVesselIds = normalizedVessels.map(function(v){ return v.id; });
+          if (allVesselIds.length > 0) {
+            const adminAll = await supa("vessel_admin_tasks", { query: "vessel_id=in.(" + allVesselIds.join(",") + ")&order=category.asc,name.asc" });
+            const adminByVessel = {};
+            (adminAll || []).forEach(function(t){ if (!adminByVessel[t.vessel_id]) adminByVessel[t.vessel_id] = []; adminByVessel[t.vessel_id].push(t); });
+            setVesselAdminTasks(adminByVessel);
+          }
+        } catch(e) { console.error("Admin tasks initial load error:", e); }
+
         // Load vessel members for all user vessels
         try {
           const allVesselIds = normalizedVessels.map(function(v){ return v.id; });
