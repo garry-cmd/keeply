@@ -15,6 +15,7 @@ export default function LandingPage() {
   const [error, setError]       = useState(null);
   const [message, setMessage]   = useState(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [signupEmail, setSignupEmail] = useState(null); // set after successful signup
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(function() {
@@ -35,9 +36,17 @@ export default function LandingPage() {
     setLoading(true); setError(null); setMessage(null);
     try {
       if (mode === "signup") {
-        const { error: e } = await supabase.auth.signUp({ email, password });
+        const { data: signUpData, error: e } = await supabase.auth.signUp({
+          email, password,
+          options: { emailRedirectTo: window.location.origin + "/?login=1" }
+        });
         if (e) throw e;
-        setMessage("Check your email to confirm your account.");
+        // Supabase returns a fake session if the email already exists — detect it
+        if (signUpData?.user?.identities?.length === 0) {
+          setError("An account with this email already exists. Try logging in instead.");
+        } else {
+          setSignupEmail(email);
+        }
       } else if (mode === "login") {
         const { error: e } = await supabase.auth.signInWithPassword({ email, password });
         if (e) throw e;
@@ -344,7 +353,27 @@ export default function LandingPage() {
           <div style={{ background: "#fff", borderRadius: 20, padding: "36px", width: "100%", maxWidth: 400, boxShadow: "0 24px 80px rgba(0,0,0,0.25)" }}
             onClick={function(e){ e.stopPropagation(); }}>
 
-            {/* Logo */}
+            {/* ── Check inbox state ── */}
+            {signupEmail ? (
+              <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📬</div>
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111", margin: "0 0 10px", letterSpacing: "-0.5px" }}>Check your inbox</h2>
+                <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, margin: "0 0 20px" }}>
+                  We sent a confirmation link to <strong style={{ color: "#111" }}>{signupEmail}</strong>.<br />
+                  Click the link to activate your account.
+                </p>
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#15803d", marginBottom: 20, textAlign: "left", lineHeight: 1.6 }}>
+                  <strong>After clicking the link</strong> you'll be taken back to Keeply and logged in automatically.
+                </div>
+                <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 16 }}>Didn't get it? Check your spam folder or</p>
+                <button onClick={function(){ setSignupEmail(null); setEmail(""); setPassword(""); setError(null); }}
+                  style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", color: "#374151", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                  Try a different email
+                </button>
+              </div>
+            ) : (<>
+
+          {/* Logo */}
             <div style={{ textAlign: "center", marginBottom: 24 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
@@ -386,7 +415,7 @@ export default function LandingPage() {
             {mode !== "forgot" && (
               <div style={{ display: "flex", background: "#f3f4f6", borderRadius: 10, padding: 3, marginBottom: 24 }}>
                 {["signup", "login"].map(function(m) { return (
-                  <button key={m} onClick={function(){ setMode(m); setError(null); setMessage(null); }}
+                  <button key={m} onClick={function(){ setMode(m); setError(null); setMessage(null); setSignupEmail(null); }}
                     style={{ flex: 1, padding: "8px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", background: mode === m ? "#fff" : "transparent", color: mode === m ? BRAND : "#6b7280", fontFamily: "inherit", boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none", transition: "all 0.15s" }}>
                     {m === "signup" ? "Sign up" : "Log in"}
                   </button>
@@ -425,9 +454,16 @@ export default function LandingPage() {
               </button>
             )}
 
-            <button onClick={function(){ setShowAuth(false); }}
-              style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
-          </div>
+            {!signupEmail && (
+              <button onClick={function(){ setShowAuth(false); setSignupEmail(null); }}
+                style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
+            )}
+            {signupEmail && (
+              <button onClick={function(){ setShowAuth(false); setSignupEmail(null); }}
+                style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
+            )}
+          </></>) }
+        </div>
         </div>
       )}
     </div>
