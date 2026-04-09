@@ -4437,8 +4437,20 @@ export default function App() {
             </div>
           )}
           {[...filteredEquip].sort(function(a,b){
-            const order = { "needs-service": 0, "watch": 1, "good": 2 };
-            return (order[a.status] ?? 2) - (order[b.status] ?? 2);
+            // 1. Engine always first
+            var aIsEngine = a.category === "Engine" || a.category === "Generator";
+            var bIsEngine = b.category === "Engine" || b.category === "Generator";
+            if (aIsEngine !== bIsEngine) return aIsEngine ? -1 : 1;
+            // 2. Status urgency
+            var statusOrder = { "needs-service": 0, "watch": 1, "good": 2 };
+            var statusDiff = (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2);
+            if (statusDiff !== 0) return statusDiff;
+            // 3. Most maintenance tasks first
+            var aTaskCount = tasks.filter(function(t){ return t.equipment_id === a.id; }).length;
+            var bTaskCount = tasks.filter(function(t){ return t.equipment_id === b.id; }).length;
+            if (bTaskCount !== aTaskCount) return bTaskCount - aTaskCount;
+            // 4. Alphabetical
+            return a.name.localeCompare(b.name);
           }).filter(function(eq){ return eq.category !== "Vessel"; }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
             const activeTab  = equipTab[eq.id] || "maintenance";
