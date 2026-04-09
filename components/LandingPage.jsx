@@ -31,6 +31,21 @@ export default function LandingPage() {
     if (p.get("login")  === "1") { setMode("login");  setShowAuth(true); }
   }, []);
 
+  const signInWithGoogle = async function () {
+    setLoading(true); setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const submit = async function (e) {
     e.preventDefault();
     setLoading(true); setError(null); setMessage(null);
@@ -62,8 +77,7 @@ export default function LandingPage() {
     {
       name: "Basic",
       monthly: "Free", annual: "Free",
-      period: "",
-      annualSub: "",
+      period: "", annualSub: "",
       badge: null, highlight: false,
       trial: "No credit card required",
       cta: "Get started free",
@@ -83,43 +97,41 @@ export default function LandingPage() {
     {
       name: "Standard",
       monthly: "$15", annual: "$12",
-      period: "/mo",
-      annualSub: "or $144/yr — save $36",
+      period: "/mo", annualSub: "or $144/yr — save $36",
       badge: "Most popular", highlight: true,
       trial: "No credit card required",
       cta: "Start 14-day free trial",
       features: [
-        { text: "1 asset",                         yes: true },
-        { text: "Unlimited maintenance tasks",      yes: true },
-        { text: "10 equipment cards",               yes: true },
-        { text: "Unlimited repair tasks",           yes: true },
-        { text: "Parts catalog & ordering",         yes: true },
-        { text: "Engine hours tracking",            yes: true },
-        { text: "Repair log & logbook",             yes: true },
-        { text: "1GB document storage",             yes: true },
-        { text: "First Mate AI — 10 queries/mo",    yes: true, bold: true },
-        { text: "AI vessel setup",                  yes: true, bold: true },
+        { text: "1 asset",                        yes: true },
+        { text: "Unlimited maintenance tasks",     yes: true },
+        { text: "10 equipment cards",              yes: true },
+        { text: "Unlimited repair tasks",          yes: true },
+        { text: "Parts catalog & ordering",        yes: true },
+        { text: "Engine hours tracking",           yes: true },
+        { text: "Repair log & logbook",            yes: true },
+        { text: "1GB document storage",            yes: true },
+        { text: "First Mate AI — 10 queries/mo",   yes: true, bold: true },
+        { text: "AI vessel setup",                 yes: true, bold: true },
       ],
     },
     {
       name: "Pro",
       monthly: "$25", annual: "$20",
-      period: "/mo",
-      annualSub: "or $240/yr — save $60",
+      period: "/mo", annualSub: "or $240/yr — save $60",
       badge: null, highlight: false,
       trial: "",
       cta: "Get Pro",
       features: [
-        { text: "2 assets",                          yes: true, bold: true },
-        { text: "Unlimited maintenance tasks",        yes: true },
-        { text: "Unlimited equipment cards",          yes: true, bold: true },
-        { text: "Unlimited repair tasks",             yes: true },
-        { text: "Parts catalog & ordering",           yes: true },
-        { text: "Engine hours tracking",              yes: true },
-        { text: "Repair log & logbook",               yes: true },
-        { text: "Unlimited document storage",         yes: true, bold: true },
-        { text: "First Mate AI — 50 queries/mo",      yes: true, bold: true },
-        { text: "AI-enriched logbook",                yes: true, bold: true },
+        { text: "2 assets",                        yes: true, bold: true },
+        { text: "Unlimited maintenance tasks",      yes: true },
+        { text: "Unlimited equipment cards",        yes: true, bold: true },
+        { text: "Unlimited repair tasks",           yes: true },
+        { text: "Parts catalog & ordering",         yes: true },
+        { text: "Engine hours tracking",            yes: true },
+        { text: "Repair log & logbook",             yes: true },
+        { text: "Unlimited document storage",       yes: true, bold: true },
+        { text: "First Mate AI — 50 queries/mo",    yes: true, bold: true },
+        { text: "AI-enriched logbook",              yes: true, bold: true },
       ],
     },
   ];
@@ -215,7 +227,6 @@ export default function LandingPage() {
               })}
             </div>
           </div>
-          {/* Chat mockup */}
           <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
               <div style={{ width: 32, height: 32, borderRadius: "50%", background: BRAND, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>⚓</div>
@@ -226,9 +237,9 @@ export default function LandingPage() {
             </div>
             {[
               { role: "user",      text: "What's due before my offshore trip Friday?" },
-              { role: "assistant", text: "Based on your service records and engine hours, here's what needs attention:\n\n🔴 Raw water impeller — overdue 3 months\n🟡 Engine zincs — 87% through interval\n🟡 Fuel filter — 250hrs since last change\n\nWant me to add these to your parts list?" },
+              { role: "assistant", text: "Based on your service records and engine hours:\n\n🔴 Raw water impeller — overdue 3 months\n🟡 Engine zincs — 87% through interval\n🟡 Fuel filter — 250hrs since last change\n\nWant me to add these to your parts list?" },
               { role: "user",      text: "Yes please, and create a departure checklist." },
-              { role: "assistant", text: "Done — 3 parts added. Your departure checklist is ready with 14 items. EPIRB registration also expires in 6 weeks — reminder set." },
+              { role: "assistant", text: "Done — 3 parts added. Departure checklist ready with 14 items. EPIRB registration expires in 6 weeks — reminder set." },
             ].map(function (msg, idx) {
               const isUser = msg.role === "user";
               return (
@@ -301,20 +312,15 @@ export default function LandingPage() {
             <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 800, color: "#111", letterSpacing: "-1.5px", margin: "0 0 12px" }}>Simple pricing</h2>
             <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>Start free. Upgrade when you're ready.</p>
           </div>
-
-          {/* Annual toggle — now clickable */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 40 }}>
             <span style={{ fontSize: 13, color: annual ? "#9ca3af" : "#111", fontWeight: annual ? 400 : 600 }}>Monthly</span>
-            <div
-              onClick={function () { setAnnual(function (a) { return !a; }); }}
+            <div onClick={function () { setAnnual(function (a) { return !a; }); }}
               style={{ width: 44, height: 24, background: annual ? "#2563eb" : "#d1d5db", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
               <div style={{ position: "absolute", width: 18, height: 18, background: "#fff", borderRadius: "50%", top: 3, left: annual ? 23 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}></div>
             </div>
             <span style={{ fontSize: 13, color: annual ? "#111" : "#9ca3af", fontWeight: annual ? 600 : 400 }}>Annual</span>
             <span style={{ background: "#dcfce7", border: "1px solid #bbf7d0", color: "#166534", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20 }}>Save 20%</span>
           </div>
-
-          {/* Cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {PLANS.map(function (plan) {
               const hl = plan.highlight;
@@ -335,18 +341,14 @@ export default function LandingPage() {
                     </span>
                     {plan.period && displayPrice !== "Free" && <span style={{ fontSize: 14, color: hl ? "rgba(255,255,255,0.5)" : "#9ca3af" }}>{plan.period}</span>}
                   </div>
-                  <div style={{ fontSize: 12, color: hl ? "#4ade80" : "#16a34a", fontWeight: 500, minHeight: 18, marginBottom: 20 }}>
-                    {displaySub || "\u00a0"}
-                  </div>
+                  <div style={{ fontSize: 12, color: hl ? "#4ade80" : "#16a34a", fontWeight: 500, minHeight: 18, marginBottom: 20 }}>{displaySub || "\u00a0"}</div>
                   <div style={{ borderTop: hl ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb", marginBottom: 20 }}></div>
                   <div style={{ flex: 1, marginBottom: 24 }}>
                     {plan.features.map(function (f) {
                       return (
                         <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 9, opacity: f.yes ? 1 : 0.38 }}>
                           <span style={{ fontSize: 12, color: f.yes ? (hl ? "#4da6ff" : "#16a34a") : "#9ca3af", marginTop: 2, flexShrink: 0 }}>{f.yes ? "✓" : "✗"}</span>
-                          <span style={{ fontSize: 13, color: hl ? "rgba(255,255,255,0.8)" : "#4b5563", textDecoration: f.yes ? "none" : "line-through", fontWeight: f.bold ? 600 : 400 }}>
-                            {f.text}
-                          </span>
+                          <span style={{ fontSize: 13, color: hl ? "rgba(255,255,255,0.8)" : "#4b5563", textDecoration: f.yes ? "none" : "line-through", fontWeight: f.bold ? 600 : 400 }}>{f.text}</span>
                         </div>
                       );
                     })}
@@ -356,14 +358,11 @@ export default function LandingPage() {
                     onClick={function () { setMode("signup"); setShowAuth(true); }}>
                     {plan.cta}
                   </button>
-                  <div style={{ textAlign: "center", fontSize: 11, color: hl ? "rgba(255,255,255,0.35)" : "#9ca3af", marginTop: 10, minHeight: 16 }}>
-                    {plan.trial}
-                  </div>
+                  <div style={{ textAlign: "center", fontSize: 11, color: hl ? "rgba(255,255,255,0.35)" : "#9ca3af", marginTop: 10, minHeight: 16 }}>{plan.trial}</div>
                 </div>
               );
             })}
           </div>
-
           <p style={{ textAlign: "center", marginTop: 28, fontSize: 13, color: "#9ca3af" }}>
             Managing 15+ assets?{" "}
             <a href="mailto:fleet@keeply.boats" style={{ color: "#2563eb", textDecoration: "none" }}>Talk to us about Enterprise →</a>
@@ -374,20 +373,14 @@ export default function LandingPage() {
       {/* ── CTA footer ── */}
       <section style={{ background: NAVY_DEEP, padding: "80px 24px", textAlign: "center" }}>
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
-          <h2 style={{ fontSize: "clamp(28px,5vw,44px)", fontWeight: 800, color: "#fff", letterSpacing: "-1.5px", margin: "0 0 16px" }}>
-            Always ready to go.
-          </h2>
-          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", margin: "0 0 36px" }}>
-            Join boaters already using Keeply to keep their boats in perfect order.
-          </p>
+          <h2 style={{ fontSize: "clamp(28px,5vw,44px)", fontWeight: 800, color: "#fff", letterSpacing: "-1.5px", margin: "0 0 16px" }}>Always ready to go.</h2>
+          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", margin: "0 0 36px" }}>Join boaters already using Keeply to keep their boats in perfect order.</p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <button
-              style={{ background: GOLD, color: "#1a1200", border: "none", padding: "13px 30px", borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+            <button style={{ background: GOLD, color: "#1a1200", border: "none", padding: "13px 30px", borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: "pointer" }}
               onClick={function () { setMode("signup"); setShowAuth(true); }}>
               Get started →
             </button>
-            <button
-              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "13px 24px", borderRadius: 9, fontSize: 15, cursor: "pointer" }}
+            <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "13px 24px", borderRadius: 9, fontSize: 15, cursor: "pointer" }}
               onClick={function () { setMode("login"); setShowAuth(true); }}>
               Log in
             </button>
@@ -405,18 +398,8 @@ export default function LandingPage() {
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, backdropFilter: "blur(4px)" }}
           onClick={function (e) { if (e.target === e.currentTarget) setShowAuth(false); }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 36, width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
-            <div style={{ display: "flex", gap: 0, marginBottom: 28, background: "#f3f4f6", borderRadius: 9, padding: 3 }}>
-              {["signup", "login"].map(function (m) {
-                return (
-                  <button key={m}
-                    onClick={function () { setMode(m); setError(null); setMessage(null); }}
-                    style={{ flex: 1, padding: "8px 0", borderRadius: 7, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", background: mode === m ? "#fff" : "transparent", color: mode === m ? "#111" : "#6b7280", boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
-                    {m === "signup" ? "Sign up" : "Log in"}
-                  </button>
-                );
-              })}
-            </div>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 32, width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
+
             {signupEmail ? (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
@@ -426,26 +409,60 @@ export default function LandingPage() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={submit}>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Email</label>
-                  <input type="email" value={email} onChange={function (e) { setEmail(e.target.value); }}
-                    placeholder="you@example.com" required
-                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                </div>
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Password</label>
-                  <input type="password" value={password} onChange={function (e) { setPassword(e.target.value); }}
-                    placeholder="••••••••" required minLength={6}
-                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                </div>
-                {error   && <div style={{ fontSize: 13, color: "#dc2626", marginBottom: 12, lineHeight: 1.5 }}>{error}</div>}
-                {message && <div style={{ fontSize: 13, color: "#16a34a", marginBottom: 12, lineHeight: 1.5 }}>{message}</div>}
-                <button type="submit" disabled={loading}
-                  style={{ width: "100%", padding: "12px 0", background: loading ? "#9ca3af" : BRAND, color: "#fff", border: "none", borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
-                  {loading ? "Please wait…" : (mode === "signup" ? "Create account" : "Log in")}
+              <>
+                {/* Google button */}
+                <button onClick={signInWithGoogle} disabled={loading}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "11px 0", border: "1.5px solid #e5e7eb", borderRadius: 10, background: "#fff", color: "#374151", fontSize: 14, fontWeight: 600, cursor: loading ? "default" : "pointer", fontFamily: "inherit", marginBottom: 16, opacity: loading ? 0.7 : 1 }}>
+                  <svg width="18" height="18" viewBox="0 0 18 18">
+                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                    <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                  </svg>
+                  Continue with Google
                 </button>
-              </form>
+
+                {/* Divider */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                  <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+                  <span style={{ fontSize: 12, color: "#9ca3af" }}>or</span>
+                  <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+                </div>
+
+                {/* Sign up / Log in toggle */}
+                <div style={{ display: "flex", background: "#f3f4f6", borderRadius: 10, padding: 3, marginBottom: 24 }}>
+                  {["signup", "login"].map(function (m) {
+                    return (
+                      <button key={m}
+                        onClick={function () { setMode(m); setError(null); setMessage(null); }}
+                        style={{ flex: 1, padding: "8px 0", borderRadius: 7, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", background: mode === m ? "#fff" : "transparent", color: mode === m ? "#111" : "#6b7280", boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
+                        {m === "signup" ? "Sign up" : "Log in"}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <form onSubmit={submit}>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Email</label>
+                    <input type="email" value={email} onChange={function (e) { setEmail(e.target.value); }}
+                      placeholder="you@example.com" required
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Password</label>
+                    <input type="password" value={password} onChange={function (e) { setPassword(e.target.value); }}
+                      placeholder="••••••••" required minLength={6}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  {error   && <div style={{ fontSize: 13, color: "#dc2626", marginBottom: 12, lineHeight: 1.5 }}>{error}</div>}
+                  {message && <div style={{ fontSize: 13, color: "#16a34a", marginBottom: 12, lineHeight: 1.5 }}>{message}</div>}
+                  <button type="submit" disabled={loading}
+                    style={{ width: "100%", padding: "12px 0", background: loading ? "#9ca3af" : BRAND, color: "#fff", border: "none", borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
+                    {loading ? "Please wait…" : (mode === "signup" ? "Create account" : "Log in")}
+                  </button>
+                </form>
+              </>
             )}
           </div>
         </div>
