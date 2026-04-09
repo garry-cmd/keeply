@@ -1410,6 +1410,10 @@ export default function App() {
 
   const deleteVessel = async function(id){
     if (vessels.length <= 1) return;
+    // Only the owner may delete a vessel
+    const userId = session && session.user ? session.user.id : null;
+    const isOwner = vesselMembers.some(function(m){ return m.vessel_id === id && m.user_id === userId && m.role === "owner"; });
+    if (!isOwner) { setDbError("Only the vessel owner can delete this boat."); return; }
     setSaving(true);
     try {
       await supa("vessels", { method: "DELETE", query: "id=eq." + id, prefer: "return=minimal" });
@@ -6542,7 +6546,12 @@ export default function App() {
             </div>
             <div style={{ padding: "16px 20px", borderTop: "1px solid var(--border)" }}>
               {editingVesselId && vessels.length > 1 && (
-                <button onClick={function(){ deleteVessel(editingVesselId); }} style={{ width: "100%", padding: 10, border: "1px solid #fca5a5", borderRadius: 8, background: "var(--bg-card)", color: "var(--danger-text)", cursor: "pointer", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>🗑 Remove This Vessel</button>
+                {(function(){
+                  var uid = session && session.user ? session.user.id : null;
+                  var isOwner = vesselMembers.some(function(m){ return m.vessel_id === editingVesselId && m.user_id === uid && m.role === "owner"; });
+                  if (!isOwner) return null;
+                  return <button onClick={function(){ deleteVessel(editingVesselId); }} style={{ width: "100%", padding: 10, border: "1px solid #fca5a5", borderRadius: 8, background: "var(--bg-card)", color: "var(--danger-text)", cursor: "pointer", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>🗑 Remove This Vessel</button>;
+                })()}
               )}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={function(){ setShowSettings(false); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
