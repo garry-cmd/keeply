@@ -1958,10 +1958,19 @@ export default function App() {
   const findPartsInline = async function(id, taskDescription, equipmentId, section) {
     const eq = equipment.find(function(e){ return e.id === equipmentId; });
     const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
-    const equipContext = eq
-      ? eq.name + (eq.notes && !eq.notes.startsWith("{") ? " " + eq.notes.substring(0, 80) : "")
-      : section;
     const vesselContext = vessel ? [vessel.year, vessel.make, vessel.model].filter(Boolean).join(" ") : "";
+    // Build equipment name — always lead with vessel make/model so AI knows the exact engine
+    const eqName = eq ? eq.name : section;
+    const eqNotes = eq && eq.notes && !eq.notes.startsWith("{") ? eq.notes.substring(0, 80) : "";
+    const equipContext = [vesselContext, eqName, eqNotes].filter(Boolean).join(" ");
+    // Explicit repair context: "Beta 35 diesel engine — Replace impellor"
+    const isEngineSection = section === "Engine" || section === "Generator";
+    const repairContext = [
+      vesselContext,
+      isEngineSection ? "marine diesel engine" : section,
+      "—",
+      taskDescription
+    ].filter(Boolean).join(" ");
     setInlinePartResults(function(prev){ const n = Object.assign({}, prev); n[id] = { loading: true, results: [], error: null }; return n; });
     try {
       const res = await fetch("/api/find-part", {
@@ -1970,7 +1979,7 @@ export default function App() {
         body: JSON.stringify({
           partName: taskDescription,
           equipmentName: equipContext,
-          repairContext: (vesselContext ? vesselContext + " — " : "") + taskDescription
+          repairContext: repairContext
         }),
       });
       const data = await res.json();
@@ -3956,7 +3965,7 @@ export default function App() {
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
                                     {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
                                   </div>
-                                  {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
+                                  {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
                                 </div>
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                   <a href={googleSearchUrl(partSearchQuery(part.name, repairEq, settings))} target="_blank" rel="noreferrer"
@@ -4206,7 +4215,7 @@ export default function App() {
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
                                       {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
                                     </div>
-                                    {part.price && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${part.price}</div>}
+                                    {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
                                   </div>
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                     <a href={googleSearchUrl(partSearchQuery(part.name, eq, settings))} target="_blank" rel="noreferrer"
