@@ -2738,7 +2738,7 @@ export default function App() {
                       { label: "Overdue Tasks", val: d.overdueCount, color: d.overdueCount > 0 ? "var(--warn-text)" : "var(--text-muted)", bg: d.overdueCount > 0 ? "var(--overdue-bg)" : "var(--bg-subtle)", tab: "maintenance" },
                       { label: "Due in 30d", val: d.dueSoonCount, color: d.dueSoonCount > 0 ? "var(--duesoon-text)" : "var(--text-muted)", bg: d.dueSoonCount > 0 ? "var(--duesoon-bg)" : "var(--bg-subtle)", tab: "maintenance" },
                       { label: "Expiring Docs", val: d.expiringDocs.length, color: d.expiringDocs.length > 0 ? "var(--brand)" : "var(--text-muted)", bg: d.expiringDocs.length > 0 ? "var(--brand-deep)" : "var(--bg-subtle)", tab: "documentation" },
-                      { label: "Admin Due", val: d.adminDueCount, color: d.adminDueCount > 0 ? "#7c3aed" : "var(--text-muted)", bg: d.adminDueCount > 0 ? "#ede9fe" : "var(--bg-subtle)", tab: "admin", isAdmin: true },
+                      { label: "Admin Due", val: d.adminDueCount, color: "var(--text-secondary)", bg: "var(--bg-subtle)", tab: "admin", isAdmin: true },
                     ].map(function(stat){ return (
                       <div key={stat.label}
                         onClick={function(e){
@@ -2751,7 +2751,7 @@ export default function App() {
                         style={{ background: stat.bg, padding: "10px 6px", textAlign: "center", borderRight: "1px solid var(--border)", cursor: stat.val > 0 ? "pointer" : "default" }}
                         title={stat.val > 0 ? "View " + stat.tab : ""}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.val}</div>
-                        <div style={{ fontSize: 9, color: stat.isAdmin && stat.val > 0 ? "#7c3aed" : "var(--text-muted)", marginTop: 3, fontWeight: 600 }}>{stat.label}</div>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, fontWeight: 600 }}>{stat.label}</div>
                         {stat.val > 0 && stat.label !== "Expiring Docs" && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap →</div>}
                       </div>
                     ); })}
@@ -2807,7 +2807,6 @@ export default function App() {
                       {fleetPanel.type === "Overdue Tasks" && "🔴 Overdue Tasks"}
                       {fleetPanel.type === "Due in 30d" && "🟡 Due in 30 Days"}
                       {fleetPanel.type === "Open Repairs" && "🔧 Open Repairs"}
-                      {fleetPanel.type === "Admin Due" && "📋 Admin Due"}
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
                       {prefix} {fleetPanel.vesselName} · {panelTasks.length + panelRepairs.length} items
@@ -3789,15 +3788,17 @@ export default function App() {
             const dueSoonCount = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
             const openRepairs  = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
             const today = new Date(); today.setHours(0,0,0,0);
-            const adminDueTasks = (vesselAdminTasks[activeVesselId] || []).filter(function(t){
-              if (!t.due_date) return false;
-              return Math.round((new Date(t.due_date) - today) / 86400000) <= 30;
-            });
-            const adminDueCount = adminDueTasks.length;
+            var adminAll = (vesselAdminTasks[activeVesselId] || []).filter(function(t){ return !!t.due_date; });
+            var adminOverdue = adminAll.filter(function(t){ return Math.round((new Date(t.due_date) - today) / 86400000) < 0; });
+            var adminDueSoon = adminAll.filter(function(t){ var d = Math.round((new Date(t.due_date) - today) / 86400000); return d >= 0 && d <= 30; });
+            var criticalTotal = overdueCount + adminOverdue.length;
+            var dueSoonTotal  = dueSoonCount + adminDueSoon.length;
+            var criticalSub = overdueCount > 0 && adminOverdue.length > 0 ? overdueCount + " tasks · " + adminOverdue.length + " admin" : "Tasks & admin overdue";
+            var dueSoonSub  = dueSoonCount > 0 && adminDueSoon.length > 0 ? dueSoonCount + " tasks · " + adminDueSoon.length + " admin" : "Overdue or due shortly";
             const cards = [
-              { label: "Critical",     val: overdueCount, sub: "Tasks overdue 10+ days", color: "var(--danger-text)",  bg: "var(--danger-bg)",  border: "1px solid var(--danger-border)"  },
-              { label: "Due Soon",     val: dueSoonCount, sub: "Overdue or due shortly",  color: "var(--warn-text)",    bg: "var(--warn-bg)",    border: "1px solid var(--warn-border)"    },
-              { label: "Open Repairs", val: openRepairs,  sub: "Repairs in progress",     color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
+              { label: "Critical",     val: criticalTotal, sub: criticalSub, color: "var(--danger-text)",  bg: "var(--danger-bg)",  border: "1px solid var(--danger-border)"  },
+              { label: "Due Soon",     val: dueSoonTotal,  sub: dueSoonSub,  color: "var(--warn-text)",    bg: "var(--warn-bg)",    border: "1px solid var(--warn-border)"    },
+              { label: "Open Repairs", val: openRepairs,   sub: "Repairs in progress", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
             ];
             return (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 10 }}>
@@ -3848,150 +3849,6 @@ export default function App() {
                     ✕
                   </button>
                 </div>
-              </div>
-            );
-          })()}
-
-          {/* ── Actions row — Parts Needed + Admin Due ── */}
-          {(function(){
-            var openRepairIds = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){ return r.id; });
-            var urgentTaskIds = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).map(function(t){ return t.id; });
-            var repairPartsCount = openRepairIds.reduce(function(acc, id){ var s = aiSuggestions[id]; return acc + (Array.isArray(s) ? s.length : 0); }, 0);
-            var taskPartsCount   = urgentTaskIds.reduce(function(acc, id){ var r = inlinePartResults[id]; return acc + (r && r.results ? r.results.length : 0); }, 0);
-            var totalParts = repairPartsCount + taskPartsCount;
-            var repairUnfetched = openRepairIds.filter(function(id){ return !aiSuggestions[id] || aiSuggestions[id] === "loading"; }).length;
-            var taskUnfetched   = urgentTaskIds.filter(function(id){ return !inlinePartResults[id] || inlinePartResults[id].loading; }).length;
-            return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: showPartsNeeded ? 10 : 20 }}>
-                <div onClick={function(){ setShowPartsNeeded(function(v){ return !v; }); }}
-                  style={{ background: "var(--info-bg)", border: showPartsNeeded ? "2px solid var(--brand)" : "0.5px solid var(--info-border)", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: "var(--info-text)", lineHeight: 1 }}>{totalParts + repairUnfetched + taskUnfetched}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--info-text)", marginTop: 2 }}>Parts needed</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
-                    {repairPartsCount > 0 ? repairPartsCount + " from repairs" : ""}
-                    {repairPartsCount > 0 && taskPartsCount > 0 ? " · " : ""}
-                    {taskPartsCount > 0 ? taskPartsCount + " from tasks" : ""}
-                    {totalParts === 0 && (repairUnfetched + taskUnfetched) > 0 ? "Tap to search" : ""}
-                    {totalParts === 0 && repairUnfetched + taskUnfetched === 0 ? "All clear" : ""}
-                  </div>
-                </div>
-                <div onClick={function(){ setShowUrgencyPanel("Admin Due"); }}
-                  style={{ background: "#faf5ff", border: "0.5px solid #d8b4fe", borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: "#7c3aed", lineHeight: 1 }}>{(function(){ var t = new Date(); t.setHours(0,0,0,0); return (vesselAdminTasks[activeVesselId]||[]).filter(function(a){ return a.due_date && Math.round((new Date(a.due_date)-t)/86400000)<=30; }).length; })()}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginTop: 2 }}>Admin due</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Reg, safety &amp; surveys</div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ── Parts Needed expanded panel ── */}
-          {showPartsNeeded && (function(){
-            var vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; });
-            var urgentTasks   = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); });
-            var repairFetched = vesselRepairs.filter(function(r){ return Array.isArray(aiSuggestions[r.id]) && aiSuggestions[r.id].length > 0; });
-            var repairUnfetched = vesselRepairs.filter(function(r){ return !aiSuggestions[r.id] || aiSuggestions[r.id] === "loading"; });
-            var taskFetched   = urgentTasks.filter(function(t){ return inlinePartResults[t.id] && inlinePartResults[t.id].results && inlinePartResults[t.id].results.length > 0; });
-            var taskUnfetched = urgentTasks.filter(function(t){ return !inlinePartResults[t.id] || inlinePartResults[t.id].loading; });
-            var hasAnything   = repairFetched.length > 0 || taskFetched.length > 0 || repairUnfetched.length > 0 || taskUnfetched.length > 0;
-            if (!hasAnything) return (
-              <div style={{ ...s.card, padding: "14px 16px", marginBottom: 20, textAlign: "center", fontSize: 12, color: "var(--text-muted)" }}>
-                No open repairs or due tasks right now. ✔
-              </div>
-            );
-            return (
-              <div style={{ ...s.card, marginBottom: 20, overflow: "hidden" }}>
-
-                {/* ── Repairs section ── */}
-                {(repairFetched.length > 0 || repairUnfetched.length > 0) && (
-                  <div style={{ padding: "10px 14px 2px", display: "flex", alignItems: "center", gap: 6, borderBottom: "0.5px solid var(--border)" }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--warn-text)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>OPEN REPAIRS</span>
-                  </div>
-                )}
-                {repairFetched.map(function(r){
-                  var parts = aiSuggestions[r.id] || [];
-                  var eq = equipment.find(function(e){ return e.id === r.equipment_id; });
-                  var eqCat = eq ? eq.category : r.section;
-                  return parts.map(function(part, pi){
-                    return (
-                      <div key={r.id + "-" + pi} style={{ padding: "9px 14px", borderBottom: "0.5px solid var(--border)" }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{part.name}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "2px 0 6px" }}>{r.section} · {r.description.length > 40 ? r.description.slice(0, 40) + "…" : r.description}</div>
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                          {retailerLinksForPart(part.name, eqCat).map(function(rl){ return (
-                            <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                              onClick={function(){ trackAffiliateClick(rl.name, part.name, r.description); }}
-                              style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: rl.color, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
-                              {rl.name} ↗
-                            </a>
-                          ); })}
-                        </div>
-                      </div>
-                    );
-                  });
-                })}
-                {repairUnfetched.length > 0 && (
-                  <div style={{ padding: "9px 14px", borderBottom: taskFetched.length > 0 || taskUnfetched.length > 0 ? "0.5px solid var(--border)" : "none" }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 4 }}>
-                      {repairUnfetched.length} repair{repairUnfetched.length !== 1 ? "s" : ""} not yet searched
-                    </div>
-                    <button onClick={function(){
-                      repairUnfetched.forEach(function(r){ getSuggestionsForRepair(r); });
-                    }} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "var(--brand)", cursor: "pointer", padding: 0 }}>
-                      Find parts for all open repairs →
-                    </button>
-                  </div>
-                )}
-
-                {/* ── Maintenance section ── */}
-                {(taskFetched.length > 0 || taskUnfetched.length > 0) && (
-                  <div style={{ padding: "10px 14px 2px", display: "flex", alignItems: "center", gap: 6, borderBottom: "0.5px solid var(--border)" }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--danger-text)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>OVERDUE / DUE SOON</span>
-                  </div>
-                )}
-                {taskFetched.map(function(t){
-                  var pr = inlinePartResults[t.id];
-                  var parts = pr ? pr.results : [];
-                  var eq = equipment.find(function(e){ return e.id === t.equipment_id; });
-                  var eqCat = eq ? eq.category : t.section;
-                  var urgency = getTaskUrgency(t);
-                  var badge = urgency === "critical" ? { label: "Critical", bg: "var(--critical-bg)", color: "var(--critical-text)" } : { label: "Due soon", bg: "var(--duesoon-bg)", color: "var(--duesoon-text)" };
-                  return parts.map(function(part, pi){
-                    return (
-                      <div key={t.id + "-" + pi} style={{ padding: "9px 14px", borderBottom: "0.5px solid var(--border)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", flex: 1, minWidth: 0 }}>{part.name}</div>
-                          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: badge.bg, color: badge.color, flexShrink: 0 }}>{badge.label}</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 6px" }}>{eq ? eq.name : t.section} · {t.task.length > 35 ? t.task.slice(0,35) + "…" : t.task}</div>
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                          {retailerLinksForPart(part.name, eqCat).map(function(rl){ return (
-                            <a key={rl.name} href={rl.url} target="_blank" rel="noreferrer"
-                              onClick={function(){ trackAffiliateClick(rl.name, part.name, t.task); }}
-                              style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: rl.color, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
-                              {rl.name} ↗
-                            </a>
-                          ); })}
-                        </div>
-                      </div>
-                    );
-                  });
-                })}
-                {taskUnfetched.length > 0 && (
-                  <div style={{ padding: "9px 14px" }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 4 }}>
-                      {taskUnfetched.length} task{taskUnfetched.length !== 1 ? "s" : ""} not yet searched
-                    </div>
-                    <button onClick={function(){
-                      taskUnfetched.forEach(function(t){ findPartsInline(t.id, t.task, t.equipment_id, t.section); });
-                    }} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "var(--brand)", cursor: "pointer", padding: 0 }}>
-                      Find parts for all due tasks →
-                    </button>
-                  </div>
-                )}
-
               </div>
             );
           })()}
@@ -5831,13 +5688,23 @@ export default function App() {
                     {showUrgencyPanel === "Critical" && "🔴 Critical Tasks"}
                     {showUrgencyPanel === "Due Soon" && "🟡 Due Soon"}
                     {showUrgencyPanel === "Open Repairs" && "🔧 Open Repairs"}
-                    {showUrgencyPanel === "Admin Due" && "📋 Admin Due"}
+
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                    {showUrgencyPanel === "Critical" && tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length + " tasks need attention"}
-                    {showUrgencyPanel === "Due Soon" && tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length + " tasks due soon"}
+                    {showUrgencyPanel === "Critical" && (function(){
+                      var maint = tasks.filter(function(t){ return t._vesselId === activeVesselId && getTaskUrgency(t) === "critical"; }).length;
+                      var nowS = new Date(); nowS.setHours(0,0,0,0);
+                      var adm = (vesselAdminTasks[activeVesselId]||[]).filter(function(t){ return t.due_date && Math.round((new Date(t.due_date)-nowS)/86400000) < 0; }).length;
+                      return (maint + adm) + " items need attention";
+                    })()}
+                    {showUrgencyPanel === "Due Soon" && (function(){
+                      var maint = tasks.filter(function(t){ return t._vesselId === activeVesselId && (getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon"); }).length;
+                      var nowS = new Date(); nowS.setHours(0,0,0,0);
+                      var adm = (vesselAdminTasks[activeVesselId]||[]).filter(function(t){ return t.due_date && (function(d){ return d >= 0 && d <= 30; })(Math.round((new Date(t.due_date)-nowS)/86400000)); }).length;
+                      return (maint + adm) + " items due shortly";
+                    })()}
                     {showUrgencyPanel === "Open Repairs" && repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length + " repairs open"}
-                    {showUrgencyPanel === "Admin Due" && (function(){ const t = new Date(); t.setHours(0,0,0,0); return (vesselAdminTasks[activeVesselId]||[]).filter(function(a){ return a.due_date && Math.round((new Date(a.due_date)-t)/86400000)<=30; }).length; })() + " items need attention"}
+
                   </div>
                 </div>
                 <button onClick={function(){ setShowUrgencyPanel(null); setExpandedTask(null); }}
@@ -5856,13 +5723,24 @@ export default function App() {
                     if (showUrgencyPanel === "Critical") return getTaskUrgency(t) === "critical";
                     return getTaskUrgency(t) === "overdue" || getTaskUrgency(t) === "due-soon";
                   });
-                  if (panelTasks.length === 0) return (
+                  var nowP = new Date(); nowP.setHours(0,0,0,0);
+                  var adminPanelTasks = (vesselAdminTasks[activeVesselId] || []).filter(function(t){
+                    if (!t.due_date) return false;
+                    var d = Math.round((new Date(t.due_date) - nowP) / 86400000);
+                    if (showUrgencyPanel === "Critical") return d < 0;
+                    return d >= 0 && d <= 30;
+                  });
+                  if (panelTasks.length === 0 && adminPanelTasks.length === 0) return (
                     <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
                       <div style={{ fontSize: 32 }}>✅</div>
                       <div style={{ marginTop: 8, fontSize: 13 }}>All clear!</div>
                     </div>
                   );
-                  return panelTasks.map(function(t){
+                  return (<>
+                    {panelTasks.length > 0 && (
+                      <div style={{ padding: "6px 20px 2px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>MAINTENANCE</div>
+                    )}
+                    {panelTasks.map(function(t){
                     const badge = getDueBadge(t.dueDate);
                     const isCompleting = completingTask === t.id;
                     const isExpanded = expandedTask === t.id;
@@ -5960,50 +5838,30 @@ export default function App() {
                         )}
                       </div>
                     );
-                  });
-                })()}
-
-                {/* Admin Due panel */}
-                {showUrgencyPanel === "Admin Due" && (function(){
-                  const today = new Date(); today.setHours(0,0,0,0);
-                  const panelAdmin = (vesselAdminTasks[activeVesselId] || []).filter(function(t){
-                    return t.due_date && Math.round((new Date(t.due_date) - today) / 86400000) <= 30;
-                  }).sort(function(a, b){ return new Date(a.due_date) - new Date(b.due_date); });
-                  if (panelAdmin.length === 0) return (
-                    <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-                      <div style={{ fontSize: 32 }}>✅</div>
-                      <div style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>All admin items current</div>
-                    </div>
-                  );
-                  return panelAdmin.map(function(task){
-                    const diff = Math.round((new Date(task.due_date) - today) / 86400000);
-                    const isOver = diff < 0;
-                    const isCompleting = completingAdminTask === task.id;
-                    const badgeBg    = isOver ? "var(--danger-bg,#fef2f2)"   : "var(--overdue-bg,#fff7ed)";
-                    const badgeColor = isOver ? "var(--danger-text,#dc2626)" : "var(--warn-text,#b45309)";
-                    const badgeBorder= isOver ? "#fca5a5"                    : "#fed7aa";
-                    const badgeLabel = isOver ? Math.abs(diff) + "d overdue" : diff === 0 ? "Due today" : diff + "d away";
-                    const catLabel   = task.category === "registrations" ? "Reg & legal" : task.category === "safety" ? "Safety" : "Survey";
-                    return (
-                      <div key={task.id} style={{ borderBottom: "1px solid var(--border)", opacity: isCompleting ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
-                        <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-                          <button onClick={function(){
-                            completeAdminTask(task, activeVesselId);
-                            if (panelAdmin.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 700);
-                          }}
-                            style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "#a78bfa"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
-                          </button>
-                          <div style={{ fontSize: 18, flexShrink: 0 }}>{task.icon || "📋"}</div>
+                  })}
+                    {/* Admin section */}
+                    {adminPanelTasks.length > 0 && (
+                      <div style={{ padding: "6px 20px 2px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", borderTop: panelTasks.length > 0 ? "1px solid var(--border)" : "none" }}>ADMIN</div>
+                    )}
+                    {adminPanelTasks.map(function(at){
+                      var now4 = new Date(); now4.setHours(0,0,0,0);
+                      var daysLeft = Math.round((new Date(at.due_date) - now4) / 86400000);
+                      var catLabels = { registrations: "Registrations", safety: "Safety", surveys: "Surveys" };
+                      var catLabel = catLabels[at.category] || at.category;
+                      return (
+                        <div key={at.id} style={{ borderBottom: "1px solid var(--border)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 20, height: 20, borderRadius: "50%", border: "1.5px solid var(--border)", flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{catLabel} · Every {task.interval_months} mo</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{at.icon || "📋"} {at.name}</div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                              {catLabel}{daysLeft < 0 ? " · " + Math.abs(daysLeft) + "d overdue" : daysLeft === 0 ? " · due today" : " · due in " + daysLeft + "d"}
+                            </div>
                           </div>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: badgeBg, color: badgeColor, border: "1px solid " + badgeBorder, whiteSpace: "nowrap", flexShrink: 0 }}>{badgeLabel}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 10, background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)", flexShrink: 0 }}>Admin</span>
                         </div>
-                      </div>
-                    );
-                  });
+                      );
+                    })}
+                  </>);
                 })()}
 
                 {/* Open Repairs panel */}
