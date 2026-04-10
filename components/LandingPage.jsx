@@ -801,6 +801,18 @@ export default function LandingPage() {
     finally { setLoading(false); }
   };
 
+  var resetPassword = async function (e) {
+    e.preventDefault();
+    if (!email) { setError("Enter your email address above first."); return; }
+    setLoading(true); setError(null); setMessage(null);
+    try {
+      var result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + "/?login=1" });
+      if (result.error) throw result.error;
+      setMessage("Check your inbox — we sent a password reset link to " + email + ".");
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
   function openAuth(m) { setMode(m || "signup"); setShowAuth(true); }
   function scrollToPricing() { var el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }
 
@@ -1048,7 +1060,15 @@ export default function LandingPage() {
                       style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                   </div>
                   <div style={{ marginBottom: 20 }}>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Password</label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>Password</label>
+                      {mode === "login" && (
+                        <button type="button" onClick={resetPassword} disabled={loading}
+                          style={{ fontSize: 12, color: BRAND, background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 500 }}>
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
                     <input type="password" value={password} onChange={function (e) { setPassword(e.target.value); }}
                       placeholder={"•".repeat(8)} required minLength={6}
                       style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
