@@ -66,15 +66,28 @@ function OceanCanvas() {
   return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
 }
 
+// ── Phosphor-style SVG icons for feature strip ───────────────────────────
+function Ico({ d, d2, d3, d4, circle }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      {d  && <path d={d}  />}
+      {d2 && <path d={d2} />}
+      {d3 && <path d={d3} />}
+      {d4 && <path d={d4} />}
+      {circle && <circle cx={circle[0]} cy={circle[1]} r={circle[2]} />}
+    </svg>
+  );
+}
+
 const FEATURE_ICONS = [
-  { icon: "\u{1F527}", label: "Maintenance" },
-  { icon: "\u{1F4E6}", label: "Equipment" },
-  { icon: "\u23F1",   label: "Engine Hours" },
-  { icon: "\u{1F4D3}", label: "Logbook" },
-  { icon: "\u{1F529}", label: "Repairs" },
-  { icon: "\u{1F916}", label: "First Mate AI" },
-  { icon: "\u{1F4CB}", label: "Admin" },
-  { icon: "\u{1F465}", label: "Crew Access" },
+  { label: "Maintenance",   el: <Ico d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /> },
+  { label: "Equipment",     el: <Ico d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" d2="M3.27 6.96 12 12.01l8.73-5.05" d3="M12 22.08V12" /> },
+  { label: "Engine Hours",  el: <Ico d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" d2="M12 6v6l4 2" /> },
+  { label: "Logbook",       el: <Ico d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" d2="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /> },
+  { label: "Repairs",       el: <Ico d="m15 12-8.5 8.5a2.12 2.12 0 0 1-3-3L12 9" d2="M17.64 15 22 10.64" d3="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91" /> },
+  { label: "First Mate AI", el: <Ico d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" d2="M5 3v4" d3="M19 17v4" d4="M3 5h4" /> },
+  { label: "Admin",         el: <Ico d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" d2="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z" d3="M9 12h6" d4="M9 16h4" /> },
+  { label: "Crew Access",   el: <Ico d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" circle={[9,7,4]} d2="M22 21v-2a4 4 0 0 0-3-3.87" d3="M16 3.13a4 4 0 0 1 0 7.75" /> },
 ];
 
 function MaintenanceVisual() {
@@ -260,7 +273,7 @@ export default function LandingPage() {
   var annualPrices = { "$15": "$12", "$25": "$20" };
 
   return (
-    <div style={{ fontFamily: "'Inter','Helvetica Neue',Arial,sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
+    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
 
       {/* Nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
@@ -281,12 +294,15 @@ export default function LandingPage() {
       {/* Hero */}
       <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "120px 24px 80px", overflow: "hidden" }}>
         <OceanCanvas />
+        {/* Grain texture */}
+        <div style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", opacity: 0.045,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")` }} />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "6px 16px", marginBottom: 32 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: GOLD, display: "inline-block" }}></span>
             <span style={{ fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: "0.8px", textTransform: "uppercase" }}>AI boat maintenance manager</span>
           </div>
-          <h1 style={{ fontSize: "clamp(42px,7vw,80px)", fontWeight: 800, color: WHITE, lineHeight: 1.05, letterSpacing: "-3px", margin: "0 0 24px" }}>
+          <h1 style={{ fontSize: "clamp(40px,7vw,78px)", fontWeight: 700, color: WHITE, lineHeight: 1.05, letterSpacing: "-2px", margin: "0 0 24px", fontFamily: "'Clash Display','Inter',sans-serif" }}>
             Your vessel{"'"}s{" "}
             <span style={{ color: ACCENT }}>First Mate</span>,<br />always ready.
           </h1>
@@ -294,7 +310,7 @@ export default function LandingPage() {
             Keeply tracks your maintenance, logs your passages, and answers questions about your boat {"\u2014"} so you spend less time worrying and more time on the water.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
-            <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, color: "#1a1200", border: "none", padding: "14px 36px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Get started free {"\u2192"}</button>
+            <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, color: "#1a1200", border: "none", padding: "14px 36px", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.2px", transition: "opacity 0.15s, transform 0.15s" }}>Get started free {"\u2192"}</button>
             <button onClick={function () { openAuth("login"); }} style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.8)", padding: "14px 28px", borderRadius: 10, fontSize: 16, cursor: "pointer" }}>Log in</button>
           </div>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Free plan available {"\u00B7"} no credit card required</p>
@@ -304,8 +320,8 @@ export default function LandingPage() {
         <div style={{ position: "relative", zIndex: 10, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 64, maxWidth: 720 }}>
           {FEATURE_ICONS.map(function (f, i) {
             return (
-              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "14px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, minWidth: 72 }}>
-                <span style={{ fontSize: 22 }}>{f.icon}</span>
+              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "14px 18px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, minWidth: 76 }}>
+                <span style={{ color: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center" }}>{f.el}</span>
                 <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>{f.label}</span>
               </div>
             );
@@ -329,7 +345,7 @@ export default function LandingPage() {
             <div key={i} style={{ maxWidth: 1100, margin: "0 auto 100px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
               <div style={{ order: isEven ? 0 : 1 }}>
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
-                <h2 style={{ fontSize: "clamp(26px,3.2vw,40px)", fontWeight: 800, color: WHITE, lineHeight: 1.15, letterSpacing: "-1.5px", margin: "0 0 20px" }}>{f.title}</h2>
+                <h2 style={{ fontSize: "clamp(26px,3.2vw,40px)", fontWeight: 700, color: WHITE, lineHeight: 1.15, letterSpacing: "-1px", margin: "0 0 20px", fontFamily: "'Clash Display','Inter',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
                 <button onClick={function () { openAuth("signup"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try it free {"\u2192"}</button>
               </div>
@@ -357,7 +373,7 @@ export default function LandingPage() {
       <section id="pricing" style={{ padding: "100px 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 800, color: WHITE, letterSpacing: "-2px", margin: "0 0 12px" }}>Simple pricing</h2>
+            <h2 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: WHITE, letterSpacing: "-1.5px", margin: "0 0 12px", fontFamily: "'Clash Display','Inter',sans-serif" }}>Simple pricing</h2>
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Start free. Upgrade when you're ready.</p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
               <span style={{ fontSize: 13, color: annual ? "rgba(255,255,255,0.4)" : WHITE, fontWeight: annual ? 400 : 600 }}>Monthly</span>
@@ -405,7 +421,7 @@ export default function LandingPage() {
           </div>
           {/* Feature comparison table */}
           <div style={{ marginTop: 64 }}>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: WHITE, letterSpacing: "-0.5px", textAlign: "center", margin: "0 0 32px" }}>Full feature comparison</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 700, color: WHITE, letterSpacing: "-0.5px", textAlign: "center", margin: "0 0 32px", fontFamily: "'Clash Display','Inter',sans-serif" }}>Full feature comparison</h3>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>

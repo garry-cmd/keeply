@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Keeply",
-  description: "Boat maintenance tracking for sailors and liveaboards",
+  description: "AI boat maintenance manager — track repairs, log passages, and get AI-powered part recommendations.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -27,6 +27,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Fontshare — Clash Display (headings) + Satoshi (body) */}
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap"
+        />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

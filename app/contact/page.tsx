@@ -43,7 +43,7 @@ export default function ContactPage() {
   ];
 
   return (
-    <div style={{ fontFamily: "'Inter','Helvetica Neue',Arial,sans-serif", background: NAVY, minHeight: "100vh", color: "#fff" }}>
+    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", background: NAVY, minHeight: "100vh", color: "#fff" }}>
 
       {/* Nav */}
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
