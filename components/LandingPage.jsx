@@ -566,7 +566,7 @@ function TestimonialsStrip() {
   ];
   var doubled = items.concat(items);
   return (
-    <div style={{ background: NAVY_MID, borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "32px 0" : "48px 0", overflow: "hidden" }}>
+    <div style={{ background: NAVY_MID, borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "clamp(32px,5vw,48px) 0", overflow: "hidden" }}>
       <style dangerouslySetInnerHTML={{ __html: "@keyframes keeply-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } } .kp-track { animation: keeply-scroll 48s linear infinite; } .kp-track:hover { animation-play-state: paused; }" }} />
       <div className="kp-track" style={{ display: "flex", gap: 20, width: "max-content", paddingLeft: 24 }}>
         {doubled.map(function (t, i) {
