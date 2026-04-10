@@ -125,7 +125,7 @@ function FirstMateVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 290, background: "#071e3d", borderRadius: 24, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 340, background: "#071e3d", borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0f4c8a,#4da6ff)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -248,7 +248,7 @@ function LogbookVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 290, background: "#071e3d", borderRadius: 24, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 340, background: "#071e3d", borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -420,7 +420,7 @@ function MyBoatVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 270, background: NAVY, borderRadius: 28, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
+      <div style={{ width: 340, background: NAVY, borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
 
         {/* Top bar */}
         <div style={{ background: NAVY, padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -615,33 +615,6 @@ function TestimonialsStrip() {
 }
 
 
-function PhotoStrip() {
-  var photos = [
-    { src: "/images/cockpit-selfie.jpg",    alt: "Skipper at the helm" },
-    { src: "/images/spinnaker.jpg",         alt: "Spinnaker run offshore" },
-    { src: "/images/dinghy-anchorage.jpg",  alt: "Arrived — Baja anchorage" },
-    { src: "/images/costa-rica-anchorage.jpg", alt: "Sailboats at anchor" },
-  ];
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", height: 260, overflow: "hidden" }}>
-      {photos.map(function(p, i) {
-        return (
-          <div key={i} style={{ overflow: "hidden" }}>
-            <img src={p.src} alt={p.alt}
-              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center",
-                filter: "brightness(0.82) saturate(1.1)",
-                transition: "transform 0.5s ease, filter 0.5s ease" }}
-              onMouseEnter={function(e){ e.currentTarget.style.transform="scale(1.05)"; e.currentTarget.style.filter="brightness(0.95) saturate(1.2)"; }}
-              onMouseLeave={function(e){ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.filter="brightness(0.82) saturate(1.1)"; }}
-            />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-
 function OnboardingVisual() {
   var [phase, setPhase] = useState(0);
   var [taskCount, setTaskCount] = useState(0);
@@ -695,7 +668,7 @@ function OnboardingVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 270, background: "#071e3d", borderRadius: 28, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 340, background: "#071e3d", borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
 
         {/* Top bar */}
         <div style={{ background: "#071e3d", padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -894,17 +867,9 @@ export default function LandingPage() {
 
       </section>
 
-      {/* Quote band */}
-      <div style={{ background: "rgba(77,166,255,0.07)", borderTop: "1px solid rgba(77,166,255,0.15)", borderBottom: "1px solid rgba(77,166,255,0.15)", padding: "28px 24px", textAlign: "center" }}>
-        <p style={{ fontSize: "clamp(15px,2.2vw,20px)", fontWeight: 700, color: ACCENT, fontStyle: "italic", margin: 0 }}>
-          "Keeply pays for itself the first time it reminds you to change an impeller."
-        </p>
-      </div>
 
-      {/* Photo strip */}
-      <PhotoStrip />
 
-      {/* Feature sections */}
+
       <section id="features" style={{ padding: "80px 24px" }}>
         {FEATURES.map(function (f, i) {
           var isEven = i % 2 === 0;
