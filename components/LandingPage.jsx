@@ -467,22 +467,13 @@ export default function LandingPage() {
         </div>
         
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "6px 16px", marginBottom: 32 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: GOLD, display: "inline-block" }}></span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: "0.8px", textTransform: "uppercase" }}>AI boat maintenance manager</span>
-          </div>
           <h1 style={{ fontSize: "clamp(40px,7vw,78px)", fontWeight: 700, color: WHITE, lineHeight: 1.05, letterSpacing: "-2px", margin: "0 0 24px", fontFamily: "'Clash Display','Inter',sans-serif" }}>
             Your vessel{"'"}s{" "}
             <span style={{ color: ACCENT }}>First Mate</span>,<br />always ready.
           </h1>
-          <p style={{ fontSize: "clamp(16px,2vw,20px)", color: "rgba(255,255,255,0.6)", maxWidth: 560, margin: "0 auto 44px", lineHeight: 1.7 }}>
-            Keeply tracks your maintenance, logs your passages, and answers questions about your boat {"\u2014"} so you spend less time worrying and more time on the water.
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
-            <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, color: "#1a1200", border: "none", padding: "14px 36px", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.2px", transition: "opacity 0.15s, transform 0.15s" }}>Get started free {"\u2192"}</button>
-            <button onClick={function () { openAuth("login"); }} style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.8)", padding: "14px 28px", borderRadius: 10, fontSize: 16, cursor: "pointer" }}>Log in</button>
+          <div style={{ marginTop: 44 }}>
+            <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, color: "#1a1200", border: "none", padding: "16px 44px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.2px", transition: "opacity 0.15s, transform 0.15s" }}>Get started free {"\u2192"}</button>
           </div>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Free plan available {"\u00B7"} no credit card required</p>
         </div>
 
         {/* Feature icon strip */}
