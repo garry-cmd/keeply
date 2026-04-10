@@ -364,8 +364,8 @@ export default function LandingPage() {
             })}
           </div>
           <p style={{ textAlign: "center", marginTop: 28, fontSize: 13, color: "#9ca3af" }}>
-            Managing 15+ assets?{" "}
-            <a href="mailto:fleet@keeply.boats" style={{ color: "#2563eb", textDecoration: "none" }}>Talk to us about Enterprise →</a>
+            Commercial or fleet manager?{" "}
+            <a href="mailto:garry@keeply.boats?subject=Keeply Fleet enquiry" style={{ color: "#2563eb", textDecoration: "none" }}>Talk to us about Fleet →</a>
           </p>
         </div>
       </section>
