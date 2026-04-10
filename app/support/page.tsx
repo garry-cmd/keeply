@@ -66,7 +66,7 @@ export default function SupportPage() {
 
       {/* ── Full-page baja beach background ── */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
-        <img src="/images/baja-beach.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
+        <img src="/images/espiritu-santo.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
         <div style={{ position: "absolute", inset: 0, background: "rgba(7,30,61,0.72)" }} />
       </div>
 
