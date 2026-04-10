@@ -13,8 +13,17 @@ function Logo({ size }) {
   size = size || 28;
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
-      <path d="M18 3L33 10V20C33 27 26 32 18 34C10 32 3 27 3 20V10L18 3Z" fill={BRAND} stroke="#1a6bbf" strokeWidth="1.5"/>
-      <path d="M13 18L16.5 21.5L23.5 14.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill={BRAND}/>
+      <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
+      <line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -458,7 +467,6 @@ export default function LandingPage() {
         <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 1, background: "#071e3d" }}>
           <video
             autoPlay muted loop playsInline
-            poster="/images/hero-sunset.jpg"
             style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%" }}
           >
             <source src="/videos/sailing-hero.mp4" type="video/mp4" />
@@ -474,17 +482,6 @@ export default function LandingPage() {
 
         </div>
 
-        {/* Feature icon strip */}
-        <div style={{ position: "relative", zIndex: 10, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 64, maxWidth: 720 }}>
-          {FEATURE_ICONS.map(function (f, i) {
-            return (
-              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "14px 18px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, minWidth: 76 }}>
-                <span style={{ color: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center" }}>{f.el}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>{f.label}</span>
-              </div>
-            );
-          })}
-        </div>
       </section>
 
       {/* Quote band */}
