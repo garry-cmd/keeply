@@ -165,7 +165,7 @@ function PhotoStrip() {
   var photos = [
     { src: "/images/cockpit-selfie.jpg",     alt: "Skipper at the helm, offshore" },
     { src: "/images/spinnaker.jpg",          alt: "Spinnaker run in the Pacific" },
-    { src: "/images/catalina-anchorage.jpg", alt: "Catalina Island anchorage" },
+    { src: "/images/pressure-gauge.jpg",     alt: "Watermaker pressure gauge — 90 psi" },
     { src: "/images/baja-beach.jpg",         alt: "Baja California — arrived" },
   ];
   return (
@@ -201,11 +201,40 @@ function PhotoStrip() {
   );
 }
 
+
+function PropPhotoVisual() {
+  return (
+    <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative", aspectRatio: "4/3" }}>
+      <img src="/images/bronze-prop.jpg" alt="Bronze propeller on workbench with tools"
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,30,61,0.78) 0%, transparent 55%)" }} />
+      <div style={{ position: "absolute", bottom: 20, left: 20, right: 20 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: GOLD, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Logged in Keeply</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>Prop removal & shaft seal replacement — every detail documented.</div>
+      </div>
+    </div>
+  );
+}
+
+function EnginePhotoVisual() {
+  return (
+    <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative", aspectRatio: "4/3" }}>
+      <img src="/images/engine-room.jpg" alt="Brand new Beta Marine diesel engine installed in engine bay"
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,30,61,0.78) 0%, transparent 55%)" }} />
+      <div style={{ position: "absolute", bottom: 20, left: 20, right: 20 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Equipment tracked</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>Beta Marine 28 — install date, engine hours, service history in one card.</div>
+      </div>
+    </div>
+  );
+}
+
 const FEATURES = [
-  { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
+  { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: PropPhotoVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
   { tag: "Logbook", title: "Log passages the smart way.", body: "Record departures, arrivals, conditions, and crew with a few taps. Pro users get AI-enriched entries — Keeply drafts the narrative from your data so your logbook writes itself.", Visual: LogbookVisual },
-  { tag: "Equipment", title: "Everything your boat runs on, in one place.", body: "Log every piece of gear with service dates, photos, and manuals. Point your camera at any piece of equipment and Keeply's AI identifies it and populates the card automatically.", Visual: EquipmentVisual },
+  { tag: "Equipment", title: "Everything your boat runs on, in one place.", body: "Log every piece of gear with service dates, photos, and manuals. Point your camera at any piece of equipment and Keeply's AI identifies it and populates the card automatically.", Visual: EnginePhotoVisual },
 ];
 
 const STATS = [
@@ -301,7 +330,6 @@ export default function LandingPage() {
         <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 1 }}>
           <video
             autoPlay muted loop playsInline
-            poster="/images/hero-sunset.jpg"
             style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%" }}
           >
             <source src="/videos/sailing-hero.mp4" type="video/mp4" />
@@ -385,8 +413,14 @@ export default function LandingPage() {
       </div>
 
       {/* Pricing */}
-      <section id="pricing" style={{ padding: "100px 24px" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+      <section id="pricing" style={{ padding: "100px 24px", position: "relative", overflow: "hidden" }}>
+        {/* Subtle photo background */}
+        <div style={{ position: "absolute", inset: 0 }}>
+          <img src="/images/hero-sunset.jpg" alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 65%" }} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(7,30,61,0.91)" }} />
+        </div>
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <h2 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: WHITE, letterSpacing: "-1.5px", margin: "0 0 12px", fontFamily: "'Clash Display','Inter',sans-serif" }}>Simple pricing</h2>
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Start free. Upgrade when you're ready.</p>
@@ -492,6 +526,7 @@ export default function LandingPage() {
             Commercial or fleet manager?{" "}
             <a href="mailto:garry@keeply.boats?subject=Keeply Fleet enquiry" style={{ color: ACCENT, textDecoration: "none", fontWeight: 600 }}>Talk to us about Fleet {"\u2192"}</a>
           </p>
+        </div>
         </div>
       </section>
 
