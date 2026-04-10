@@ -475,7 +475,7 @@ export default function LandingPage() {
         </div>
         
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
-          <h1 style={{ fontSize: "clamp(40px,7vw,78px)", fontWeight: 700, color: WHITE, lineHeight: 1.05, letterSpacing: "-2px", margin: "0 0 24px", fontFamily: "'Clash Display','Inter',sans-serif" }}>
+          <h1 style={{ fontSize: "clamp(48px,8vw,96px)", fontWeight: 800, color: WHITE, lineHeight: 1.0, letterSpacing: "-2.5px", margin: "0 0 24px", fontFamily: "'Clash Display','Inter',sans-serif" }}>
             Your vessel{"'"}s{" "}
             <span style={{ color: GOLD }}>First Mate</span>,<br />always ready.
           </h1>
