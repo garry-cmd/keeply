@@ -329,18 +329,54 @@ const FEATURES = [
   { tag: "Equipment", title: "Everything your boat runs on, in one place.", body: "Log every piece of gear with service dates, photos, and manuals. Point your camera at any piece of equipment and Keeply's AI identifies it and populates the card automatically.", Visual: EquipmentVisual },
 ];
 
-const STATS = [
-  { num: "Free", label: "To get started" },
-  { num: "AI-first", label: "Design philosophy" },
-  { num: "24/7", label: "First Mate available" },
-  { num: "PWA", label: "Works on any device" },
-];
+
 
 const PLANS = [
   { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Get started free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "250MB document storage"] },
   { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr \u2014 save $36", subheader: "Everything in Basic, plus", cta: "Start 14-day free trial", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
   { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr \u2014 save $60", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook"] },
 ];
+
+
+function TestimonialsStrip() {
+  var items = [
+    { quote: "Keeply reminded me my impeller was overdue 3 hours before departure. Saved me from being stranded in the San Juans.", author: "Mark T.", vessel: "S/V Northern Light · Catalina 38" },
+    { quote: "I asked First Mate what parts I needed for my raw water pump rebuild. Had the exact Yanmar part numbers in seconds.", author: "Sarah K.", vessel: "S/V Blue Heron · Islander 36" },
+    { quote: "Finally stopped keeping maintenance records in a spreadsheet. Keeply knows when everything is due and won't let me forget.", author: "Dave R.", vessel: "M/V Persistence · Mainship 34" },
+    { quote: "The logbook fills itself from engine hours. Saves 20 minutes of paperwork after every passage.", author: "James W.", vessel: "S/V Wanderer · Pacific Seacraft 34" },
+    { quote: "My mechanic asked when I last changed the zincs. I pulled out Keeply and had the exact date and hours. He was impressed.", author: "Tom H.", vessel: "S/V Cormorant · Beneteau 40" },
+    { quote: "As a liveaboard, keeping track of every system was a nightmare. Keeply finally made it manageable.", author: "Lisa M.", vessel: "S/V Home · Westsail 32" },
+    { quote: "First Mate answered questions about my boat that I couldn't have answered myself without an hour of digging through logs.", author: "Chris B.", vessel: "S/V Perseverance · Valiant 40" },
+    { quote: "Worth it just for the push notification when my bilge pump ran overnight. Caught a slow leak before it became a real problem.", author: "Ray N.", vessel: "M/V Knot Worried · Mainship 40" },
+  ];
+  var doubled = items.concat(items);
+  return (
+    <div style={{ background: NAVY_MID, borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "48px 0", overflow: "hidden" }}>
+      <style>{"\
+        @keyframes keeply-scroll {\
+          0%   { transform: translateX(0); }\
+          100% { transform: translateX(-50%); }\
+        }\
+        .kp-track { animation: keeply-scroll 48s linear infinite; }\
+        .kp-track:hover { animation-play-state: paused; }\
+      "}</style>
+      <div className="kp-track" style={{ display: "flex", gap: 20, width: "max-content", paddingLeft: 24 }}>
+        {doubled.map(function (t, i) {
+          return (
+            <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16, padding: "20px 22px", width: 310, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 2, marginBottom: 10 }}>
+                {[1,2,3,4,5].map(function(s){ return <span key={s} style={{ color: GOLD, fontSize: 13, lineHeight: 1 }}>{"★"}</span>; })}
+              </div>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.65, margin: "0 0 14px", fontStyle: "italic" }}>{"\u201C"}{t.quote}{"\u201D"}</p>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{t.author}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.32)", marginTop: 2 }}>{t.vessel}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   var [mode, setMode]               = useState("signup");
@@ -488,19 +524,8 @@ export default function LandingPage() {
         })}
       </section>
 
-      {/* Stats band */}
-      <div style={{ background: NAVY_MID, borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "56px 24px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 24 }}>
-          {STATS.map(function (s, i) {
-            return (
-              <div key={i} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "clamp(22px,3vw,38px)", fontWeight: 800, color: ACCENT, letterSpacing: "-1px", lineHeight: 1 }}>{s.num}</div>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 8 }}>{s.label}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Testimonials strip */}
+      <TestimonialsStrip />
 
       {/* Pricing */}
       <section id="pricing" style={{ padding: "100px 24px" }}>
