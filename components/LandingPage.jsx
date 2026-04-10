@@ -81,17 +81,15 @@ export default function LandingPage() {
       badge: null, highlight: false,
       trial: "No credit card required",
       cta: "Get started free",
+      subheader: "Includes",
       features: [
-        { text: "1 asset",                    yes: true  },
-        { text: "Unlimited maintenance tasks", yes: true  },
-        { text: "3 equipment cards",           yes: true  },
-        { text: "3 repair tasks",              yes: true  },
-        { text: "Parts catalog",               yes: true  },
-        { text: "Engine hours tracking",       yes: true  },
-        { text: "250MB document storage",      yes: true  },
-        { text: "Repair log & logbook",        yes: false },
-        { text: "First Mate AI",               yes: false },
-        { text: "AI vessel setup",             yes: false },
+        { text: "1 vessel"                    },
+        { text: "Unlimited maintenance tasks" },
+        { text: "3 equipment cards"           },
+        { text: "3 repairs"                   },
+        { text: "Parts catalog"               },
+        { text: "Engine hours tracking"       },
+        { text: "250MB document storage"      },
       ],
     },
     {
@@ -101,17 +99,14 @@ export default function LandingPage() {
       badge: "Most popular", highlight: true,
       trial: "No credit card required",
       cta: "Start 14-day free trial",
+      subheader: "Everything in Basic, plus",
       features: [
-        { text: "1 asset",                        yes: true },
-        { text: "Unlimited maintenance tasks",     yes: true },
-        { text: "10 equipment cards",              yes: true },
-        { text: "Unlimited repair tasks",          yes: true },
-        { text: "Parts catalog & ordering",        yes: true },
-        { text: "Engine hours tracking",           yes: true },
-        { text: "Repair log & logbook",            yes: true },
-        { text: "1GB document storage",            yes: true },
-        { text: "First Mate AI — 10 queries/mo",   yes: true, bold: true },
-        { text: "AI vessel setup",                 yes: true, bold: true },
+        { text: "10 equipment cards"              },
+        { text: "Unlimited repairs"               },
+        { text: "Repair log & logbook"            },
+        { text: "1GB document storage"            },
+        { text: "First Mate AI — 10 queries/mo", bold: true },
+        { text: "AI vessel setup",               bold: true },
       ],
     },
     {
@@ -121,17 +116,13 @@ export default function LandingPage() {
       badge: null, highlight: false,
       trial: "",
       cta: "Get Pro",
+      subheader: "Everything in Standard, plus",
       features: [
-        { text: "2 assets",                        yes: true, bold: true },
-        { text: "Unlimited maintenance tasks",      yes: true },
-        { text: "Unlimited equipment cards",        yes: true, bold: true },
-        { text: "Unlimited repair tasks",           yes: true },
-        { text: "Parts catalog & ordering",         yes: true },
-        { text: "Engine hours tracking",            yes: true },
-        { text: "Repair log & logbook",             yes: true },
-        { text: "Unlimited document storage",       yes: true, bold: true },
-        { text: "First Mate AI — 50 queries/mo",    yes: true, bold: true },
-        { text: "AI-enriched logbook",              yes: true, bold: true },
+        { text: "2 vessels",                      bold: true },
+        { text: "Unlimited equipment cards",      bold: true },
+        { text: "Unlimited document storage",     bold: true },
+        { text: "First Mate AI — 50 queries/mo",  bold: true },
+        { text: "AI-enriched logbook",            bold: true },
       ],
     },
   ];
@@ -344,11 +335,16 @@ export default function LandingPage() {
                   <div style={{ fontSize: 12, color: hl ? "#4ade80" : "#16a34a", fontWeight: 500, minHeight: 18, marginBottom: 20 }}>{displaySub || "\u00a0"}</div>
                   <div style={{ borderTop: hl ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb", marginBottom: 20 }}></div>
                   <div style={{ flex: 1, marginBottom: 24 }}>
+                    {plan.subheader && (
+                      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.6px", textTransform: "uppercase", color: hl ? "rgba(255,255,255,0.4)" : "#9ca3af", marginBottom: 12 }}>
+                        {plan.subheader}
+                      </div>
+                    )}
                     {plan.features.map(function (f) {
                       return (
-                        <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 9, opacity: f.yes ? 1 : 0.38 }}>
-                          <span style={{ fontSize: 12, color: f.yes ? (hl ? "#4da6ff" : "#16a34a") : "#9ca3af", marginTop: 2, flexShrink: 0 }}>{f.yes ? "✓" : "✗"}</span>
-                          <span style={{ fontSize: 13, color: hl ? "rgba(255,255,255,0.8)" : "#4b5563", textDecoration: f.yes ? "none" : "line-through", fontWeight: f.bold ? 600 : 400 }}>{f.text}</span>
+                        <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 9 }}>
+                          <span style={{ fontSize: 12, color: hl ? "#4da6ff" : "#16a34a", marginTop: 2, flexShrink: 0 }}>✓</span>
+                          <span style={{ fontSize: 13, color: hl ? "rgba(255,255,255,0.8)" : "#4b5563", fontWeight: f.bold ? 600 : 400 }}>{f.text}</span>
                         </div>
                       );
                     })}
