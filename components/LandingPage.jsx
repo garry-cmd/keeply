@@ -19,52 +19,7 @@ function Logo({ size }) {
   );
 }
 
-function OceanCanvas() {
-  var canvasRef = useRef(null);
-  useEffect(function () {
-    var canvas = canvasRef.current;
-    if (!canvas) return;
-    var ctx = canvas.getContext("2d");
-    var w = canvas.width = canvas.offsetWidth;
-    var h = canvas.height = canvas.offsetHeight;
-    var t = 0;
-    var raf;
-    function draw() {
-      ctx.clearRect(0, 0, w, h);
-      var grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, "#071e3d");
-      grad.addColorStop(1, "#0d3a6e");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-      for (var i = 0; i < 8; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, h * 0.35 + i * 44);
-        for (var x = 0; x <= w; x += 4) {
-          var y = h * 0.35 + i * 44 + Math.sin((x / w) * Math.PI * 3 + t * 0.5 + i * 0.7) * (12 - i * 1.1);
-          ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = "rgba(77,166,255," + (0.04 + i * 0.008) + ")";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-      var orb = ctx.createRadialGradient(w * 0.78, h * 0.18, 0, w * 0.78, h * 0.18, w * 0.38);
-      orb.addColorStop(0, "rgba(77,166,255,0.07)");
-      orb.addColorStop(1, "rgba(77,166,255,0)");
-      ctx.fillStyle = orb;
-      ctx.fillRect(0, 0, w, h);
-      t += 0.012;
-      raf = requestAnimationFrame(draw);
-    }
-    draw();
-    var ro = new ResizeObserver(function () {
-      w = canvas.width = canvas.offsetWidth;
-      h = canvas.height = canvas.offsetHeight;
-    });
-    ro.observe(canvas);
-    return function () { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
-}
+
 
 // ── Phosphor-style SVG icons for feature strip ───────────────────────────
 function Ico({ d, d2, d3, d4, circle }) {
@@ -463,10 +418,18 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "120px 24px 80px", overflow: "hidden" }}>
-        <OceanCanvas />
-        {/* Grain texture */}
-        <div style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", opacity: 0.045,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")` }} />
+        {/* ── Hero background: sailing video with dark overlay ── */}
+        <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 1, background: "#071e3d" }}>
+          <video
+            autoPlay muted loop playsInline
+            poster="/images/hero-sunset.jpg"
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%" }}
+          >
+            <source src="/videos/sailing-hero.mp4" type="video/mp4" />
+          </video>
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.55) 0%, rgba(7,30,61,0.2) 40%, rgba(7,30,61,0.7) 80%, rgba(7,30,61,0.97) 100%)" }} />
+        </div>
+        
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "6px 16px", marginBottom: 32 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: GOLD, display: "inline-block" }}></span>
