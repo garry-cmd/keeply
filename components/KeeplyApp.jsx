@@ -282,6 +282,32 @@ const ALL_SECTIONS   = Object.keys(SECTIONS);
 const MAINT_SECTIONS = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Vessel"; });
 const EQ_CATEGORIES  = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Dinghy" && s !== "Vessel"; });
 
+// ─── CATEGORY ICONS ──────────────────────────────────────────────────────────
+function getCategoryIcon(category, size) {
+  size = size || 18;
+  const s = { width: size, height: size, fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" };
+  const icons = {
+    "Anchor":      { stroke: "#4da6ff",  bg: "rgba(77,166,255,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#4da6ff"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="22"/><path d="M5 15H2a10 10 0 0 0 20 0h-3"/></svg> },
+    "Bilge":       { stroke: "#38bdf8",  bg: "rgba(56,189,248,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#38bdf8"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> },
+    "Deck":        { stroke: "#fb923c",  bg: "rgba(251,146,60,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#fb923c"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="2.5" r="1.2" fill="#fb923c" stroke="none"/><circle cx="21.5" cy="12" r="1.2" fill="#fb923c" stroke="none"/><circle cx="12" cy="21.5" r="1.2" fill="#fb923c" stroke="none"/><circle cx="2.5" cy="12" r="1.2" fill="#fb923c" stroke="none"/></svg> },
+    "Dinghy":      { stroke: "#818cf8",  bg: "rgba(129,140,248,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#818cf8"><path d="M12 3C7 3 3 6.5 3 11v2c0 4.5 4 7 9 7s9-2.5 9-7v-2C21 6.5 17 3 12 3z" strokeWidth="2.4" fill="none"/><line x1="5" y1="19.5" x2="19" y2="19.5" strokeWidth="1.5"/><line x1="6" y1="12" x2="18" y2="12" strokeWidth="1.2"/></svg> },
+    "Electrical":  { stroke: "#fbbf24",  bg: "rgba(251,191,36,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#fbbf24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+    "Electronics": { stroke: "#4da6ff",  bg: "rgba(77,166,255,0.1)",    path: <svg {...s} viewBox="0 0 24 24" stroke="#4da6ff"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5"/><line x1="12" y1="12" x2="20" y2="5"/><circle cx="12" cy="12" r="1.5" fill="#4da6ff" stroke="none"/><circle cx="17.5" cy="7" r="1.4" fill="#4da6ff" stroke="none"/></svg> },
+    "Engine":      { stroke: "#94a3b8",  bg: "rgba(148,163,184,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#94a3b8"><rect x="2" y="10" width="14" height="9" rx="1.5"/><rect x="3.5" y="6" width="2.5" height="5" rx="0.5"/><rect x="7.5" y="6" width="2.5" height="5" rx="0.5"/><rect x="11.5" y="6" width="2.5" height="5" rx="0.5"/><circle cx="20" cy="13.5" r="3"/><line x1="16" y1="13.5" x2="17" y2="13.5"/></svg> },
+    "Galley":      { stroke: "#f97316",  bg: "rgba(251,146,60,0.1)",    path: <svg {...s} viewBox="0 0 24 24" stroke="#f97316"><path d="M12 2c0 6.5-7 9.5-6 14.5a7 7 0 0 0 14 0C21 11.5 16 8 16 2c-1.5 4-4.5 6-4.5 9.5C11.5 8 12 5 12 2z"/></svg> },
+    "Hull":        { stroke: "#f87171",  bg: "rgba(248,113,113,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#f87171"><path d="M2 12C5 12 8 11 12 11C16 11 19 12 22 12L20 16C17 17.5 14.5 18 12 18C9.5 18 7 17.5 4 16Z"/><path d="M12 18L11 22L13 22Z" fill="rgba(248,113,113,0.25)" strokeWidth="1.2"/><line x1="2" y1="12" x2="22" y2="12" strokeDasharray="3 2" strokeOpacity="0.4"/></svg> },
+    "Navigation":  { stroke: "#34d399",  bg: "rgba(52,211,153,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#34d399"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="5" strokeWidth="2"/><line x1="22" y1="12" x2="19" y2="12" strokeWidth="1.4"/><line x1="12" y1="22" x2="12" y2="19" strokeWidth="1.4"/><line x1="2" y1="12" x2="5" y2="12" strokeWidth="1.4"/><path d="M12 5 L13.5 12 L12 19 L10.5 12 Z" fill="rgba(52,211,153,0.85)" stroke="none"/><path d="M12 5 L10.5 12 L12 19 L13.5 12 Z" fill="rgba(52,211,153,0.2)" stroke="none"/><circle cx="12" cy="12" r="2" fill="white" stroke="#34d399" strokeWidth="1.5"/></svg> },
+    "Plumbing":    { stroke: "#60a5fa",  bg: "rgba(96,165,250,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#60a5fa"><line x1="2" y1="12" x2="7" y2="12" strokeWidth="2.5"/><circle cx="12" cy="12" r="5"/><line x1="12" y1="7" x2="12" y2="4" strokeWidth="2"/><line x1="9" y1="4" x2="15" y2="4" strokeWidth="2"/><line x1="17" y1="12" x2="22" y2="12" strokeWidth="2.5"/><line x1="8.5" y1="12" x2="15.5" y2="12" strokeWidth="1.5" strokeOpacity="0.45"/></svg> },
+    "Rigging":     { stroke: "#6ee7b7",  bg: "rgba(167,243,208,0.1)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#6ee7b7"><rect x="5" y="3" width="14" height="3" rx="1.5"/><rect x="7.5" y="6" width="9" height="11" rx="1"/><line x1="7.5" y1="8.5"  x2="16.5" y2="8.5"  strokeWidth="1.2" strokeOpacity="0.7"/><line x1="7.5" y1="11"   x2="16.5" y2="11"   strokeWidth="1.2" strokeOpacity="0.7"/><line x1="7.5" y1="13.5" x2="16.5" y2="13.5" strokeWidth="1.2" strokeOpacity="0.7"/><rect x="5" y="17" width="14" height="3" rx="1.5"/><rect x="8" y="20" width="8" height="2" rx="1"/><circle cx="12" cy="4.5" r="1.2" fill="#6ee7b7" stroke="none"/></svg> },
+    "Safety":      { stroke: "#a78bfa",  bg: "rgba(196,181,253,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#a78bfa"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg> },
+    "Sails":       { stroke: "#7dd3fc",  bg: "rgba(125,211,252,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#7dd3fc"><path d="M3 7C7 7 10 5 15 5C18 5 20 7 22 7"/><path d="M3 12C8 12 12 10 18 10C20.5 10 22 12 22 12"/><path d="M3 17C6 17 9 19 13 19C15.5 19 17 17 17 17"/><path d="M20 5L22 7L20 9" strokeWidth="1.4"/><path d="M20 10L22 12L20 14" strokeWidth="1.4"/></svg> },
+    "Steering":    { stroke: "#14b8a6",  bg: "rgba(20,184,166,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#14b8a6"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/><line x1="4.22" y1="4.22" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.78" y2="19.78"/><line x1="19.78" y1="4.22" x2="16.24" y2="7.76"/><line x1="7.76" y1="16.24" x2="4.22" y2="19.78"/></svg> },
+  };
+  var ic = icons[category];
+  if (!ic) ic = { stroke: "#64748b", bg: "rgba(100,116,139,0.1)", path: <svg {...s} viewBox="0 0 24 24" stroke="#64748b"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> };
+  return { ...ic, tile: <div style={{ width: size + 18, height: size + 18, borderRadius: 10, background: ic.bg, border: "1px solid " + ic.stroke.replace(")", ",0.2)").replace("rgb", "rgba"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{ic.path}</div> };
+}
+
 // ─── SMALL SHARED COMPONENTS ─────────────────────────────────────────────────
 function Badge({ label, color, bg, border }) {
   return <span style={{ background: bg, color, border: border ? "1px solid " + border : "none", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{label}</span>;
@@ -801,7 +827,7 @@ export default function App() {
 
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
   const [tab, setTab]   = useState("boat");
-  const [darkMode, setDarkMode] = useState(function(){ return typeof window !== "undefined" && localStorage.getItem("keeply-dark") === "1"; });
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(function(){
     if (typeof document !== "undefined") {
@@ -2500,13 +2526,13 @@ export default function App() {
 
   // ─── STYLES ──────────────────────────────────────────────────────────────────
   const s = {
-    app:     { fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", background: "var(--bg-app)", minHeight: "100vh", color: "var(--text-primary)" },
-    topBar:  { background: "#1a3a5c", padding: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexShrink: 0 },
+    app:     { fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", background: "#071e3d", minHeight: "100vh", color: "rgba(255,255,255,0.88)" },
+    topBar:  { background: "#071e3d", padding: "0 14px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 52, flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.06)" },
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
     main:    { maxWidth: 960, margin: "0 auto", padding: "16px 12px 24px", paddingTop: 0, paddingBottom: 80 },
-    card:    { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
+    card:    { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 14, marginBottom: 10, overflow: "hidden" },
     pill:    function(a,c){ return { padding: "4px 11px", borderRadius: 20, border: a ? "1.5px solid " + (c || "var(--brand)") : "1.5px solid var(--border)", background: a ? (c || "var(--brand-deep)") : "transparent", color: a ? (c || "var(--brand)") : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }; },
     plusBtn: { background: "var(--brand)", color: "var(--text-on-brand)", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 22, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
     modalBg: { position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
@@ -2530,7 +2556,7 @@ export default function App() {
   // ─── RENDER ──────────────────────────────────────────────────────────────────
   // Auth loading
   if (session === undefined) return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-app)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg-app)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" }}>
       <div style={{ textAlign: "center", color: "var(--text-muted)" }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>⚓</div>
         <div>Loading Keeply…</div>
@@ -2565,7 +2591,7 @@ export default function App() {
                 setView("admin");
                 setShowMobileMenu(false);
               }
-            }}><defs><linearGradient id="ksg" x1="4" y1="2" x2="32" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#5bbcf8"/><stop offset="100%" stopColor="#0e5cc7"/></linearGradient></defs><path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="url(#ksg)"/><circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/><line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><text x="40" y="24" fontFamily="Satoshi,DM Sans,Helvetica Neue,sans-serif" fontWeight="800" fontSize="18" fill="white">Keeply</text></svg>
+            }}><defs><linearGradient id="ksg" x1="4" y1="2" x2="32" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#5bbcf8"/><stop offset="100%" stopColor="#0e5cc7"/></linearGradient></defs><path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="url(#ksg)"/><circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/><line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/><path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><text x="40" y="24" fontFamily="DM Sans,Helvetica Neue,sans-serif" fontWeight="800" fontSize="18" fill="white">Keeply</text></svg>
       </div>
       <LoadingScreen />
     </div>
@@ -2601,7 +2627,7 @@ export default function App() {
             <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
             <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
             <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            <text x="40" y="24" fontFamily="Satoshi,DM Sans,Helvetica Neue,sans-serif" fontWeight="800" fontSize="18" fill="white">Keeply</text>
+            <text x="40" y="24" fontFamily="DM Sans,Helvetica Neue,sans-serif" fontWeight="800" fontSize="18" fill="white">Keeply</text>
           </svg>
           {/* Vessel switcher */}
           <div style={{ position: "relative" }} onClick={function(e){ e.stopPropagation(); }}>
@@ -2639,51 +2665,42 @@ export default function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
-          <button onClick={function(){ setDarkMode(function(d){ return !d; }); }} title={darkMode ? "Light mode" : "Dark mode"}
-            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, height: 34, width: 34, color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5"/>
-              <path d="M8 2a6 6 0 0 1 0 12V2Z" fill="rgba(255,255,255,0.9)"/>
-            </svg>
-          </button>
+
         </div>
       </div>
-      {/* ── First Mate input bar ── */}
-      <div style={{ background: "#1a3a5c", padding: "0 12px 12px" }}>
-        <div style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 24, padding: "0 14px 0 10px", display: "flex", alignItems: "center", gap: 10, height: 44 }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <rect x="4" y="1" width="5" height="7" rx="2.5" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2"/>
-              <path d="M1.5 7a5 5 0 0 0 10 0" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="6.5" y1="12" x2="6.5" y2="10" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div onClick={function(){ setShowFirstMatePanel(true); }}
-            style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.55)", cursor: "pointer", userSelect: "none" }}>
-            Ask First Mate…
-          </div>
-          <div onClick={function(){ setShowFirstMatePanel(true); }}
-            style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }}>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 15, fontWeight: 700 }}>↑</span>
+      {/* ── First Mate input bar — sparkle icon, always sticky ── */}
+      <div style={{ background: "#071e3d", padding: "0 14px 11px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: 13, padding: "9px 10px 9px 12px", display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}
+          onClick={function(){ setShowFirstMatePanel(true); }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+          </svg>
+          <div style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.3)", userSelect: "none" }}>Ask First Mate…</div>
+          <div style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
           </div>
         </div>
       </div>
 
-      {/* ── BOTTOM TAB BAR ── */}
+      {/* ── BOTTOM TAB BAR — white footer, SVG icons ── */}
       {(view === "customer" || view === "fleet") && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400, background: "var(--bg-card)", borderTop: "1px solid var(--border)", display: "flex", height: 60, boxShadow: "0 -2px 12px rgba(0,0,0,0.08)" }}>
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400, background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", height: 62, boxShadow: "0 -2px 12px rgba(0,0,0,0.12)" }}>
           {[
-            { icon: "⛵", label: "My Boat",   active: view==="customer" && tab==="boat",                 action: function(){ setView("customer"); setTab("boat"); } },
-            { icon: "🗺️",  label: "Logbook",  active: view==="customer" && tab==="logbook-standalone",   action: function(){ setView("customer"); setTab("logbook-standalone"); } },
-            { icon: "⚙️",  label: "Equipment", active: view==="customer" && tab==="equipment-standalone", action: function(){ setView("customer"); setTab("equipment-standalone"); } },
-            { icon: "👤",  label: "Profile",   active: false,                                             action: function(){ setShowProfilePanel(true); } },
+            { label: "My Boat",   active: view==="customer" && tab==="boat",                 action: function(){ setView("customer"); setTab("boat"); },
+              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+            { label: "Logbook",   active: view==="customer" && tab==="logbook-standalone",   action: function(){ setView("customer"); setTab("logbook-standalone"); },
+              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
+            { label: "Equipment", active: view==="customer" && tab==="equipment-standalone", action: function(){ setView("customer"); setTab("equipment-standalone"); },
+              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
+            { label: "Profile",   active: false,                                             action: function(){ setShowProfilePanel(true); },
+              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
           ].map(function(item){ return (
             <button key={item.label} onClick={item.action}
-              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "6px 0",
-                color: item.active ? "var(--brand)" : "var(--text-muted)" }}>
-              <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
-              <span style={{ fontSize: 10, fontWeight: item.active ? 700 : 500, letterSpacing: "0.2px" }}>{item.label}</span>
-              {item.active && <div style={{ position: "absolute", bottom: 0, width: 32, height: 2, background: "var(--brand)", borderRadius: 1 }} />}
+              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "8px 0",
+                color: item.active ? "#0f4c8a" : "rgba(7,30,61,0.32)", fontFamily: "inherit" }}>
+              {item.svg}
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase" }}>{item.label}</span>
             </button>
           ); })}
         </div>
@@ -3167,14 +3184,13 @@ export default function App() {
             const makeModel = [activeVessel?.year, activeVessel?.make, activeVessel?.model].filter(Boolean).join(" ");
             const isExpanded = expandedEquip === vesselEq.id;
             return (
-              <div style={{ marginBottom: 16, borderRadius: "0 0 12px 12px", overflow: "hidden", boxShadow: "0 2px 12px rgba(15,76,138,0.18)", background: "#1a3a5c", marginLeft: -12, marginRight: -12 }}>
+              <div style={{ marginBottom: 16, borderRadius: 18, overflow: "hidden", boxShadow: "0 2px 20px rgba(0,0,0,0.3)", background: "linear-gradient(150deg,#0d2d5e 0%,#071e3d 100%)", border: "1px solid rgba(255,255,255,0.1)" }}>
                 {/* Banner header */}
                 <div style={{ background: "#1a3a5c", cursor: "pointer", padding: "18px 20px 16px" }}
                   onClick={function(){ setExpandedEquip(isExpanded ? null : vesselEq.id); if (!isExpanded) setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 4 }}>Vessel</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", marginBottom: 2 }}>⚓ {vesselEq.name}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", marginBottom: 2 }}>{vesselEq.name}</div>
                       {makeModel && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: (info.hin || info.uscg_doc || info.home_port) ? 10 : 0 }}>{makeModel}</div>}
                       {(info.hin || info.uscg_doc || info.home_port) && (
                         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 8 }}>
@@ -3739,16 +3755,16 @@ export default function App() {
             const totalNm   = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
             const totalEngHrs = vesselLogs.reduce(function(acc, e){ return acc + (parseFloat(e.engine_hours) || 0); }, 0);
             var updateHours = function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); };
-            const cellStyle = { background: "var(--bg-card)", padding: "11px 12px" };
-            const labelStyle = { fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 4 };
+            const cellStyle = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "13px 14px" };
+            const labelStyle = { fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 5 };
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: "1px", background: "#1a3a5c", borderRadius: 12, overflow: "hidden", marginBottom: 16, border: "2px solid #1a3a5c" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
 
                 {/* Row 1 Cell 1 — Engine hours (from last logbook hours_end or manual) */}
                 <div style={cellStyle}>
                   <div style={labelStyle}>Engine hrs</div>
                   {(lastLogWithHours || engineHours) ? (<>
-                    <div onClick={updateHours} style={{ fontSize: 17, fontWeight: 700, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", lineHeight: 1, cursor: "pointer" }}>
+                    <div onClick={updateHours} style={{ fontSize: 22, fontWeight: 800, color: "#4da6ff", fontFamily: "DM Mono, monospace", lineHeight: 1, cursor: "pointer" }}>
                       {(lastLogWithHours ? lastLogWithHours.hours_end : engineHours).toLocaleString()}
                     </div>
                     <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>
@@ -3760,40 +3776,19 @@ export default function App() {
                   </>)}
                 </div>
 
-                {/* Row 1 Cell 2 — Next service */}
-                <div style={cellStyle}>
-                  <div style={labelStyle}>Next service</div>
-                  {nextDue ? (<>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: nextColor, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{nextDue.task}</div>
-                    <div style={{ fontSize: 10, color: nextColor, marginTop: 3, fontFamily: "DM Mono, monospace" }}>{daysLabel}</div>
-                  </>) : (
-                    <div style={{ fontSize: 12, color: "var(--ok-text)", fontWeight: 600, marginTop: 4 }}>All clear ✓</div>
-                  )}
-                </div>
-
-                {/* Row 2 Cell 1 — nm logged */}
-                <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: logStats.passages > 0 ? "pointer" : "default" }}
+                {/* Row 2 — NM logged */}
+                <div style={{ ...cellStyle, cursor: logStats.passages > 0 ? "pointer" : "default" }}
                   onClick={logStats.passages > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
-                  <div style={labelStyle}>nm logged</div>
+                  <div style={labelStyle}>NM logged</div>
                   {logStats.totalNm > 0 ? (<>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{Math.round(logStats.totalNm).toLocaleString()}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: "#4da6ff", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{Math.round(logStats.totalNm).toLocaleString()}</div>
                     <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{logStats.passages} {logStats.passages === 1 ? "passage" : "passages"}</div>
                   </>) : (
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No passages yet</div>
                   )}
                 </div>
 
-                {/* Row 2 Cell 2 — avg speed */}
-                <div style={{ ...cellStyle, borderTop: "1px solid var(--border)", cursor: logStats.passages > 0 ? "pointer" : "default" }}
-                  onClick={logStats.passages > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
-                  <div style={labelStyle}>Avg speed</div>
-                  {logStats.avgSpeed !== null ? (<>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: "var(--brand)", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>{logStats.avgSpeed.toFixed(1)}</div>
-                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>kts avg</div>
-                  </>) : (
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>—</div>
-                  )}
-                </div>
+
 
 
               </div>
@@ -3814,18 +3809,18 @@ export default function App() {
             var criticalSub = overdueCount > 0 && adminOverdue.length > 0 ? overdueCount + " tasks · " + adminOverdue.length + " admin" : "Tasks & admin overdue";
             var dueSoonSub  = dueSoonCount > 0 && adminDueSoon.length > 0 ? dueSoonCount + " tasks · " + adminDueSoon.length + " admin" : "Overdue or due shortly";
             const cards = [
-              { label: "Critical",     val: criticalTotal, sub: criticalSub, color: "var(--danger-text)",  bg: "var(--danger-bg)",  border: "1px solid var(--danger-border)"  },
-              { label: "Due Soon",     val: dueSoonTotal,  sub: dueSoonSub,  color: "var(--warn-text)",    bg: "var(--warn-bg)",    border: "1px solid var(--warn-border)"    },
-              { label: "Open Repairs", val: openRepairs,   sub: "Repairs in progress", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "1px solid var(--duesoon-border)" },
+              { label: "Critical",     val: criticalTotal, sub: criticalSub,           numColor: "#f87171", bg: "rgba(239,68,68,0.1)",  border: "1px solid rgba(239,68,68,0.22)",  lblColor: "rgba(248,113,113,0.65)" },
+              { label: "Due Soon",     val: dueSoonTotal,  sub: dueSoonSub,            numColor: "#fbbf24", bg: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.22)", lblColor: "rgba(251,191,36,0.65)"  },
+              { label: "Open Repairs", val: openRepairs,   sub: "Repairs in progress", numColor: "#4da6ff", bg: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.22)", lblColor: "rgba(77,166,255,0.65)"  },
             ];
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
                 {cards.map(function(card){ return (
                   <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
-                    style={{ background: card.bg, border: card.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer", userSelect: "none" }}>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.val}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: card.color, marginTop: 2 }}>{card.label}</div>
-                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{card.sub}</div>
+                    style={{ background: card.bg, border: card.border, borderRadius: 13, padding: "12px 8px 10px", textAlign: "center", cursor: "pointer", userSelect: "none" }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: card.numColor, lineHeight: 1 }}>{card.val}</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: card.lblColor, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.3px" }}>{card.label}</div>
+                    <div style={{ fontSize: 8, color: "rgba(255,255,255,0.22)", marginTop: 2 }}>{card.sub}</div>
                   </div>
                 ); })}
               </div>
@@ -3833,6 +3828,49 @@ export default function App() {
           })()}
 
 
+
+          {/* ── Overdue & due soon tasks on My Boat ── */}
+          {(function(){
+            var vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
+            var urgentTasks = vesselTasks.filter(function(t){
+              var u = getTaskUrgency(t);
+              return u === "critical" || u === "overdue" || u === "due-soon";
+            }).sort(function(a,b){
+              var order = { critical: 0, overdue: 1, "due-soon": 2 };
+              return (order[getTaskUrgency(a)] || 3) - (order[getTaskUrgency(b)] || 3);
+            });
+            if (urgentTasks.length === 0) return null;
+            return (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 8px" }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.2px", textTransform: "uppercase" }}>Overdue &amp; due soon</span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{urgentTasks.length}</span>
+                </div>
+                {urgentTasks.map(function(t){
+                  var u = getTaskUrgency(t);
+                  var dotColor = u === "critical" || u === "overdue" ? "#ef4444" : "#f59e0b";
+                  var dotShadow = u === "critical" || u === "overdue" ? "0 0 5px rgba(239,68,68,0.55)" : "0 0 5px rgba(245,158,11,0.45)";
+                  var daysLabel = (function(){
+                    if (!t.due_date) return "";
+                    var diff = Math.round((new Date(t.due_date) - new Date()) / 86400000);
+                    if (diff < -1) return Math.abs(diff) + "d over";
+                    if (diff === -1) return "1d over";
+                    if (diff === 0) return "Due today";
+                    return diff + "d";
+                  })();
+                  var textColor = u === "critical" || u === "overdue" ? "#f87171" : "#fbbf24";
+                  return (
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                      onClick={function(){ setExpandedTask(t.id); }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, boxShadow: dotShadow, flexShrink: 0 }} />
+                      <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>{t.task}</div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: textColor, flexShrink: 0 }}>{daysLabel}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* ── Engine tasks import banner ── */}
           {(function(){
@@ -3877,10 +3915,9 @@ export default function App() {
             const openCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
             if (openCount === 0) return null;
             return (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--warn-text)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Open repairs · {openCount}</span>
-                <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, padding: "4px 0" }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.2px", textTransform: "uppercase" }}>Open repairs</span>
+                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{openCount}</span>
               </div>
             );
           })()}
@@ -3895,13 +3932,18 @@ export default function App() {
           {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).map(function(r){
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
+            const daysSinceLogged = r.date ? Math.round((new Date() - new Date(r.date)) / 86400000) : 0;
+            const repairDotColor = daysSinceLogged >= 10 ? "#ef4444" : "#f59e0b";
+            const repairDotShadow = daysSinceLogged >= 10 ? "0 0 6px rgba(239,68,68,0.6)" : "0 0 6px rgba(245,158,11,0.5)";
+            const catIcon = getCategoryIcon(r.section, 14);
             return (
-              <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                  {catIcon.tile}
                   <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
-                    style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--warn-border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
+                    style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.2)"), background: completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.05)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
                     title="Mark complete">
-                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                   </button>
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
                     const next = isExpanded ? null : r.id;
@@ -3930,9 +3972,9 @@ export default function App() {
                         </div>
                       </div>
                     ) : (<>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{r.description}</div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
-                        {fmt(r.date)}
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.88)", lineHeight: 1.2 }}>{r.description}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>
+                        {daysSinceLogged === 0 ? "Logged today" : "Logged " + daysSinceLogged + " day" + (daysSinceLogged === 1 ? "" : "s") + " ago"}
                         {(r.photos || []).length > 0 && (
                           <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
                         )}
@@ -3942,11 +3984,12 @@ export default function App() {
                       </div>
                     </>)}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: repairDotColor, boxShadow: repairDotShadow, flexShrink: 0 }} />
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
-                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "▾" : "▸"}</span>
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "rgba(255,255,255,0.35)" }} title="Edit">✏️</button>
+                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", opacity: 0.5 }} title="Delete"><TrashIcon /></button>
+                    <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
                 {isExpanded && (
@@ -4454,56 +4497,26 @@ export default function App() {
                     {!isExpanded && <div style={{ height: 3, background: "linear-gradient(90deg, #5bbcf8 0%, #0e5cc7 100%)" }} />}
                   </div>
                 ) : (
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
-                        {eq.name}
-                        {eq.status === "needs-service" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--danger-text)", display: "inline-block", flexShrink: 0 }} title="Needs service" />}
-                        {eq.status === "watch" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--warn-text)", display: "inline-block", flexShrink: 0 }} title="Watch" />}
-                      </div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                        {(SECTIONS[eq.category] || "")} {eq.category}
-                        {eq.lastService && <span> · Serviced {fmt(eq.lastService)}</span>}
+                <div style={{ padding: "11px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : eq.id; setExpandedEquip(next); if (next) { setEquipTab(function(prev){ const n = Object.assign({}, prev); if (!n[eq.id]) n[eq.id] = "maintenance"; return n; }); } }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                    {getCategoryIcon(eq.category, 18).tile}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,0.9)", lineHeight: 1.2 }}>{eq.name}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+                        {[eq.make, eq.model].filter(Boolean).join(" · ") || eq.category}
+                        {eq.lastService && <span> · {fmt(eq.lastService)}</span>}
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {(function(){
                       const urgentTasks = tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id && getTaskUrgency(t) !== "ok"; });
-                      const totalTasks = tasks.filter(function(t){ return t._vesselId===activeVesselId && t.equipment_id===eq.id; }).length;
                       const openRepairs = repairs.filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status !== "closed"; }).length;
-                      const totalParts = (eq.customParts || []).length;
-                      const totalDocs  = (eq.docs || []).length;
-                      return (<>
-                        {totalTasks > 0 && (
-                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "maintenance"; return n; }); }}
-                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer",
-                              background: urgentTasks.length > 0 ? "var(--danger-bg)" : "var(--bg-subtle)",
-                              color: urgentTasks.length > 0 ? "var(--danger-text)" : "var(--text-muted)",
-                              border: "0.5px solid " + (urgentTasks.length > 0 ? "var(--danger-border)" : "var(--border)") }}>
-                            {totalTasks} task{totalTasks !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                        {openRepairs > 0 && (
-                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "repairs"; return n; }); }}
-                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer", background: "var(--warn-bg)", color: "var(--warn-text)", border: "0.5px solid var(--warn-border)" }}>
-                            {openRepairs} repair{openRepairs !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                        {totalParts > 0 && (
-                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "parts"; return n; }); }}
-                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer", background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)" }}>
-                            {totalParts} part{totalParts !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                        {totalDocs > 0 && (
-                          <span onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ const n = Object.assign({}, prev); n[eq.id] = "docs"; return n; }); }}
-                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 10, cursor: "pointer", background: "var(--info-bg)", color: "var(--info-text)", border: "0.5px solid var(--info-border)" }}>
-                            {totalDocs} doc{totalDocs !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </>);
+                      const dotColor = eq.status === "needs-service" ? "#ef4444" : eq.status === "watch" || urgentTasks.length > 0 || openRepairs > 0 ? "#f59e0b" : "#22c55e";
+                      const dotShadow = eq.status === "needs-service" ? "0 0 5px rgba(239,68,68,0.55)" : eq.status === "watch" || urgentTasks.length > 0 ? "0 0 5px rgba(245,158,11,0.45)" : "0 0 5px rgba(34,197,94,0.45)";
+                      return (
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, boxShadow: dotShadow, flexShrink: 0 }} />
+                      );
                     })()}
                     <button onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ var n = Object.assign({}, prev); n[eq.id] = "edit"; return n; }); }}                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}                      title="Edit equipment">                      ✏️                    </button>                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}
