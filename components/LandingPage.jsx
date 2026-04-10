@@ -13,8 +13,17 @@ function Logo({ size }) {
   size = size || 28;
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
-      <path d="M18 3L33 10V20C33 27 26 32 18 34C10 32 3 27 3 20V10L18 3Z" fill={BRAND} stroke="#1a6bbf" strokeWidth="1.5"/>
-      <path d="M13 18L16.5 21.5L23.5 14.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill={BRAND}/>
+      <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
+      <line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -207,9 +216,9 @@ const STATS = [
 ];
 
 const PLANS = [
-  { name: "Entry",  price: "Free",   period: "",    sub: "No credit card required",       subheader: "Includes",             cta: "Get started free",        features: ["1 vessel", "Unlimited maintenance tasks", "Unlimited equipment cards", "5 repairs", "Parts catalog", "Engine hours tracking", "Document storage"] },
-  { name: "Pro",    price: "$9.99",  period: "/mo", sub: "or $69.99/yr \u2014 save $50", subheader: "Everything in Entry, plus", cta: "Start 14-day free trial", highlight: true, badge: "Most popular", features: ["2 vessels", "Unlimited repairs", "Logbook", "First Mate AI", "AI vessel setup", "AI-enriched logbook", "Consumables tracking"] },
-  { name: "Fleet",  price: "$49.99", period: "/mo", sub: "Up to 3 vessels",               subheader: "Everything in Pro, plus",  cta: "Get Fleet",             features: ["3 vessels", "Fleet dashboard", "Priority support", "Unlimited document storage"] },
+  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required",     subheader: "Includes",                    cta: "Get started free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "250MB document storage"] },
+  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr — save $36", subheader: "Everything in Basic, plus",   cta: "Start 14-day free trial", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "1GB document storage", "First Mate AI — 10 queries/mo", "AI vessel setup"] },
+  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr — save $60", subheader: "Everything in Standard, plus", cta: "Get Pro",                features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — 50 queries/mo", "AI-enriched logbook"] },
 ];
 
 export default function LandingPage() {
@@ -265,7 +274,7 @@ export default function LandingPage() {
 
   function openAuth(m) { setMode(m || "signup"); setShowAuth(true); }
 
-  var annualPrices = { "$9.99": "$5.83", "$49.99": "$41.66" };
+  var annualPrices = { "$15": "$12", "$25": "$20" };
 
   return (
     <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
@@ -297,11 +306,7 @@ export default function LandingPage() {
           >
             <source src="/videos/sailing-hero.mp4" type="video/mp4" />
           </video>
-          <img
-            src="/images/hero-sunset.jpg"
-            alt=""
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%", zIndex: -1 }}
-          />
+
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.55) 0%, rgba(7,30,61,0.2) 40%, rgba(7,30,61,0.7) 80%, rgba(7,30,61,0.97) 100%)" }} />
         </div>
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
@@ -437,7 +442,7 @@ export default function LandingPage() {
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left", padding: "12px 16px", color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.6px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>Feature</th>
-                    {["Entry", "Pro", "Fleet"].map(function (p, i) {
+                    {["Basic", "Standard", "Pro"].map(function (p, i) {
                       return <th key={i} style={{ textAlign: "center", padding: "12px 16px", color: i === 1 ? ACCENT : "rgba(255,255,255,0.8)", fontWeight: 700, fontSize: 13, borderBottom: "1px solid rgba(255,255,255,0.1)", minWidth: 100 }}>{p}</th>;
                     })}
                   </tr>
@@ -446,20 +451,20 @@ export default function LandingPage() {
                   {[
                     ["Vessels",               "1",         "1",           "2"],
                     ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
-                    ["Equipment cards",        "Unlimited", "Unlimited",   "Unlimited"],
-                    ["Repairs",               "5",         "Unlimited",   "Unlimited"],
+                    ["Equipment cards",        "3",         "10",          "Unlimited"],
+                    ["Repairs",               "3",         "Unlimited",   "Unlimited"],
                     ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
                     ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
-                    ["Document storage",      "\u2713",   "\u2713",     "Unlimited"],
+                    ["Document storage",      "250 MB",    "1 GB",        "Unlimited"],
                     ["Push notifications",    "\u2713",    "\u2713",      "\u2713"],
                     ["Admin task tracking",   "\u2713",    "\u2713",      "\u2713"],
                     ["Crew / shared access",  "\u2713",    "\u2713",      "\u2713"],
                     ["Repair log & logbook",  "\u2014",    "\u2713",      "\u2713"],
                     ["Haul-out planner",      "\u2014",    "\u2713",      "\u2713"],
-                    ["First Mate AI",         "\u2014",    "\u2713",     "\u2713"],
+                    ["First Mate AI",         "\u2014",    "10 / mo",     "50 / mo"],
                     ["AI vessel setup",       "\u2014",    "\u2713",      "\u2713"],
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
-                    ["Price",                 "Free",      "$9.99 / mo",  "$49.99 / mo"],
+                    ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
                   ].map(function (row, ri) {
                     var isLast = ri === 15;
                     return (
