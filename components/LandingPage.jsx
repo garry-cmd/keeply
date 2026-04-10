@@ -125,31 +125,31 @@ function FirstMateVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 380, background: "#071e3d", borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 390, background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
-        <div style={{ background: "#071e3d", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0f4c8a,#4da6ff)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ background: "#071e3d", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#0f4c8a,#4da6ff)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>First Mate</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Knows your whole boat</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>First Mate</div>
+            <div style={{ fontSize: 14, color: "rgba(255,255,255,0.4)" }}>Knows your whole boat</div>
           </div>
           <div style={{ marginLeft: "auto", width: 8, height: 8, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e" }} />
         </div>
         {/* Messages */}
-        <div style={{ padding: "14px 14px 14px", minHeight: 280, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ padding: "14px 14px 14px", minHeight: 340, display: "flex", flexDirection: "column", gap: 10 }}>
           {/* Previous completed exchanges */}
           {visibleExchanges.map(function(ex, i){
             return (
               <div key={i} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 2px 14px", background: "rgba(77,166,255,0.18)", border: "1px solid rgba(77,166,255,0.3)", fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>{ex.q}</div>
+                  <div style={{ maxWidth: "82%", padding: "11px 16px", borderRadius: "14px 14px 2px 14px", background: "rgba(77,166,255,0.18)", border: "1px solid rgba(77,166,255,0.3)", fontSize: 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>{ex.q}</div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                  <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.55 }}>{ex.a}</div>
+                  <div style={{ maxWidth: "82%", padding: "11px 16px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.55 }}>{ex.a}</div>
                 </div>
               </div>
             );
@@ -157,7 +157,7 @@ function FirstMateVisual() {
           {/* Current question */}
           {showQ && (
             <div style={{ display: "flex", justifyContent: "flex-end", opacity: showQ ? 1 : 0, transition: "opacity 0.4s" }}>
-              <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 2px 14px", background: "rgba(77,166,255,0.18)", border: "1px solid rgba(77,166,255,0.3)", fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
+              <div style={{ maxWidth: "82%", padding: "11px 16px", borderRadius: "14px 14px 2px 14px", background: "rgba(77,166,255,0.18)", border: "1px solid rgba(77,166,255,0.3)", fontSize: 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
                 {exchanges[step] ? exchanges[step].q : ''}
               </div>
             </div>
@@ -165,7 +165,7 @@ function FirstMateVisual() {
           {/* Thinking dots */}
           {showThinking && (
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
-              <div style={{ padding: "10px 14px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 14, color: BLUE, letterSpacing: 3 }}>
+              <div style={{ padding: "14px 18px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 20, color: BLUE, letterSpacing: 3 }}>
                 {"\u2022\u2022\u2022"}
               </div>
             </div>
@@ -173,7 +173,7 @@ function FirstMateVisual() {
           {/* AI answer */}
           {showA && (
             <div style={{ display: "flex", justifyContent: "flex-start", opacity: showA ? 1 : 0, transition: "opacity 0.35s" }}>
-              <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.55 }}>
+              <div style={{ maxWidth: "82%", padding: "11px 16px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.55 }}>
                 {exchanges[step] ? exchanges[step].a : ''}
               </div>
             </div>
@@ -181,8 +181,8 @@ function FirstMateVisual() {
         </div>
         {/* Input bar */}
         <div style={{ padding: "0 12px 14px" }}>
-          <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "9px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ flex: 1, fontSize: 11, color: "rgba(255,255,255,0.25)" }}>Ask anything about your boat…</span>
+          <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ flex: 1, fontSize: 15, color: "rgba(255,255,255,0.25)" }}>Ask anything about your boat…</span>
             <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
             </div>
@@ -248,13 +248,13 @@ function LogbookVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 380, background: "#071e3d", borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 390, background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>New logbook entry</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>New logbook entry</span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
             {[phase===0?BLUE:"rgba(255,255,255,0.2)", phase===1?"#f5a623":"rgba(255,255,255,0.2)", phase===2?"#4ade80":"rgba(255,255,255,0.2)"].map(function(c,i){
               return <div key={i} style={{ width:6,height:6,borderRadius:"50%",background:c,transition:"background 0.4s" }} />;
@@ -262,24 +262,24 @@ function LogbookVisual() {
           </div>
         </div>
 
-        <div style={{ padding: "14px 14px", minHeight: 300 }}>
+        <div style={{ padding: "18px 18px", minHeight: 360 }}>
 
           {/* Phase 0 — form filling in */}
           {phase === 0 && (
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
                 Port Ludlow {"\u2192"} Friday Harbor
               </div>
               {fields.map(function(f, i){
                 return (
                   <div key={i} style={{ marginBottom: 9, opacity: i < fieldsVisible ? 1 : 0, transform: i < fieldsVisible ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.35s, transform 0.35s" }}>
-                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.6px" }}>{f[0]}</div>
-                    <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 8, padding: "7px 10px", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>{f[1]}</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.6px" }}>{f[0]}</div>
+                    <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 8, padding: "14px 18px", fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>{f[1]}</div>
                   </div>
                 );
               })}
               {statsVisible && (
-                <div style={{ display: "flex", gap: 8, marginTop: 10, opacity: statsVisible ? 1 : 0, transition: "opacity 0.5s" }}>
+                <div style={{ display: "flex", gap: 11, marginTop: 10, opacity: statsVisible ? 1 : 0, transition: "opacity 0.5s" }}>
                   {[["42 nm","Distance"],["6h 20m","Duration"],["8.1 kts","Avg speed"]].map(function(s,i){
                     return (
                       <div key={i} style={{ flex:1, background:"rgba(77,166,255,0.07)", border:"1px solid rgba(77,166,255,0.15)", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
@@ -393,7 +393,7 @@ function MyBoatVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 380, background: NAVY, borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
+      <div style={{ width: 390, background: NAVY, borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
 
         {/* Top bar */}
         <div style={{ background: NAVY, padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -403,10 +403,10 @@ function MyBoatVisual() {
               <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
               <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>Keeply</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: "#fff" }}>Keeply</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "4px 10px 4px 8px" }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>S/V Irene</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>S/V Irene</span>
           </div>
         </div>
 
@@ -414,48 +414,48 @@ function MyBoatVisual() {
         <div style={{ padding: "10px 12px 6px" }}>
 
           {/* Vessel card */}
-          <div style={{ background: "linear-gradient(150deg,#0d2d5e,#071e3d)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "12px 14px", marginBottom: 9 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", marginBottom: 1 }}>Irene</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>1980 Ta Shing Baba 35</div>
+          <div style={{ background: "linear-gradient(150deg,#0d2d5e,#071e3d)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "16px 18px", marginBottom: 9 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#fff", marginBottom: 1 }}>Irene</div>
+            <div style={{ fontSize: 14, color: "rgba(255,255,255,0.4)" }}>1980 Ta Shing Baba 35</div>
           </div>
 
           {/* KPIs */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 9 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 9 }}>
             {[["1,557","ENGINE HRS"],["136 nm","NM LOGGED"]].map(function(k){ return (
               <div key={k[1]} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 11, padding: "10px 12px" }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: BLUE }}>{k[0]}</div>
-                <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.4px", marginTop: 4 }}>{k[1]}</div>
+                <div style={{ fontSize: 25, fontWeight: 800, color: BLUE }}>{k[0]}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.4px", marginTop: 4 }}>{k[1]}</div>
               </div>
             ); })}
           </div>
 
           {/* Status strip */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 9 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 11, marginBottom: 9 }}>
             {/* Critical card — pulses on tap */}
             <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: 11, padding: "8px 6px", textAlign: "center", transform: cardPulse ? "scale(1.08)" : "scale(1)", transition: "transform 0.25s", boxShadow: cardPulse ? "0 0 16px rgba(239,68,68,0.5)" : "none" }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#f87171", lineHeight: 1, transition: "all 0.4s" }}>{criticalCount}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#f87171", lineHeight: 1, transition: "all 0.4s" }}>{criticalCount}</div>
               <div style={{ fontSize: 7.5, fontWeight: 700, color: "rgba(248,113,113,0.6)", textTransform: "uppercase", letterSpacing: "0.3px", marginTop: 3 }}>Critical</div>
             </div>
             {[["6","Due Soon","rgba(245,158,11,0.1)","rgba(245,158,11,0.22)","#fbbf24","rgba(251,191,36,0.6)"],
               ["5","Repairs","rgba(77,166,255,0.1)","rgba(77,166,255,0.22)","#4da6ff","rgba(77,166,255,0.6)"]].map(function(c){ return (
               <div key={c[1]} style={{ background: c[2], border: "1px solid " + c[3], borderRadius: 11, padding: "8px 6px", textAlign: "center" }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: c[4], lineHeight: 1 }}>{c[0]}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: c[4], lineHeight: 1 }}>{c[0]}</div>
                 <div style={{ fontSize: 7.5, fontWeight: 700, color: c[5], textTransform: "uppercase", letterSpacing: "0.3px", marginTop: 3 }}>{c[1]}</div>
               </div>
             ); })}
           </div>
 
           {/* Open repairs preview */}
-          <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 6 }}>Open repairs</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 6 }}>Open repairs</div>
           {[
             { title: "Replace oil extraction pump", sub: "Engine · 3 days ago", c: "#f59e0b" },
             { title: "Replace main bilge pump",      sub: "Plumbing · 3 days ago", c: "#f59e0b" },
           ].map(function(r, i){ return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-              <div style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{wrenchIcon}</div>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 11, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 7, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{wrenchIcon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{r.title}</div>
-                <div style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{r.sub}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{r.title}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{r.sub}</div>
               </div>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: r.c, boxShadow: "0 0 5px " + r.c }} />
             </div>
@@ -485,10 +485,10 @@ function MyBoatVisual() {
           <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <div style={{ width: 32, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.2)", margin: "0 auto 10px" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#fff" }}>
                 <span style={{ color: "#f87171", marginRight: 6 }}>{criticalCount}</span>Critical items
               </div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)" }}>Tap to complete</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>Tap to complete</div>
             </div>
           </div>
           {/* Critical items list */}
@@ -498,8 +498,8 @@ function MyBoatVisual() {
               var isCompleted  = completedIdx === i;
               return (
                 <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "8px 14px",
+                  display: "flex", alignItems: "center", gap: 18,
+                  padding: "11px 18px",
                   maxHeight: isCompleted ? 0 : 48,
                   opacity: isCompleted ? 0 : 1,
                   overflow: "hidden",
@@ -508,7 +508,7 @@ function MyBoatVisual() {
                 }}>
                   {/* Checkbox */}
                   <div style={{
-                    width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                    width: 22, height: 22, borderRadius: 5, flexShrink: 0,
                     border: isCompleting ? "none" : "1.5px solid rgba(239,68,68,0.4)",
                     background: isCompleting ? "#22c55e" : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -521,9 +521,9 @@ function MyBoatVisual() {
                     )}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: isCompleting ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.85)", textDecoration: isCompleting ? "line-through" : "none", transition: "all 0.3s" }}>{item.name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: isCompleting ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.85)", textDecoration: isCompleting ? "line-through" : "none", transition: "all 0.3s" }}>{item.name}</div>
                   </div>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: i < 2 ? "#f87171" : "#fbbf24", flexShrink: 0 }}>{item.age}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: i < 2 ? "#f87171" : "#fbbf24", flexShrink: 0 }}>{item.age}</span>
                 </div>
               );
             })}
@@ -573,11 +573,11 @@ function TestimonialsStrip() {
           return (
             <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16, padding: "20px 22px", width: 310, flexShrink: 0 }}>
               <div style={{ display: "flex", gap: 2, marginBottom: 10 }}>
-                {[1,2,3,4,5].map(function(s){ return <span key={s} style={{ color: GOLD, fontSize: 13, lineHeight: 1 }}>{"★"}</span>; })}
+                {[1,2,3,4,5].map(function(s){ return <span key={s} style={{ color: GOLD, fontSize: 18, lineHeight: 1 }}>{"★"}</span>; })}
               </div>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.65, margin: "0 0 14px", fontStyle: "italic" }}>{"\u201C"}{t.quote}{"\u201D"}</p>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{t.author}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.32)", marginTop: 2 }}>{t.vessel}</div>
+              <p style={{ fontSize: 18, color: "rgba(255,255,255,0.78)", lineHeight: 1.65, margin: "0 0 14px", fontStyle: "italic" }}>{"\u201C"}{t.quote}{"\u201D"}</p>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{t.author}</div>
+              <div style={{ fontSize: 15, color: "rgba(255,255,255,0.32)", marginTop: 2 }}>{t.vessel}</div>
             </div>
           );
         })}
@@ -640,7 +640,7 @@ function OnboardingVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 380, background: "#071e3d", borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 390, background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
 
         {/* Top bar */}
         <div style={{ background: "#071e3d", padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -649,7 +649,7 @@ function OnboardingVisual() {
             <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
             <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>Keeply</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: "#fff" }}>Keeply</span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
             {[phase === 0 ? BLUE : "rgba(255,255,255,0.2)", phase === 1 ? "#f5a623" : "rgba(255,255,255,0.2)", phase === 2 ? "#4ade80" : "rgba(255,255,255,0.2)"].map(function(c, i){
               return <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: c, transition: "background 0.4s" }} />;
@@ -661,12 +661,12 @@ function OnboardingVisual() {
 
           {/* ── Phase 0: Enter vessel ── */}
           <div style={{ opacity: phase === 0 ? 1 : 0, transition: "opacity 0.5s", position: phase === 0 ? "relative" : "absolute", pointerEvents: "none" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 12 }}>Add your vessel</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 12 }}>Add your vessel</div>
             {fields.map(function(f, i) {
               return (
                 <div key={i} style={{ marginBottom: 10, opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.4s " + (i * 0.15) + "s, transform 0.4s " + (i * 0.15) + "s" }}>
-                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginBottom: 3 }}>{f[0]}</div>
-                  <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 3 }}>{f[0]}</div>
+                  <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "14px 18px", fontSize: 17, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     {f[1]}
                     {i === fields.length - 1 && (
                       <div style={{ width: 2, height: 14, background: BLUE, animation: "keeply-blink 1s step-end infinite" }} />
@@ -675,24 +675,24 @@ function OnboardingVisual() {
                 </div>
               );
             })}
-            <div style={{ marginTop: 16, background: BLUE, borderRadius: 9, padding: "9px 0", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#fff", opacity: phase === 0 ? 1 : 0, transition: "opacity 0.4s 0.6s" }}>
+            <div style={{ marginTop: 16, background: BLUE, borderRadius: 9, padding: "9px 0", textAlign: "center", fontSize: 17, fontWeight: 700, color: "#fff", opacity: phase === 0 ? 1 : 0, transition: "opacity 0.4s 0.6s" }}>
               Build my vessel →
             </div>
           </div>
 
           {/* ── Phase 1: Building ── */}
           {phase === 1 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, gap: 16 }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(77,166,255,0.1)", border: "2px solid rgba(77,166,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 360, gap: 16 }}>
+              <div style={{ width: 68, height: 68, borderRadius: "50%", background: "rgba(77,166,255,0.1)", border: "2px solid rgba(77,166,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
                 </svg>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 6 }}>First Mate is building your vessel{dots}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Generating maintenance schedule</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Loading equipment baseline</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Setting service intervals</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 6 }}>First Mate is building your vessel{dots}</div>
+                <div style={{ fontSize: 15, color: "rgba(255,255,255,0.4)" }}>Generating maintenance schedule</div>
+                <div style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Loading equipment baseline</div>
+                <div style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Setting service intervals</div>
               </div>
             </div>
           )}
@@ -700,31 +700,31 @@ function OnboardingVisual() {
           {/* ── Phase 2: Results ── */}
           {phase === 2 && (
             <div>
-              <div style={{ display: "flex", gap: 7, marginBottom: 14 }}>
+              <div style={{ display: "flex", gap: 18, marginBottom: 14 }}>
                 {[[String(taskCount > 6 ? 14 : taskCount * 2), "Tasks", BLUE, "rgba(77,166,255,0.08)", "rgba(77,166,255,0.2)"],
                   [taskCount >= 5 ? "5" : taskCount >= 3 ? "3" : "—", "Equipment", "#4ade80", "rgba(34,197,94,0.08)", "rgba(34,197,94,0.2)"],
                   [taskCount === 7 ? "60s" : "…", "Setup", "#f5a623", "rgba(245,166,35,0.08)", "rgba(245,166,35,0.2)"]].map(function(s,i){
                   return (
                     <div key={i} style={{ flex: 1, background: s[3], border: "1px solid " + s[4], borderRadius: 10, padding: "9px 6px", textAlign: "center", transition: "all 0.3s" }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: s[2], lineHeight: 1 }}>{s[0]}</div>
-                      <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.4px" }}>{s[1]}</div>
+                      <div style={{ fontSize: 25, fontWeight: 800, color: s[2], lineHeight: 1 }}>{s[0]}</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.4px" }}>{s[1]}</div>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Maintenance schedule</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Maintenance schedule</div>
               {tasks.slice(0, taskCount).map(function(t, i) {
                 return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", opacity: 1, transform: "translateX(0)", transition: "opacity 0.3s, transform 0.3s" }}>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 11, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", opacity: 1, transform: "translateX(0)", transition: "opacity 0.3s, transform 0.3s" }}>
                     <div style={{ width: 6, height: 6, borderRadius: "50%", background: i < 2 ? "#f59e0b" : "#22c55e", flexShrink: 0 }} />
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.75)" }}>{t}</span>
+                    <span style={{ fontSize: 14, color: "rgba(255,255,255,0.75)" }}>{t}</span>
                   </div>
                 );
               })}
               {taskCount < tasks.length && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "5px 0" }}>
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>Loading…</span>
+                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.25)" }}>Loading…</span>
                 </div>
               )}
             </div>
@@ -848,7 +848,7 @@ export default function LandingPage() {
           var isEven = i % 2 === 0;
           var V = f.Visual;
           return (
-            <div key={i} style={{ maxWidth: 1100, margin: "0 auto 100px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
+            <div key={i} style={{ maxWidth: 1300, margin: "0 auto 120px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "start" }}>
               <div style={{ order: isEven ? 0 : 1 }}>
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
                 <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
