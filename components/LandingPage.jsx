@@ -556,7 +556,6 @@ export default function LandingPage() {
             <a href="mailto:garry@keeply.boats?subject=Keeply Fleet enquiry" style={{ color: ACCENT, textDecoration: "none", fontWeight: 600 }}>Talk to us about Fleet {"\u2192"}</a>
           </p>
         </div>
-        </div>
       </section>
 
       {/* Footer */}
