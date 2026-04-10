@@ -271,6 +271,8 @@ export default function LandingPage() {
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <a href="#features" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Features</a>
           <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>
+          <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>
+          <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>
           <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
           <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
         </div>
@@ -401,7 +403,61 @@ export default function LandingPage() {
               );
             })}
           </div>
-          <p style={{ textAlign: "center", marginTop: 32, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
+          {/* Feature comparison table */}
+          <div style={{ marginTop: 64 }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: WHITE, letterSpacing: "-0.5px", textAlign: "center", margin: "0 0 32px" }}>Full feature comparison</h3>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "12px 16px", color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.6px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>Feature</th>
+                    {["Basic", "Standard", "Pro"].map(function (p, i) {
+                      return <th key={i} style={{ textAlign: "center", padding: "12px 16px", color: i === 1 ? ACCENT : "rgba(255,255,255,0.8)", fontWeight: 700, fontSize: 13, borderBottom: "1px solid rgba(255,255,255,0.1)", minWidth: 100 }}>{p}</th>;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Vessels",               "1",         "1",           "2"],
+                    ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
+                    ["Equipment cards",        "3",         "10",          "Unlimited"],
+                    ["Repairs",               "3",         "Unlimited",   "Unlimited"],
+                    ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
+                    ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
+                    ["Document storage",      "250 MB",    "1 GB",        "Unlimited"],
+                    ["Push notifications",    "\u2713",    "\u2713",      "\u2713"],
+                    ["Admin task tracking",   "\u2713",    "\u2713",      "\u2713"],
+                    ["Crew / shared access",  "\u2713",    "\u2713",      "\u2713"],
+                    ["Repair log & logbook",  "\u2014",    "\u2713",      "\u2713"],
+                    ["Haul-out planner",      "\u2014",    "\u2713",      "\u2713"],
+                    ["First Mate AI",         "\u2014",    "10 / mo",     "50 / mo"],
+                    ["AI vessel setup",       "\u2014",    "\u2713",      "\u2713"],
+                    ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
+                    ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
+                  ].map(function (row, ri) {
+                    var isLast = ri === 15;
+                    return (
+                      <tr key={ri} style={{ background: ri % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)" }}>
+                        <td style={{ padding: "12px 16px", color: "rgba(255,255,255,0.7)", fontWeight: isLast ? 700 : 400 }}>{row[0]}</td>
+                        {row.slice(1).map(function (val, ci) {
+                          var isCheck = val === "\u2713";
+                          var isDash  = val === "\u2014";
+                          var isHighlight = ci === 1;
+                          return (
+                            <td key={ci} style={{ padding: "12px 16px", textAlign: "center", color: isCheck ? "#4ade80" : isDash ? "rgba(255,255,255,0.2)" : isHighlight ? ACCENT : "rgba(255,255,255,0.75)", fontWeight: (isCheck || isLast) ? 700 : 400 }}>
+                              {val}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <p style={{ textAlign: "center", marginTop: 48, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
             Commercial or fleet manager?{" "}
             <a href="mailto:garry@keeply.boats?subject=Keeply Fleet enquiry" style={{ color: ACCENT, textDecoration: "none", fontWeight: 600 }}>Talk to us about Fleet {"\u2192"}</a>
           </p>
@@ -416,9 +472,10 @@ export default function LandingPage() {
             <span style={{ fontSize: 15, fontWeight: 700, color: WHITE }}>Keeply</span>
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+            <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Support</a>
+            <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Contact</a>
             <a href="/privacy" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Privacy</a>
             <a href="/terms" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Terms</a>
-            <a href="mailto:garry@keeply.boats" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Support</a>
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>{"\u00A9"} {new Date().getFullYear()} Keeply</div>
         </div>
