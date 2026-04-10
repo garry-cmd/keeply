@@ -110,7 +110,8 @@ export default function SupportPage() {
       </div>
 
       {/* ── Category tabs + FAQ ── */}
-      <div style={{ background: NAVY, maxWidth: 900, margin: "0 auto", padding: "56px 24px 80px", display: "grid", gridTemplateColumns: "220px 1fr", gap: 48, alignItems: "start" }}>
+      <div style={{ background: NAVY, width: "100%" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "56px 24px 80px", display: "grid", gridTemplateColumns: "220px 1fr", gap: 48, alignItems: "start" }}>
         <div>
           <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 16 }}>Topics</div>
           {CATEGORIES.map((c, i) => (
@@ -121,7 +122,7 @@ export default function SupportPage() {
             </button>
           ))}
         </div>
-        <div style={{ background: NAVY }}>
+        <div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
             <span style={{ fontSize: 28 }}>{cat.icon}</span>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", margin: 0 }}>{cat.title}</h2>
@@ -132,6 +133,7 @@ export default function SupportPage() {
         </div>
       </div>
 
+      </div>
       {/* ── Bottom CTA with spinnaker photo ── */}
       <div style={{ position: "relative", overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.07)", padding: "56px 24px", textAlign: "center" }}>
         <img src="/images/spinnaker.jpg" alt=""
