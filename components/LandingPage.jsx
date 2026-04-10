@@ -13,21 +13,58 @@ function Logo({ size }) {
   size = size || 28;
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
-      <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill={BRAND}/>
-      <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
-      <line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18 3L33 10V20C33 27 26 32 18 34C10 32 3 27 3 20V10L18 3Z" fill={BRAND} stroke="#1a6bbf" strokeWidth="1.5"/>
+      <path d="M13 18L16.5 21.5L23.5 14.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
 
+function OceanCanvas() {
+  var canvasRef = useRef(null);
+  useEffect(function () {
+    var canvas = canvasRef.current;
+    if (!canvas) return;
+    var ctx = canvas.getContext("2d");
+    var w = canvas.width = canvas.offsetWidth;
+    var h = canvas.height = canvas.offsetHeight;
+    var t = 0;
+    var raf;
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      var grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, "#071e3d");
+      grad.addColorStop(1, "#0d3a6e");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      for (var i = 0; i < 8; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.35 + i * 44);
+        for (var x = 0; x <= w; x += 4) {
+          var y = h * 0.35 + i * 44 + Math.sin((x / w) * Math.PI * 3 + t * 0.5 + i * 0.7) * (12 - i * 1.1);
+          ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = "rgba(77,166,255," + (0.04 + i * 0.008) + ")";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      var orb = ctx.createRadialGradient(w * 0.78, h * 0.18, 0, w * 0.78, h * 0.18, w * 0.38);
+      orb.addColorStop(0, "rgba(77,166,255,0.07)");
+      orb.addColorStop(1, "rgba(77,166,255,0)");
+      ctx.fillStyle = orb;
+      ctx.fillRect(0, 0, w, h);
+      t += 0.012;
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+    var ro = new ResizeObserver(function () {
+      w = canvas.width = canvas.offsetWidth;
+      h = canvas.height = canvas.offsetHeight;
+    });
+    ro.observe(canvas);
+    return function () { cancelAnimationFrame(raf); ro.disconnect(); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
+}
 
 // ── Phosphor-style SVG icons for feature strip ───────────────────────────
 function Ico({ d, d2, d3, d4, circle }) {
@@ -160,110 +197,181 @@ function EquipmentVisual() {
   );
 }
 
+function MyBoatVisual() {
+  var NAVY   = "#071e3d";
+  var CARD   = "rgba(255,255,255,0.04)";
+  var BORDER = "rgba(255,255,255,0.09)";
+  var MUTED  = "rgba(255,255,255,0.35)";
+  var WHITE  = "rgba(255,255,255,0.88)";
+  var BLUE   = "#4da6ff";
 
-function PhotoStrip() {
-  var photos = [
-    { src: "/images/cockpit-selfie.jpg",     alt: "Skipper at the helm, offshore" },
-    { src: "/images/spinnaker.jpg",          alt: "Spinnaker run in the Pacific" },
-    { src: "/images/pacific-bay.jpg",         alt: "Vivid blue Pacific bay, Nayarit coast" },
-    { src: "/images/dinghy-anchorage.jpg",   alt: "Dinghy ashore, two sailboats at anchor" },
+  var dot = function(c, s) {
+    return <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, boxShadow: "0 0 5px " + s, flexShrink: 0 }} />;
+  };
+
+  var repairs = [
+    { title: "Replace oil extraction pump",   sub: "Engine · 3 days ago",  dotC: "#f59e0b", dotS: "rgba(245,158,11,0.5)"  },
+    { title: "Replace main bilge pump",        sub: "Plumbing · 3 days ago", dotC: "#f59e0b", dotS: "rgba(245,158,11,0.5)"  },
+    { title: "Leaking cockpit drain fitting",  sub: "Hull · 14 days ago",   dotC: "#ef4444", dotS: "rgba(239,68,68,0.6)"   },
   ];
+
+  var tasks = [
+    { name: "Engine oil & filter change",  badge: "12d over",  bc: "#f87171" },
+    { name: "Impeller replacement",        badge: "Due today", bc: "#f87171" },
+    { name: "Fuel filter (primary)",       badge: "4d",        bc: "#fbbf24" },
+    { name: "Raw water strainer clean",    badge: "7d",        bc: "#fbbf24" },
+  ];
+
+  /* Wrench fallback icon */
+  var wrenchIcon = (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+    </svg>
+  );
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", height: 280, overflow: "hidden" }}>
-      {photos.map(function(p, i) {
-        return (
-          <div key={i} style={{ overflow: "hidden" }}>
-            <img
-              src={p.src}
-              alt={p.alt}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "center",
-                filter: "brightness(0.8) saturate(1.15)",
-                transition: "transform 0.55s ease, filter 0.55s ease",
-                display: "block",
-              }}
-              onMouseEnter={function(e) {
-                e.currentTarget.style.transform = "scale(1.06)";
-                e.currentTarget.style.filter = "brightness(0.95) saturate(1.2)";
-              }}
-              onMouseLeave={function(e) {
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.filter = "brightness(0.8) saturate(1.15)";
-              }}
-            />
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ width: 270, background: NAVY, borderRadius: 28, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+
+        {/* ── Top bar ── */}
+        <div style={{ background: NAVY, padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
+              <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="#0f4c8a"/>
+              <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
+              <line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>Keeply</span>
           </div>
-        );
-      })}
-    </div>
-  );
-}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "4px 10px 4px 8px" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"><path d="M3 17l2-8h14l2 8H3z"/></svg>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>S/V Irene</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
 
+        {/* ── First Mate bar ── */}
+        <div style={{ padding: "8px 12px 10px", background: NAVY, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: 12, padding: "7px 10px", display: "flex", alignItems: "center", gap: 7 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+            </svg>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", flex: 1 }}>Ask First Mate…</span>
+            <div style={{ width: 22, height: 22, borderRadius: 6, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+            </div>
+          </div>
+        </div>
 
+        <div style={{ padding: "10px 12px", paddingBottom: 4, overflowY: "hidden", maxHeight: 520 }}>
 
-function FailedPartVisual() {
-  return (
-    <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative", aspectRatio: "4/3" }}>
-      <img src="/images/failed-impeller.jpg" alt="Cracked impeller housing — caught before failure"
-        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,30,61,0.82) 0%, transparent 50%)" }} />
-      <div style={{ position: "absolute", bottom: 20, left: 20, right: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Caught before failure</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>This is what a missed service interval looks like. Keeply makes sure you never get here.</div>
-      </div>
-    </div>
-  );
-}
+          {/* ── Vessel card ── */}
+          <div style={{ background: "linear-gradient(150deg,#0d2d5e 0%,#071e3d 100%)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "14px", marginBottom: 10 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", lineHeight: 1, marginBottom: 2 }}>Irene</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 11 }}>1980 Ta Shing Baba 35</div>
+            <div style={{ display: "flex", gap: 5, marginBottom: 11 }}>
+              {["ID","Docs","Admin"].map(function(t,i){ return (
+                <div key={t} style={{ background: i===0?"rgba(77,166,255,0.15)":"rgba(255,255,255,0.06)", border: "1px solid " + (i===0?"rgba(77,166,255,0.3)":"rgba(255,255,255,0.1)"), borderRadius: 20, padding: "3px 10px", fontSize: 9, fontWeight: 700, color: i===0?BLUE:"rgba(255,255,255,0.5)" }}>{t}</div>
+              ); })}
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              {[["HIN","FDL350400880"],["Doc No.","1213266"],["Home Port","Port Ludlow"]].map(function(m){ return (
+                <div key={m[0]}>
+                  <div style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>{m[0]}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", fontFamily: "DM Mono,monospace" }}>{m[1]}</div>
+                </div>
+              ); })}
+            </div>
+          </div>
 
-function LogbookPhotoVisual() {
-  return (
-    <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative", aspectRatio: "4/3" }}>
-      <img src="/images/costa-rica-anchorage.jpg" alt="Fleet of sailboats anchored at Costa Rica anchorage"
-        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", display: "block" }} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,30,61,0.78) 0%, transparent 55%)" }} />
-      <div style={{ position: "absolute", bottom: 20, left: 20, right: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Passage logged</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>La Cruz de Huanacaxtle — every nm, every hour, every crew member. Your whole journey, documented.</div>
-      </div>
-    </div>
-  );
-}
+          {/* ── KPI row ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
+            {[["1,557","from log · 04/07/26","ENGINE HRS"],["136 nm","11 passages","NM LOGGED"]].map(function(k){ return (
+              <div key={k[2]} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 13, padding: "11px 12px" }}>
+                <div style={{ fontSize: 19, fontWeight: 800, color: BLUE, letterSpacing: "-0.5px", lineHeight: 1 }}>{k[0]}</div>
+                <div style={{ fontSize: 8, color: MUTED, marginTop: 2 }}>{k[1]}</div>
+                <div style={{ fontSize: 8, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 5 }}>{k[2]}</div>
+              </div>
+            ); })}
+          </div>
 
-function PropPhotoVisual() {
-  return (
-    <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative", aspectRatio: "4/3" }}>
-      <img src="/images/bronze-prop.jpg" alt="Bronze propeller on workbench with tools"
-        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,30,61,0.78) 0%, transparent 55%)" }} />
-      <div style={{ position: "absolute", bottom: 20, left: 20, right: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: GOLD, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Logged in Keeply</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>Prop removal & shaft seal replacement — every detail documented.</div>
-      </div>
-    </div>
-  );
-}
+          {/* ── Status strip ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
+            {[["13","Critical","rgba(239,68,68,0.1)","rgba(239,68,68,0.22)","#f87171","rgba(248,113,113,0.6)"],
+              ["6","Due Soon","rgba(245,158,11,0.1)","rgba(245,158,11,0.22)","#fbbf24","rgba(251,191,36,0.6)"],
+              ["5","Repairs","rgba(77,166,255,0.1)","rgba(77,166,255,0.22)","#4da6ff","rgba(77,166,255,0.6)"]].map(function(c){ return (
+              <div key={c[1]} style={{ background: c[2], border: "1px solid " + c[3], borderRadius: 11, padding: "8px 6px", textAlign: "center" }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: c[4], lineHeight: 1 }}>{c[0]}</div>
+                <div style={{ fontSize: 7.5, fontWeight: 700, color: c[5], textTransform: "uppercase", letterSpacing: "0.3px", marginTop: 3 }}>{c[1]}</div>
+              </div>
+            ); })}
+          </div>
 
-function EnginePhotoVisual() {
-  return (
-    <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative", aspectRatio: "4/3" }}>
-      <img src="/images/engine-room.jpg" alt="Brand new Beta Marine diesel engine installed in engine bay"
-        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,30,61,0.78) 0%, transparent 55%)" }} />
-      <div style={{ position: "absolute", bottom: 20, left: 20, right: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 4 }}>Equipment tracked</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>Beta Marine 28 — install date, engine hours, service history in one card.</div>
+          {/* ── Open repairs ── */}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 6px" }}>
+            <span style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.1px", textTransform: "uppercase" }}>Open repairs</span>
+            <span style={{ fontSize: 8, color: "rgba(255,255,255,0.2)" }}>5</span>
+          </div>
+          {repairs.map(function(r, i){ return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{wrenchIcon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: WHITE, lineHeight: 1.2 }}>{r.title}</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{r.sub}</div>
+              </div>
+              {dot(r.dotC, r.dotS)}
+            </div>
+          ); })}
+
+          {/* ── Overdue & due soon ── */}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 6px" }}>
+            <span style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.1px", textTransform: "uppercase" }}>Overdue &amp; due soon</span>
+          </div>
+          {tasks.map(function(t, i){ return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i < tasks.length-1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+              {dot(t.bc, t.bc === "#f87171" ? "rgba(239,68,68,0.5)" : "rgba(245,158,11,0.45)")}
+              <div style={{ flex: 1, fontSize: 11, fontWeight: 600, color: WHITE }}>{t.name}</div>
+              <span style={{ fontSize: 9, fontWeight: 700, color: t.bc, flexShrink: 0 }}>{t.badge}</span>
+            </div>
+          ); })}
+
+        </div>
+
+        {/* ── White footer ── */}
+        <div style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", padding: "8px 0 10px" }}>
+          {[
+            ["My Boat",   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>, "#0f4c8a"],
+            ["Logbook",   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>, "rgba(7,30,61,0.3)"],
+            ["Equipment", <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>, "rgba(7,30,61,0.3)"],
+            ["Profile",   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, "rgba(7,30,61,0.3)"],
+          ].map(function(item){ return (
+            <div key={item[0]} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, color: item[2] }}>
+              {item[1]}
+              <span style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.3px" }}>{item[0]}</span>
+            </div>
+          ); })}
+        </div>
+
       </div>
     </div>
   );
 }
 
 const FEATURES = [
-  { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: FailedPartVisual },
+  { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
-  { tag: "Logbook", title: "Log passages the smart way.", body: "Record departures, arrivals, conditions, and crew with a few taps. Pro users get AI-enriched entries — Keeply drafts the narrative from your data so your logbook writes itself.", Visual: LogbookPhotoVisual },
-  { tag: "Equipment", title: "Everything your boat runs on, in one place.", body: "Log every piece of gear with service dates, photos, and manuals. Point your camera at any piece of equipment and Keeply's AI identifies it and populates the card automatically.", Visual: EnginePhotoVisual },
+  { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
+  { tag: "Logbook", title: "Log passages the smart way.", body: "Record departures, arrivals, conditions, and crew with a few taps. Pro users get AI-enriched entries — Keeply drafts the narrative from your data so your logbook writes itself.", Visual: LogbookVisual },
+  { tag: "Equipment", title: "Everything your boat runs on, in one place.", body: "Log every piece of gear with service dates, photos, and manuals. Point your camera at any piece of equipment and Keeply's AI identifies it and populates the card automatically.", Visual: EquipmentVisual },
 ];
 
 const STATS = [
@@ -274,9 +382,9 @@ const STATS = [
 ];
 
 const PLANS = [
-  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required",     subheader: "Includes",                    cta: "Get started free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "250MB document storage"] },
-  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr — save $36", subheader: "Everything in Basic, plus",   cta: "Start 14-day free trial", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "1GB document storage", "First Mate AI — 10 queries/mo", "AI vessel setup"] },
-  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr — save $60", subheader: "Everything in Standard, plus", cta: "Get Pro",                features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — 50 queries/mo", "AI-enriched logbook"] },
+  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Get started free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "250MB document storage"] },
+  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr \u2014 save $36", subheader: "Everything in Basic, plus", cta: "Start 14-day free trial", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
+  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr \u2014 save $60", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook"] },
 ];
 
 export default function LandingPage() {
@@ -335,37 +443,30 @@ export default function LandingPage() {
   var annualPrices = { "$15": "$12", "$25": "$20" };
 
   return (
-    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden", minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
 
       {/* Nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
         <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <Logo size={30} />
-          <span style={{ fontSize: 20, fontWeight: 700, color: WHITE, letterSpacing: "-0.3px" }}>Keeply</span>
+          <Logo size={28} />
+          <span style={{ fontSize: 18, fontWeight: 700, color: WHITE, letterSpacing: "-0.3px" }}>Keeply</span>
         </a>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <a href="#features" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Features</a>
-          <a href="#pricing" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>
-          <a href="/support" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Support</a>
-          <a href="/contact" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>
-          <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "8px 20px", borderRadius: 8, fontSize: 15, cursor: "pointer" }}>Log in</button>
-          <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 22px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
+          <a href="#features" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Features</a>
+          <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>
+          <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>
+          <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>
+          <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
+          <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
         </div>
       </nav>
 
       {/* Hero */}
       <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "120px 24px 80px", overflow: "hidden" }}>
-        {/* ── Hero background: real sailing video + photo fallback ── */}
-        <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 1, background: "#071e3d" }}>
-          <video
-            autoPlay muted loop playsInline
-            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%" }}
-          >
-            <source src="/videos/sailing-hero.mp4" type="video/mp4" />
-          </video>
-
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.55) 0%, rgba(7,30,61,0.2) 40%, rgba(7,30,61,0.7) 80%, rgba(7,30,61,0.97) 100%)" }} />
-        </div>
+        <OceanCanvas />
+        {/* Grain texture */}
+        <div style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", opacity: 0.045,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")` }} />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "6px 16px", marginBottom: 32 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: GOLD, display: "inline-block" }}></span>
@@ -399,17 +500,14 @@ export default function LandingPage() {
       </section>
 
       {/* Quote band */}
-      <div style={{ background: "#0a1f3d", borderTop: "1px solid rgba(77,166,255,0.2)", borderBottom: "1px solid rgba(77,166,255,0.2)", padding: "28px 24px", textAlign: "center" }}>
+      <div style={{ background: "rgba(77,166,255,0.07)", borderTop: "1px solid rgba(77,166,255,0.15)", borderBottom: "1px solid rgba(77,166,255,0.15)", padding: "28px 24px", textAlign: "center" }}>
         <p style={{ fontSize: "clamp(15px,2.2vw,20px)", fontWeight: 700, color: ACCENT, fontStyle: "italic", margin: 0 }}>
           "Keeply pays for itself the first time it reminds you to change an impeller."
         </p>
       </div>
 
-      {/* Photo strip – real sailing life */}
-      <PhotoStrip />
-
       {/* Feature sections */}
-      <section id="features" style={{ padding: "80px 24px", background: "#071e3d" }}>
+      <section id="features" style={{ padding: "80px 24px" }}>
         {FEATURES.map(function (f, i) {
           var isEven = i % 2 === 0;
           var V = f.Visual;
@@ -442,14 +540,8 @@ export default function LandingPage() {
       </div>
 
       {/* Pricing */}
-      <section id="pricing" style={{ padding: "100px 24px", position: "relative", overflow: "hidden" }}>
-        {/* Subtle photo background */}
-        <div style={{ position: "absolute", inset: 0 }}>
-          <img src="/images/hero-sunset.jpg" alt=""
-            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 65%" }} />
-          <div style={{ position: "absolute", inset: 0, background: "rgba(7,30,61,0.91)" }} />
-        </div>
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 960, margin: "0 auto" }}>
+      <section id="pricing" style={{ padding: "100px 24px" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <h2 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: WHITE, letterSpacing: "-1.5px", margin: "0 0 12px", fontFamily: "'Clash Display','Inter',sans-serif" }}>Simple pricing</h2>
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Start free. Upgrade when you're ready.</p>
