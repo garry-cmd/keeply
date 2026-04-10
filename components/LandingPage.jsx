@@ -514,7 +514,7 @@ export default function LandingPage() {
             <div key={i} style={{ maxWidth: 1100, margin: "0 auto 100px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
               <div style={{ order: isEven ? 0 : 1 }}>
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
-                <h2 style={{ fontSize: "clamp(26px,3.2vw,40px)", fontWeight: 700, color: WHITE, lineHeight: 1.15, letterSpacing: "-1px", margin: "0 0 20px", fontFamily: "'Clash Display','Inter',sans-serif" }}>{f.title}</h2>
+                <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
                 <button onClick={function () { openAuth("signup"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try it free {"\u2192"}</button>
               </div>
@@ -531,7 +531,7 @@ export default function LandingPage() {
       <section id="pricing" style={{ padding: "100px 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: WHITE, letterSpacing: "-1.5px", margin: "0 0 12px", fontFamily: "'Clash Display','Inter',sans-serif" }}>Simple pricing</h2>
+            <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Simple pricing</h2>
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Start free. Upgrade when you're ready.</p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
               <span style={{ fontSize: 13, color: annual ? "rgba(255,255,255,0.4)" : WHITE, fontWeight: annual ? 400 : 600 }}>Monthly</span>
@@ -579,7 +579,7 @@ export default function LandingPage() {
           </div>
           {/* Feature comparison table */}
           <div style={{ marginTop: 64 }}>
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: WHITE, letterSpacing: "-0.5px", textAlign: "center", margin: "0 0 32px", fontFamily: "'Clash Display','Inter',sans-serif" }}>Full feature comparison</h3>
+            <h3 style={{ fontSize: 17, fontWeight: 600, color: WHITE, letterSpacing: "-0.2px", textAlign: "center", margin: "0 0 32px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Full feature comparison</h3>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
