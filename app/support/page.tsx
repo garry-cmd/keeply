@@ -92,7 +92,7 @@ export default function SupportPage() {
 
       {/* ── Hero with engine room photo ── */}
       <div style={{ position: "relative", overflow: "hidden", padding: "72px 24px 56px", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <img src="/images/pacific-bay.jpg" alt=""
+        <img src="/images/baja-beach.jpg" alt=""
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.82) 0%, rgba(7,30,61,0.72) 50%, rgba(7,30,61,0.92) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1 }}>
