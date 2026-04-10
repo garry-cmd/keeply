@@ -55,28 +55,16 @@ const FEATURE_ICONS = [
 ];
 
 function MaintenanceVisual() {
-  var tasks = [
-    { task: "Engine oil & filter change", status: "overdue", label: "Overdue" },
-    { task: "Impeller replacement",       status: "due",     label: "Due soon" },
-    { task: "Raw water strainer clean",   status: "ok",      label: "OK" },
-    { task: "Fuel filter (primary)",      status: "ok",      label: "OK" },
-  ];
-  var colors = { overdue: "#ef4444", due: GOLD, ok: "#22c55e" };
-  var bgs    = { overdue: "rgba(239,68,68,0.12)", due: "rgba(245,166,35,0.12)", ok: "rgba(34,197,94,0.08)" };
   return (
-    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24 }}>
-      {tasks.map(function (t, i) {
-        var c = colors[t.status];
-        return (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0, boxShadow: "0 0 6px " + c }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>{t.task}</div>
-            </div>
-            <div style={{ background: bgs[t.status], border: "1px solid " + c + "44", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: c }}>{t.label}</div>
-          </div>
-        );
-      })}
+    <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "4/3" }}>
+      <img src="/images/failed-impeller.jpg" alt="Failed impeller"
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.1) 0%, rgba(7,30,61,0.75) 100%)" }} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 20px 22px" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Overdue</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", lineHeight: 1.2, marginBottom: 4 }}>Impeller replacement</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Last changed 14 months ago · 1,200 hrs on unit</div>
+      </div>
     </div>
   );
 }
@@ -387,6 +375,33 @@ function TestimonialsStrip() {
   );
 }
 
+
+function PhotoStrip() {
+  var photos = [
+    { src: "/images/cockpit-selfie.jpg",    alt: "Skipper at the helm" },
+    { src: "/images/spinnaker.jpg",         alt: "Spinnaker run offshore" },
+    { src: "/images/dinghy-anchorage.jpg",  alt: "Arrived — Baja anchorage" },
+    { src: "/images/costa-rica-anchorage.jpg", alt: "Sailboats at anchor" },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", height: 260, overflow: "hidden" }}>
+      {photos.map(function(p, i) {
+        return (
+          <div key={i} style={{ overflow: "hidden" }}>
+            <img src={p.src} alt={p.alt}
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center",
+                filter: "brightness(0.82) saturate(1.1)",
+                transition: "transform 0.5s ease, filter 0.5s ease" }}
+              onMouseEnter={function(e){ e.currentTarget.style.transform="scale(1.05)"; e.currentTarget.style.filter="brightness(0.95) saturate(1.2)"; }}
+              onMouseLeave={function(e){ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.filter="brightness(0.82) saturate(1.1)"; }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function LandingPage() {
   var [mode, setMode]               = useState("signup");
   var [email, setEmail]             = useState("");
@@ -490,6 +505,9 @@ export default function LandingPage() {
           "Keeply pays for itself the first time it reminds you to change an impeller."
         </p>
       </div>
+
+      {/* Photo strip */}
+      <PhotoStrip />
 
       {/* Feature sections */}
       <section id="features" style={{ padding: "80px 24px" }}>
