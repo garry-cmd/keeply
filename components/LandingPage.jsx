@@ -340,16 +340,16 @@ export default function LandingPage() {
       {/* Nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
         <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <Logo size={28} />
-          <span style={{ fontSize: 18, fontWeight: 700, color: WHITE, letterSpacing: "-0.3px" }}>Keeply</span>
+          <Logo size={30} />
+          <span style={{ fontSize: 20, fontWeight: 700, color: WHITE, letterSpacing: "-0.3px" }}>Keeply</span>
         </a>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <a href="#features" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Features</a>
-          <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>
-          <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>
-          <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>
-          <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
-          <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
+          <a href="#features" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Features</a>
+          <a href="#pricing" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>
+          <a href="/support" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Support</a>
+          <a href="/contact" style={{ fontSize: 15, color: "rgba(255,255,255,0.65)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>
+          <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "8px 20px", borderRadius: 8, fontSize: 15, cursor: "pointer" }}>Log in</button>
+          <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 22px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
         </div>
       </nav>
 
