@@ -64,7 +64,7 @@ export default function SupportPage() {
   const cat = CATEGORIES[activeCategory];
 
   return (
-    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", minHeight: "100vh", color: "#fff", position: "relative", background: "#071e3d" }}>
+    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", minHeight: "100vh", color: "#fff", position: "relative" }}>
 
       {/* ── Nav ── */}
       <nav style={{ position: "sticky", top: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)", background: "rgba(7,30,61,0.85)" }}>
@@ -91,9 +91,8 @@ export default function SupportPage() {
       </nav>
 
       {/* ── Hero with engine room photo ── */}
-      <div style={{ position: "relative", overflow: "hidden", padding: "72px 24px 56px", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <img src="/images/baja-beach.jpg" alt=""
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+      <div style={{ position: "relative", zIndex: 1, padding: "72px 24px 56px", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.82) 0%, rgba(7,30,61,0.72) 50%, rgba(7,30,61,0.92) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "5px 14px", marginBottom: 24 }}>
@@ -161,3 +160,4 @@ export default function SupportPage() {
     </div>
   );
 }
+
