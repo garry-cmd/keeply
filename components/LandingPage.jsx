@@ -19,52 +19,6 @@ function Logo({ size }) {
   );
 }
 
-function OceanCanvas() {
-  var canvasRef = useRef(null);
-  useEffect(function () {
-    var canvas = canvasRef.current;
-    if (!canvas) return;
-    var ctx = canvas.getContext("2d");
-    var w = canvas.width = canvas.offsetWidth;
-    var h = canvas.height = canvas.offsetHeight;
-    var t = 0;
-    var raf;
-    function draw() {
-      ctx.clearRect(0, 0, w, h);
-      var grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, "#071e3d");
-      grad.addColorStop(1, "#0d3a6e");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-      for (var i = 0; i < 8; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, h * 0.35 + i * 44);
-        for (var x = 0; x <= w; x += 4) {
-          var y = h * 0.35 + i * 44 + Math.sin((x / w) * Math.PI * 3 + t * 0.5 + i * 0.7) * (12 - i * 1.1);
-          ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = "rgba(77,166,255," + (0.04 + i * 0.008) + ")";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-      var orb = ctx.createRadialGradient(w * 0.78, h * 0.18, 0, w * 0.78, h * 0.18, w * 0.38);
-      orb.addColorStop(0, "rgba(77,166,255,0.07)");
-      orb.addColorStop(1, "rgba(77,166,255,0)");
-      ctx.fillStyle = orb;
-      ctx.fillRect(0, 0, w, h);
-      t += 0.012;
-      raf = requestAnimationFrame(draw);
-    }
-    draw();
-    var ro = new ResizeObserver(function () {
-      w = canvas.width = canvas.offsetWidth;
-      h = canvas.height = canvas.offsetHeight;
-    });
-    ro.observe(canvas);
-    return function () { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
-}
 
 // ── Phosphor-style SVG icons for feature strip ───────────────────────────
 function Ico({ d, d2, d3, d4, circle }) {
@@ -197,6 +151,47 @@ function EquipmentVisual() {
   );
 }
 
+
+function PhotoStrip() {
+  var photos = [
+    { src: "/images/cockpit-selfie.jpg",     alt: "Skipper at the helm, offshore" },
+    { src: "/images/spinnaker.jpg",          alt: "Spinnaker run in the Pacific" },
+    { src: "/images/catalina-anchorage.jpg", alt: "Catalina Island anchorage" },
+    { src: "/images/baja-beach.jpg",         alt: "Baja California — arrived" },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", height: 280, overflow: "hidden" }}>
+      {photos.map(function(p, i) {
+        return (
+          <div key={i} style={{ overflow: "hidden" }}>
+            <img
+              src={p.src}
+              alt={p.alt}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center",
+                filter: "brightness(0.8) saturate(1.15)",
+                transition: "transform 0.55s ease, filter 0.55s ease",
+                display: "block",
+              }}
+              onMouseEnter={function(e) {
+                e.currentTarget.style.transform = "scale(1.06)";
+                e.currentTarget.style.filter = "brightness(0.95) saturate(1.2)";
+              }}
+              onMouseLeave={function(e) {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.filter = "brightness(0.8) saturate(1.15)";
+              }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const FEATURES = [
   { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
@@ -212,9 +207,9 @@ const STATS = [
 ];
 
 const PLANS = [
-  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Get started free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "250MB document storage"] },
-  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr \u2014 save $36", subheader: "Everything in Basic, plus", cta: "Start 14-day free trial", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
-  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr \u2014 save $60", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook"] },
+  { name: "Entry",  price: "Free",   period: "",    sub: "No credit card required",       subheader: "Includes",             cta: "Get started free",        features: ["1 vessel", "Unlimited maintenance tasks", "Unlimited equipment cards", "5 repairs", "Parts catalog", "Engine hours tracking", "Document storage"] },
+  { name: "Pro",    price: "$9.99",  period: "/mo", sub: "or $69.99/yr \u2014 save $50", subheader: "Everything in Entry, plus", cta: "Start 14-day free trial", highlight: true, badge: "Most popular", features: ["2 vessels", "Unlimited repairs", "Logbook", "First Mate AI", "AI vessel setup", "AI-enriched logbook", "Consumables tracking"] },
+  { name: "Fleet",  price: "$49.99", period: "/mo", sub: "Up to 3 vessels",               subheader: "Everything in Pro, plus",  cta: "Get Fleet",             features: ["3 vessels", "Fleet dashboard", "Priority support", "Unlimited document storage"] },
 ];
 
 export default function LandingPage() {
@@ -270,7 +265,7 @@ export default function LandingPage() {
 
   function openAuth(m) { setMode(m || "signup"); setShowAuth(true); }
 
-  var annualPrices = { "$15": "$12", "$25": "$20" };
+  var annualPrices = { "$9.99": "$5.83", "$49.99": "$41.66" };
 
   return (
     <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
@@ -293,10 +288,22 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "120px 24px 80px", overflow: "hidden" }}>
-        <OceanCanvas />
-        {/* Grain texture */}
-        <div style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", opacity: 0.045,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")` }} />
+        {/* ── Hero background: real sailing video + photo fallback ── */}
+        <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 1 }}>
+          <video
+            autoPlay muted loop playsInline
+            poster="/images/hero-sunset.jpg"
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%" }}
+          >
+            <source src="/videos/sailing-hero.mp4" type="video/mp4" />
+          </video>
+          <img
+            src="/images/hero-sunset.jpg"
+            alt=""
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%", zIndex: -1 }}
+          />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.55) 0%, rgba(7,30,61,0.2) 40%, rgba(7,30,61,0.7) 80%, rgba(7,30,61,0.97) 100%)" }} />
+        </div>
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "6px 16px", marginBottom: 32 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: GOLD, display: "inline-block" }}></span>
@@ -335,6 +342,9 @@ export default function LandingPage() {
           "Keeply pays for itself the first time it reminds you to change an impeller."
         </p>
       </div>
+
+      {/* Photo strip – real sailing life */}
+      <PhotoStrip />
 
       {/* Feature sections */}
       <section id="features" style={{ padding: "80px 24px" }}>
@@ -427,7 +437,7 @@ export default function LandingPage() {
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left", padding: "12px 16px", color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.6px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>Feature</th>
-                    {["Basic", "Standard", "Pro"].map(function (p, i) {
+                    {["Entry", "Pro", "Fleet"].map(function (p, i) {
                       return <th key={i} style={{ textAlign: "center", padding: "12px 16px", color: i === 1 ? ACCENT : "rgba(255,255,255,0.8)", fontWeight: 700, fontSize: 13, borderBottom: "1px solid rgba(255,255,255,0.1)", minWidth: 100 }}>{p}</th>;
                     })}
                   </tr>
@@ -436,20 +446,20 @@ export default function LandingPage() {
                   {[
                     ["Vessels",               "1",         "1",           "2"],
                     ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
-                    ["Equipment cards",        "3",         "10",          "Unlimited"],
-                    ["Repairs",               "3",         "Unlimited",   "Unlimited"],
+                    ["Equipment cards",        "Unlimited", "Unlimited",   "Unlimited"],
+                    ["Repairs",               "5",         "Unlimited",   "Unlimited"],
                     ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
                     ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
-                    ["Document storage",      "250 MB",    "1 GB",        "Unlimited"],
+                    ["Document storage",      "\u2713",   "\u2713",     "Unlimited"],
                     ["Push notifications",    "\u2713",    "\u2713",      "\u2713"],
                     ["Admin task tracking",   "\u2713",    "\u2713",      "\u2713"],
                     ["Crew / shared access",  "\u2713",    "\u2713",      "\u2713"],
                     ["Repair log & logbook",  "\u2014",    "\u2713",      "\u2713"],
                     ["Haul-out planner",      "\u2014",    "\u2713",      "\u2713"],
-                    ["First Mate AI",         "\u2014",    "10 / mo",     "50 / mo"],
+                    ["First Mate AI",         "\u2014",    "\u2713",     "\u2713"],
                     ["AI vessel setup",       "\u2014",    "\u2713",      "\u2713"],
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
-                    ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
+                    ["Price",                 "Free",      "$9.99 / mo",  "$49.99 / mo"],
                   ].map(function (row, ri) {
                     var isLast = ri === 15;
                     return (
