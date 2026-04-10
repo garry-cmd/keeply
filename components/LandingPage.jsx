@@ -335,7 +335,7 @@ export default function LandingPage() {
   var annualPrices = { "$15": "$12", "$25": "$20" };
 
   return (
-    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
+    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden", minHeight: "100vh" }}>
 
       {/* Nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
@@ -399,7 +399,7 @@ export default function LandingPage() {
       </section>
 
       {/* Quote band */}
-      <div style={{ background: "rgba(77,166,255,0.07)", borderTop: "1px solid rgba(77,166,255,0.15)", borderBottom: "1px solid rgba(77,166,255,0.15)", padding: "28px 24px", textAlign: "center" }}>
+      <div style={{ background: "#0a1f3d", borderTop: "1px solid rgba(77,166,255,0.2)", borderBottom: "1px solid rgba(77,166,255,0.2)", padding: "28px 24px", textAlign: "center" }}>
         <p style={{ fontSize: "clamp(15px,2.2vw,20px)", fontWeight: 700, color: ACCENT, fontStyle: "italic", margin: 0 }}>
           "Keeply pays for itself the first time it reminds you to change an impeller."
         </p>
@@ -409,7 +409,7 @@ export default function LandingPage() {
       <PhotoStrip />
 
       {/* Feature sections */}
-      <section id="features" style={{ padding: "80px 24px" }}>
+      <section id="features" style={{ padding: "80px 24px", background: "#071e3d" }}>
         {FEATURES.map(function (f, i) {
           var isEven = i % 2 === 0;
           var V = f.Visual;
