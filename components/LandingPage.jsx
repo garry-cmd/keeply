@@ -70,53 +70,270 @@ function MaintenanceVisual() {
 }
 
 function FirstMateVisual() {
-  var msgs = [
-    { who: "you", msg: "When did I last change the raw water impeller?" },
-    { who: "ai",  msg: "Replaced March 14, 2024 — 847 engine hours ago. Based on your 300-hour interval it's due in 53 hours." },
-    { who: "you", msg: "What parts should I order?" },
-    { who: "ai",  msg: "Yanmar 129670-42531 impeller kit + spare O-ring set. I've linked both on Google and eBay." },
+  var BLUE = "#4da6ff";
+  var exchanges = [
+    {
+      q: "When did I last change the raw water impeller?",
+      a: "Replaced March 14, 2024 — 847 engine hours ago. Based on your 300-hour interval, it's due in 53 hours.",
+    },
+    {
+      q: "What parts should I order?",
+      a: "Yanmar 129670-42531 impeller kit + spare O-ring set. Want me to find the best price?",
+    },
+    {
+      q: "Any other tasks due before Friday?",
+      a: "Yes — raw water strainer clean is 4 days overdue, and fuel filter is due in 6 days. Both worth doing before you go.",
+    },
   ];
+  var [step, setStep] = useState(0);
+  var [showQ, setShowQ] = useState(false);
+  var [showThinking, setShowThinking] = useState(false);
+  var [showA, setShowA] = useState(false);
+  var [visibleExchanges, setVisibleExchanges] = useState([]);
+  var [dots, setDots] = useState('');
+
+  useEffect(function() {
+    var timers = [];
+    function runCycle() {
+      setVisibleExchanges([]); setStep(0); setShowQ(false); setShowThinking(false); setShowA(false);
+      var delay = 600;
+      exchanges.forEach(function(ex, i) {
+        timers.push(setTimeout(function(){ setStep(i); setShowQ(true); setShowThinking(false); setShowA(false); }, delay));
+        delay += 1800;
+        timers.push(setTimeout(function(){ setShowThinking(true); }, delay));
+        delay += 1600;
+        timers.push(setTimeout(function(){ setShowThinking(false); setShowA(true); }, delay));
+        delay += 2200;
+        timers.push(setTimeout(function(){
+          setVisibleExchanges(function(prev){ return prev.concat([ex]); });
+          setShowQ(false); setShowA(false);
+        }, delay));
+        delay += 400;
+      });
+      timers.push(setTimeout(runCycle, delay + 1500));
+    }
+    runCycle();
+    return function(){ timers.forEach(clearTimeout); };
+  }, []);
+
+  useEffect(function() {
+    if (!showThinking) { setDots(''); return; }
+    var i = 0;
+    var t = setInterval(function(){ i = (i+1)%4; setDots('.'.repeat(i)); }, 380);
+    return function(){ clearInterval(t); };
+  }, [showThinking]);
+
   return (
-    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0f4c8a,#4da6ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{"\u2693"}</div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: WHITE }}>First Mate</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>AI crew member</div>
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ width: 290, background: "#071e3d", borderRadius: 24, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+        {/* Header */}
+        <div style={{ background: "#071e3d", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0f4c8a,#4da6ff)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>First Mate</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Knows your whole boat</div>
+          </div>
+          <div style={{ marginLeft: "auto", width: 8, height: 8, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e" }} />
         </div>
-      </div>
-      {msgs.map(function (m, i) {
-        var isYou = m.who === "you";
-        return (
-          <div key={i} style={{ display: "flex", justifyContent: isYou ? "flex-end" : "flex-start", marginBottom: 10 }}>
-            <div style={{ maxWidth: "80%", padding: "9px 13px", borderRadius: isYou ? "14px 14px 2px 14px" : "14px 14px 14px 2px", background: isYou ? "rgba(77,166,255,0.2)" : "rgba(255,255,255,0.07)", border: isYou ? "1px solid rgba(77,166,255,0.3)" : "1px solid rgba(255,255,255,0.1)", fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
-              {m.msg}
+        {/* Messages */}
+        <div style={{ padding: "14px 14px 14px", minHeight: 280, display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Previous completed exchanges */}
+          {visibleExchanges.map(function(ex, i){
+            return (
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 2px 14px", background: "rgba(77,166,255,0.18)", border: "1px solid rgba(77,166,255,0.3)", fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>{ex.q}</div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                  <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.55 }}>{ex.a}</div>
+                </div>
+              </div>
+            );
+          })}
+          {/* Current question */}
+          {showQ && (
+            <div style={{ display: "flex", justifyContent: "flex-end", opacity: showQ ? 1 : 0, transition: "opacity 0.4s" }}>
+              <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 2px 14px", background: "rgba(77,166,255,0.18)", border: "1px solid rgba(77,166,255,0.3)", fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
+                {exchanges[step] ? exchanges[step].q : ''}
+              </div>
+            </div>
+          )}
+          {/* Thinking dots */}
+          {showThinking && (
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <div style={{ padding: "10px 14px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 14, color: BLUE, letterSpacing: 3 }}>
+                {"\u2022\u2022\u2022"}
+              </div>
+            </div>
+          )}
+          {/* AI answer */}
+          {showA && (
+            <div style={{ display: "flex", justifyContent: "flex-start", opacity: showA ? 1 : 0, transition: "opacity 0.35s" }}>
+              <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: "14px 14px 14px 2px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.55 }}>
+                {exchanges[step] ? exchanges[step].a : ''}
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Input bar */}
+        <div style={{ padding: "0 12px 14px" }}>
+          <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "9px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ flex: 1, fontSize: 11, color: "rgba(255,255,255,0.25)" }}>Ask anything about your boat…</span>
+            <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
             </div>
           </div>
-        );
-      })}
+        </div>
+      </div>
     </div>
   );
 }
 
 function LogbookVisual() {
+  var BLUE = "#4da6ff";
+  var narrative = "Light SW, 8-12 kts. Glassy through Admiralty Inlet. Passed the shipping lanes at 0820 with 2nm clearance. Anchored Friday Harbor 1235. Engine hours 847\u2192854.";
+  var [phase, setPhase] = useState(0);
+  var [shownChars, setShownChars] = useState(0);
+  var [fieldsVisible, setFieldsVisible] = useState(0);
+  var [statsVisible, setStatsVisible] = useState(false);
+  var [dots, setDots] = useState('');
+
+  useEffect(function() {
+    var timers = [];
+    function runCycle() {
+      setPhase(0); setFieldsVisible(0); setShownChars(0); setStatsVisible(false);
+      // Fields stagger in
+      [0,1,2,3].forEach(function(i){
+        timers.push(setTimeout(function(){ setFieldsVisible(function(n){ return Math.max(n, i+1); }); }, 400 + i * 400));
+      });
+      // Stats appear
+      timers.push(setTimeout(function(){ setStatsVisible(true); }, 2200));
+      // Phase 1: enriching
+      timers.push(setTimeout(function(){ setPhase(1); }, 3000));
+      // Phase 2: narrative types in
+      timers.push(setTimeout(function(){
+        setPhase(2); setShownChars(0);
+        var charTimer = setInterval(function(){
+          setShownChars(function(n){
+            if (n >= narrative.length) { clearInterval(charTimer); return n; }
+            return n + 3;
+          });
+        }, 30);
+        timers.push(charTimer);
+      }, 5000));
+      // Loop
+      timers.push(setTimeout(runCycle, 13000));
+    }
+    runCycle();
+    return function(){ timers.forEach(function(t){ try{ clearTimeout(t); clearInterval(t); } catch(e){} }); };
+  }, []);
+
+  useEffect(function() {
+    if (phase !== 1) { setDots(''); return; }
+    var i = 0;
+    var t = setInterval(function(){ i=(i+1)%4; setDots('.'.repeat(i)); }, 380);
+    return function(){ clearInterval(t); };
+  }, [phase]);
+
+  var fields = [
+    ["Departure", "Port Ludlow · 06:15"],
+    ["Arrival",   "Friday Harbor · 12:35"],
+    ["Conditions","SW 8-12 kts · partly cloudy"],
+    ["Engine hrs","847 start · 854 end"],
+  ];
+
   return (
-    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1px", marginBottom: 16, textTransform: "uppercase" }}>Latest passage</div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: WHITE, marginBottom: 4 }}>Port Ludlow {"\u2192"} Friday Harbor</div>
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 20 }}>Apr 8, 2026 {"\u00B7"} 06:15 departure</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
-        {[["42 nm","Distance"],["6h 20m","Duration"],["8.1 kts","Avg speed"]].map(function (s, i) {
-          return (
-            <div key={i} style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 10px", textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: ACCENT }}>{s[0]}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>{s[1]}</div>
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ width: 290, background: "#071e3d", borderRadius: 24, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+        {/* Header */}
+        <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>New logbook entry</span>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
+            {[phase===0?BLUE:"rgba(255,255,255,0.2)", phase===1?"#f5a623":"rgba(255,255,255,0.2)", phase===2?"#4ade80":"rgba(255,255,255,0.2)"].map(function(c,i){
+              return <div key={i} style={{ width:6,height:6,borderRadius:"50%",background:c,transition:"background 0.4s" }} />;
+            })}
+          </div>
+        </div>
+
+        <div style={{ padding: "14px 14px", minHeight: 300 }}>
+
+          {/* Phase 0 — form filling in */}
+          {phase === 0 && (
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
+                Port Ludlow {"\u2192"} Friday Harbor
+              </div>
+              {fields.map(function(f, i){
+                return (
+                  <div key={i} style={{ marginBottom: 9, opacity: i < fieldsVisible ? 1 : 0, transform: i < fieldsVisible ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.35s, transform 0.35s" }}>
+                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.6px" }}>{f[0]}</div>
+                    <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 8, padding: "7px 10px", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>{f[1]}</div>
+                  </div>
+                );
+              })}
+              {statsVisible && (
+                <div style={{ display: "flex", gap: 8, marginTop: 10, opacity: statsVisible ? 1 : 0, transition: "opacity 0.5s" }}>
+                  {[["42 nm","Distance"],["6h 20m","Duration"],["8.1 kts","Avg speed"]].map(function(s,i){
+                    return (
+                      <div key={i} style={{ flex:1, background:"rgba(77,166,255,0.07)", border:"1px solid rgba(77,166,255,0.15)", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:BLUE }}>{s[0]}</div>
+                        <div style={{ fontSize:8, color:"rgba(255,255,255,0.35)", marginTop:2 }}>{s[1]}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          );
-        })}
-      </div>
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", lineHeight: 1.7, fontStyle: "italic", borderLeft: "2px solid rgba(77,166,255,0.3)", paddingLeft: 12 }}>
-        "Light southwesterly, 8-12 kts. Glassy conditions through Admiralty Inlet. Engine hours 847 to 854."
+          )}
+
+          {/* Phase 1 — AI enriching */}
+          {phase === 1 && (
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:260, gap:14 }}>
+              <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(77,166,255,0.1)", border:"2px solid rgba(77,166,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                </svg>
+              </div>
+              <div style={{ textAlign:"center" }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:5 }}>First Mate is writing your entry{dots}</div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>Turning your data into a passage narrative</div>
+              </div>
+            </div>
+          )}
+
+          {/* Phase 2 — narrative typed out */}
+          {phase === 2 && (
+            <div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#fff", marginBottom:6 }}>Port Ludlow {"\u2192"} Friday Harbor</div>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginBottom:14 }}>Apr 8, 2026 · AI-enriched</div>
+              <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+                {[["42 nm","Distance"],["6h 20m","Duration"],["8.1 kts","Speed"]].map(function(s,i){
+                  return (
+                    <div key={i} style={{ flex:1, background:"rgba(77,166,255,0.07)", border:"1px solid rgba(77,166,255,0.15)", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:BLUE }}>{s[0]}</div>
+                      <div style={{ fontSize:8, color:"rgba(255,255,255,0.35)", marginTop:2 }}>{s[1]}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ borderLeft:"2px solid rgba(77,166,255,0.3)", paddingLeft:12 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:BLUE, letterSpacing:"0.5px", textTransform:"uppercase", marginBottom:6 }}>First Mate</div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.72)", lineHeight:1.7, fontStyle:"italic" }}>
+                  {narrative.slice(0, shownChars)}
+                  <span style={{ opacity: shownChars < narrative.length ? 1 : 0, borderLeft:"2px solid "+BLUE, marginLeft:1 }}>&nbsp;</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
