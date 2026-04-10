@@ -319,6 +319,7 @@ function MyBoatVisual() {
 }
 
 const FEATURES = [
+  { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
   { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
   { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
@@ -398,6 +399,96 @@ function PhotoStrip() {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+
+function OnboardingVisual() {
+  var NAVY = "#071e3d";
+  var BLUE = "#4da6ff";
+  var tasks = [
+    "Engine oil & filter change",
+    "Raw water impeller",
+    "Zincs (hull & shaft)",
+    "Fuel filter (primary)",
+    "Coolant flush",
+    "Transmission service",
+  ];
+  var equip = ["Main Engine","Watermaker","VHF Radio","Autopilot","Windlass"];
+  return (
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ width: 270, background: "#071e3d", borderRadius: 28, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+
+        {/* Top bar */}
+        <div style={{ background: "#071e3d", padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
+            <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="#0f4c8a"/>
+            <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
+            <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>Keeply</span>
+        </div>
+
+        <div style={{ padding: "14px 14px 16px" }}>
+
+          {/* Step 1 — vessel entered */}
+          <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 8 }}>New vessel</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {[["Vessel name","S/V Irene"],["Type","Sailboat"],["Year / Make","1980 · Ta Shing"],["Model","Baba 35"]].map(function(f){
+                return (
+                  <div key={f[0]} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>{f[0]}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{f[1]}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Step 2 — AI building */}
+          <div style={{ background: "rgba(77,166,255,0.07)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 14, padding: "10px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: BLUE }}>First Mate is building your vessel…</div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Generating schedule · Loading equipment baseline</div>
+            </div>
+          </div>
+
+          {/* Step 3 — results */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 7 }}>Maintenance schedule — ready</div>
+            {tasks.map(function(t, i){
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: i < tasks.length-1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: i < 2 ? "#f59e0b" : "#22c55e", flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.75)" }}>{t}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Equipment count badge */}
+          <div style={{ display: "flex", gap: 7 }}>
+            <div style={{ flex: 1, background: "rgba(77,166,255,0.08)", border: "1px solid rgba(77,166,255,0.18)", borderRadius: 10, padding: "9px 10px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: BLUE, lineHeight: 1 }}>14</div>
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>Tasks loaded</div>
+            </div>
+            <div style={{ flex: 1, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", borderRadius: 10, padding: "9px 10px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#4ade80", lineHeight: 1 }}>5</div>
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>Equipment cards</div>
+            </div>
+            <div style={{ flex: 1, background: "rgba(245,166,35,0.08)", border: "1px solid rgba(245,166,35,0.18)", borderRadius: 10, padding: "9px 10px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#f5a623", lineHeight: 1 }}>60s</div>
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>To full setup</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
