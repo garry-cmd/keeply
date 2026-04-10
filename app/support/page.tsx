@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 
-const NAVY  = "#071e3d";
-const BRAND = "#0f4c8a";
+const NAVY   = "#071e3d";
+const BRAND  = "#0f4c8a";
 const ACCENT = "#4da6ff";
-const GOLD  = "#f5a623";
+const GOLD   = "#f5a623";
 
 const CATEGORIES = [
   { icon: "🚀", title: "Getting Started", faqs: [
@@ -52,9 +52,7 @@ function FAQ({ q, a }: { q: string; a: string }) {
         <span style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>{q}</span>
         <span style={{ fontSize: 20, color: ACCENT, flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(45deg)" : "none" }}>+</span>
       </button>
-      {open && (
-        <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, paddingBottom: 16 }}>{a}</div>
-      )}
+      {open && <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, paddingBottom: 16 }}>{a}</div>}
     </div>
   );
 }
@@ -66,98 +64,99 @@ export default function SupportPage() {
   return (
     <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", minHeight: "100vh", color: "#fff", position: "relative" }}>
 
-      {/* ── Nav ── */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)", background: "rgba(7,30,61,0.85)" }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
-            <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill={BRAND}/>
-            <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
-            <line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Keeply</span>
-        </a>
-        <div style={{ display: "flex", gap: 20 }}>
-          <a href="/" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Home</a>
-          <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Contact</a>
-        </div>
-      </nav>
+      {/* ── Full-page baja beach background ── */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
+        <img src="/images/baja-beach.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
+        <div style={{ position: "absolute", inset: 0, background: "rgba(7,30,61,0.72)" }} />
+      </div>
 
-      {/* ── Hero with engine room photo ── */}
-      <div style={{ position: "relative", zIndex: 1, padding: "72px 24px 56px", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.82) 0%, rgba(7,30,61,0.72) 50%, rgba(7,30,61,0.92) 100%)" }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
+      {/* ── All content sits above background ── */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+
+        {/* Nav */}
+        <nav style={{ position: "sticky", top: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", background: "rgba(7,30,61,0.3)" }}>
+          <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+            <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
+              <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill={BRAND}/>
+              <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
+              <line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Keeply</span>
+          </a>
+          <div style={{ display: "flex", gap: 20 }}>
+            <a href="/" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Home</a>
+            <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Contact</a>
+          </div>
+        </nav>
+
+        {/* Hero */}
+        <div style={{ padding: "80px 24px 64px", textAlign: "center" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "5px 14px", marginBottom: 24 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.8px", textTransform: "uppercase" }}>Support</span>
           </div>
           <h1 style={{ fontSize: "clamp(32px,5vw,56px)", fontWeight: 800, color: "#fff", letterSpacing: "-2px", margin: "0 0 16px", lineHeight: 1.1 }}>How can we help?</h1>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", maxWidth: 480, margin: "0 auto 36px", lineHeight: 1.7 }}>
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.65)", maxWidth: 480, margin: "0 auto 36px", lineHeight: 1.7 }}>
             Find answers to common questions, or reach out to the team.
           </p>
           <a href="mailto:garry@keeply.boats" style={{ display: "inline-block", background: GOLD, color: "#1a1200", padding: "12px 32px", borderRadius: 9, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
             Email support →
           </a>
         </div>
-      </div>
 
-      {/* ── Category tabs + FAQ ── */}
-      <div style={{ background: NAVY, width: "100%" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "56px 24px 80px", display: "grid", gridTemplateColumns: "220px 1fr", gap: 48, alignItems: "start" }}>
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 16 }}>Topics</div>
-          {CATEGORIES.map((c, i) => (
-            <button key={i} onClick={() => setActiveCategory(i)}
-              style={{ width: "100%", textAlign: "left", background: activeCategory === i ? "rgba(77,166,255,0.1)" : "none", border: activeCategory === i ? "1px solid rgba(77,166,255,0.25)" : "1px solid transparent", borderRadius: 10, padding: "10px 14px", cursor: "pointer", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 18 }}>{c.icon}</span>
-              <span style={{ fontSize: 13, fontWeight: activeCategory === i ? 700 : 400, color: activeCategory === i ? ACCENT : "rgba(255,255,255,0.6)" }}>{c.title}</span>
-            </button>
-          ))}
-        </div>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
-            <span style={{ fontSize: 28 }}>{cat.icon}</span>
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", margin: 0 }}>{cat.title}</h2>
+        {/* Category tabs + FAQ */}
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 80px", display: "grid", gridTemplateColumns: "220px 1fr", gap: 48, alignItems: "start" }}>
+
+          {/* Sidebar */}
+          <div style={{ background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "20px 16px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 16, paddingLeft: 4 }}>Topics</div>
+            {CATEGORIES.map((c, i) => (
+              <button key={i} onClick={() => setActiveCategory(i)} style={{ width: "100%", textAlign: "left", background: activeCategory === i ? "rgba(77,166,255,0.12)" : "none", border: activeCategory === i ? "1px solid rgba(77,166,255,0.25)" : "1px solid transparent", borderRadius: 10, padding: "10px 14px", cursor: "pointer", marginBottom: 4, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 16 }}>{c.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: activeCategory === i ? 700 : 400, color: activeCategory === i ? ACCENT : "rgba(255,255,255,0.6)" }}>{c.title}</span>
+              </button>
+            ))}
           </div>
-          {cat.faqs.map((faq, i) => (
-            <FAQ key={i} q={faq.q} a={faq.a} />
-          ))}
+
+          {/* FAQ panel */}
+          <div style={{ background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "28px 28px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+              <span style={{ fontSize: 26 }}>{cat.icon}</span>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px", margin: 0 }}>{cat.title}</h2>
+            </div>
+            {cat.faqs.map((faq, i) => <FAQ key={i} q={faq.q} a={faq.a} />)}
+          </div>
         </div>
-      </div>
+
+        {/* Bottom CTA */}
+        <div style={{ textAlign: "center", padding: "56px 24px 72px" }}>
+          <div style={{ display: "inline-block", background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "40px 48px" }}>
+            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>Still need help?</h3>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 24px" }}>Our team responds within one business day.</p>
+            <a href="/contact" style={{ display: "inline-block", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "11px 28px", borderRadius: 9, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+              Contact us →
+            </a>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "24px", textAlign: "center", background: "rgba(7,30,61,0.5)" }}>
+          <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="/" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Home</a>
+            <a href="/contact" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Contact</a>
+            <a href="/privacy" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Privacy</a>
+            <a href="/terms" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Terms</a>
+          </div>
+        </div>
 
       </div>
-      {/* ── Bottom CTA with spinnaker photo ── */}
-      <div style={{ position: "relative", overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.07)", padding: "56px 24px", textAlign: "center" }}>
-        <img src="/images/spinnaker.jpg" alt=""
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%" }} />
-        <div style={{ position: "absolute", inset: 0, background: "rgba(7,30,61,0.84)" }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>Still need help?</h3>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 24px" }}>Our team responds within one business day.</p>
-          <a href="/contact" style={{ display: "inline-block", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "11px 28px", borderRadius: 9, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
-            Contact us →
-          </a>
-        </div>
-      </div>
-
-      {/* ── Footer ── */}
-      <div style={{ background: NAVY, borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px", textAlign: "center" }}>
-        <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-          <a href="/" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Home</a>
-          <a href="/contact" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Contact</a>
-          <a href="/privacy" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Privacy</a>
-          <a href="/terms" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Terms</a>
-        </div>
-      </div>
-
     </div>
   );
 }
-
