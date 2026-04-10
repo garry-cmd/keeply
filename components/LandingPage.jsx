@@ -125,7 +125,7 @@ function FirstMateVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 390, background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#0f4c8a,#4da6ff)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -248,7 +248,7 @@ function LogbookVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 390, background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -393,7 +393,7 @@ function MyBoatVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 390, background: NAVY, borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
+      <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: NAVY, borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
 
         {/* Top bar */}
         <div style={{ background: NAVY, padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -566,7 +566,7 @@ function TestimonialsStrip() {
   ];
   var doubled = items.concat(items);
   return (
-    <div style={{ background: NAVY_MID, borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "48px 0", overflow: "hidden" }}>
+    <div style={{ background: NAVY_MID, borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "32px 0" : "48px 0", overflow: "hidden" }}>
       <style dangerouslySetInnerHTML={{ __html: "@keyframes keeply-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } } .kp-track { animation: keeply-scroll 48s linear infinite; } .kp-track:hover { animation-play-state: paused; }" }} />
       <div className="kp-track" style={{ display: "flex", gap: 20, width: "max-content", paddingLeft: 24 }}>
         {doubled.map(function (t, i) {
@@ -640,7 +640,7 @@ function OnboardingVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 390, background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
 
         {/* Top bar */}
         <div style={{ background: "#071e3d", padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -752,12 +752,20 @@ export default function LandingPage() {
   var [showAuth, setShowAuth]       = useState(false);
   var [signupEmail, setSignupEmail] = useState(null);
   var [scrolled, setScrolled]       = useState(false);
+  var [isMobile, setIsMobile]       = useState(false);
   var [annual, setAnnual]           = useState(false);
 
   useEffect(function () {
     var onScroll = function () { setScrolled(window.scrollY > 60); };
     window.addEventListener("scroll", onScroll);
     return function () { window.removeEventListener("scroll", onScroll); };
+  }, []);
+
+  useEffect(function () {
+    var check = function () { setIsMobile(window.innerWidth < 768); };
+    check();
+    window.addEventListener("resize", check);
+    return function () { window.removeEventListener("resize", check); };
   }, []);
 
   useEffect(function () {
@@ -802,16 +810,16 @@ export default function LandingPage() {
     <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
 
       {/* Nav */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 16px" : "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
         <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
           <Logo size={28} />
           <span style={{ fontSize: 18, fontWeight: 700, color: WHITE, letterSpacing: "-0.3px" }}>Keeply</span>
         </a>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <a href="#features" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Features</a>
-          <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>
-          <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>
-          <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>
+          {!isMobile && <a href="#features" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Features</a>}
+          {!isMobile && <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>}
+          {!isMobile && <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>}
+          {!isMobile && <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>}
           <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
           <button onClick={scrollToPricing} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
         </div>
@@ -843,19 +851,19 @@ export default function LandingPage() {
 
 
 
-      <section id="features" style={{ padding: "80px 24px" }}>
+      <section id="features" style={{ padding: isMobile ? "48px 16px" : "80px 24px" }}>
         {FEATURES.map(function (f, i) {
           var isEven = i % 2 === 0;
           var V = f.Visual;
           return (
-            <div key={i} style={{ maxWidth: 1300, margin: "0 auto 120px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "start" }}>
-              <div style={{ order: isEven ? 0 : 1 }}>
+            <div key={i} style={{ maxWidth: 1300, margin: "0 auto 80px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 64, alignItems: "start" }}>
+              <div style={{ order: isMobile ? 0 : (isEven ? 0 : 1) }}>
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
                 <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
                 <button onClick={scrollToPricing} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try it free {"\u2192"}</button>
               </div>
-              <div style={{ order: isEven ? 1 : 0 }}><V /></div>
+              <div style={{ order: isMobile ? 1 : (isEven ? 1 : 0) }}><V /></div>
             </div>
           );
         })}
@@ -865,7 +873,7 @@ export default function LandingPage() {
       <TestimonialsStrip />
 
       {/* Pricing */}
-      <section id="pricing" style={{ padding: "100px 24px" }}>
+      <section id="pricing" style={{ padding: isMobile ? "56px 16px" : "100px 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Simple pricing</h2>
@@ -879,7 +887,7 @@ export default function LandingPage() {
               <span style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>Save 20%</span>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
             {PLANS.map(function (plan, pi) {
               var hl = plan.highlight;
               var price = plan.price === "Free" ? "Free" : (annual ? (annualPrices[plan.price] || plan.price) : plan.price);
@@ -915,7 +923,7 @@ export default function LandingPage() {
             })}
           </div>
           {/* Feature comparison table */}
-          <div style={{ marginTop: 64 }}>
+          <div style={{ marginTop: 64, display: isMobile ? "none" : "block" }}>
             <h3 style={{ fontSize: 17, fontWeight: 600, color: WHITE, letterSpacing: "-0.2px", textAlign: "center", margin: "0 0 32px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Full feature comparison</h3>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -977,7 +985,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "40px 24px", background: "#040f1f" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Logo size={22} />
             <span style={{ fontSize: 15, fontWeight: 700, color: WHITE }}>Keeply</span>
