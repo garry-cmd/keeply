@@ -405,6 +405,185 @@ function PhotoStrip() {
 
 
 function OnboardingVisual() {
+  var [phase, setPhase] = useState(0);
+  var [taskCount, setTaskCount] = useState(0);
+  var [dots, setDots] = useState('');
+  var BLUE = "#4da6ff";
+  var tasks = [
+    "Engine oil & filter change",
+    "Raw water impeller",
+    "Zincs — hull & shaft",
+    "Fuel filter (primary)",
+    "Coolant flush",
+    "Transmission service",
+    "Impeller — raw water pump",
+  ];
+  var fields = [
+    ["Vessel name", "S/V Irene"],
+    ["Type", "Sailboat"],
+    ["Year · Make", "1980 · Ta Shing"],
+    ["Model", "Baba 35"],
+  ];
+
+  useEffect(function() {
+    var timers = [];
+    function runCycle() {
+      setPhase(0); setTaskCount(0);
+      // Phase 0 → 1: show form for 2.5s
+      timers.push(setTimeout(function() { setPhase(1); setTaskCount(0); }, 2500));
+      // Phase 1 → 2: building for 2s
+      timers.push(setTimeout(function() { setPhase(2); }, 4500));
+      // Phase 2: tasks count up 1 by 1
+      tasks.forEach(function(_, i) {
+        timers.push(setTimeout(function() { setTaskCount(function(n){ return n + 1; }); }, 4500 + (i * 320)));
+      });
+      // Loop after pause
+      timers.push(setTimeout(runCycle, 12000));
+    }
+    runCycle();
+    return function() { timers.forEach(clearTimeout); };
+  }, []);
+
+  // Animated dots for building phase
+  useEffect(function() {
+    if (phase !== 1) { setDots(''); return; }
+    var i = 0;
+    var t = setInterval(function() {
+      i = (i + 1) % 4;
+      setDots('.'.repeat(i));
+    }, 400);
+    return function() { clearInterval(t); };
+  }, [phase]);
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ width: 270, background: "#071e3d", borderRadius: 28, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+
+        {/* Top bar */}
+        <div style={{ background: "#071e3d", padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
+            <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="#0f4c8a"/>
+            <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
+            <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>Keeply</span>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
+            {[phase === 0 ? BLUE : "rgba(255,255,255,0.2)", phase === 1 ? "#f5a623" : "rgba(255,255,255,0.2)", phase === 2 ? "#4ade80" : "rgba(255,255,255,0.2)"].map(function(c, i){
+              return <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: c, transition: "background 0.4s" }} />;
+            })}
+          </div>
+        </div>
+
+        <div style={{ padding: "14px 14px 16px", minHeight: 360 }}>
+
+          {/* ── Phase 0: Enter vessel ── */}
+          <div style={{ opacity: phase === 0 ? 1 : 0, transition: "opacity 0.5s", position: phase === 0 ? "relative" : "absolute", pointerEvents: "none" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 12 }}>Add your vessel</div>
+            {fields.map(function(f, i) {
+              return (
+                <div key={i} style={{ marginBottom: 10, opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.4s " + (i * 0.15) + "s, transform 0.4s " + (i * 0.15) + "s" }}>
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginBottom: 3 }}>{f[0]}</div>
+                  <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    {f[1]}
+                    {i === fields.length - 1 && (
+                      <div style={{ width: 2, height: 14, background: BLUE, animation: "keeply-blink 1s step-end infinite" }} />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ marginTop: 16, background: BLUE, borderRadius: 9, padding: "9px 0", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#fff", opacity: phase === 0 ? 1 : 0, transition: "opacity 0.4s 0.6s" }}>
+              Build my vessel →
+            </div>
+          </div>
+
+          {/* ── Phase 1: Building ── */}
+          {phase === 1 && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, gap: 16 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(77,166,255,0.1)", border: "2px solid rgba(77,166,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                </svg>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 6 }}>First Mate is building your vessel{dots}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Generating maintenance schedule</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Loading equipment baseline</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Setting service intervals</div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Phase 2: Results ── */}
+          {phase === 2 && (
+            <div>
+              <div style={{ display: "flex", gap: 7, marginBottom: 14 }}>
+                {[[String(taskCount > 6 ? 14 : taskCount * 2), "Tasks", BLUE, "rgba(77,166,255,0.08)", "rgba(77,166,255,0.2)"],
+                  [taskCount >= 5 ? "5" : taskCount >= 3 ? "3" : "—", "Equipment", "#4ade80", "rgba(34,197,94,0.08)", "rgba(34,197,94,0.2)"],
+                  [taskCount === 7 ? "60s" : "…", "Setup", "#f5a623", "rgba(245,166,35,0.08)", "rgba(245,166,35,0.2)"]].map(function(s,i){
+                  return (
+                    <div key={i} style={{ flex: 1, background: s[3], border: "1px solid " + s[4], borderRadius: 10, padding: "9px 6px", textAlign: "center", transition: "all 0.3s" }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: s[2], lineHeight: 1 }}>{s[0]}</div>
+                      <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.4px" }}>{s[1]}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Maintenance schedule</div>
+              {tasks.slice(0, taskCount).map(function(t, i) {
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", opacity: 1, transform: "translateX(0)", transition: "opacity 0.3s, transform 0.3s" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: i < 2 ? "#f59e0b" : "#22c55e", flexShrink: 0 }} />
+                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.75)" }}>{t}</span>
+                  </div>
+                );
+              })}
+              {taskCount < tasks.length && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>Loading…</span>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      </div>
+      <style>{"\
+        @keyframes keeply-blink { 0%,100%{opacity:1} 50%{opacity:0} }\
+      "}</style>
+    </div>
+  );
+}
+
+function PhotoStrip() {
+  var photos = [
+    { src: "/images/cockpit-selfie.jpg",    alt: "Skipper at the helm" },
+    { src: "/images/spinnaker.jpg",         alt: "Spinnaker run offshore" },
+    { src: "/images/dinghy-anchorage.jpg",  alt: "Arrived — Baja anchorage" },
+    { src: "/images/costa-rica-anchorage.jpg", alt: "Sailboats at anchor" },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", height: 260, overflow: "hidden" }}>
+      {photos.map(function(p, i) {
+        return (
+          <div key={i} style={{ overflow: "hidden" }}>
+            <img src={p.src} alt={p.alt}
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center",
+                filter: "brightness(0.82) saturate(1.1)",
+                transition: "transform 0.5s ease, filter 0.5s ease" }}
+              onMouseEnter={function(e){ e.currentTarget.style.transform="scale(1.05)"; e.currentTarget.style.filter="brightness(0.95) saturate(1.2)"; }}
+              onMouseLeave={function(e){ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.filter="brightness(0.82) saturate(1.1)"; }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
+function OnboardingVisual() {
   var NAVY = "#071e3d";
   var BLUE = "#4da6ff";
   var tasks = [
