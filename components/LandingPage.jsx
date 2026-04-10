@@ -125,7 +125,7 @@ function FirstMateVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 340, background: "#071e3d", borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 380, background: "#071e3d", borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0f4c8a,#4da6ff)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -248,7 +248,7 @@ function LogbookVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 340, background: "#071e3d", borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 380, background: "#071e3d", borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -339,33 +339,6 @@ function LogbookVisual() {
   );
 }
 
-function EquipmentVisual() {
-  var items = [
-    { name: "Main Engine",   sub: "Yanmar 4JH2E \u00B7 847 hrs", status: "needs-service", icon: "\u2699\uFE0F" },
-    { name: "Watermaker",    sub: "Spectra Newport 400",          status: "good",          icon: "\u{1F4A7}" },
-    { name: "VHF Radio",     sub: "Standard Horizon GX2400",      status: "good",          icon: "\u{1F4E1}" },
-    { name: "Autopilot",     sub: "Raymarine EV-100",             status: "watch",         icon: "\u{1F9ED}" },
-  ];
-  var dot = { "needs-service": "#ef4444", good: "#22c55e", watch: GOLD };
-  return (
-    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24 }}>
-      {items.map(function (eq, i) {
-        var c = dot[eq.status];
-        return (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{eq.icon}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{eq.name}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>{eq.sub}</div>
-            </div>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, boxShadow: "0 0 6px " + c }} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function MyBoatVisual() {
   var NAVY = "#071e3d";
   var BLUE = "#4da6ff";
@@ -420,7 +393,7 @@ function MyBoatVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 340, background: NAVY, borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
+      <div style={{ width: 380, background: NAVY, borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
 
         {/* Top bar */}
         <div style={{ background: NAVY, padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -564,12 +537,11 @@ function MyBoatVisual() {
 
 
 const FEATURES = [
+  { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
   { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
   { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
-  { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
   { tag: "Logbook", title: "Log passages the smart way.", body: "Record departures, arrivals, conditions, and crew with a few taps. Pro users get AI-enriched entries — Keeply drafts the narrative from your data so your logbook writes itself.", Visual: LogbookVisual },
-  { tag: "Equipment", title: "Everything your boat runs on, in one place.", body: "Log every piece of gear with service dates, photos, and manuals. Point your camera at any piece of equipment and Keeply's AI identifies it and populates the card automatically.", Visual: EquipmentVisual },
 ];
 
 
@@ -668,7 +640,7 @@ function OnboardingVisual() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 340, background: "#071e3d", borderRadius: 36, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 380, background: "#071e3d", borderRadius: 40, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
 
         {/* Top bar */}
         <div style={{ background: "#071e3d", padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -822,6 +794,7 @@ export default function LandingPage() {
   };
 
   function openAuth(m) { setMode(m || "signup"); setShowAuth(true); }
+  function scrollToPricing() { var el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }
 
   var annualPrices = { "$15": "$12", "$25": "$20" };
 
@@ -840,7 +813,7 @@ export default function LandingPage() {
           <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>
           <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>
           <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
-          <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
+          <button onClick={scrollToPricing} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
         </div>
       </nav>
 
@@ -880,7 +853,7 @@ export default function LandingPage() {
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
                 <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
-                <button onClick={function () { openAuth("signup"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try it free {"\u2192"}</button>
+                <button onClick={scrollToPricing} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try it free {"\u2192"}</button>
               </div>
               <div style={{ order: isEven ? 1 : 0 }}><V /></div>
             </div>
