@@ -64,7 +64,7 @@ export default function SupportPage() {
   const cat = CATEGORIES[activeCategory];
 
   return (
-    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", minHeight: "100vh", color: "#fff", position: "relative" }}>
+    <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", minHeight: "100vh", color: "#fff", position: "relative", background: "#071e3d" }}>
 
       {/* ── Nav ── */}
       <nav style={{ position: "sticky", top: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)", background: "rgba(7,30,61,0.85)" }}>
