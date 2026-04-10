@@ -469,11 +469,9 @@ export default function LandingPage() {
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780 }}>
           <h1 style={{ fontSize: "clamp(40px,7vw,78px)", fontWeight: 700, color: WHITE, lineHeight: 1.05, letterSpacing: "-2px", margin: "0 0 24px", fontFamily: "'Clash Display','Inter',sans-serif" }}>
             Your vessel{"'"}s{" "}
-            <span style={{ color: ACCENT }}>First Mate</span>,<br />always ready.
+            <span style={{ color: GOLD }}>First Mate</span>,<br />always ready.
           </h1>
-          <div style={{ marginTop: 44 }}>
-            <button onClick={function () { openAuth("signup"); }} style={{ background: GOLD, color: "#1a1200", border: "none", padding: "16px 44px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.2px", transition: "opacity 0.15s, transform 0.15s" }}>Get started free {"\u2192"}</button>
-          </div>
+
         </div>
 
         {/* Feature icon strip */}
