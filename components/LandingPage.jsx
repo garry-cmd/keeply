@@ -367,116 +367,103 @@ function EquipmentVisual() {
 }
 
 function MyBoatVisual() {
-  var NAVY   = "#071e3d";
-  var CARD   = "rgba(255,255,255,0.04)";
-  var BORDER = "rgba(255,255,255,0.09)";
-  var MUTED  = "rgba(255,255,255,0.35)";
-  var WHITE  = "rgba(255,255,255,0.88)";
-  var BLUE   = "#4da6ff";
+  var NAVY = "#071e3d";
+  var BLUE = "#4da6ff";
+  var [phase, setPhase] = useState(0);
+  var [criticalCount, setCriticalCount] = useState(13);
+  var [sheetVisible, setSheetVisible] = useState(false);
+  var [completingIdx, setCompletingIdx] = useState(-1);
+  var [completedIdx, setCompletedIdx] = useState(-1);
+  var [cardPulse, setCardPulse] = useState(false);
 
-  var dot = function(c, s) {
-    return <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, boxShadow: "0 0 5px " + s, flexShrink: 0 }} />;
-  };
-
-  var repairs = [
-    { title: "Replace oil extraction pump",   sub: "Engine · 3 days ago",  dotC: "#f59e0b", dotS: "rgba(245,158,11,0.5)"  },
-    { title: "Replace main bilge pump",        sub: "Plumbing · 3 days ago", dotC: "#f59e0b", dotS: "rgba(245,158,11,0.5)"  },
-    { title: "Leaking cockpit drain fitting",  sub: "Hull · 14 days ago",   dotC: "#ef4444", dotS: "rgba(239,68,68,0.6)"   },
+  var criticalItems = [
+    { name: "Engine oil & filter change", age: "12d over" },
+    { name: "Impeller replacement",       age: "Due today" },
+    { name: "Fuel filter (primary)",      age: "2d over" },
+    { name: "Raw water strainer clean",   age: "8d over" },
+    { name: "Zinc anodes — hull",         age: "15d over" },
+    { name: "Shaft zinc",                 age: "15d over" },
   ];
 
-  var tasks = [
-    { name: "Engine oil & filter change",  badge: "12d over",  bc: "#f87171" },
-    { name: "Impeller replacement",        badge: "Due today", bc: "#f87171" },
-    { name: "Fuel filter (primary)",       badge: "4d",        bc: "#fbbf24" },
-    { name: "Raw water strainer clean",    badge: "7d",        bc: "#fbbf24" },
-  ];
+  useEffect(function() {
+    var timers = [];
+    function runCycle() {
+      setCriticalCount(13); setPhase(0); setSheetVisible(false);
+      setCompletingIdx(-1); setCompletedIdx(-1); setCardPulse(false);
+      // Pause on normal view
+      timers.push(setTimeout(function(){ setCardPulse(true); }, 2200));
+      timers.push(setTimeout(function(){ setCardPulse(false); }, 2700));
+      // Sheet slides up
+      timers.push(setTimeout(function(){ setSheetVisible(true); setPhase(1); }, 3000));
+      // Tap first item — completing state
+      timers.push(setTimeout(function(){ setCompletingIdx(0); }, 5200));
+      // Item completes — slides out, count drops
+      timers.push(setTimeout(function(){
+        setCompletedIdx(0);
+        setCriticalCount(12);
+      }, 6200));
+      // Sheet slides back down
+      timers.push(setTimeout(function(){ setSheetVisible(false); }, 8200));
+      timers.push(setTimeout(function(){ setPhase(0); }, 9000));
+      // Loop
+      timers.push(setTimeout(runCycle, 11500));
+    }
+    runCycle();
+    return function(){ timers.forEach(clearTimeout); };
+  }, []);
 
-  /* Wrench fallback icon */
   var wrenchIcon = (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
     </svg>
   );
 
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 270, background: NAVY, borderRadius: 28, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 270, background: NAVY, borderRadius: 28, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
 
-        {/* ── Top bar ── */}
+        {/* Top bar */}
         <div style={{ background: NAVY, padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
               <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="#0f4c8a"/>
               <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
-              <line x1="18" y1="10.8" x2="18" y2="8.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="18" y1="25.2" x2="18" y2="27.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="10.8" y1="18" x2="8.6" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="25.2" y1="18" x2="27.4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="13" y1="13" x2="11.4" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="23" y1="23" x2="24.6" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="23" y1="13" x2="24.6" y2="11.4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="13" y1="23" x2="11.4" y2="24.6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>Keeply</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "4px 10px 4px 8px" }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"><path d="M3 17l2-8h14l2 8H3z"/></svg>
             <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>S/V Irene</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
 
-        {/* ── First Mate bar ── */}
-        <div style={{ padding: "8px 12px 10px", background: NAVY, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: 12, padding: "7px 10px", display: "flex", alignItems: "center", gap: 7 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-              <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-            </svg>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", flex: 1 }}>Ask First Mate…</span>
-            <div style={{ width: 22, height: 22, borderRadius: 6, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-            </div>
-          </div>
-        </div>
+        {/* Main content */}
+        <div style={{ padding: "10px 12px 6px" }}>
 
-        <div style={{ padding: "10px 12px", paddingBottom: 4, overflowY: "hidden", maxHeight: 520 }}>
-
-          {/* ── Vessel card ── */}
-          <div style={{ background: "linear-gradient(150deg,#0d2d5e 0%,#071e3d 100%)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "14px", marginBottom: 10 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", lineHeight: 1, marginBottom: 2 }}>Irene</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 11 }}>1980 Ta Shing Baba 35</div>
-            <div style={{ display: "flex", gap: 5, marginBottom: 11 }}>
-              {["ID","Docs","Admin"].map(function(t,i){ return (
-                <div key={t} style={{ background: i===0?"rgba(77,166,255,0.15)":"rgba(255,255,255,0.06)", border: "1px solid " + (i===0?"rgba(77,166,255,0.3)":"rgba(255,255,255,0.1)"), borderRadius: 20, padding: "3px 10px", fontSize: 9, fontWeight: 700, color: i===0?BLUE:"rgba(255,255,255,0.5)" }}>{t}</div>
-              ); })}
-            </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              {[["HIN","FDL350400880"],["Doc No.","1213266"],["Home Port","Port Ludlow"]].map(function(m){ return (
-                <div key={m[0]}>
-                  <div style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.7px", textTransform: "uppercase" }}>{m[0]}</div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", fontFamily: "DM Mono,monospace" }}>{m[1]}</div>
-                </div>
-              ); })}
-            </div>
+          {/* Vessel card */}
+          <div style={{ background: "linear-gradient(150deg,#0d2d5e,#071e3d)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "12px 14px", marginBottom: 9 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", marginBottom: 1 }}>Irene</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>1980 Ta Shing Baba 35</div>
           </div>
 
-          {/* ── KPI row ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
-            {[["1,557","from log · 04/07/26","ENGINE HRS"],["136 nm","11 passages","NM LOGGED"]].map(function(k){ return (
-              <div key={k[2]} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 13, padding: "11px 12px" }}>
-                <div style={{ fontSize: 19, fontWeight: 800, color: BLUE, letterSpacing: "-0.5px", lineHeight: 1 }}>{k[0]}</div>
-                <div style={{ fontSize: 8, color: MUTED, marginTop: 2 }}>{k[1]}</div>
-                <div style={{ fontSize: 8, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 5 }}>{k[2]}</div>
+          {/* KPIs */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 9 }}>
+            {[["1,557","ENGINE HRS"],["136 nm","NM LOGGED"]].map(function(k){ return (
+              <div key={k[1]} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 11, padding: "10px 12px" }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: BLUE }}>{k[0]}</div>
+                <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.4px", marginTop: 4 }}>{k[1]}</div>
               </div>
             ); })}
           </div>
 
-          {/* ── Status strip ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
-            {[["13","Critical","rgba(239,68,68,0.1)","rgba(239,68,68,0.22)","#f87171","rgba(248,113,113,0.6)"],
-              ["6","Due Soon","rgba(245,158,11,0.1)","rgba(245,158,11,0.22)","#fbbf24","rgba(251,191,36,0.6)"],
+          {/* Status strip */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 9 }}>
+            {/* Critical card — pulses on tap */}
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: 11, padding: "8px 6px", textAlign: "center", transform: cardPulse ? "scale(1.08)" : "scale(1)", transition: "transform 0.25s", boxShadow: cardPulse ? "0 0 16px rgba(239,68,68,0.5)" : "none" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#f87171", lineHeight: 1, transition: "all 0.4s" }}>{criticalCount}</div>
+              <div style={{ fontSize: 7.5, fontWeight: 700, color: "rgba(248,113,113,0.6)", textTransform: "uppercase", letterSpacing: "0.3px", marginTop: 3 }}>Critical</div>
+            </div>
+            {[["6","Due Soon","rgba(245,158,11,0.1)","rgba(245,158,11,0.22)","#fbbf24","rgba(251,191,36,0.6)"],
               ["5","Repairs","rgba(77,166,255,0.1)","rgba(77,166,255,0.22)","#4da6ff","rgba(77,166,255,0.6)"]].map(function(c){ return (
               <div key={c[1]} style={{ background: c[2], border: "1px solid " + c[3], borderRadius: 11, padding: "8px 6px", textAlign: "center" }}>
                 <div style={{ fontSize: 20, fontWeight: 800, color: c[4], lineHeight: 1 }}>{c[0]}</div>
@@ -485,55 +472,96 @@ function MyBoatVisual() {
             ); })}
           </div>
 
-          {/* ── Open repairs ── */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 6px" }}>
-            <span style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.1px", textTransform: "uppercase" }}>Open repairs</span>
-            <span style={{ fontSize: 8, color: "rgba(255,255,255,0.2)" }}>5</span>
-          </div>
-          {repairs.map(function(r, i){ return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{wrenchIcon}</div>
+          {/* Open repairs preview */}
+          <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 6 }}>Open repairs</div>
+          {[
+            { title: "Replace oil extraction pump", sub: "Engine · 3 days ago", c: "#f59e0b" },
+            { title: "Replace main bilge pump",      sub: "Plumbing · 3 days ago", c: "#f59e0b" },
+          ].map(function(r, i){ return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <div style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{wrenchIcon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: WHITE, lineHeight: 1.2 }}>{r.title}</div>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{r.sub}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{r.title}</div>
+                <div style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{r.sub}</div>
               </div>
-              {dot(r.dotC, r.dotS)}
-            </div>
-          ); })}
-
-          {/* ── Overdue & due soon ── */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 6px" }}>
-            <span style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.1px", textTransform: "uppercase" }}>Overdue &amp; due soon</span>
-          </div>
-          {tasks.map(function(t, i){ return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i < tasks.length-1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-              {dot(t.bc, t.bc === "#f87171" ? "rgba(239,68,68,0.5)" : "rgba(245,158,11,0.45)")}
-              <div style={{ flex: 1, fontSize: 11, fontWeight: 600, color: WHITE }}>{t.name}</div>
-              <span style={{ fontSize: 9, fontWeight: 700, color: t.bc, flexShrink: 0 }}>{t.badge}</span>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: r.c, boxShadow: "0 0 5px " + r.c }} />
             </div>
           ); })}
 
         </div>
 
-        {/* ── White footer ── */}
-        <div style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", padding: "8px 0 10px" }}>
-          {[
-            ["My Boat",   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>, "#0f4c8a"],
-            ["Logbook",   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>, "rgba(7,30,61,0.3)"],
-            ["Equipment", <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>, "rgba(7,30,61,0.3)"],
-            ["Profile",   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, "rgba(7,30,61,0.3)"],
-          ].map(function(item){ return (
-            <div key={item[0]} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, color: item[2] }}>
-              {item[1]}
-              <span style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.3px" }}>{item[0]}</span>
+        {/* Footer */}
+        <div style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", padding: "7px 0 9px" }}>
+          {[["My Boat","#0f4c8a"],["Logbook","rgba(7,30,61,0.3)"],["Equipment","rgba(7,30,61,0.3)"],["Profile","rgba(7,30,61,0.3)"]].map(function(item){
+            return <div key={item[0]} style={{ flex:1, textAlign:"center", fontSize:7, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.3px", color:item[1] }}>{item[0]}</div>;
+          })}
+        </div>
+
+        {/* ── Critical bottom sheet ── slides up over content */}
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          background: "#0d1e3a",
+          borderTop: "1.5px solid rgba(239,68,68,0.35)",
+          borderRadius: "20px 20px 0 0",
+          transform: sheetVisible ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 0.45s cubic-bezier(0.34,1.12,0.64,1)",
+          boxShadow: "0 -8px 32px rgba(0,0,0,0.5)",
+          zIndex: 10,
+        }}>
+          {/* Sheet handle + header */}
+          <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ width: 32, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.2)", margin: "0 auto 10px" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
+                <span style={{ color: "#f87171", marginRight: 6 }}>{criticalCount}</span>Critical items
+              </div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)" }}>Tap to complete</div>
             </div>
-          ); })}
+          </div>
+          {/* Critical items list */}
+          <div style={{ padding: "6px 0 12px" }}>
+            {criticalItems.map(function(item, i) {
+              var isCompleting = completingIdx === i;
+              var isCompleted  = completedIdx === i;
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "8px 14px",
+                  maxHeight: isCompleted ? 0 : 48,
+                  opacity: isCompleted ? 0 : 1,
+                  overflow: "hidden",
+                  transition: "max-height 0.5s ease, opacity 0.4s ease",
+                  background: isCompleting ? "rgba(34,197,94,0.08)" : "transparent",
+                }}>
+                  {/* Checkbox */}
+                  <div style={{
+                    width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                    border: isCompleting ? "none" : "1.5px solid rgba(239,68,68,0.4)",
+                    background: isCompleting ? "#22c55e" : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all 0.3s",
+                  }}>
+                    {isCompleting && (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: isCompleting ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.85)", textDecoration: isCompleting ? "line-through" : "none", transition: "all 0.3s" }}>{item.name}</div>
+                  </div>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: i < 2 ? "#f87171" : "#fbbf24", flexShrink: 0 }}>{item.age}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
       </div>
     </div>
   );
 }
+
 
 const FEATURES = [
   { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
