@@ -746,6 +746,7 @@ export default function LandingPage() {
   var [mode, setMode]               = useState("signup");
   var [email, setEmail]             = useState("");
   var [password, setPassword]       = useState("");
+  var [confirmPassword, setConfirmPassword] = useState("");
   var [loading, setLoading]         = useState(false);
   var [error, setError]             = useState(null);
   var [message, setMessage]         = useState(null);
@@ -754,6 +755,7 @@ export default function LandingPage() {
   var [scrolled, setScrolled]       = useState(false);
   var [isMobile, setIsMobile]       = useState(false);
   var [annual, setAnnual]           = useState(false);
+  var [isRecovery, setIsRecovery]   = useState(false);
 
   useEffect(function () {
     var onScroll = function () { setScrolled(window.scrollY > 60); };
@@ -772,6 +774,20 @@ export default function LandingPage() {
     var p = new URLSearchParams(window.location.search);
     if (p.get("signup") === "1") { setMode("signup"); setShowAuth(true); }
     if (p.get("login")  === "1") { setMode("login");  setShowAuth(true); }
+  }, []);
+
+  useEffect(function () {
+    var { data: { subscription } } = supabase.auth.onAuthStateChange(function (event) {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+        setShowAuth(true);
+        setPassword("");
+        setConfirmPassword("");
+        setError(null);
+        setMessage(null);
+      }
+    });
+    return function () { subscription.unsubscribe(); };
   }, []);
 
   var signInWithGoogle = async function () {
@@ -809,6 +825,23 @@ export default function LandingPage() {
       var result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + "/?login=1" });
       if (result.error) throw result.error;
       setMessage("Check your inbox — we sent a password reset link to " + email + ".");
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  var updatePassword = async function (e) {
+    e.preventDefault();
+    if (password !== confirmPassword) { setError("Passwords don't match. Please try again."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    setLoading(true); setError(null); setMessage(null);
+    try {
+      var result = await supabase.auth.updateUser({ password: password });
+      if (result.error) throw result.error;
+      setMessage("Password updated! You're now logged in.");
+      setIsRecovery(false);
+      setPassword("");
+      setConfirmPassword("");
+      setTimeout(function () { setShowAuth(false); }, 1800);
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   };
@@ -1025,6 +1058,38 @@ export default function LandingPage() {
                   We sent a confirmation link to <strong>{signupEmail}</strong>. Click it to activate your account.
                 </div>
               </div>
+            ) : isRecovery ? (
+              <>
+                <div style={{ textAlign: "center", marginBottom: 24 }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>{"🔑"}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: "#111", marginBottom: 4 }}>Set a new password</div>
+                  <div style={{ fontSize: 13, color: "#6b7280" }}>Choose a strong password for your account.</div>
+                </div>
+                <form onSubmit={updatePassword}>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>New password</label>
+                    <input type="password" value={password} onChange={function (e) { setPassword(e.target.value); }}
+                      placeholder={"•".repeat(8)} required minLength={6}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Confirm new password</label>
+                    <input type="password" value={confirmPassword} onChange={function (e) { setConfirmPassword(e.target.value); }}
+                      placeholder={"•".repeat(8)} required minLength={6}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box",
+                        borderColor: confirmPassword && confirmPassword !== password ? "#ef4444" : "#d1d5db" }} />
+                    {confirmPassword && confirmPassword !== password && (
+                      <div style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>Passwords don{"'"}t match</div>
+                    )}
+                  </div>
+                  {error   && <div style={{ fontSize: 13, color: "#dc2626", marginBottom: 12, lineHeight: 1.5 }}>{error}</div>}
+                  {message && <div style={{ fontSize: 13, color: "#16a34a", marginBottom: 12, lineHeight: 1.5 }}>{message}</div>}
+                  <button type="submit" disabled={loading || (confirmPassword !== "" && confirmPassword !== password)}
+                    style={{ width: "100%", padding: "12px 0", background: loading ? "#9ca3af" : BRAND, color: "#fff", border: "none", borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
+                    {loading ? "Updating\u2026" : "Set new password"}
+                  </button>
+                </form>
+              </>
             ) : (
               <>
                 <button onClick={signInWithGoogle} disabled={loading}
