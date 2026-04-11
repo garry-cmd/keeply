@@ -150,6 +150,7 @@ export default function LogbookPage({
   const [draftRestored,setDraftRestored]= useState(false);
   const [saving,       setSaving]       = useState(false);
   const [savedBanner,  setSavedBanner]  = useState(false);
+  const [editingId,    setEditingId]    = useState(null);
   const firstMount = useRef(true);
 
   // History list
@@ -232,7 +233,28 @@ export default function LogbookPage({
   const resetForm = function() {
     const fresh = blankForm();
     setForm(fresh);
+    setEditingId(null);
     clearDraft(vesselId);
+  };
+
+  const openEdit = function(entry) {
+    setForm({
+      entry_date:     entry.entry_date     || today(),
+      departure_time: entry.departure_time || "",
+      arrival_time:   entry.arrival_time   || "",
+      from_location:  entry.from_location  || "",
+      to_location:    entry.to_location    || "",
+      crew:           entry.crew           || "",
+      distance_nm:    entry.distance_nm    ? String(entry.distance_nm) : "",
+      hours_end:      entry.hours_end      ? String(entry.hours_end)   : "",
+      conditions:     entry.conditions     || "",
+      sea_state:      entry.sea_state      || "",
+      notes:          entry.notes          || "",
+    });
+    setEditingId(entry.id);
+    setShowHistory(false);
+    setLogbookTab("passages");
+    setViewingEntry(null);
   };
 
   // ── Derived calculations ───────────────────────────────────────────────
@@ -280,16 +302,28 @@ export default function LogbookPage({
       notes:          form.notes          || null,
     };
     try {
-      const { data, error: e } = await supabase.from("logbook").insert(body).select().single();
-      if (e) throw e;
-      if (body.hours_end) {
-        await supabase.from("vessels").update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date }).eq("id", vesselId);
+      if (editingId) {
+        const { data, error: e } = await supabase.from("logbook").update(body).eq("id", editingId).select().single();
+        if (e) throw e;
+        setEntries(function(prev) { return prev.map(function(en) { return en.id === editingId ? data : en; }); });
+        if (body.hours_end) {
+          await supabase.from("vessels").update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date }).eq("id", vesselId);
+        }
+        clearDraft(vesselId);
+        resetForm();
+        setShowHistory(true);
+      } else {
+        const { data, error: e } = await supabase.from("logbook").insert(body).select().single();
+        if (e) throw e;
+        if (body.hours_end) {
+          await supabase.from("vessels").update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date }).eq("id", vesselId);
+        }
+        clearDraft(vesselId);
+        resetForm();
+        setEntries(function(prev) { return [data, ...prev]; });
+        setSavedBanner(true);
+        setTimeout(function() { setSavedBanner(false); }, 3500);
       }
-      clearDraft(vesselId);
-      resetForm();
-      setEntries(function(prev) { return [data, ...prev]; });
-      setSavedBanner(true);
-      setTimeout(function() { setSavedBanner(false); }, 3500);
     } catch(e) { alert("Save failed: " + e.message); }
     finally { setSaving(false); }
   };
@@ -402,8 +436,18 @@ export default function LogbookPage({
     return (
       <div style={{ paddingBottom: 80 }}>
 
+        {/* Editing banner */}
+        {editingId && (
+          <div style={{ background: "rgba(245,166,35,0.12)", border: "0.5px solid rgba(245,166,35,0.3)", borderRadius: 10, padding: "8px 14px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+              Editing: {form.from_location && form.to_location ? form.from_location + " → " + form.to_location : "passage"}
+            </span>
+            <button onClick={resetForm} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", fontFamily: "inherit", padding: 0 }}>Cancel</button>
+          </div>
+        )}
+
         {/* Draft restored banner */}
-        {draftRestored && (
+        {draftRestored && !editingId && (
           <div style={{ background: "rgba(74,158,222,0.12)", border: "0.5px solid rgba(74,158,222,0.3)", borderRadius: 10, padding: "8px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#4a9ede" strokeWidth="1.3"/><path d="M8 5v4M8 11v.5" stroke="#4a9ede" strokeWidth="1.3" strokeLinecap="round"/></svg>
             <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Draft restored — pick up where you left off</span>
@@ -524,13 +568,15 @@ export default function LogbookPage({
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={resetForm}
-            style={{ padding: "11px 16px", border: "0.5px solid var(--border)", borderRadius: 10, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--text-muted)", fontFamily: "inherit" }}>
-            Clear
-          </button>
+          {!editingId && (
+            <button onClick={resetForm}
+              style={{ padding: "11px 16px", border: "0.5px solid var(--border)", borderRadius: 10, background: "var(--bg-card)", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--text-muted)", fontFamily: "inherit" }}>
+              Clear
+            </button>
+          )}
           <button onClick={savePassage} disabled={saving || !form.entry_date}
             style={{ flex: 1, padding: "11px", border: "none", borderRadius: 10, background: (saving || !form.entry_date) ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: (saving || !form.entry_date) ? "default" : "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit" }}>
-            {saving ? "Saving…" : "Save passage"}
+            {saving ? "Saving…" : editingId ? "Update passage" : "Save passage"}
           </button>
         </div>
       </div>
@@ -600,10 +646,14 @@ export default function LogbookPage({
                         {avgSpd && <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", marginTop: 4 }}>{avgSpd} kts</div>}
                       </div>
                     </div>
-                    <div style={{ borderTop: "0.5px solid var(--border)", display: "flex", justifyContent: "flex-end", padding: "6px 10px" }}>
-                      <button onClick={function(e){ e.stopPropagation(); if(window.confirm("Delete this entry?")){ del(entry.id); } }}
+                    <div style={{ borderTop: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px" }}>
+                      <button onClick={function(ev){ ev.stopPropagation(); if(window.confirm("Delete this entry?")){ del(entry.id); } }}
                         style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 8px", borderRadius: 6, color: "var(--danger-text)", display: "flex", alignItems: "center" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
+                      <button onClick={function(ev){ ev.stopPropagation(); openEdit(entry); }}
+                        style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", color: "var(--text-muted)", fontFamily: "inherit" }}>
+                        Edit
                       </button>
                     </div>
                   </div>
@@ -701,10 +751,36 @@ export default function LogbookPage({
         const e = viewingEntry;
         const dp = (e.entry_date||"").split("-");
         const dateStr = dp.length===3 ? MONTHS[parseInt(dp[1])-1]+" "+parseInt(dp[2])+", "+dp[0] : e.entry_date;
+        // Calculate derived stats from saved data
+        var timeLabel = null; var avgSpd = null; var fuelUsed = null;
+        if (e.departure_time && e.arrival_time) {
+          const d2 = e.departure_time.split(":").map(Number);
+          const a2 = e.arrival_time.split(":").map(Number);
+          let diff2 = (a2[0]*60+a2[1]) - (d2[0]*60+d2[1]);
+          if (diff2 < 0) diff2 += 1440;
+          const hrs2 = diff2 / 60;
+          timeLabel = Math.floor(hrs2) + "h " + Math.round((hrs2%1)*60) + "m";
+          if (e.distance_nm && hrs2 > 0) avgSpd = (parseFloat(e.distance_nm)/hrs2).toFixed(1);
+          if (e.hours_end && fuelBurnRate) {
+            const prevP = entries
+              .filter(function(p){ return p.entry_type==="passage" && p.hours_end && p.id!==e.id && p.entry_date<=e.entry_date; })
+              .sort(function(a,b){ return b.entry_date.localeCompare(a.entry_date); })[0];
+            if (prevP && prevP.hours_end) {
+              const runH = parseFloat(e.hours_end) - parseFloat(prevP.hours_end);
+              if (runH > 0) fuelUsed = (runH * fuelBurnRate).toFixed(1);
+            }
+          }
+        }
+        const statCells = [
+          e.distance_nm ? { val: e.distance_nm, lbl: "nm" } : null,
+          timeLabel     ? { val: timeLabel,      lbl: "time" } : null,
+          avgSpd        ? { val: avgSpd + " kts", lbl: "avg speed" } : null,
+          fuelUsed      ? { val: fuelUsed + " gal", lbl: "fuel used" } : null,
+        ].filter(Boolean);
         return (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
             onClick={function(ev){ if(ev.target===ev.currentTarget) setViewingEntry(null); }}>
-            <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+            <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, maxHeight: "88vh", display: "flex", flexDirection: "column" }}
               onClick={function(ev){ ev.stopPropagation(); }}>
               <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0 }}>
                 <div>
@@ -716,20 +792,28 @@ export default function LogbookPage({
                 <button onClick={function(){ setViewingEntry(null); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)", lineHeight: 1 }}>✕</button>
               </div>
               <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-                {(e.distance_nm||e.departure_time) && (
+                {statCells.length > 0 && (
                   <div style={{ display: "flex", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "0.5px solid var(--border)" }}>
-                    {e.distance_nm && <div style={{ flex:1, background:"var(--bg-subtle)", padding:"10px 12px", textAlign:"center" }}><div style={{ fontSize:18, fontWeight:700, color:"var(--brand)", fontFamily:"DM Mono,monospace", lineHeight:1 }}>{e.distance_nm}</div><div style={{ fontSize:9, color:"var(--text-muted)", marginTop:3, textTransform:"uppercase", letterSpacing:"0.5px" }}>nm</div></div>}
+                    {statCells.map(function(cell) {
+                      return (
+                        <div key={cell.lbl} style={{ flex:1, background:"var(--bg-subtle)", padding:"10px 8px", textAlign:"center" }}>
+                          <div style={{ fontSize:15, fontWeight:700, color:"var(--brand)", fontFamily:"DM Mono,monospace", lineHeight:1 }}>{cell.val}</div>
+                          <div style={{ fontSize:9, color:"var(--text-muted)", marginTop:3, textTransform:"uppercase", letterSpacing:"0.5px" }}>{cell.lbl}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 {e.notes && <div style={{ marginBottom:16 }}><div style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", letterSpacing:"0.5px", textTransform:"uppercase", marginBottom:6 }}>Notes</div><div style={{ fontSize:13, color:"var(--text-primary)", lineHeight:1.6, whiteSpace:"pre-wrap" }}>{e.notes}</div></div>}
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
-                  {[["Departed",e.departure_time],["Arrived",e.arrival_time],["Crew",e.crew],["Conditions",e.conditions],["Sea state",e.sea_state],["Engine hrs",e.hours_end]].map(function(pair){
+                  {[["Departed",e.departure_time],["Arrived",e.arrival_time],["Crew",e.crew],["Conditions",e.conditions],["Sea state",e.sea_state],["Engine hrs end",e.hours_end]].map(function(pair){
                     return (<div key={pair[0]} style={{ marginBottom:14 }}><div style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", letterSpacing:"0.5px", textTransform:"uppercase", marginBottom:3 }}>{pair[0]}</div><div style={{ fontSize:14, color:pair[1]?"var(--text-primary)":"var(--text-muted)", fontWeight:pair[1]?500:400 }}>{pair[1]||"—"}</div></div>);
                   })}
                 </div>
               </div>
               <div style={{ padding:"12px 20px", borderTop:"0.5px solid var(--border)", display:"flex", gap:10, flexShrink:0 }}>
-                <button onClick={function(){ del(e.id); }} style={{ padding:"10px 14px", border:"0.5px solid var(--danger-border)", borderRadius:10, background:"none", cursor:"pointer", fontWeight:600, fontSize:14, color:"var(--danger-text)" }}>Delete</button>
+                <button onClick={function(){ if(window.confirm("Delete this entry?")){ del(e.id); setViewingEntry(null); } }} style={{ padding:"10px 14px", border:"0.5px solid var(--danger-border)", borderRadius:10, background:"none", cursor:"pointer", fontWeight:600, fontSize:14, color:"var(--danger-text)" }}>Delete</button>
+                <button onClick={function(){ openEdit(e); }} style={{ flex:1, padding:"10px", border:"0.5px solid var(--border)", borderRadius:10, background:"var(--bg-card)", cursor:"pointer", fontWeight:600, fontSize:14 }}>Edit</button>
                 <button onClick={function(){ setViewingEntry(null); }} style={{ flex:1, padding:"10px", border:"none", borderRadius:10, background:"var(--brand)", color:"#fff", cursor:"pointer", fontWeight:700, fontSize:14 }}>Done</button>
               </div>
             </div>
