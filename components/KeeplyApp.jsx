@@ -2534,7 +2534,7 @@ export default function App() {
   // ─── STYLES ──────────────────────────────────────────────────────────────────
   const s = {
     app:     { fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", background: "#071e3d", minHeight: "100vh", color: "rgba(255,255,255,0.88)" },
-    topBar:  { background: "#071e3d", padding: "0 14px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 52, flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.06)" },
+    topBar:  { background: "var(--bg-card)", padding: "0 14px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 52, flexShrink: 0, borderBottom: "1px solid var(--border-strong)" },
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
@@ -3882,7 +3882,7 @@ export default function App() {
             if (openCount === 0) return null;
             return (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, padding: "4px 0" }}>
-                <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.2px", textTransform: "uppercase" }}>Open repairs</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: "1.2px", textTransform: "uppercase" }}>Open repairs</span>
                 <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{openCount}</span>
               </div>
             );
@@ -4161,7 +4161,7 @@ export default function App() {
                 const isCompleting = completingTask === t.id;
                 const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
                 return (
-                  <div key={t.id} style={{ ...s.card, borderTop: "2px solid var(--brand)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: isCompleting ? 0 : 1, transform: isCompleting ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease", marginBottom: 8 }}>
+                  <div key={t.id} style={{ ...s.card, borderTop: "2px solid var(--brand)", opacity: isCompleting ? 0 : 1, transform: isCompleting ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease", marginBottom: 8 }}>
                     <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                       <button onClick={function(){
                           if (isCompleting) return;
@@ -5571,7 +5571,7 @@ export default function App() {
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
-              <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", borderRadius: "0 0 " + (s.card.borderRadius || "12px") + " " + (s.card.borderRadius || "12px"), opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+              <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 {/* Card header */}
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                   {/* Circle checkbox to clear repair */}

@@ -69,18 +69,18 @@
 body.dark-mode {
   /* ── Option A: Lifted Navy — deeper base, cards float, rgba borders ── */
   --bg-app: #091e3a;
-  --bg-card: #112548;
-  --bg-elevated: #1a3560;
-  --bg-subtle: #0d2240;
+  --bg-card: #142c52;
+  --bg-elevated: #1c3a64;
+  --bg-subtle: #0e2444;
   --bg-overlay: rgba(0, 0, 0, 0.65);
-  --brand: #2e7abf;
+  --brand: #3b86c8;
   --brand-deep: #1a3d6b;
   --brand-muted: #4a90c8;
-  --border: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.18);
-  --text-primary: #f0f6ff;
-  --text-secondary: #6a96bc;
-  --text-muted: #4a7090;
+  --border: rgba(255, 255, 255, 0.11);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --text-primary: #f2f7ff;
+  --text-secondary: #7aaace;
+  --text-muted: #4e789a;
   --text-label: #3d5f7a;
   --text-on-brand: #ffffff;
   --ok-text: #2a9e6a;
