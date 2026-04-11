@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/components/supabase-client'
+import { supabase } from '@/components/supabase-client'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface AdminStats {
@@ -239,7 +239,6 @@ export default function AdminPage() {
     setLoading(true)
     setError(null)
     try {
-      const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
