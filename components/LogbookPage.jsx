@@ -158,7 +158,6 @@ export default function LogbookPage({
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState(null);
   const [viewingEntry, setViewingEntry] = useState(null);
-  const [editingId,    setEditingId]    = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm,     setEditForm]     = useState({});
 
