@@ -3009,7 +3009,7 @@ export default function App() {
                           <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
                             <div style={{ padding: "12px 14px" }}>
                               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>Suggested parts</div>
-                              {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }>Find parts</button>}
+                              {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>Find parts</button>}
                               {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                               {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
                                 return (
