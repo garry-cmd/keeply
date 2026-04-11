@@ -8,7 +8,7 @@ import LogbookPage from "./LogbookPage";
 import PartsPage from "./PartsPage";
 import FirstMate from "./FirstMate";
 
-// -- Part search helpers ------------------------------------------------------
+// ── Part search helpers ──────────────────────────────────────────────────────
 // Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
 function partSearchQuery(partName, equipObj, vesselObj) {
   const parts = [
@@ -24,10 +24,10 @@ function googleSearchUrl(query) {
 function ebaySearchUrl(query) {
   return "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(query) + "&_sacat=26429";
 }
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 
-// --- SUPABASE CONFIG ----------------------------------------------------------
+// ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
 
@@ -76,7 +76,7 @@ async function supa(table, opts) {
   return res.json();
 }
 
-// --- STORAGE UPLOAD ----------------------------------------------------------
+// ─── STORAGE UPLOAD ──────────────────────────────────────────────────────────
 async function uploadToStorage(file, eqId) {
   const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = eqId + "/" + Date.now() + "-" + safeFileName;
@@ -102,7 +102,7 @@ async function uploadToStorage(file, eqId) {
   return "https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/public/equipment-docs/" + path;
 }
 
-// --- IMAGE COMPRESSION --------------------------------------------------------------
+// ─── IMAGE COMPRESSION ──────────────────────────────────────────────────────────────
 async function compressImage(file, maxWidth, quality) {
   return new Promise(function(resolve) {
     var reader = new FileReader();
@@ -129,7 +129,7 @@ async function compressImage(file, maxWidth, quality) {
   });
 }
 
-// --- HELPERS ------------------------------------------------------------------
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 function today() { return new Date().toISOString().split("T")[0]; }
 
 function addDays(dateStr, days) {
@@ -168,24 +168,24 @@ function getDueBadge(dueDate, intervalDays) {
   const now = new Date(); now.setHours(0,0,0,0);
   const due = new Date(dueDate); due.setHours(0,0,0,0);
   const diff = Math.round((due - now) / 86400000);
-  if (diff <= -10) return { label: "?? Critical",  color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)" };
-  if (diff <= -5)  return { label: "?? Overdue",   color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)"  };
+  if (diff <= -10) return { label: "🔴 Critical",  color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)" };
+  if (diff <= -5)  return { label: "🟠 Overdue",   color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)"  };
   // Due Soon window = half the interval, capped at 10 days
   const dueSoonDays = intervalDays ? Math.min(Math.floor(intervalDays / 2), 21) : 21;
-  if (diff <= dueSoonDays) return { label: "?? Due Soon",  color: "var(--duesoon-text)",  bg: "var(--duesoon-bg)",  border: "var(--duesoon-border)"  };
+  if (diff <= dueSoonDays) return { label: "🟡 Due Soon",  color: "var(--duesoon-text)",  bg: "var(--duesoon-bg)",  border: "var(--duesoon-border)"  };
   return null;
 }
 
 function getHoursBadge(dueHours, currentHours, intervalHours) {
   if (dueHours == null || currentHours == null) return null;
   var hoursLeft = dueHours - currentHours;
-  if (hoursLeft < 0) return { label: "?? Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
+  if (hoursLeft < 0) return { label: "🔴 Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
   var dueSoon = intervalHours ? Math.floor(intervalHours * 0.25) : 25;
-  if (hoursLeft <= dueSoon) return { label: "?? Due Soon", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "var(--duesoon-border)", hours: hoursLeft };
+  if (hoursLeft <= dueSoon) return { label: "🟡 Due Soon", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "var(--duesoon-border)", hours: hoursLeft };
   return null;
 }
 
-// --- CONSTANTS ----------------------------------------------------------------
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
 
 const EQUIPMENT_PARTS = {
@@ -236,13 +236,13 @@ function getAutoSuggestedDocs(equipmentName) {
 }
 
 const DOC_TYPE_CFG = {
-  "Manual":      { color: "var(--info-text)",    bg: "var(--info-bg)",    icon: "??" },
-  "Parts List":  { color: "var(--ok-text)",      bg: "var(--ok-bg)",      icon: "??" },
-  "Build Sheet": { color: "var(--brand)",         bg: "var(--brand-deep)", icon: "??" },
-  "Warranty":    { color: "var(--warn-text)",     bg: "var(--warn-bg)",    icon: "??" },
-  "Photo":       { color: "var(--info-text)",     bg: "var(--info-bg)",    icon: "??" },
-  "License":     { color: "var(--warn-text)",     bg: "var(--warn-bg)",    icon: "??" },
-  "Other":       { color: "var(--text-muted)",    bg: "var(--bg-subtle)",  icon: "??" },
+  "Manual":      { color: "var(--info-text)",    bg: "var(--info-bg)",    icon: "📖" },
+  "Parts List":  { color: "var(--ok-text)",      bg: "var(--ok-bg)",      icon: "🔩" },
+  "Build Sheet": { color: "var(--brand)",         bg: "var(--brand-deep)", icon: "📋" },
+  "Warranty":    { color: "var(--warn-text)",     bg: "var(--warn-bg)",    icon: "📜" },
+  "Photo":       { color: "var(--info-text)",     bg: "var(--info-bg)",    icon: "📷" },
+  "License":     { color: "var(--warn-text)",     bg: "var(--warn-bg)",    icon: "🪪" },
+  "Other":       { color: "var(--text-muted)",    bg: "var(--bg-subtle)",  icon: "📄" },
 };
 
 const STATUS_CFG = {
@@ -258,23 +258,23 @@ const PRIORITY_CFG = {
 };
 const SECTIONS = {
   Anchor:      "⚓",
-  Bilge:       "💧",
-  Deck:        "🔧",
-  Dinghy:      "🛶",
+  Bilge:       "🪣",
+  Deck:        "🛥️",
+  Dinghy:      "🚤",
   Electrical:  "⚡",
   Electronics: "📡",
-  Engine:      "⚙️",
+  Engine:      "🔧",
   Galley:      "🍳",
-  Generator:   "🔋",
+  Generator:   "🔌",
   Hull:        "🚢",
-  Mechanical:  "🔧",
-  Navigation:  "🧭",
-  Paperwork:   "📋",
-  Plumbing:    "🚰",
-  Rigging:     "⛵",
+  Mechanical:  "⚙️",
+  Navigation:  "🗺️",
+  Paperwork:   "📄",
+  Plumbing:    "🚿",
+  Rigging:     "🪢",
   Safety:      "🛟",
   Sails:       "⛵",
-  Steering:    "🎯",
+  Steering:    "🧭",
   Vessel:      "⚓",
   Watermaker:  "💧",
 };
@@ -282,7 +282,7 @@ const ALL_SECTIONS   = Object.keys(SECTIONS);
 const MAINT_SECTIONS = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Vessel"; });
 const EQ_CATEGORIES  = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Dinghy" && s !== "Vessel"; });
 
-// --- CATEGORY ICONS ----------------------------------------------------------
+// ─── CATEGORY ICONS ──────────────────────────────────────────────────────────
 function getCategoryIcon(category, size) {
   size = size || 18;
   const s = { width: size, height: size, fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" };
@@ -308,7 +308,7 @@ function getCategoryIcon(category, size) {
   return { ...ic, tile: <div style={{ width: size + 18, height: size + 18, borderRadius: 10, background: ic.bg, border: "1px solid " + ic.stroke.replace(")", ",0.2)").replace("rgb", "rgba"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{ic.path}</div> };
 }
 
-// --- SMALL SHARED COMPONENTS -------------------------------------------------
+// ─── SMALL SHARED COMPONENTS ─────────────────────────────────────────────────
 function Badge({ label, color, bg, border }) {
   return <span style={{ background: bg, color, border: border ? "1px solid " + border : "none", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{label}</span>;
 }
@@ -330,12 +330,12 @@ function UrgencyCard({ label, sub, val, color, bg, active, onClick }) {
       <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{val}</div>
       <div style={{ fontSize: 12, fontWeight: 700, color, marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{sub}</div>}
-      {active && <div style={{ fontSize: 9, color, fontWeight: 700, marginTop: 4 }}>FILTERED ?</div>}
+      {active && <div style={{ fontSize: 9, color, fontWeight: 700, marginTop: 4 }}>FILTERED ✕</div>}
     </div>
   );
 }
 
-// --- TRASH ICON --------------------------------------------------------------
+// ─── TRASH ICON ──────────────────────────────────────────────────────────────
 function TrashIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -347,18 +347,18 @@ function TrashIcon() {
   );
 }
 
-// --- LOADING SPINNER ---------------------------------------------------------
+// ─── LOADING SPINNER ─────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: 16 }}>
       <div style={{ width: 40, height: 40, border: "3px solid #e2e8f0", borderTop: "3px solid #0f4c8a", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Loading your vessel data�</div>
+      <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Loading your vessel data…</div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-// --- ADMIN DASHBOARD ---------------------------------------------------------
+// ─── ADMIN DASHBOARD ─────────────────────────────────────────────────────────
 function AdminDashboard({ onClose }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -492,7 +492,7 @@ function AdminDashboard({ onClose }) {
     loadMetrics();
   }, []);
 
-  if (loading) return <div style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>Loading�</div>;
+  if (loading) return <div style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>Loading…</div>;
   if (!metrics) return <div style={{ textAlign: "center", padding: 48, color: "var(--danger-text)" }}>Failed to load.</div>;
 
   const m = metrics;
@@ -511,7 +511,7 @@ function AdminDashboard({ onClose }) {
     if (prior === 0 && today === 0) return null;
     const pct = prior === 0 ? 100 : Math.round(((today - prior) / prior) * 100);
     const up = today >= prior;
-    return <span style={{ fontSize: 10, fontWeight: 700, color: up ? "var(--ok-text)" : "var(--danger-text)", marginLeft: 6 }}>{up ? "?" : "?"} {Math.abs(pct)}%</span>;
+    return <span style={{ fontSize: 10, fontWeight: 700, color: up ? "var(--ok-text)" : "var(--danger-text)", marginLeft: 6 }}>{up ? "▲" : "▼"} {Math.abs(pct)}%</span>;
   };
 
   const compareRow = function(label, today, prior, todayLabel, priorLabel) {
@@ -531,17 +531,17 @@ function AdminDashboard({ onClose }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 800 }}>?? Keeply Admin</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Internal use only � keeply.boats</div>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>⚙️ Keeply Admin</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Internal use only · keeply.boats</div>
         </div>
-        <button onClick={onClose} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "var(--text-muted)" }}>? Close</button>
+        <button onClick={onClose} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: "var(--text-muted)" }}>✕ Close</button>
       </div>
 
       {/* Users & Vessels */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>USERS & VESSELS</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
         {stat(m.authUsers, "Total Users", "signed up accounts", "var(--brand)")}
-        {stat(m.totalVessels, "Total Vessels", m.sailboats + " sail � " + m.motorboats + " motor")}
+        {stat(m.totalVessels, "Total Vessels", m.sailboats + " sail · " + m.motorboats + " motor")}
       </div>
 
       {/* New Vessel Growth */}
@@ -597,14 +597,14 @@ function AdminDashboard({ onClose }) {
         {stat("$" + parseFloat(m.cartAOV).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "AOV", "avg order value per vessel", "var(--brand)")}
       </div>
 
-      {/* -- Affiliate Clicks -- */}
+      {/* ── Affiliate Clicks ── */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", padding: "18px 0 8px" }}>AFFILIATE CLICKS</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, marginBottom: 4 }}>
         {stat(m.totalAffiliateClicks, "Total Clicks", "all time")}
         {stat(m.affiliateClicksThisMonth, "This Month", "")}
         {(function(){
           const diff = m.affiliateClicksThisWeek - m.affiliateClicksLastWeek;
-          const trend = diff > 0 ? "? " + diff + " vs last wk" : diff < 0 ? "? " + Math.abs(diff) + " vs last wk" : "= same as last wk";
+          const trend = diff > 0 ? "↑ " + diff + " vs last wk" : diff < 0 ? "↓ " + Math.abs(diff) + " vs last wk" : "= same as last wk";
           return stat(m.affiliateClicksThisWeek, "This Week", trend, diff > 0 ? "var(--ok-text)" : diff < 0 ? "var(--danger-text)" : "var(--text-muted)");
         })()}
       </div>
@@ -628,7 +628,7 @@ function AdminDashboard({ onClose }) {
           {m.affiliateTopParts.map(function(p, i){ return (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: i < m.affiliateTopParts.length - 1 ? "0.5px solid var(--border)" : "none" }}>
               <div style={{ fontSize: 12, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, paddingRight: 8 }}>{p[0]}</div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", flexShrink: 0 }}>{p[1]}�</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", flexShrink: 0 }}>{p[1]}×</span>
             </div>
           ); })}
         </div>
@@ -645,14 +645,14 @@ function AdminDashboard({ onClose }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
                 <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                  {p.equipment_name ? p.equipment_name + " � " : ""}
+                  {p.equipment_name ? p.equipment_name + " · " : ""}
                   {p.vendor || ""}
-                  {p.source === "ai-equipment" || p.source === "ai-repair" ? " � ? AI" : ""}
-                  {p.qty > 1 ? " � qty " + p.qty : ""}
+                  {p.source === "ai-equipment" || p.source === "ai-repair" ? " · ✨ AI" : ""}
+                  {p.qty > 1 ? " · qty " + p.qty : ""}
                 </div>
               </div>
               <div style={{ fontSize: 12, fontWeight: 600, color: p.price ? "var(--ok-text)" : "var(--text-muted)", flexShrink: 0 }}>
-                {p.price ? "$" + (parseFloat(p.price) * (p.qty || 1)).toFixed(2) : "�"}
+                {p.price ? "$" + (parseFloat(p.price) * (p.qty || 1)).toFixed(2) : "—"}
               </div>
             </div>
           ); })}
@@ -681,7 +681,7 @@ function AdminDashboard({ onClose }) {
         ].map(function(link){ return (
           <a key={link.url} href={link.url} target="_blank" rel="noreferrer"
             style={{ display: "block", padding: "10px 14px", background: "var(--bg-subtle)", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--brand)", textDecoration: "none" }}>
-            {link.label} ?
+            {link.label} ↗
           </a>
         ); })}
       </div>
@@ -689,7 +689,7 @@ function AdminDashboard({ onClose }) {
   );
 }
 
-// --- TASK ROW -----------------------------------------------------------------
+// ─── TASK ROW ─────────────────────────────────────────────────────────────────
 function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showSection }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("log");
@@ -717,15 +717,15 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
           </div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
             Every {task.interval || (task.interval_days ? task.interval_days + " days" : "?")}
-            {lastService && <span> � Last: {fmt(lastService)}</span>}
-            {dueDate && <span style={{ color: badge ? badge.color : "var(--text-muted)", fontWeight: badge ? 700 : 400 }}> � Next due: {fmt(dueDate)}</span>}
+            {lastService && <span> · Last: {fmt(lastService)}</span>}
+            {dueDate && <span style={{ color: badge ? badge.color : "var(--text-muted)", fontWeight: badge ? 700 : 400 }}> · Next due: {fmt(dueDate)}</span>}
           </div>
           {/* Log count badge */}
           <div style={{ marginTop: 4, display: "flex", gap: 6 }}>
             <span style={{ background: logs.length > 0 ? "var(--ok-bg)" : "var(--bg-subtle)", color: logs.length > 0 ? "var(--ok-text)" : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
-              ??{logs.length > 0 ? " " + logs.length : ""}
+              📋{logs.length > 0 ? " " + logs.length : ""}
             </span>
-            <span style={{ background: "var(--bg-subtle)", color: "var(--text-muted)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>??</span>
+            <span style={{ background: "var(--bg-subtle)", color: "var(--text-muted)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✏️</span>
           </div>
         </div>
         <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -738,7 +738,7 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
         <div style={{ padding: "0 20px 14px 48px" }} onClick={function(e){ e.stopPropagation(); }}>
           {/* Tab buttons */}
           <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-            {[["log", "?? Log"], ["edit", "?? Edit"]].map(function(t){ return (
+            {[["log", "📋 Log"], ["edit", "✏️ Edit"]].map(function(t){ return (
               <button key={t[0]} onClick={function(){ setActiveTab(t[0]); }}
                 style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: activeTab===t[0] ? (t[0]==="edit" ? "var(--brand)" : "var(--brand)") : "var(--bg-subtle)", color: activeTab===t[0] ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {t[1]}
@@ -750,7 +750,7 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
           {activeTab === "log" && (
             <div>
               <input
-                placeholder="Add log entry� (press Enter)"
+                placeholder="Add log entry… (press Enter)"
                 value={logInput}
                 onChange={function(e){ setLogInput(e.target.value); }}
                 onKeyDown={function(e){
@@ -810,9 +810,9 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
 }
 
 
-// --- MAIN APP -----------------------------------------------------------------
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  // -- Auth state --
+  // ── Auth state ──
   const [session, setSession]     = useState(undefined); // undefined = loading, null = not logged in
   const [needsSetup, setNeedsSetup] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -911,16 +911,16 @@ export default function App() {
   const [importSaving, setImportSaving] = useState(false);
   const [importDone, setImportDone]     = useState(0);
 
-  // -- Loading state --
+  // ── Loading state ──
   const [loading, setLoading]   = useState(true);
   const [dbError, setDbError]   = useState(null);
   const [saving, setSaving]     = useState(false);
 
-  // -- Parts (saved to equipment, no cart) --
+  // ── Parts (saved to equipment, no cart) ──
 
 
 
-  // -- Vessels (Supabase) --
+  // ── Vessels (Supabase) ──
   const [vessels, setVessels]               = useState([]);
   const [activeVesselId, setActiveVesselId] = useState(null);
   const [showVesselDropdown, setShowVesselDropdown] = useState(false);
@@ -929,7 +929,7 @@ export default function App() {
   const [editingVesselId, setEditingVesselId] = useState(null);
   const BLANK_VESSEL = { vesselType: "sail", vesselName: "", ownerName: "", address: "", make: "", model: "", year: "", photoUrl: "" };
 
-  // -- Equipment (Supabase) --
+  // ── Equipment (Supabase) ──
   const [equipment, setEquipment]           = useState([]);
   const [expandedEquip, setExpandedEquip]   = useState(null);
   const [equipTab, setEquipTab]             = useState({});
@@ -980,7 +980,7 @@ export default function App() {
   const [showEnginePickerModal, setShowEnginePickerModal] = useState(false);
   const [docSuggestFor, setDocSuggestFor]   = useState(null);
 
-  // -- Maintenance Tasks (Supabase) --
+  // ── Maintenance Tasks (Supabase) ──
   const [tasks, setTasks]                   = useState([]);
   const [expandedSection, setExpandedSection] = useState(null);
   const [filterSection, setFilterSection]   = useState("All");
@@ -1000,7 +1000,7 @@ export default function App() {
   const [aiLoaded, setAiLoaded]             = useState(false);
   const [equipSuggestions, setEquipSuggestions] = useState({});
 
-  // -- Repairs (Supabase) --
+  // ── Repairs (Supabase) ──
   const [repairs, setRepairs]               = useState([]);
   const [vesselMembers, setVesselMembers]   = useState([]);
   const [showAddRepair, setShowAddRepair]   = useState(false);
@@ -1021,7 +1021,7 @@ export default function App() {
 
   // upgraded=true handler replaced by upgraded=1 handler below
 
-  // --- AUTH SESSION ------------------------------------------------------------
+  // ─── AUTH SESSION ────────────────────────────────────────────────────────────
   useEffect(function(){
     supabase.auth.getSession().then(function(res){
       setSession(res.data.session);
@@ -1070,13 +1070,13 @@ export default function App() {
     return function(){ listener.subscription.unsubscribe(); };
   }, []);
 
-  // --- LOAD ALL DATA FROM SUPABASE --------------------------------------------
+  // ─── LOAD ALL DATA FROM SUPABASE ────────────────────────────────────────────
   useEffect(function(){
     async function loadAll() {
       if (!session) return;
       try {
         setLoading(true);
-        // Load vessels � filter by membership
+        // Load vessels — filter by membership
         const vs = await supa("vessels", { query: "order=created_at" });
         if (!vs || vs.length === 0) {
           setNeedsSetup(true);
@@ -1191,7 +1191,7 @@ export default function App() {
     loadAll();
   }, [session]);
 
-  // --- SWITCH VESSEL � reload equipment + tasks --------------------------------
+  // ─── SWITCH VESSEL — reload equipment + tasks ────────────────────────────────
   const switchVessel = useCallback(async function(vid) {
     setActiveVesselId(vid);
     localStorage.setItem("keeply_active_vessel", vid);
@@ -1299,7 +1299,7 @@ export default function App() {
     }
   }, []);
 
-  // Handle push notification tap-through � open the right urgency panel
+  // Handle push notification tap-through — open the right urgency panel
   useEffect(function(){
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -1314,7 +1314,7 @@ export default function App() {
     }
   }, []);
 
-  // Restore and persist active tab � skip if a notification deep-link panel param is present
+  // Restore and persist active tab — skip if a notification deep-link panel param is present
   useEffect(function(){
     const params = new URLSearchParams(window.location.search);
     if (params.get("panel")) return; // panel handler will set tab instead
@@ -1334,7 +1334,7 @@ export default function App() {
     return function(){ document.removeEventListener("visibilitychange", handleVisibility); };
   }, []);
 
-  // --- VESSEL CRUD -------------------------------------------------------------
+  // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
   const openAddVessel = async function(){
     // Always fetch fresh plan from DB to avoid stale state after upgrade
     var livePlan = userPlan;
@@ -1452,7 +1452,7 @@ export default function App() {
     finally { setSaving(false); }
   };
 
-  // --- EQUIPMENT CRUD ----------------------------------------------------------
+  // ─── EQUIPMENT CRUD ──────────────────────────────────────────────────────────
   const addEquipment = async function(){
     if (!newEquip.name.trim()) return;
     const autoSuggested = getAutoSuggestedDocs(newEquip.name);
@@ -1498,7 +1498,7 @@ export default function App() {
   };
 
   const normalizePart = function(name) {
-    return (name || "").toLowerCase().replace(/[���\s\-,\.]+/g, " ").trim();
+    return (name || "").toLowerCase().replace(/[™®©\s\-,\.]+/g, " ").trim();
   };
 
   const saveAiPartToMyParts = async function(eq, part) {
@@ -1587,7 +1587,7 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
-  // --- MAINTENANCE TASK CRUD ---------------------------------------------------
+  // ─── MAINTENANCE TASK CRUD ───────────────────────────────────────────────────
   const toggleTask = async function(id, noteOverride){
     setCompletingTask(id);
     setTimeout(function(){ setCompletingTask(null); }, 600);
@@ -1600,14 +1600,14 @@ export default function App() {
     const commentText = noteOverride !== undefined ? noteOverride.trim() : (t.pendingComment || "").trim();
     const log = { date: serviceDate, comment: commentText || null };
     const updatedLogs = [...(t.serviceLogs || []), log];
-    // Optimistic update � update UI immediately, sync DB in background
+    // Optimistic update — update UI immediately, sync DB in background
     setTasks(function(prev){ return prev.map(function(tk){ return tk.id === id ? { ...tk, lastService: serviceDate, dueDate: newDue, serviceLogs: updatedLogs, pendingComment: "" } : tk; }); });
     try {
       // Auto-add log entry to linked equipment
       if (t.equipment_id) {
         const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
         if (eq) {
-          const eqLogEntry = { date: serviceDate, text: "Service: " + t.task + (commentText ? " � " + commentText : ""), type: "service" };
+          const eqLogEntry = { date: serviceDate, text: "Service: " + t.task + (commentText ? " — " + commentText : ""), type: "service" };
           const updatedEqLogs = [...(eq.logs || []), eqLogEntry];
           await supa("equipment", { method: "PATCH", query: "id=eq." + t.equipment_id, body: { logs: updatedEqLogs }, prefer: "return=minimal" });
           setEquipment(function(prev){ return prev.map(function(e){ return e.id === t.equipment_id ? { ...e, logs: updatedEqLogs } : e; }); });
@@ -1679,7 +1679,7 @@ export default function App() {
     finally { setSaving(false); setUploadingDoc(false); }
   };
 
-  // --- REPAIRS CRUD ------------------------------------------------------------
+  // ─── REPAIRS CRUD ────────────────────────────────────────────────────────────
   const addRepair = async function(){
     if (!newRepair.description.trim()) return;
     setSaving(true);
@@ -1757,7 +1757,7 @@ export default function App() {
             const equipContext = linkedEquip
               ? linkedEquip.name + (linkedEquip.model ? " " + linkedEquip.model : "") + " (" + linkedEquip.category + ")"
               : repair.section;
-            return equipContext + " � repair needed: " + repair.description;
+            return equipContext + " — repair needed: " + repair.description;
           })(),
           type: "repair"
         })
@@ -1772,7 +1772,7 @@ export default function App() {
 
 
 
-  // -- Service Worker + Push Notification setup ------------------------------
+  // ── Service Worker + Push Notification setup ──────────────────────────────
   const isIOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isPWA = typeof window !== "undefined" && (window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches);
 
@@ -1781,7 +1781,7 @@ export default function App() {
       setPushStatus("unsupported");
       return;
     }
-    // iOS Safari (non-PWA) cannot use push � requires home screen install
+    // iOS Safari (non-PWA) cannot use push — requires home screen install
     if (isIOS && !isPWA) {
       setPushStatus("ios-browser");
       return;
@@ -1836,7 +1836,7 @@ export default function App() {
 
 
 
-  // -- Vessel admin tasks ----------------------------------------------------
+  // ── Vessel admin tasks ────────────────────────────────────────────────────
   const loadVesselAdminTasks = async function(vesselId) {
     if (!vesselId) return;
     setAdminTaskLoading(function(prev){ return { ...prev, [vesselId]: true }; });
@@ -1949,7 +1949,7 @@ export default function App() {
     if (!newAdminTask.name.trim()) return;
     const userId = session && session.user ? session.user.id : null;
     try {
-      const created = await supa("vessel_admin_tasks", { method: "POST", body: { vessel_id: vesselId, user_id: userId, name: newAdminTask.name.trim(), category: newAdminTask.category, icon: "??", due_date: newAdminTask.due_date || null, notes: newAdminTask.notes || "", is_custom: true, interval_months: 12 } });
+      const created = await supa("vessel_admin_tasks", { method: "POST", body: { vessel_id: vesselId, user_id: userId, name: newAdminTask.name.trim(), category: newAdminTask.category, icon: "📌", due_date: newAdminTask.due_date || null, notes: newAdminTask.notes || "", is_custom: true, interval_months: 12 } });
       setVesselAdminTasks(function(prev){ return { ...prev, [vesselId]: [...(prev[vesselId] || []), created[0]] }; });
       setNewAdminTask({ name: "", category: "registrations", due_date: "", notes: "" });
       setShowAddAdminTask(null);
@@ -1970,42 +1970,42 @@ export default function App() {
 
 
 
-  // -- Default vessel admin tasks --------------------------------------------
+  // ── Default vessel admin tasks ────────────────────────────────────────────
   const DEFAULT_ADMIN_TASKS = [
     // Registrations & legal
-    { name: "Vessel registration renewal", category: "registrations", icon: "??", interval_months: 12,  notes: "State or federal registration" },
-    { name: "Marine insurance renewal",    category: "registrations", icon: "???", interval_months: 12,  notes: "" },
-    { name: "USCG documentation renewal",  category: "registrations", icon: "??", interval_months: 12,  notes: "Federal documentation � if applicable" },
-    { name: "MMSI registration",           category: "registrations", icon: "??", interval_months: 24,  notes: "Renew every 2 years with BoatUS or USPS" },
+    { name: "Vessel registration renewal", category: "registrations", icon: "📋", interval_months: 12,  notes: "State or federal registration" },
+    { name: "Marine insurance renewal",    category: "registrations", icon: "🛡️", interval_months: 12,  notes: "" },
+    { name: "USCG documentation renewal",  category: "registrations", icon: "📄", interval_months: 12,  notes: "Federal documentation — if applicable" },
+    { name: "MMSI registration",           category: "registrations", icon: "📡", interval_months: 24,  notes: "Renew every 2 years with BoatUS or USPS" },
     // Safety equipment
-    { name: "Flares � expiry check",       category: "safety",        icon: "??", interval_months: 42,  notes: "USCG requires non-expired visual distress signals" },
-    { name: "EPIRB battery replacement",   category: "safety",        icon: "??", interval_months: 60,  notes: "Battery expires every 5 years" },
-    { name: "EPIRB NOAA registration",     category: "safety",        icon: "???", interval_months: 24,  notes: "Register/renew at beaconregistration.noaa.gov" },
-    { name: "Life raft service & re-cert", category: "safety",        icon: "??", interval_months: 36,  notes: "Every 3 years � includes hydrostatic release" },
-    { name: "Fire extinguisher inspection",category: "safety",        icon: "??", interval_months: 12,  notes: "Annual professional service per NFPA" },
-    { name: "PFD inspection & service",    category: "safety",        icon: "??", interval_months: 12,  notes: "Inspect inflatables � rearming kit & CO2 cylinder" },
-    { name: "Bilge pump test",               category: "safety",        icon: "??", interval_months: 1,   notes: "Test all bilge pumps � manual and automatic" },
+    { name: "Flares — expiry check",       category: "safety",        icon: "🔴", interval_months: 42,  notes: "USCG requires non-expired visual distress signals" },
+    { name: "EPIRB battery replacement",   category: "safety",        icon: "🚨", interval_months: 60,  notes: "Battery expires every 5 years" },
+    { name: "EPIRB NOAA registration",     category: "safety",        icon: "🛰️", interval_months: 24,  notes: "Register/renew at beaconregistration.noaa.gov" },
+    { name: "Life raft service & re-cert", category: "safety",        icon: "🔵", interval_months: 36,  notes: "Every 3 years — includes hydrostatic release" },
+    { name: "Fire extinguisher inspection",category: "safety",        icon: "🧯", interval_months: 12,  notes: "Annual professional service per NFPA" },
+    { name: "PFD inspection & service",    category: "safety",        icon: "🦺", interval_months: 12,  notes: "Inspect inflatables — rearming kit & CO₂ cylinder" },
+    { name: "Bilge pump test",               category: "safety",        icon: "💧", interval_months: 1,   notes: "Test all bilge pumps — manual and automatic" },
     // Surveys & inspections
-    { name: "Marine survey",               category: "surveys",       icon: "??", interval_months: 60,  notes: "Condition & valuation � required for insurance" },
-    { name: "USCG vessel safety check",    category: "surveys",       icon: "?", interval_months: 12,  notes: "Free voluntary check � schedule at uscgboating.org" },
-    { name: "Haul out",                    category: "surveys",       icon: "??", interval_months: 12,  notes: "Bottom paint, zincs, hull inspection" },
+    { name: "Marine survey",               category: "surveys",       icon: "🔍", interval_months: 60,  notes: "Condition & valuation — required for insurance" },
+    { name: "USCG vessel safety check",    category: "surveys",       icon: "⚓", interval_months: 12,  notes: "Free voluntary check — schedule at uscgboating.org" },
+    { name: "Haul out",                    category: "surveys",       icon: "🚢", interval_months: 12,  notes: "Bottom paint, zincs, hull inspection" },
   ];
 
-  // -- Unified inline part finder � calls find-part with full vessel+equipment context --
+  // ── Unified inline part finder — calls find-part with full vessel+equipment context ──
   const findPartsInline = async function(id, taskDescription, equipmentId, section) {
     const eq = equipment.find(function(e){ return e.id === equipmentId; });
     const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
     const vesselContext = vessel ? [vessel.year, vessel.make, vessel.model].filter(Boolean).join(" ") : "";
-    // Build equipment name � always lead with vessel make/model so AI knows the exact engine
+    // Build equipment name — always lead with vessel make/model so AI knows the exact engine
     const eqName = eq ? eq.name : section;
     const eqNotes = eq && eq.notes && !eq.notes.startsWith("{") ? eq.notes.substring(0, 80) : "";
     const equipContext = [vesselContext, eqName, eqNotes].filter(Boolean).join(" ");
-    // Explicit repair context: "Beta 35 diesel engine � Replace impellor"
+    // Explicit repair context: "Beta 35 diesel engine — Replace impellor"
     const isEngineSection = section === "Engine" || section === "Generator";
     const repairContext = [
       vesselContext,
       isEngineSection ? "marine diesel engine" : section,
-      "�",
+      "—",
       taskDescription
     ].filter(Boolean).join(" ");
     setInlinePartResults(function(prev){ const n = Object.assign({}, prev); n[id] = { loading: true, results: [], error: null }; return n; });
@@ -2047,7 +2047,7 @@ export default function App() {
   };
 
 
-  // Auto-search fires once when modal opens � ref prevents re-firing on re-renders
+  // Auto-search fires once when modal opens — ref prevents re-firing on re-renders
   useEffect(function(){
     if (!confirmPart) {
       setFindPartResults([]); setFindPartError(null);
@@ -2192,7 +2192,7 @@ export default function App() {
         setShareMsg("Added " + trimmed + " but email failed to send");
       } else {
         const alreadyUser = newMember && newMember.user_id;
-        setShareMsg(alreadyUser ? trimmed + " added � they already have a Keeply account and can see this vessel now" : "Invite sent to " + trimmed);
+        setShareMsg(alreadyUser ? trimmed + " added — they already have a Keeply account and can see this vessel now" : "Invite sent to " + trimmed);
       }
       setShareEmail("");
       // Add real record (with real id) to local state
@@ -2314,7 +2314,7 @@ export default function App() {
           setImportDone(done);
         }
       }
-      // Success � reset
+      // Success — reset
       setImportRows([]);
       setImportFile(null);
     } catch(err){ setDbError(err.message); }
@@ -2447,7 +2447,7 @@ export default function App() {
     } catch(err){ setDbError(err.message); }
   };
 
-    // --- DERIVED STATE ------------------------------------------------------------
+    // ─── DERIVED STATE ────────────────────────────────────────────────────────────
   const getTaskUrgency = function(t){
     var activeV2 = vessels.find(function(v){ return v.id === activeVesselId; });
     var curHrs2 = activeV2 ? activeV2.engineHours : null;
@@ -2496,7 +2496,7 @@ export default function App() {
 
   const filteredEquip = equipment.filter(function(e){
     if (equipSectionFilter !== "All" && e.category !== equipSectionFilter) return false;
-    // Filter by urgency card � match by equipment_id if linked, else by section/category
+    // Filter by urgency card — match by equipment_id if linked, else by section/category
     if (filterUrgency !== "All") {
       if (filterUrgency === "Critical") {
         const hasLinked = tasks.some(function(t){ return t.equipment_id === e.id && getTaskUrgency(t) === "critical"; });
@@ -2524,10 +2524,10 @@ export default function App() {
   const prefix    = settings.vesselType === "motor" ? "M/V" : "S/V";
   const boatName  = settings.vesselName ? prefix + " " + settings.vesselName : prefix + " Vessel";
 
-  // --- STYLES ------------------------------------------------------------------
+  // ─── STYLES ──────────────────────────────────────────────────────────────────
   const s = {
-    app:     { fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", background: "var(--bg-app)", minHeight: "100vh", color: "rgba(255,255,255,0.88)" },
-    topBar:  { background: "var(--bg-app)", padding: "0 14px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 52, flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.06)" },
+    app:     { fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", background: "#071e3d", minHeight: "100vh", color: "rgba(255,255,255,0.88)" },
+    topBar:  { background: "#071e3d", padding: "0 14px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 52, flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.06)" },
     vBtn:    function(a){ return { padding: "5px 14px", borderRadius: 6, border: "none", background: a ? "var(--brand)" : "transparent", color: a ? "var(--text-on-brand)" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 700, cursor: "pointer" }; },
     nav:     { background: "var(--bg-card)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 2, overflowX: "auto" },
     navBtn:  function(a){ return { padding: "13px 14px", fontSize: 13, fontWeight: a ? 700 : 500, color: a ? "var(--brand)" : "var(--text-muted)", background: "none", border: "none", borderBottom: a ? "2px solid var(--brand)" : "2px solid transparent", cursor: "pointer", whiteSpace: "nowrap" }; },
@@ -2553,13 +2553,13 @@ export default function App() {
     </div>
   ); };
 
-  // --- RENDER ------------------------------------------------------------------
+  // ─── RENDER ──────────────────────────────────────────────────────────────────
   // Auth loading
   if (session === undefined) return (
     <div style={{ minHeight: "100vh", background: "var(--bg-app)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" }}>
       <div style={{ textAlign: "center", color: "var(--text-muted)" }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>?</div>
-        <div>Loading Keeply�</div>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>⚓</div>
+        <div>Loading Keeply…</div>
       </div>
     </div>
   );
@@ -2601,7 +2601,7 @@ export default function App() {
     <div style={s.app}>
       <div style={s.topBar}><span style={{ color: "#fff", fontWeight: 700 }}>Keeply</span></div>
       <div style={{ maxWidth: 500, margin: "60px auto", padding: 32, background: "var(--bg-card)", borderRadius: 16, border: "1px solid #fca5a5" }}>
-        <div style={{ fontSize: 24, marginBottom: 12 }}>??</div>
+        <div style={{ fontSize: 24, marginBottom: 12 }}>⚠️</div>
         <div style={{ fontWeight: 700, fontSize: 16, color: "var(--danger-text)", marginBottom: 8 }}>Database Error</div>
         <div style={{ fontSize: 13, color: "var(--text-secondary)", fontFamily: "monospace", background: "var(--danger-bg)", padding: 12, borderRadius: 8 }}>{dbError}</div>
         <button onClick={function(){ setDbError(null); window.location.reload(); }} style={{ marginTop: 16, background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", cursor: "pointer", fontWeight: 700 }}>Retry</button>
@@ -2611,7 +2611,7 @@ export default function App() {
 
   return (
     <div style={s.app} onClick={function(){ setShowVesselDropdown(false); }}>
-      {/* -- TOP BAR -- */}
+      {/* ── TOP BAR ── */}
       <div style={s.topBar}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <svg width="130" height="36" viewBox="0 0 130 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2633,7 +2633,7 @@ export default function App() {
           <div style={{ position: "relative" }} onClick={function(e){ e.stopPropagation(); }}>
             <button onClick={function(){ setShowVesselDropdown(function(v){ return !v; }); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
               {settings.photoUrl && <img src={settings.photoUrl} alt={boatName} style={{ width: 24, height: 24, borderRadius: 5, objectFit: "cover", border: "1px solid rgba(255,255,255,0.3)" }} />}
-              {boatName} <span style={{ opacity: 0.7 }}>?</span>
+              {boatName} <span style={{ opacity: 0.7 }}>▾</span>
             </button>
             {showVesselDropdown && (
               <div style={{ position: "absolute", top: 38, left: 0, background: "var(--bg-card)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", minWidth: 220, zIndex: 100, overflow: "hidden" }}>
@@ -2643,15 +2643,15 @@ export default function App() {
                     <div key={v.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", cursor: "pointer", background: v.id === activeVesselId ? "#f0f7ff" : "#fff", borderBottom: "1px solid var(--border)" }}
                       onClick={function(){ switchVessel(v.id); setShowVesselDropdown(false); }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        {v.photoUrl ? <img src={v.photoUrl} alt={v.vesselName} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{v.vesselType === "motor" ? "??" : "?"}</div>}
+                        {v.photoUrl ? <img src={v.photoUrl} alt={v.vesselName} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{v.vesselType === "motor" ? "🚤" : "⛵"}</div>}
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: v.id === activeVesselId ? "var(--brand)" : "var(--text-primary)" }}>{pf} {v.vesselName}</div>
                           {v.make && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{v.year} {v.make}</div>}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
-                        {v.id === activeVesselId && <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>?</span>}
-                        <button onClick={function(e){ e.stopPropagation(); openEditVessel(v); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text-muted)" }}>?</button>
+                        {v.id === activeVesselId && <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>✓</span>}
+                        <button onClick={function(e){ e.stopPropagation(); openEditVessel(v); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text-muted)" }}>✎</button>
                       </div>
                     </div>
                   );
@@ -2664,26 +2664,26 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving�</span>}
+          {saving && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Saving…</span>}
 
         </div>
       </div>
-      {/* -- First Mate input bar � sparkle icon, always sticky -- */}
-      <div style={{ background: "var(--bg-app)", padding: "0 14px 11px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      {/* ── First Mate input bar — sparkle icon, always sticky ── */}
+      <div style={{ background: "#071e3d", padding: "0 14px 11px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: 13, padding: "9px 10px 9px 12px", display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}
           onClick={function(){ setShowFirstMatePanel(true); }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
             <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
             <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
           </svg>
-          <div style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.3)", userSelect: "none" }}>Ask First Mate�</div>
+          <div style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.3)", userSelect: "none" }}>Ask First Mate…</div>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
           </div>
         </div>
       </div>
 
-      {/* -- BOTTOM TAB BAR � white footer, SVG icons -- */}
+      {/* ── BOTTOM TAB BAR — white footer, SVG icons ── */}
       {(view === "customer" || view === "fleet") && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400, background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", height: 62, boxShadow: "0 -2px 12px rgba(0,0,0,0.12)" }}>
           {[
@@ -2707,29 +2707,29 @@ export default function App() {
       )}
 
       <div style={s.main}>
-        {/* -- ADMIN VIEW -- */}
+        {/* ── ADMIN VIEW ── */}
         {view === "fleet" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>? Fleet Overview</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>⚓ Fleet Overview</div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{vessels.length} vessel{vessels.length !== 1 ? "s" : ""}</div>
               </div>
               <button onClick={loadFleetData} disabled={fleetLoading} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", cursor: "pointer" }}>
-                {fleetLoading ? "Loading�" : "? Refresh"}
+                {fleetLoading ? "Loading…" : "↺ Refresh"}
               </button>
             </div>
 
             {fleetLoading && !fleetData && (
               <div style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>?</div>
-                <div>Loading fleet data�</div>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>⚓</div>
+                <div>Loading fleet data…</div>
               </div>
             )}
 
             {!fleetLoading && !fleetData && (
               <div style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>?</div>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>⚓</div>
                 <div>Click Refresh to load fleet status</div>
               </div>
             )}
@@ -2746,7 +2746,7 @@ export default function App() {
               const statusColor = hasIssues ? "var(--danger-text)" : hasWarnings ? "var(--warn-text)" : "var(--ok-text)";
               const statusBg = hasIssues ? "var(--danger-bg)" : hasWarnings ? "var(--warn-bg)" : "var(--ok-bg)";
               const statusLabel = hasIssues ? "Needs Attention" : hasWarnings ? "Watch Items" : "All Good";
-              const statusIcon = hasIssues ? "??" : hasWarnings ? "??" : "??";
+              const statusIcon = hasIssues ? "🔴" : hasWarnings ? "🟡" : "🟢";
 
               return (
                 <div key={vessel.id} style={{ ...s.card, marginBottom: 16, border: isActive ? "2px solid #0f4c8a" : "1px solid var(--border)", cursor: "pointer" }}
@@ -2768,7 +2768,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Stats row � each box deep-links to that tab */}
+                  {/* Stats row — each box deep-links to that tab */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 0, borderTop: "1px solid var(--border)" }}>
                     {[
                       { label: "Open Repairs", val: d.openRepairs, color: d.openRepairs > 0 ? "var(--danger-text)" : "var(--text-muted)", bg: d.openRepairs > 0 ? "var(--danger-bg)" : "var(--bg-subtle)", tab: "repairs" },
@@ -2789,7 +2789,7 @@ export default function App() {
                         title={stat.val > 0 ? "View " + stat.tab : ""}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.val}</div>
                         <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, fontWeight: 600 }}>{stat.label}</div>
-                        {stat.val > 0 && stat.label !== "Expiring Docs" && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap ?</div>}
+                        {stat.val > 0 && stat.label !== "Expiring Docs" && <div style={{ fontSize: 9, color: stat.color, marginTop: 2, opacity: 0.7 }}>tap →</div>}
                       </div>
                     ); })}
                   </div>
@@ -2801,7 +2801,7 @@ export default function App() {
                       {d.expiringDocs.map(function(doc){ return (
                         <div key={doc.id} style={{ fontSize: 12, color: "var(--text-secondary)", padding: "2px 0", display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", flexShrink: 0, display: "inline-block" }} />
-                          {doc.task} {doc.due_date && <span style={{ color: "var(--text-muted)" }}>� {doc.due_date}</span>}
+                          {doc.task} {doc.due_date && <span style={{ color: "var(--text-muted)" }}>· {doc.due_date}</span>}
                         </div>
                       ); })}
                     </div>
@@ -2809,7 +2809,7 @@ export default function App() {
 
                   {/* Click hint */}
                   <div style={{ padding: "8px 20px", borderTop: "1px solid var(--border)", textAlign: "right", fontSize: 11, color: "var(--text-muted)" }}>
-                    {isActive ? "Currently viewing" : "Tap to switch ?"}
+                    {isActive ? "Currently viewing" : "Tap to switch →"}
                   </div>
                 </div>
               );
@@ -2817,7 +2817,7 @@ export default function App() {
           </div>
         )}
 
-        {/* -- FLEET URGENCY PANEL -- */}
+        {/* ── FLEET URGENCY PANEL ── */}
         {fleetPanel && (function(){
           const d = fleetData && fleetData[fleetPanel.vesselId];
           if (!d) return null;
@@ -2841,17 +2841,17 @@ export default function App() {
                 <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
                   <div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>
-                      {fleetPanel.type === "Overdue Tasks" && "?? Overdue Tasks"}
-                      {fleetPanel.type === "Due in 30d" && "?? Due in 30 Days"}
-                      {fleetPanel.type === "Open Repairs" && "?? Open Repairs"}
+                      {fleetPanel.type === "Overdue Tasks" && "🔴 Overdue Tasks"}
+                      {fleetPanel.type === "Due in 30d" && "🟡 Due in 30 Days"}
+                      {fleetPanel.type === "Open Repairs" && "🔧 Open Repairs"}
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                      {prefix} {fleetPanel.vesselName} � {panelTasks.length + panelRepairs.length} items
+                      {prefix} {fleetPanel.vesselName} · {panelTasks.length + panelRepairs.length} items
                     </div>
                   </div>
                   <button onClick={function(){ setFleetPanel(null); }}
                     style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, width: 32, height: 32, fontSize: 16, cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    ?
+                    ✕
                   </button>
                 </div>
 
@@ -2862,7 +2862,7 @@ export default function App() {
                   {fleetPanel.type === "Admin Due" && (function(){
                     const adminItems = fleetPanel.adminDueTasks || [];
                     const today = new Date(); today.setHours(0,0,0,0);
-                    if (adminItems.length === 0) return <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>All admin items current ?</div>;
+                    if (adminItems.length === 0) return <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>All admin items current ✅</div>;
                     return (
                       <div>
                         {adminItems.map(function(task){
@@ -2875,10 +2875,10 @@ export default function App() {
                           const cat     = task.category === "registrations" ? "Reg & legal" : task.category === "safety" ? "Safety" : "Survey";
                           return (
                             <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", borderBottom: "0.5px solid var(--border)" }}>
-                              <div style={{ fontSize: 16 }}>{task.icon || "??"}</div>
+                              <div style={{ fontSize: 16 }}>{task.icon || "📋"}</div>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{cat} � Every {task.interval_months} mo</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{cat} · Every {task.interval_months} mo</div>
                               </div>
                               <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: badgeBg, color: badgeC, border: "1px solid " + badgeB, whiteSpace: "nowrap" }}>{label}</span>
                             </div>
@@ -2903,7 +2903,7 @@ export default function App() {
                             if (panelTasks.length <= 1) setTimeout(function(){ setFleetPanel(null); }, 600);
                           }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>?</span>}
+                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
                           <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{t.task}</div>
@@ -2915,7 +2915,7 @@ export default function App() {
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
                             onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
-                            {isExpanded ? "?" : "?"}
+                            {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
                         {isExpanded && (
@@ -2923,7 +2923,7 @@ export default function App() {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval_days ? t.interval_days + " days" : "�"}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval_days ? t.interval_days + " days" : "—"}</div>
                               </div>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
@@ -2931,7 +2931,7 @@ export default function App() {
                               </div>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.due_date ? fmt(t.due_date) : "�"}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.due_date ? fmt(t.due_date) : "—"}</div>
                               </div>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
@@ -2940,11 +2940,11 @@ export default function App() {
                             </div>
                             {/* AI parts */}
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>? Suggested parts</div>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>✨ Suggested parts</div>
                               {(function(){
                                 const sugg = aiSuggestions[t.id];
-                                if (!sugg) return <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>? Find parts</button>;
-                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts�</div>;
+                                if (!sugg) return <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts</button>;
+                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
                                 if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Error. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer" }}>Retry</button></div>;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No parts found.</div>;
                                 return sugg.slice(0, 3).map(function(part){
@@ -2956,12 +2956,12 @@ export default function App() {
                                         {linkedEq && (
                                           <button onClick={function(){ saveAiPartToMyParts(linkedEq, part); }}
                                             style={{ flex: 1, padding: "4px 8px", border: "0.5px solid var(--border)", borderRadius: 6, background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                            ?? Save
+                                            💾 Save
                                           </button>
                                         )}
                                         <button onClick={function(){ setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: t.section, repairContext: t.task }); }}
                                           style={{ flex: 1, padding: "4px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                          {"?? Find Part"}
+                                          {"🔍 Find Part"}
                                         </button>
                                       </div>
                                     </div>
@@ -2984,34 +2984,34 @@ export default function App() {
                         <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                           <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); if (panelRepairs.length <= 1) setTimeout(function(){ setFleetPanel(null); }, 600); }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                            {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>?</span>}
+                            {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
                           <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{r.description}</div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               <SectionBadge section={r.section} />
-                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>? {sugg.length} parts</span>}
+                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>}
                             </div>
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
                             onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>
-                            {isExpanded ? "?" : "?"}
+                            {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
                         {isExpanded && (
                           <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
                             <div style={{ padding: "12px 14px" }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>? Suggested parts</div>
-                              {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>?? Find parts</button>}
-                              {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts�</div>}
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>✨ Suggested parts</div>
+                              {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>🔩 Find parts</button>}
+                              {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                               {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
                                 return (
                                   <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                    <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>?? {part.reason}</div>
+                                    <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
                                     <button onClick={function(){ setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: r.section, repairContext: r.description }); }}
                                       style={{ marginTop: 4, width: "100%", padding: "4px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                      {"?? Find Part"}
+                                      {"🔍 Find Part"}
                                     </button>
                                   </div>
                                 );
@@ -3026,17 +3026,17 @@ export default function App() {
                   {/* Empty state */}
                   {panelTasks.length === 0 && panelRepairs.length === 0 && (
                     <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-                      <div style={{ fontSize: 32 }}>?</div>
+                      <div style={{ fontSize: 32 }}>✅</div>
                       <div style={{ marginTop: 8, fontSize: 13 }}>All clear!</div>
                     </div>
                   )}
                 </div>
 
-                {/* Footer � switch to vessel */}
+                {/* Footer — switch to vessel */}
                 <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
                   <button onClick={function(){ switchVessel(fleetPanel.vesselId); setView("customer"); setFleetPanel(null); }}
                     style={{ width: "100%", padding: "9px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", fontSize: 12, fontWeight: 600, color: "var(--brand)", cursor: "pointer" }}>
-                    Switch to {prefix} {fleetPanel.vesselName} ?
+                    Switch to {prefix} {fleetPanel.vesselName} →
                   </button>
                 </div>
               </div>
@@ -3049,13 +3049,13 @@ export default function App() {
         {view === "import" && (
           <div>
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>?? Import Data</div>
+              <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>📥 Import Data</div>
               <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Upload a CSV or Excel file to bulk-add equipment or maintenance tasks to {boatName}.</div>
             </div>
 
             {/* Type selector */}
             <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-              {[["equipment","?? Equipment"],["maintenance","?? Maintenance Tasks"]].map(function(t){ return (
+              {[["equipment","⚙️ Equipment"],["maintenance","📋 Maintenance Tasks"]].map(function(t){ return (
                 <button key={t[0]} onClick={function(){ setImportType(t[0]); setImportRows([]); setImportFile(null); }}
                   style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "2px solid " + (importType===t[0] ? "var(--brand)" : "var(--border)"), background: importType===t[0] ? "var(--brand-deep)" : "var(--bg-subtle)", color: importType===t[0] ? "var(--brand)" : "var(--text-muted)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                   {t[1]}
@@ -3065,19 +3065,19 @@ export default function App() {
 
             {/* Template hint */}
             <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 12, color: "var(--text-secondary)" }}>
-              <div style={{ fontWeight: 700, marginBottom: 6, color: "var(--brand)" }}>?? Expected columns</div>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: "var(--brand)" }}>📋 Expected columns</div>
               {importType === "equipment"
-                ? <div><span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>name</span> (required) � <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>category</span> � <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>status</span> � <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>notes</span></div>
-                : <div><span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>task</span> (required) � <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>section</span> � <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>interval</span> � <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>priority</span></div>
+                ? <div><span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>name</span> (required) · <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>category</span> · <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>status</span> · <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>notes</span></div>
+                : <div><span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>task</span> (required) · <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>section</span> · <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>interval</span> · <span style={{ fontFamily: "monospace", background: "var(--border)", padding: "1px 5px", borderRadius: 4 }}>priority</span></div>
               }
-              <div style={{ marginTop: 6, color: "var(--text-muted)" }}>Column names are flexible � we'll match common variations. Missing values get sensible defaults.</div>
+              <div style={{ marginTop: 6, color: "var(--text-muted)" }}>Column names are flexible — we'll match common variations. Missing values get sensible defaults.</div>
             </div>
 
             {/* File upload */}
             {!importRows.length && (
               <label style={{ display: "block", padding: "32px", border: "2px dashed #e2e8f0", borderRadius: 12, cursor: "pointer", textAlign: "center", background: "var(--bg-subtle)", marginBottom: 20 }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>??</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4 }}>{importFile ? "? " + importFile : "Choose CSV or Excel file"}</div>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📂</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4 }}>{importFile ? "✅ " + importFile : "Choose CSV or Excel file"}</div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>CSV (.csv) or Excel (.xlsx, .xls)</div>
                 <input type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }}
                   onChange={async function(e){
@@ -3092,9 +3092,9 @@ export default function App() {
                         const parsed = parseCSV(text);
                         rows = parsed.map(importType === "equipment" ? normalizeEquipRow : normalizeTaskRow);
                       } else {
-                        // Excel � use SheetJS loaded from CDN
+                        // Excel — use SheetJS loaded from CDN
                         const XLSX = window.XLSX;
-                        if (!XLSX) { setDbError("Excel support loading � please try again in a moment"); return; }
+                        if (!XLSX) { setDbError("Excel support loading — please try again in a moment"); return; }
                         const buf = await file.arrayBuffer();
                         const wb = XLSX.read(buf, { type: "array" });
                         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -3117,7 +3117,7 @@ export default function App() {
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{importRows.length} rows ready to import</div>
-                  <button onClick={function(){ setImportRows([]); setImportFile(null); }} style={{ background: "none", border: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>? Clear</button>
+                  <button onClick={function(){ setImportRows([]); setImportFile(null); }} style={{ background: "none", border: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>✕ Clear</button>
                 </div>
                 <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", maxHeight: 340, overflowY: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -3144,7 +3144,7 @@ export default function App() {
                 </div>
                 <button onClick={importBulk} disabled={importSaving}
                   style={{ width: "100%", marginTop: 14, padding: 14, border: "none", borderRadius: 10, background: importSaving ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: importSaving ? "default" : "pointer" }}>
-                  {importSaving ? "Importing� " + importDone + "/" + importRows.length : "Import " + importRows.length + " " + (importType === "equipment" ? "Equipment Items" : "Maintenance Tasks") + " ?"}
+                  {importSaving ? "Importing… " + importDone + "/" + importRows.length : "Import " + importRows.length + " " + (importType === "equipment" ? "Equipment Items" : "Maintenance Tasks") + " →"}
                 </button>
               </div>
             )}
@@ -3152,13 +3152,13 @@ export default function App() {
             {/* Success state */}
             {importDone > 0 && !importSaving && (
               <div style={{ textAlign: "center", padding: "40px 24px" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>??</div>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ok-text)", marginBottom: 6 }}>{importDone} items imported!</div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 24 }}>They've been added to {boatName}.</div>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
                   <button onClick={function(){ setView("customer"); setTab("boat"); setImportDone(0); }}
                     style={{ padding: "10px 24px", border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
-                    View {importType === "equipment" ? "Equipment" : "Maintenance"} ?
+                    View {importType === "equipment" ? "Equipment" : "Maintenance"} →
                   </button>
                   <button onClick={function(){ setImportDone(0); setImportRows([]); setImportFile(null); }}
                     style={{ padding: "10px 24px", border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg-card)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
@@ -3173,9 +3173,9 @@ export default function App() {
         {view === "admin" && <AdminDashboard onClose={function(){ setView("customer"); }} />}
 
 
-        {/* -- EQUIPMENT TAB -- */}
+        {/* ── EQUIPMENT TAB ── */}
         {view === "customer" && tab === "boat" && (<>
-          {/* -- Vessel passport card on My Boat -- */}
+          {/* ── Vessel passport card on My Boat ── */}
           {(function(){
             const vesselEq = equipment.find(function(e){ return e.category === "Vessel" && e._vesselId === activeVesselId; });
             if (!vesselEq) return null;
@@ -3184,7 +3184,7 @@ export default function App() {
             const makeModel = [activeVessel?.year, activeVessel?.make, activeVessel?.model].filter(Boolean).join(" ");
             const isExpanded = expandedEquip === vesselEq.id;
             return (
-              <div style={{ marginBottom: 16, borderRadius: 18, overflow: "hidden", boxShadow: "0 2px 20px rgba(0,0,0,0.3)", background: "linear-gradient(150deg,#1a3d6b 0%,#0e2d52 100%)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ marginBottom: 16, borderRadius: 18, overflow: "hidden", boxShadow: "0 2px 20px rgba(0,0,0,0.3)", background: "linear-gradient(150deg,#0d2d5e 0%,#071e3d 100%)", border: "1px solid rgba(255,255,255,0.1)" }}>
                 {/* Banner header */}
                 <div style={{ background: "#1a3a5c", cursor: "pointer", padding: "18px 20px 16px" }}
                   onClick={function(){ setExpandedEquip(isExpanded ? null : vesselEq.id); if (!isExpanded) setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); }}>
@@ -3200,10 +3200,10 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, flexShrink: 0, paddingLeft: 12 }}>{isExpanded ? "?" : "?"}</span>
+                    <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, flexShrink: 0, paddingLeft: 12 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
-                {/* Vessel card action footer � Option B */}
+                {/* Vessel card action footer — Option B */}
                 {(function(){
                   const activeTab = equipTab[vesselEq.id] || "info";
                   const tapTab = function(t) {
@@ -3287,7 +3287,7 @@ export default function App() {
                       var haulTask = (vesselAdminTasks[activeVesselId] || []).find(function(t){ return t.name && t.name.toLowerCase().includes("haul"); });
                       return (
                         <div>
-                          {/* Haul dates � sourced from admin task */}
+                          {/* Haul dates — sourced from admin task */}
                           {haulTask && (
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
                               <div style={{ padding: "7px 0" }}>
@@ -3324,10 +3324,10 @@ export default function App() {
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                                   <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
-                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "??" : "?"}</a>
+                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
                                 </div>
                                 <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                                  <button onClick={function(){ setRenamingDoc({ eqId: vesselEq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">??</button>
+                                  <button onClick={function(){ setRenamingDoc({ eqId: vesselEq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">✏️</button>
                                   <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(vesselEq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", flexShrink: 0, display: "flex", alignItems: "center" }}><TrashIcon /></button>
                                 </div>
                               </div>
@@ -3352,18 +3352,18 @@ export default function App() {
                               {["url","file"].map(function(src){ return (
                                 <button key={src} onClick={function(){ setNewDocForm(function(f){ return { ...f, source: src }; }); }}
                                   style={{ flex: 1, padding: "6px", border: "1.5px solid " + (newDocForm.source===src?"var(--brand)":"var(--border)"), borderRadius: 8, background: newDocForm.source===src?"var(--brand-deep)":"var(--bg-subtle)", color: newDocForm.source===src?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                                  {src === "url" ? "?? URL" : "?? File"}
+                                  {src === "url" ? "🔗 URL" : "📎 File"}
                                 </button>
                               ); })}
                             </div>
                             <input placeholder="Document name / label" value={newDocForm.label}
                               onChange={function(e){ setNewDocForm(function(f){ return { ...f, label: e.target.value }; }); }} style={s.inp} />
                             {newDocForm.source === "url"
-                              ? <input placeholder="https://�" value={newDocForm.url}
+                              ? <input placeholder="https://…" value={newDocForm.url}
                                   onChange={function(e){ setNewDocForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
                               : <div style={{ marginBottom: 10 }}>
                                   <label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDocForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
-                                    {newDocForm.fileName ? "?? " + newDocForm.fileName : "Choose file� (PDF, JPG, PNG, etc)"}
+                                    {newDocForm.fileName ? "📎 " + newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
                                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }}
                                       onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} />
                                   </label>
@@ -3377,7 +3377,7 @@ export default function App() {
                                 style={{ flex: 1, padding: "7px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
                               <button onClick={function(){ addCustomDoc(vesselEq.id); }} disabled={uploadingDoc}
                                 style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, fontWeight: 700 }}>
-                                {uploadingDoc ? "Uploading�" : "Add Document"}
+                                {uploadingDoc ? "Uploading…" : "Add Document"}
                               </button>
                             </div>
                           </div>
@@ -3407,9 +3407,9 @@ export default function App() {
                         if (diff === 0) return { label: "Due today",                  bg: "var(--overdue-bg,#fff7ed)", color: "var(--warn-text,#b45309)", border: "#fed7aa" };
                         if (diff <= 30) return { label: diff + "d away",              bg: "var(--overdue-bg,#fff7ed)", color: "var(--warn-text,#b45309)", border: "#fed7aa" };
                         if (diff <= 90) return { label: Math.round(diff/30) + "mo away", bg: "var(--bg-subtle)", color: "var(--text-muted)", border: "var(--border)" };
-                        return { label: "? " + Math.round(diff/30) + "mo away",      bg: "#f0fdf4", color: "#16a34a", border: "#86efac" };
+                        return { label: "✓ " + Math.round(diff/30) + "mo away",      bg: "#f0fdf4", color: "#16a34a", border: "#86efac" };
                       };
-                      if (loading) return <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>Loading�</div>;
+                      if (loading) return <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>Loading…</div>;
                       return (
                         <div>
                           {GROUPS.map(function(group){
@@ -3430,20 +3430,20 @@ export default function App() {
                                             completeAdminTask(task, vesselEq._vesselId);
                                           }}
                                             style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingAdminTask === task.id ? "var(--ok-text)" : "var(--border)"), background: completingAdminTask === task.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
-                                            {completingAdminTask === task.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>?</span>}
+                                            {completingAdminTask === task.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                                           </div>
-                                          <div style={{ fontSize: 15, flexShrink: 0 }}>{task.icon || "??"}</div>
+                                          <div style={{ fontSize: 15, flexShrink: 0 }}>{task.icon || "📋"}</div>
                                           <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
                                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
                                               Every {task.interval_months} mo
-                                              {task.due_date && <span> � Due {new Date(task.due_date).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })}</span>}
-                                              {task.last_completed && <span> � Done {new Date(task.last_completed).toLocaleDateString("en-US", { month:"short", year:"numeric" })}</span>}
+                                              {task.due_date && <span> · Due {new Date(task.due_date).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })}</span>}
+                                              {task.last_completed && <span> · Done {new Date(task.last_completed).toLocaleDateString("en-US", { month:"short", year:"numeric" })}</span>}
                                             </div>
                                           </div>
                                           {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
                                           <button onClick={function(){ setEditingAdminTask(task.id); setEditAdminTaskForm({ name: task.name, interval_months: task.interval_months || 12, due_date: task.due_date || "" }); }}
-                                            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit">??</button>
+                                            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13, flexShrink: 0 }} title="Edit">✏️</button>
                                           <button onClick={function(){ showConfirm("Delete " + task.name + "?", function(){ deleteAdminTask(task.id, vesselEq._vesselId); }); }}
                                             style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", flexShrink: 0 }} title="Delete"><TrashIcon /></button>
                                         </div>
@@ -3490,7 +3490,7 @@ export default function App() {
                           {tasks.length === 0 && (
                             <div style={{ textAlign: "center", padding: "16px 0", fontSize: 12, color: "var(--text-muted)" }}>No admin tasks yet</div>
                           )}
-                          {/* Generate haul plan � Pro feature */}
+                          {/* Generate haul plan — Pro feature */}
                           {(function(){
                             var isPro = userPlan === "pro" || userPlan === "captain" || userPlan === "fleet" || userPlan === "enterprise";
                             return (
@@ -3525,7 +3525,7 @@ export default function App() {
                                       });
                                       var data = await res.json();
                                       if (data.error) throw new Error(data.error);
-                                      setHaulPlanMsg({ ok: true, text: "Plan sent to " + userEmail + " ?" });
+                                      setHaulPlanMsg({ ok: true, text: "Plan sent to " + userEmail + " ✓" });
                                     } catch(e) {
                                       setHaulPlanMsg({ ok: false, text: "Error: " + e.message });
                                     } finally {
@@ -3541,11 +3541,11 @@ export default function App() {
                                     cursor: isPro && !haulPlanLoading ? "pointer" : "default",
                                     fontFamily: "inherit", transition: "background 0.15s",
                                   }}>
-                                  {haulPlanLoading ? "Generating plan�" : isPro ? "? Email my haul-out plan" : "? Email haul-out plan (Pro)"}
+                                  {haulPlanLoading ? "Generating plan…" : isPro ? "⛵ Email my haul-out plan" : "⛵ Email haul-out plan (Pro)"}
                                 </button>
                                 {!isPro && (
                                   <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 5 }}>
-                                    Pro feature � <a href="/#pricing" style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}>upgrade ?</a>
+                                    Pro feature — <a href="/#pricing" style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}>upgrade →</a>
                                   </div>
                                 )}
                               </div>
@@ -3595,7 +3595,7 @@ export default function App() {
 
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
                       <div onClick={function(e){ e.stopPropagation(); }}>
-                        {/* -- Vessel details (name / make / model / year) -- */}
+                        {/* ── Vessel details (name / make / model / year) ── */}
                         <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "0.5px solid var(--border)" }}>
                           <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>VESSEL DETAILS</div>
                           {(function(){
@@ -3627,14 +3627,14 @@ export default function App() {
                                 } catch(e) { console.error(e); }
                                 finally { setVesselDetailSaving(false); }
                               }} style={{ width: "100%", padding: "8px", border: "none", borderRadius: 8, background: vesselDetailSaved ? "var(--ok-text)" : "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
-                                {vesselDetailSaving ? "Saving�" : vesselDetailSaved ? "? Saved" : "Save Vessel Details"}
+                                {vesselDetailSaving ? "Saving…" : vesselDetailSaved ? "✓ Saved" : "Save Vessel Details"}
                               </button>
                             </>);
                           })()}
                         </div>
                         {/* AI scan button */}
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px", border: "1.5px dashed #ddd6fe", borderRadius: 8, cursor: scanningVesselDoc ? "default" : "pointer", fontSize: 13, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", marginBottom: 14, boxSizing: "border-box" }}>
-                          {scanningVesselDoc ? "? Scanning document�" : "? Scan document with AI"}
+                          {scanningVesselDoc ? "✨ Scanning document…" : "✨ Scan document with AI"}
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} disabled={scanningVesselDoc}
                             onChange={async function(e){
                               const file = e.target.files[0];
@@ -3699,7 +3699,7 @@ export default function App() {
                           { key: "loa",        label: "LOA (ft)",             placeholder: "38" },
                           { key: "beam",       label: "Beam (ft)",            placeholder: "13" },
                           { key: "draft",      label: "Draft (ft)",           placeholder: "5.5" },
-                          { key: "insurance_carrier", label: "Insurance Carrier", placeholder: "BoatUS, Markel�" },
+                          { key: "insurance_carrier", label: "Insurance Carrier", placeholder: "BoatUS, Markel…" },
                           { key: "policy_no",  label: "Policy No.",           placeholder: "POL-123456" },
                           { key: "policy_exp", label: "Policy Expiry",        placeholder: "2027-01-01", type: "date" },
                           { key: "flag",       label: "Flag",                 placeholder: "USA" },
@@ -3731,7 +3731,7 @@ export default function App() {
             );
           })()}
 
-          {/* -- Instrument strip � 2x2 grid -- */}
+          {/* ── Instrument strip — 2x2 grid ── */}
           {(() => {
             const engineHours = settings.engineHours || null;
             const lastHoursUpdate = settings.engineHoursDate || null;
@@ -3748,7 +3748,7 @@ export default function App() {
             const nextColor = nextUrgency === "critical" ? "var(--danger-text)" : nextUrgency === "overdue" ? "var(--warn-text)" : nextUrgency === "due-soon" ? "var(--duesoon-text)" : "var(--text-primary)";
             const daysUntil = nextDue && nextDue.dueDate ? Math.round((new Date(nextDue.dueDate) - new Date()) / 86400000) : null;
             const daysLabel = daysUntil === null ? "" : daysUntil < 0 ? Math.abs(daysUntil) + "d overdue" : daysUntil === 0 ? "due today" : "in " + daysUntil + "d";
-            // Logbook KPIs � from logStats (fetched independently)
+            // Logbook KPIs — from logStats (fetched independently)
             const vesselLogs = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.entry_type === "passage"; });
             const lastLogWithHours = [...vesselLogs].filter(function(e){ return e.hours_end; })
               .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0] || null;
@@ -3760,7 +3760,7 @@ export default function App() {
             return (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
 
-                {/* Row 1 Cell 1 � Engine hours (from last logbook hours_end or manual) */}
+                {/* Row 1 Cell 1 — Engine hours (from last logbook hours_end or manual) */}
                 <div style={cellStyle}>
                   <div style={labelStyle}>Engine hrs</div>
                   {(lastLogWithHours || engineHours) ? (<>
@@ -3768,15 +3768,15 @@ export default function App() {
                       {(lastLogWithHours ? lastLogWithHours.hours_end : engineHours).toLocaleString()}
                     </div>
                     <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>
-                      {lastLogWithHours ? "from log � " + fmt(lastLogWithHours.entry_date) : "manually entered"} � <span onClick={updateHours} style={{ color: "var(--brand)", cursor: "pointer" }}>update</span>
+                      {lastLogWithHours ? "from log · " + fmt(lastLogWithHours.entry_date) : "manually entered"} · <span onClick={updateHours} style={{ color: "var(--brand)", cursor: "pointer" }}>update</span>
                     </div>
                   </>) : (<>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Not logged</div>
-                    <div onClick={updateHours} style={{ fontSize: 9, color: "var(--brand)", marginTop: 4, cursor: "pointer" }}>tap to log ?</div>
+                    <div onClick={updateHours} style={{ fontSize: 9, color: "var(--brand)", marginTop: 4, cursor: "pointer" }}>tap to log →</div>
                   </>)}
                 </div>
 
-                {/* Row 2 � NM logged */}
+                {/* Row 2 — NM logged */}
                 <div style={{ ...cellStyle, cursor: logStats.passages > 0 ? "pointer" : "default" }}
                   onClick={logStats.passages > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
                   <div style={labelStyle}>NM logged</div>
@@ -3806,8 +3806,8 @@ export default function App() {
             var adminDueSoon = adminAll.filter(function(t){ var d = Math.round((new Date(t.due_date) - today) / 86400000); return d >= 0 && d <= 30; });
             var criticalTotal = overdueCount + adminOverdue.length;
             var dueSoonTotal  = dueSoonCount + adminDueSoon.length;
-            var criticalSub = overdueCount > 0 && adminOverdue.length > 0 ? overdueCount + " tasks � " + adminOverdue.length + " admin" : "Tasks & admin overdue";
-            var dueSoonSub  = dueSoonCount > 0 && adminDueSoon.length > 0 ? dueSoonCount + " tasks � " + adminDueSoon.length + " admin" : "Overdue or due shortly";
+            var criticalSub = overdueCount > 0 && adminOverdue.length > 0 ? overdueCount + " tasks · " + adminOverdue.length + " admin" : "Tasks & admin overdue";
+            var dueSoonSub  = dueSoonCount > 0 && adminDueSoon.length > 0 ? dueSoonCount + " tasks · " + adminDueSoon.length + " admin" : "Overdue or due shortly";
             const cards = [
               { label: "Critical",     val: criticalTotal, sub: criticalSub,           numColor: "#f87171", bg: "rgba(239,68,68,0.1)",  border: "1px solid rgba(239,68,68,0.22)",  lblColor: "rgba(248,113,113,0.65)" },
               { label: "Due Soon",     val: dueSoonTotal,  sub: dueSoonSub,            numColor: "#fbbf24", bg: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.22)", lblColor: "rgba(251,191,36,0.65)"  },
@@ -3829,9 +3829,50 @@ export default function App() {
 
 
 
+          {/* ── Overdue & due soon tasks on My Boat ── */}
+          {(function(){
+            var vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
+            var urgentTasks = vesselTasks.filter(function(t){
+              var u = getTaskUrgency(t);
+              return u === "critical" || u === "overdue" || u === "due-soon";
+            }).sort(function(a,b){
+              var order = { critical: 0, overdue: 1, "due-soon": 2 };
+              return (order[getTaskUrgency(a)] || 3) - (order[getTaskUrgency(b)] || 3);
+            });
+            if (urgentTasks.length === 0) return null;
+            return (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 8px" }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.2px", textTransform: "uppercase" }}>Overdue &amp; due soon</span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{urgentTasks.length}</span>
+                </div>
+                {urgentTasks.map(function(t){
+                  var u = getTaskUrgency(t);
+                  var dotColor = u === "critical" || u === "overdue" ? "#ef4444" : "#f59e0b";
+                  var dotShadow = u === "critical" || u === "overdue" ? "0 0 5px rgba(239,68,68,0.55)" : "0 0 5px rgba(245,158,11,0.45)";
+                  var daysLabel = (function(){
+                    if (!t.due_date) return "";
+                    var diff = Math.round((new Date(t.due_date) - new Date()) / 86400000);
+                    if (diff < -1) return Math.abs(diff) + "d over";
+                    if (diff === -1) return "1d over";
+                    if (diff === 0) return "Due today";
+                    return diff + "d";
+                  })();
+                  var textColor = u === "critical" || u === "overdue" ? "#f87171" : "#fbbf24";
+                  return (
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                      onClick={function(){ setExpandedTask(t.id); }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, boxShadow: dotShadow, flexShrink: 0 }} />
+                      <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>{t.task}</div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: textColor, flexShrink: 0 }}>{daysLabel}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
-
-          {/* -- Engine tasks import banner -- */}
+          {/* ── Engine tasks import banner ── */}
           {(function(){
             if (dismissedEngineTasksBanner) return null;
             var vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId && t.section === "Engine"; });
@@ -3839,10 +3880,10 @@ export default function App() {
             if (hasHourTasks) return null; // already set up
             return (
               <div style={{ background: "var(--brand-deep)", border: "1px solid var(--brand)", borderRadius: 12, padding: "12px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 22, flexShrink: 0 }}>??</div>
+                <div style={{ fontSize: 22, flexShrink: 0 }}>⚙️</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>Add engine hour tracking</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>8 default tasks (oil, impeller, filters�) with dual calendar + hour triggers</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>8 default tasks (oil, impeller, filters…) with dual calendar + hour triggers</div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <button onClick={async function(){
@@ -3861,7 +3902,7 @@ export default function App() {
                   </button>
                   <button onClick={function(){ setDismissedEngineTasksBanner(true); }}
                     style={{ padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "none", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
-                    ?
+                    ✕
                   </button>
                 </div>
               </div>
@@ -3869,7 +3910,7 @@ export default function App() {
           })()}
 
 
-          {/* -- Open Repairs divider -- */}
+          {/* ── Open Repairs divider ── */}
           {(function(){
             const openCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
             if (openCount === 0) return null;
@@ -3883,7 +3924,7 @@ export default function App() {
 
           {repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length === 0 && (
             <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", background: "var(--bg-subtle)", borderRadius: 10, marginBottom: 16 }}>
-              <div style={{ fontSize: 28 }}>?</div>
+              <div style={{ fontSize: 28 }}>✅</div>
               <div style={{ marginTop: 6, fontSize: 12 }}>No open repairs</div>
             </div>
           )}
@@ -3902,7 +3943,7 @@ export default function App() {
                   <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
                     style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.2)"), background: completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.05)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
                     title="Mark complete">
-                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>?</span>}
+                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                   </button>
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
                     const next = isExpanded ? null : r.id;
@@ -3921,7 +3962,7 @@ export default function App() {
                         <select value={editRepairForm._equipmentId || ""}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
-                          <option value="">� No equipment linked �</option>
+                          <option value="">— No equipment linked —</option>
                           {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
                         <div style={{ display: "flex", gap: 6 }}>
@@ -3935,10 +3976,10 @@ export default function App() {
                       <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>
                         {daysSinceLogged === 0 ? "Logged today" : "Logged " + daysSinceLogged + " day" + (daysSinceLogged === 1 ? "" : "s") + " ago"}
                         {(r.photos || []).length > 0 && (
-                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>?? {r.photos.length}</span>
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
                         )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
-                          <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>? {sugg.length} parts</span>
+                          <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
                         )}
                       </div>
                     </>)}
@@ -3946,9 +3987,9 @@ export default function App() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: repairDotColor, boxShadow: repairDotShadow, flexShrink: 0 }} />
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "rgba(255,255,255,0.35)" }} title="Edit">??</button>
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "rgba(255,255,255,0.35)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", opacity: 0.5 }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "?" : "?"}</span>
+                    <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
                 {isExpanded && (
@@ -3961,7 +4002,7 @@ export default function App() {
                       {["parts", "notes", "photos"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
-                          {t === "parts" ? "?? Parts needed" : t === "notes" ? "?? Notes" : "?? Photos"}
+                          {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
@@ -3976,10 +4017,10 @@ export default function App() {
                           if (!pr) return (
                             <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }}
                               style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 700, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                              ?? Find parts for this repair
+                              🔩 Find parts for this repair
                             </button>
                           );
-                          if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>?? Searching for parts�</div>;
+                          if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>🔍 Searching for parts…</div>;
                           if (pr.error) return (
                             <div style={{ fontSize: 12, color: "var(--warn-text)" }}>
                               Search failed. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button>
@@ -3987,8 +4028,8 @@ export default function App() {
                           );
                           return (<>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-                              <span>?? PARTS FOUND {pr.results.length > 0 ? "� " + pr.results.length : ""}</span>
-                              <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>? refresh</button>
+                              <span>🔩 PARTS FOUND {pr.results.length > 0 ? "· " + pr.results.length : ""}</span>
+                              <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>↺ refresh</button>
                             </div>
                             {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>No specific parts found.</div>}
                             {pr.results.map(function(part, pi){ return (
@@ -4002,18 +4043,18 @@ export default function App() {
                                       }
                                     </div>
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                    {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>?? {part.reason}</div>}
+                                    {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
                                   </div>
                                   {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
                                 </div>
                                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                   <a href={googleSearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    ?? Google ?
+                                    🔍 Google ↗
                                   </a>
                                   <a href={ebaySearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    eBay ?
+                                    eBay ↗
                                   </a>
                                   {repairEq && (function(){
                                     const sk = repairEq.id + "-" + part.name;
@@ -4022,7 +4063,7 @@ export default function App() {
                                       <button onClick={function(e){ e.stopPropagation(); saveAiPartToMyParts(repairEq, part); }}
                                         disabled={st === "saving" || st === "saved"}
                                         style={{ padding: "4px 10px", borderRadius: 6, background: st === "saved" ? "var(--ok-bg)" : st === "error" ? "var(--danger-bg)" : "var(--bg-subtle)", border: "0.5px solid " + (st === "saved" ? "var(--ok-border)" : st === "error" ? "var(--danger-border)" : "var(--border)"), color: st === "saved" ? "var(--ok-text)" : st === "error" ? "var(--danger-text)" : "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: st ? "default" : "pointer" }}>
-                                        {st === "saving" ? "Saving�" : st === "saved" ? "? Saved" : st === "error" ? "? Failed" : "+ Save to parts"}
+                                        {st === "saving" ? "Saving…" : st === "saved" ? "✓ Saved" : st === "error" ? "✗ Failed" : "+ Save to parts"}
                                       </button>
                                     );
                                   })()}
@@ -4033,11 +4074,11 @@ export default function App() {
                               <div style={{ display: "flex", gap: 5 }}>
                                 <a href={googleSearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  ?? Google ?
+                                  🔍 Google ↗
                                 </a>
                                 <a href={ebaySearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  eBay ?
+                                  eBay ↗
                                 </a>
                               </div>
                             )}
@@ -4051,7 +4092,7 @@ export default function App() {
                         <textarea
                           value={repairNotesDraft[r.id] !== undefined ? repairNotesDraft[r.id] : (r.notes || "")}
                           onChange={function(e){ const v = e.target.value; setRepairNotesDraft(function(prev){ const n = Object.assign({}, prev); n[r.id] = v; return n; }); }}
-                          placeholder={"What's been tried, parts ordered, what the mechanic said�"}
+                          placeholder={"What's been tried, parts ordered, what the mechanic said…"}
                           rows={4}
                           style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 12, lineHeight: 1.5, resize: "vertical", boxSizing: "border-box", outline: "none", background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "inherit" }}
                         />
@@ -4071,12 +4112,12 @@ export default function App() {
                             }}
                               disabled={savingRepairNotes[r.id]}
                               style={{ flex: 2, padding: "7px", border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-                              {savingRepairNotes[r.id] ? "Saving�" : "Save notes"}
+                              {savingRepairNotes[r.id] ? "Saving…" : "Save notes"}
                             </button>
                           </div>
                         )}
                         {!(repairNotesDraft[r.id] !== undefined && repairNotesDraft[r.id] !== (r.notes || "")) && (r.notes || "") === "" && (
-                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Tap above to add notes � what you've tried, parts ordered, what the mechanic said.</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Tap above to add notes — what you've tried, parts ordered, what the mechanic said.</div>
                         )}
                       </div>
                     )}
@@ -4084,7 +4125,7 @@ export default function App() {
                       <div style={{ padding: "14px 16px" }} onClick={function(e){ e.stopPropagation(); }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>PHOTOS</div>
                         {(r.photos || []).length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet � tap the camera button to document this repair over time.</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet — tap the camera button to document this repair over time.</div>
                         )}
                         {(r.photos || []).length > 0 && (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
@@ -4097,7 +4138,7 @@ export default function App() {
                           </div>
                         )}
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[r.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
-                          {uploadingRepairPhoto[r.id] ? "? Uploading�" : "?? Add Photo"}
+                          {uploadingRepairPhoto[r.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                           {!uploadingRepairPhoto[r.id] && (
                             <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                               var file = e.target.files && e.target.files[0];
@@ -4126,7 +4167,7 @@ export default function App() {
 
 
 
-          {/* -- Maintenance divider -- */}
+          {/* ── Maintenance divider ── */}
           {(function(){
             const urgentTasks = tasks.filter(function(t){
               if (t._vesselId !== activeVesselId) return false;
@@ -4141,7 +4182,7 @@ export default function App() {
             return (<>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, marginTop: 4 }}>
                 <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--brand)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Maintenance due � {urgentTasks.length}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--brand)", letterSpacing: "0.7px", textTransform: "uppercase", whiteSpace: "nowrap" }}>Maintenance due · {urgentTasks.length}</span>
                 <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
               </div>
               {[...urgentTasks].sort(function(a,b){
@@ -4164,7 +4205,7 @@ export default function App() {
                           setNoteSheetVal("");
                         }}
                         style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                        {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>?</span>}
+                        {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
                       </button>
                       <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{t.task}</div>
@@ -4177,7 +4218,7 @@ export default function App() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }}
                           onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !aiSuggestions[t.id]) getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}>
-                          {isExpanded ? "?" : "?"}
+                          {isExpanded ? "▾" : "▸"}
                         </span>
                       </div>
                     </div>
@@ -4186,15 +4227,15 @@ export default function App() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, paddingLeft: 38 }}>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "�"}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.interval_days ? t.interval_days + " days" : "—"}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
-                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.lastService ? fmt(t.lastService) : "Never"}{t.last_service_hours ? " � " + t.last_service_hours + "h" : ""}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.lastService ? fmt(t.lastService) : "Never"}{t.last_service_hours ? " · " + t.last_service_hours + "h" : ""}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: badge ? badge.color : "var(--text-primary)" }}>{t.dueDate ? fmt(t.dueDate) : "�"}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: badge ? badge.color : "var(--text-primary)" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>{t.due_hours ? "DUE AT HRS" : "PRIORITY"}</div>
@@ -4210,24 +4251,24 @@ export default function App() {
                           if (!t.interval_hours) return null;
                           var avH2 = vessels.find(function(v){ return v.id === activeVesselId; });
                           var cH2 = avH2 ? avH2.engineHours : null;
-                          if (cH2 == null) return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 10, color: "var(--text-muted)", fontStyle: "italic" }}>?? <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>Log engine hours</span> to activate hour tracking</span></div>);
+                          if (cH2 == null) return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 10, color: "var(--text-muted)", fontStyle: "italic" }}>⚙️ <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>Log engine hours</span> to activate hour tracking</span></div>);
                           var hbg2 = getHoursBadge(t.due_hours, cH2, t.interval_hours);
                           if (!hbg2) return null;
-                          return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 11, fontWeight: 700, background: hbg2.bg, color: hbg2.color, border: "1px solid " + (hbg2.border || hbg2.color), borderRadius: 5, padding: "2px 8px" }}>{hbg2.label} � {hbg2.hours > 0 ? hbg2.hours + " hrs remaining" : Math.abs(hbg2.hours) + " hrs overdue"}</span></div>);
+                          return (<div style={{ paddingLeft: 38, marginBottom: 8 }}><span style={{ fontSize: 11, fontWeight: 700, background: hbg2.bg, color: hbg2.color, border: "1px solid " + (hbg2.border || hbg2.color), borderRadius: 5, padding: "2px 8px" }}>{hbg2.label} · {hbg2.hours > 0 ? hbg2.hours + " hrs remaining" : Math.abs(hbg2.hours) + " hrs overdue"}</span></div>);
                         })()}
-                        {/* -- Find Part (unified inline) -- */}
+                        {/* ── Find Part (unified inline) ── */}
                         {(function(){
                           const pr = inlinePartResults[t.id];
                           if (!pr) return (
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                               <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }}
                                 style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "9px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 700, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                                ?? Find parts for this task
+                                🔩 Find parts for this task
                               </button>
                             </div>
                           );
                           if (pr.loading) return (
-                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "14px 0" }}>?? Searching for parts�</div>
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "14px 0" }}>🔍 Searching for parts…</div>
                           );
                           if (pr.error) return (
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, fontSize: 12, color: "var(--warn-text)" }}>
@@ -4237,10 +4278,10 @@ export default function App() {
                           return (
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-                                <span>?? PARTS FOUND {pr.results.length > 0 ? "� " + pr.results.length : ""}</span>
-                                <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>? refresh</button>
+                                <span>🔩 PARTS FOUND {pr.results.length > 0 ? "· " + pr.results.length : ""}</span>
+                                <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>↺ refresh</button>
                               </div>
-                              {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found � try searching retailers directly.</div>}
+                              {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found — try searching retailers directly.</div>}
                               {pr.results.map(function(part, pi){ return (
                                 <div key={pi} style={{ padding: "10px", borderBottom: "0.5px solid var(--border)", background: part.type === "replacement" ? "rgba(217,119,6,0.06)" : "transparent", borderRadius: part.type === "replacement" ? 8 : 0, marginLeft: part.type === "replacement" ? -10 : 0, marginRight: part.type === "replacement" ? -10 : 0 }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
@@ -4252,18 +4293,18 @@ export default function App() {
                                         }
                                       </div>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>?? {part.reason}</div>}
+                                      {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>💡 {part.reason}</div>}
                                     </div>
                                     {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
                                   </div>
                                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                                     <a href={googleSearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    ?? Google ?
+                                    🔍 Google ↗
                                   </a>
                                   <a href={ebaySearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                     style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    eBay ?
+                                    eBay ↗
                                   </a>
                                     {eq && (function(){
                                       const sk = eq.id + "-" + part.name;
@@ -4272,7 +4313,7 @@ export default function App() {
                                         <button onClick={function(){ saveAiPartToMyParts(eq, part); }}
                                           disabled={st === "saving" || st === "saved"}
                                           style={{ padding: "4px 10px", borderRadius: 6, background: st === "saved" ? "var(--ok-bg)" : st === "error" ? "var(--danger-bg)" : "var(--bg-subtle)", border: "0.5px solid " + (st === "saved" ? "var(--ok-border)" : st === "error" ? "var(--danger-border)" : "var(--border)"), color: st === "saved" ? "var(--ok-text)" : st === "error" ? "var(--danger-text)" : "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: st ? "default" : "pointer" }}>
-                                          {st === "saving" ? "Saving�" : st === "saved" ? "? Saved" : st === "error" ? "? Failed" : "+ Save to parts"}
+                                          {st === "saving" ? "Saving…" : st === "saved" ? "✓ Saved" : st === "error" ? "✗ Failed" : "+ Save to parts"}
                                         </button>
                                       );
                                     })()}
@@ -4283,11 +4324,11 @@ export default function App() {
                                 <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
                                   <a href={googleSearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  ?? Google ?
+                                  🔍 Google ↗
                                 </a>
                                 <a href={ebaySearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
                                   style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  eBay ?
+                                  eBay ↗
                                 </a>
                                 </div>
                               )}
@@ -4295,7 +4336,7 @@ export default function App() {
                           );
                         })()}
 
-                        {/* -- Photos -- */}
+                        {/* ── Photos ── */}
                         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
                           {(t.photos || []).length > 0 && (
                             <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 8, paddingBottom: 2 }}>
@@ -4309,7 +4350,7 @@ export default function App() {
                             </div>
                           )}
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[t.id] ? "default" : "pointer", fontSize: 11, fontWeight: 600, color: "var(--brand)", background: "var(--bg-card)" }}>
-                            {uploadingRepairPhoto[t.id] ? "? Uploading�" : "?? Add Photo"}
+                            {uploadingRepairPhoto[t.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                             {!uploadingRepairPhoto[t.id] && (
                               <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                                 var file = e.target.files && e.target.files[0];
@@ -4336,7 +4377,7 @@ export default function App() {
             </>);
           })()}
 
-          {/* -- Equipment alerts (chips linking to Equipment page) -- */}
+          {/* ── Equipment alerts (chips linking to Equipment page) ── */}
           {(function(){
             const alertEquip = equipment.filter(function(e){
               return e._vesselId === activeVesselId && (e.status === "needs-service" || e.status === "watch");
@@ -4355,9 +4396,9 @@ export default function App() {
                     return (
                       <button key={e.id} onClick={function(){ setTab("equipment-standalone"); setExpandedEquip(e.id); }}
                         style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "1px solid " + (isNeedsService ? "var(--danger-border)" : "var(--warn-border)"), borderRadius: 20, background: isNeedsService ? "var(--danger-bg)" : "var(--warn-bg)", cursor: "pointer" }}>
-                        <span style={{ fontSize: 12 }}>{isNeedsService ? "??" : "??"}</span>
+                        <span style={{ fontSize: 12 }}>{isNeedsService ? "🔴" : "🟡"}</span>
                         <span style={{ fontSize: 12, fontWeight: 600, color: isNeedsService ? "var(--danger-text)" : "var(--warn-text)" }}>{e.name}</span>
-                        <span style={{ fontSize: 10, color: isNeedsService ? "var(--danger-text)" : "var(--warn-text)", opacity: 0.8 }}>?</span>
+                        <span style={{ fontSize: 10, color: isNeedsService ? "var(--danger-text)" : "var(--warn-text)", opacity: 0.8 }}>→</span>
                       </button>
                     );
                   })}
@@ -4371,9 +4412,9 @@ export default function App() {
         </>
       )}
 
-        {/* -- EQUIPMENT STANDALONE -- */}
+        {/* ── EQUIPMENT STANDALONE ── */}
         {view === "customer" && tab === "equipment-standalone" && (<>
-          {tabHeader("Equipment", boatName + " � " + equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length + " items", true, function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); })}
+          {tabHeader("Equipment", boatName + " · " + equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length + " items", true, function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); })}
 
           {/* Category filter */}
           {(function(){
@@ -4392,7 +4433,7 @@ export default function App() {
 
           {filteredEquip.length === 0 && !showAddEquip && (
             <div style={{ textAlign: "center", padding: "56px 24px", color: "var(--text-muted)" }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>??</div>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>⚙️</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>No equipment yet</div>
               <div style={{ fontSize: 13, marginBottom: 20 }}>Add your engine, sails, electronics and more to track service history and get AI part suggestions.</div>
               <button onClick={function(){ setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Add First Equipment</button>
@@ -4426,7 +4467,7 @@ export default function App() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
                           <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 4 }}>Vessel</div>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>? {eq.name}</div>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>⚓ {eq.name}</div>
                           {(function(){
                             let info = {}; try { info = JSON.parse(eq.notes || "{}"); } catch(e) {}
                             const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
@@ -4449,7 +4490,7 @@ export default function App() {
                               {(repairs||[]).filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status!=="closed"; }).length} repair{(repairs||[]).filter(function(r){ return r._vesselId===activeVesselId && r.equipment_id===eq.id && r.status!=="closed"; }).length !== 1 ? "s" : ""}
                             </span>
                           )}
-                          <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 16 }}>{isExpanded ? "?" : "?"}</span>
+                          <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 16 }}>{isExpanded ? "▾" : "▸"}</span>
                         </div>
                       </div>
                     </div>
@@ -4462,8 +4503,8 @@ export default function App() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,0.9)", lineHeight: 1.2 }}>{eq.name}</div>
                       <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
-                        {[eq.make, eq.model].filter(Boolean).join(" � ") || eq.category}
-                        {eq.lastService && <span> � {fmt(eq.lastService)}</span>}
+                        {[eq.make, eq.model].filter(Boolean).join(" · ") || eq.category}
+                        {eq.lastService && <span> · {fmt(eq.lastService)}</span>}
                       </div>
                     </div>
                   </div>
@@ -4477,25 +4518,25 @@ export default function App() {
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, boxShadow: dotShadow, flexShrink: 0 }} />
                       );
                     })()}
-                    <button onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ var n = Object.assign({}, prev); n[eq.id] = "edit"; return n; }); }}                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}                      title="Edit equipment">                      ??                    </button>                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
+                    <button onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ var n = Object.assign({}, prev); n[eq.id] = "edit"; return n; }); }}                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}                      title="Edit equipment">                      ✏️                    </button>                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}
                       title="Delete equipment">
                       <TrashIcon />
                     </button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 16 }}>{isExpanded ? "?" : "?"}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 16 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
                 )}
                 {isExpanded && (
                   <div style={{ borderTop: isVesselCard ? "2px solid rgba(255,255,255,0.15)" : "1px solid var(--border)", padding: "16px 20px", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
 
-                    {eq.notes && !isVesselCard && <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>?? {eq.notes}</div>}
+                    {eq.notes && !isVesselCard && <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>📝 {eq.notes}</div>}
 
                                         {/* Log tab */}
                     {activeTab === "log" && (
                       <div>
                         <input
-                          placeholder="Add log entry� (press Enter)"
+                          placeholder="Add log entry… (press Enter)"
                           value={equipLogInput[eq.id] || ""}
                           onChange={function(e){ setEquipLogInput(function(prev){ const n = Object.assign({}, prev); n[eq.id] = e.target.value; return n; }); }}
                           onKeyDown={function(e){
@@ -4551,7 +4592,7 @@ export default function App() {
                       <div style={{ padding: "14px 16px" }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>CONDITION PHOTOS</div>
                         {(eq.photos || []).length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet � document this equipment�s condition over time.</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet — document this equipment’s condition over time.</div>
                         )}
                         {(eq.photos || []).length > 0 && (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
@@ -4564,7 +4605,7 @@ export default function App() {
                           </div>
                         )}
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[eq.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
-                          {uploadingRepairPhoto[eq.id] ? "? Uploading�" : "?? Add Photo"}
+                          {uploadingRepairPhoto[eq.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                           {!uploadingRepairPhoto[eq.id] && (
                             <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                               var file = e.target.files && e.target.files[0];
@@ -4616,7 +4657,7 @@ export default function App() {
                         </button>
                         <button onClick={function(){ showConfirm("Delete " + eq.name + "? This will also remove all tasks and repairs linked to it.", function(){ deleteEquipment(eq.id); }); }}
                           style={{ width: "100%", marginTop: 8, padding: 10, border: "1px solid var(--danger-border)", borderRadius: 8, background: "none", color: "var(--danger-text)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                          ?? Delete {eq.name}
+                          🗑 Delete {eq.name}
                         </button>
                       </div>
                     )}
@@ -4625,7 +4666,7 @@ export default function App() {
                     <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch", msOverflowStyle: "none", scrollbarWidth: "none" }}>
                       {(isVesselCard ? ["info","docs","photos","edit"] : ["maintenance","repairs","parts","docs","log","photos","edit"]).map(function(t){ return (
                         <button key={t} onClick={function(){ setEquipTab(function(prev){ const n = {}; Object.keys(prev).forEach(function(k){ n[k] = prev[k]; }); n[eq.id] = t; return n; }); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: activeTab===t ? "var(--brand)" : "var(--bg-subtle)", color: activeTab===t ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : t === "photos" ? "?? Photos" : "Edit"}
+                          {t === "info" ? "Vessel ID" : t === "maintenance" ? "Maintenance" : t === "repairs" ? "Repairs" : t === "parts" ? "Parts" : t === "docs" ? "Docs" : t === "log" ? "Log" : t === "photos" ? "📷 Photos" : "Edit"}
                         </button>
                       ); })}
                     </div>
@@ -4667,13 +4708,13 @@ export default function App() {
                                             setNoteSheetVal("");
                                           }}
                                           style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
-                                          {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>?</span>}
+                                          {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
                                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t.task}</div>
                                           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
                                             Every {t.interval || (t.interval_days ? t.interval_days + " days" : "?")}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}
-                                            {t.dueDate && <span style={{ color: badge ? badge.color : "var(--text-muted)", fontWeight: badge ? 700 : 400 }}> � Due: {fmt(t.dueDate)}</span>}
+                                            {t.dueDate && <span style={{ color: badge ? badge.color : "var(--text-muted)", fontWeight: badge ? 700 : 400 }}> · Due: {fmt(t.dueDate)}</span>}
                                           </div>
                                         </div>
                                         {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
@@ -4685,14 +4726,14 @@ export default function App() {
                                           if (!hb) return null;
                                           return <span style={{ background: hb.bg, color: hb.color, border: "1px solid " + (hb.border||hb.color), borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{hb.label}</span>;
                                         })()}
-                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer", flexShrink: 0 }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>{isExpanded ? "?" : "?"}</span>
+                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer", flexShrink: 0 }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>{isExpanded ? "▾" : "▸"}</span>
                                       </div>
                                       {isExpanded && (
                                         <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", padding: "12px 0 14px 32px" }}>
                                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                                             <div>
                                               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
-                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval || (t.interval_days ? t.interval_days + " days" : "�")}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}</div>
+                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval || (t.interval_days ? t.interval_days + " days" : "—")}{t.interval_hours ? " / " + t.interval_hours + "h" : ""}</div>
                                             </div>
                                             <div>
                                               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
@@ -4700,7 +4741,7 @@ export default function App() {
                                             </div>
                                             <div>
                                               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
-                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.dueDate ? fmt(t.dueDate) : "�"}</div>
+                                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
                                             </div>
                                             <div>
                                               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
@@ -4708,7 +4749,7 @@ export default function App() {
                                             </div>
                                           </div>
                                           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                                            <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", due_hours: t.due_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "5px 12px", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>?? Edit</button>
+                                            <button onClick={function(e){ e.stopPropagation(); setEditingTask(t.id); setEditTaskForm({ task: t.task, interval_days: t.interval_days || 30, interval_hours: t.interval_hours || "", due_hours: t.due_hours || "", dueDate: t.dueDate || "" }); }} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "5px 12px", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}>✏️ Edit</button>
                                             <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "5px 12px", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><TrashIcon /> Delete</button>
                                           </div>
                                           {t.serviceLogs && t.serviceLogs.length > 0 && (
@@ -4728,26 +4769,26 @@ export default function App() {
                                             </div>
                                           )}
                                           <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>? Suggested parts</div>
+                                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>✨ Suggested parts</div>
                                             {(function(){
                                               const sugg = aiSuggestions[t.id];
                                               if (!sugg) return (
                                                 <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}
                                                   style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
-                                                  ? Find parts for this task
+                                                  ✨ Find parts for this task
                                                 </button>
                                               );
-                                              if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts�</div>;
+                                              if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
                                               if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                               if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
                                               return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
                                                 return (
                                                   <div key={part.name} style={{ padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
                                                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                                    <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>?? {part.reason}</div>
+                                                    <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
                                                     <button onClick={function(){ setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: eq.name, repairContext: t.task + " " + t.section }); }}
                                                       style={{ marginTop: 5, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                                      ?? Find Part
+                                                      🔍 Find Part
                                                     </button>
                                                   </div>
                                                 );
@@ -4856,17 +4897,17 @@ export default function App() {
                                     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0" }}>
                                       <div onClick={function(){ startCompletingRepair(r.id); }}
                                         style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, background: isCompleting ? "var(--ok-bg)" : "transparent", transition: "all 0.3s" }}>
-                                        {isCompleting && <span style={{ color: "var(--ok-text)", fontSize: 12, fontWeight: 700 }}>?</span>}
+                                        {isCompleting && <span style={{ color: "var(--ok-text)", fontSize: 12, fontWeight: 700 }}>✓</span>}
                                       </div>
                                       <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
                                         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{r.description}</div>
-                                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{r.section} � {fmt(r.date)}</div>
+                                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{r.section} · {fmt(r.date)}</div>
                                       </div>
                                       <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                                         {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
-                                          <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>? {sugg.length}</span>
+                                          <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length}</span>
                                         )}
-                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "?" : "?"}</span>
+                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
                                         <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}><TrashIcon /></button>
                                       </div>
                                     </div>
@@ -4877,14 +4918,14 @@ export default function App() {
                                           {["parts", "notes", "photos"].map(function(t){ return (
                                             <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
                                               style={{ padding: "6px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)" }}>
-                                              {t === "parts" ? "?? Parts needed" : t === "notes" ? "?? Notes" : "?? Photos"}
+                                              {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
                                             </button>
                                           ); })}
                                         </div>
                                         {(repairTab[r.id] || "parts") === "parts" && (
                                           <div style={{ padding: "12px 12px 8px" }}>
-                                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>? AI suggested parts</div>
-                                            {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts�</div>}
+                                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>✨ AI suggested parts</div>
+                                            {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                                             {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
                                             {sugg && sugg !== "loading" && sugg !== "error" && sugg.filter(function(p){ return !rejectedParts["repair-" + r.id + "-" + p.id]; }).map(function(part){
                                               return (
@@ -4892,14 +4933,14 @@ export default function App() {
                                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                                                     <div style={{ flex: 1 }}>
                                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2 }}>?? {part.reason}</div>
+                                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2 }}>💡 {part.reason}</div>
                                                     </div>
                                                     <button onClick={function(e){ e.stopPropagation(); setRejectedParts(function(prev){ const n = Object.assign({}, prev); n["repair-" + r.id + "-" + part.id] = true; return n; }); getSuggestionsForRepair(r); }}
-                                                      style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 2px", flexShrink: 0 }} title="Wrong part">?</button>
+                                                      style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 2px", flexShrink: 0 }} title="Wrong part">✕</button>
                                                   </div>
                                                   <button onClick={function(e){ e.stopPropagation(); setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: (function(){ const eq = equipment.find(function(e){ return e.id === r.equipment_id; }); return eq ? eq.name + (eq.model ? " " + eq.model : "") : r.section; })(), repairContext: r.description + " " + r.section }); }}
                                                     style={{ marginTop: 6, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                                    {"?? Find Part"}
+                                                    {"🔍 Find Part"}
                                                   </button>
                                                 </div>
                                               );
@@ -4907,13 +4948,13 @@ export default function App() {
                                             {!sugg && (
                                               <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
                                                 style={{ width: "100%", background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>
-                                                ? Find parts for this repair
+                                                ✨ Find parts for this repair
                                               </button>
                                             )}
                                             {sugg && sugg !== "loading" && (
                                               <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
                                                 style={{ marginTop: 6, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>
-                                                ? Refresh
+                                                ↺ Refresh
                                               </button>
                                             )}
                                           </div>
@@ -4969,14 +5010,14 @@ export default function App() {
                                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                                     <span style={{ fontSize: 11, fontFamily: "DM Mono, monospace", color: "var(--brand)", background: "var(--brand-deep)", padding: "1px 6px", borderRadius: 4 }}>#{part.sku}</span>
                                     <a href={"https://www.google.com/search?q=" + encodeURIComponent(part.sku + " " + part.name)} target="_blank" rel="noreferrer"
-                                      style={{ fontSize: 10, color: "var(--text-muted)", textDecoration: "none" }}>?? search</a>
+                                      style={{ fontSize: 10, color: "var(--text-muted)", textDecoration: "none" }}>🔍 search</a>
                                   </div>
                                 )}
                                 {part.notes && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{part.notes}</div>}
                               </div>
                               <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
                                 {part.price && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>${part.price}</span>}
-                                {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>? Buy</a>}
+                                {part.url && <a href={part.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>↗ Buy</a>}
                               </div>
                             </div>
                           </div>
@@ -5001,7 +5042,7 @@ export default function App() {
                       )}
                     </>)}
 
-                    {/* -- VESSEL ID TAB -- */}
+                    {/* ── VESSEL ID TAB ── */}
                     {activeTab === "info" && isVesselCard && (function(){
                       let vesselInfo = {};
                       try { vesselInfo = JSON.parse(eq.notes || "{}"); if (typeof vesselInfo !== "object") vesselInfo = {}; } catch(e) { vesselInfo = {}; }
@@ -5018,7 +5059,7 @@ export default function App() {
                         { key: "loa",        label: "LOA (ft)",               placeholder: "38" },
                         { key: "beam",       label: "Beam (ft)",              placeholder: "13" },
                         { key: "draft",      label: "Draft (ft)",             placeholder: "5.5" },
-                        { key: "insurance_carrier", label: "Insurance Carrier", placeholder: "BoatUS, Markel�" },
+                        { key: "insurance_carrier", label: "Insurance Carrier", placeholder: "BoatUS, Markel…" },
                         { key: "policy_no",  label: "Policy No.",             placeholder: "POL-123456" },
                         { key: "policy_exp", label: "Policy Expiry",          placeholder: "2027-01-01", type: "date" },
                         { key: "flag",       label: "Flag",                   placeholder: "USA" },
@@ -5031,7 +5072,7 @@ export default function App() {
                             <>
                               {!hasData ? (
                                 <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
-                                  <div style={{ fontSize: 28, marginBottom: 8 }}>??</div>
+                                  <div style={{ fontSize: 28, marginBottom: 8 }}>🪪</div>
                                   <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>Add your vessel's official identity information</div>
                                   <button onClick={function(){ setInfoForm(vesselInfo); setEditingInfo(true); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Vessel ID</button>
                                 </div>
@@ -5053,7 +5094,7 @@ export default function App() {
                             <div>
                               {/* AI scan button */}
                               <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px", border: "1.5px dashed #ddd6fe", borderRadius: 8, cursor: scanningVesselDoc ? "default" : "pointer", fontSize: 13, fontWeight: 700, color: "var(--brand)", background: "var(--brand-deep)", marginBottom: 14, boxSizing: "border-box" }}>
-                                {scanningVesselDoc ? "? Scanning document�" : "? Scan document with AI"}
+                                {scanningVesselDoc ? "✨ Scanning document…" : "✨ Scan document with AI"}
                                 <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} disabled={scanningVesselDoc}
                                   onChange={async function(e){
                                     const file = e.target.files[0];
@@ -5153,10 +5194,10 @@ export default function App() {
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                                   <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
-                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "??" : "?"}</a>
+                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
                                 </div>
                                 <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                                  <button onClick={function(){ setRenamingDoc({ eqId: eq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">??</button>
+                                  <button onClick={function(){ setRenamingDoc({ eqId: eq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">✏️</button>
                                   <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(eq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove"><TrashIcon /></button>
                                 </div>
                               </div>
@@ -5177,12 +5218,12 @@ export default function App() {
                       </>)}
                       {autoSugDocs.length > 0 && (
                         <div style={{ background: "var(--warn-bg)", border: "1px solid #fde68a", borderRadius: 10, padding: 12, marginTop: 12 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--warn-text)", marginBottom: 8 }}>?? SUGGESTED DOCUMENTS</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--warn-text)", marginBottom: 8 }}>💡 SUGGESTED DOCUMENTS</div>
                           {autoSugDocs.slice(0,3).map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; return (
                             <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #fde68a25" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
-                                <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--brand)", textDecoration: "none" }}>{doc.label} ?</a>
+                                <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--brand)", textDecoration: "none" }}>{doc.label} ↗</a>
                               </div>
                               <button onClick={function(){ addSuggestedDoc(eq.id, doc); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
                             </div>
@@ -5192,19 +5233,19 @@ export default function App() {
                       {addingDocFor === eq.id ? (
                         <div style={{ marginTop: 12, background: "var(--bg-subtle)", borderRadius: 10, padding: 14 }}>
                           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                            {["url","file"].map(function(src){ return <button key={src} onClick={function(){ setNewDocForm(function(f){ return { ...f, source: src }; }); }} style={{ flex: 1, padding: "6px", border: "1.5px solid " + (newDocForm.source===src?"var(--brand)":"var(--border)"), borderRadius: 8, background: newDocForm.source===src?"var(--brand-deep)":"var(--bg-subtle)", color: newDocForm.source===src?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{src === "url" ? "?? URL" : "?? File"}</button>; })}
+                            {["url","file"].map(function(src){ return <button key={src} onClick={function(){ setNewDocForm(function(f){ return { ...f, source: src }; }); }} style={{ flex: 1, padding: "6px", border: "1.5px solid " + (newDocForm.source===src?"var(--brand)":"var(--border)"), borderRadius: 8, background: newDocForm.source===src?"var(--brand-deep)":"var(--bg-subtle)", color: newDocForm.source===src?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{src === "url" ? "🔗 URL" : "📎 File"}</button>; })}
                           </div>
                           <input placeholder="Document name / label" value={newDocForm.label} onChange={function(e){ setNewDocForm(function(f){ return { ...f, label: e.target.value }; }); }} style={s.inp} />
                           {newDocForm.source === "url"
-                            ? <input placeholder="https://�" value={newDocForm.url} onChange={function(e){ setNewDocForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
-                            : <div style={{ marginBottom: 10 }}><label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDocForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>{newDocForm.fileName ? "?? " + newDocForm.fileName : "Choose file� (PDF, JPG, PNG, etc)"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} /></label></div>
+                            ? <input placeholder="https://…" value={newDocForm.url} onChange={function(e){ setNewDocForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
+                            : <div style={{ marginBottom: 10 }}><label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDocForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>{newDocForm.fileName ? "📎 " + newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} /></label></div>
                           }
                           <select value={newDocForm.type} onChange={function(e){ setNewDocForm(function(f){ return { ...f, type: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 10 }}>
                             {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
                           </select>
                           <div style={{ display: "flex", gap: 8 }}>
                             <button onClick={function(){ setAddingDocFor(null); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileObj:null, fileName:"" }); }} style={{ flex: 1, padding: "7px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
-                            <button onClick={function(){ addCustomDoc(eq.id); }} disabled={uploadingDoc} style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, fontWeight: 700 }}>{uploadingDoc ? "Uploading�" : "Add Document"}</button>
+                            <button onClick={function(){ addCustomDoc(eq.id); }} disabled={uploadingDoc} style={{ flex: 1, padding: "7px", border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, fontWeight: 700 }}>{uploadingDoc ? "Uploading…" : "Add Document"}</button>
                           </div>
                         </div>
                       ) : (
@@ -5239,7 +5280,7 @@ export default function App() {
                     </select>
                   </div>
                   <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: editEquipForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: editEquipForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
-                    {uploadingEditDoc ? "? Uploading�" : editEquipForm.fileName ? "?? " + editEquipForm.fileName : "Choose file� (PDF, JPG, PNG, etc)"}
+                    {uploadingEditDoc ? "⏳ Uploading…" : editEquipForm.fileName ? "📎 " + editEquipForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={async function(e){
                       const file = e.target.files[0];
                       if (!file) return;
@@ -5275,7 +5316,7 @@ export default function App() {
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Task</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newTask._equipmentId || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || t.section : t.section }; }); }} style={s.sel}>
-                  <option value="">� Not linked to equipment �</option>
+                  <option value="">— Not linked to equipment —</option>
                   {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
                 <input placeholder="Task description" value={newTask.task} onChange={function(e){ setNewTask(function(t){ return { ...t, task: e.target.value }; }); }} style={s.inp} />
@@ -5285,10 +5326,10 @@ export default function App() {
                 <select value={newTask.interval} onChange={function(e){ setNewTask(function(t){ return { ...t, interval: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0 }}>
                   {["30 days","60 days","90 days","6 months","annual","2 years"].map(function(i){ return <option key={i} value={i}>{i}</option>; })}
                 </select>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 12 }}>?? ENGINE HOURS INTERVAL (optional)</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 12 }}>⚙️ ENGINE HOURS INTERVAL (optional)</div>
                 <input type="number" placeholder="e.g. 100 (every 100 engine hours)" value={newTask.interval_hours} onChange={function(e){ setNewTask(function(t){ return { ...t, interval_hours: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} min="1" />
                 <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 4, marginTop: 3 }}>For engine/generator tasks tracked by hours</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 4 }}>DUE DATE (optional � overrides interval)</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6, marginTop: 4 }}>DUE DATE (optional — overrides interval)</div>
                 <input type="date" value={newTask.dueDate || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, dueDate: e.target.value }; }); }} style={{ ...s.inp, marginBottom: 0 }} />
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={function(){ setShowAddTask(false); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
@@ -5304,10 +5345,10 @@ export default function App() {
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
-                  <option value="">� Not linked to equipment �</option>
+                  <option value="">— Not linked to equipment —</option>
                   {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
-                <textarea placeholder="Describe the repair�" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
+                <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
                 <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                 </select>
@@ -5329,11 +5370,11 @@ export default function App() {
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
               {[
-                { label: "Add Equipment", icon: "??", action: function(){
+                { label: "Add Equipment", icon: "⚙️", action: function(){
         setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
       } },
-                { label: "Add Task", icon: "??", action: function(){ setShowAddTask(true); setShowFab(false); } },
-                { label: "Add Repair", icon: "??", action: function(){
+                { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
+                { label: "Add Repair", icon: "🔧", action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
                     if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
                       setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs with AI parts suggestions.");
@@ -5343,7 +5384,7 @@ export default function App() {
                     }
                     setShowAddRepair(true); setShowFab(false);
                   } },
-                { label: "Equipment Note", icon: "??", action: function(){
+                { label: "Equipment Note", icon: "📝", action: function(){
                     // Default to most urgent equipment card on this vessel
                     var vesselEq = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; });
                     var urgent = vesselEq.find(function(e){ return e.status === "needs-service"; }) || vesselEq.find(function(e){ return e.status === "watch"; }) || vesselEq[0];
@@ -5352,7 +5393,7 @@ export default function App() {
                     setShowEquipNote(true);
                     setShowFab(false);
                   } },
-                { label: "Log Entry", icon: "???", action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
+                { label: "Log Entry", icon: "🗺️", action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
               ].map(function(item){ return (
                 <div key={item.label} onClick={item.action}
                   style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
@@ -5376,7 +5417,7 @@ export default function App() {
                   <div style={{ fontWeight: 800, fontSize: 16 }}>Add Equipment</div>
                   <div style={{ display: "flex", gap: 0, border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
                     <button onClick={function(){ setEquipAiMode(false); }} style={{ padding: "5px 12px", border: "none", background: !equipAiMode ? "var(--brand)" : "var(--bg-subtle)", color: !equipAiMode ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manual</button>
-                    <button onClick={function(){ setEquipAiMode(true); }} style={{ padding: "5px 12px", border: "none", borderLeft: "1px solid var(--border)", background: equipAiMode ? "var(--brand)" : "var(--bg-subtle)", color: equipAiMode ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>? AI Identify</button>
+                    <button onClick={function(){ setEquipAiMode(true); }} style={{ padding: "5px 12px", border: "none", borderLeft: "1px solid var(--border)", background: equipAiMode ? "var(--brand)" : "var(--bg-subtle)", color: equipAiMode ? "var(--text-on-brand)" : "var(--text-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✨ AI Identify</button>
                   </div>
                 </div>
 
@@ -5391,7 +5432,7 @@ export default function App() {
                     rows={3}
                     style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", fontSize: 13, boxSizing: "border-box", outline: "none", marginBottom: 8, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }}
                   />
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12 }}>Be specific � make, model, and size gives the best results.</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12 }}>Be specific — make, model, and size gives the best results.</div>
 
                   {equipAiError && <div style={{ background: "var(--danger-bg)", color: "var(--danger-text)", borderRadius: 8, padding: "8px 12px", fontSize: 12, marginBottom: 10 }}>{equipAiError}</div>}
 
@@ -5402,8 +5443,8 @@ export default function App() {
                           <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{equipAiResult.name}</div>
                           <div style={{ fontWeight: 500, color: "var(--text-muted)" }}>
                             {SECTIONS[equipAiResult.category] || ""} {equipAiResult.category}
-                            {equipAiResult.manufacturer && <span> � {equipAiResult.manufacturer}</span>}
-                            {equipAiResult.model && <span> � {equipAiResult.model}</span>}
+                            {equipAiResult.manufacturer && <span> · {equipAiResult.manufacturer}</span>}
+                            {equipAiResult.model && <span> · {equipAiResult.model}</span>}
                           </div>
                         </div>
                         <span style={{ flexShrink: 0, marginLeft: 8 }}>{(equipAiResult.tasks||[]).length} tasks</span>
@@ -5437,7 +5478,7 @@ export default function App() {
                         } catch(e) { setEquipAiError("Couldn't identify equipment: " + e.message); }
                         finally { setEquipAiLoading(false); }
                       }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: equipAiLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: equipAiLoading ? "not-allowed" : "pointer", fontWeight: 700 }}>
-                        {equipAiLoading ? "Identifying�" : "Identify Equipment ?"}
+                        {equipAiLoading ? "Identifying…" : "Identify Equipment →"}
                       </button>
                     ) : (
                       <button onClick={async function(){
@@ -5464,7 +5505,7 @@ export default function App() {
                         } catch(e) { setEquipAiError(e.message); }
                         finally { setSaving(false); }
                       }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: saving ? "var(--brand-deep)" : "var(--ok-text)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
-                        {saving ? "Adding�" : "Add to My Boat ?"}
+                        {saving ? "Adding…" : "Add to My Boat ✓"}
                       </button>
                     )}
                   </div>
@@ -5487,13 +5528,13 @@ export default function App() {
                     </select>
                   </div>
                   <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newEquip.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newEquip.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
-                    {newEquip.fileName ? "?? " + newEquip.fileName : "Choose file� (PDF, JPG, PNG, etc)"}
+                    {newEquip.fileName ? "📎 " + newEquip.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewEquip(function(eq){ return { ...eq, fileObj: file, fileName: file.name }; }); }} />
                   </label>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={function(){ setShowAddEquip(false); setNewEquip({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" }); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={addEquipment} disabled={uploadingDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontWeight: 700 }}>{uploadingDoc ? "Uploading�" : "Add Equipment"}</button>
+                  <button onClick={addEquipment} disabled={uploadingDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontWeight: 700 }}>{uploadingDoc ? "Uploading…" : "Add Equipment"}</button>
                 </div>
                 </>)}
               </div>
@@ -5502,7 +5543,7 @@ export default function App() {
         
 
 
-        {/* -- LOGBOOK PAGE -- */}
+        {/* ── LOGBOOK PAGE ── */}
         {view === "customer" && tab === "logbook-standalone" && (
           <LogbookPage
             vesselId={activeVesselId}
@@ -5513,7 +5554,7 @@ export default function App() {
           />
         )}
 
-        {/* -- FIRST MATE inline panel overlay -- */}
+        {/* ── FIRST MATE inline panel overlay ── */}
         {view === "customer" && (
           <FirstMate
             vesselId={activeVesselId}
@@ -5526,7 +5567,7 @@ export default function App() {
           />
         )}
 
-        {/* -- PARTS PAGE -- */}
+        {/* ── PARTS PAGE ── */}
         {view === "customer" && tab === "parts-standalone" && (
           <PartsPage
             equipment={equipment.filter(function(e){ return e._vesselId === activeVesselId; })}
@@ -5534,9 +5575,9 @@ export default function App() {
           />
         )}
 
-        {/* -- REPAIRS TAB -- */}
+        {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs-standalone" && (<>
-          {tabHeader("Repairs", boatName + " � " + repairs.filter(function(r){ return r.status !== "closed"; }).length + " open", true, function(){ setShowAddRepair(true); })}
+          {tabHeader("Repairs", boatName + " · " + repairs.filter(function(r){ return r.status !== "closed"; }).length + " open", true, function(){ setShowAddRepair(true); })}
 
           {/* Section filter dropdown */}
           <div style={{ marginBottom: 16 }}>
@@ -5555,7 +5596,7 @@ export default function App() {
             return repairSectionFilter === "All" || r.section === repairSectionFilter;
           }).length === 0 && !showAddRepair && (
             <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
-              <div style={{ fontSize: 36 }}>?</div>
+              <div style={{ fontSize: 36 }}>✅</div>
               <div style={{ marginTop: 8 }}>No repairs on the list.</div>
             </div>
           )}
@@ -5572,7 +5613,7 @@ export default function App() {
                   <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
                     style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease", flexShrink: 0 }}
                     title="Mark complete">
-                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>?</span>}
+                    {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                   </button>
                   {/* Main content - clickable to expand */}
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){
@@ -5592,7 +5633,7 @@ export default function App() {
                         <select value={editRepairForm._equipmentId || ""}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
-                          <option value="">� No equipment linked �</option>
+                          <option value="">— No equipment linked —</option>
                           {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
                         <div style={{ display: "flex", gap: 6 }}>
@@ -5606,19 +5647,19 @@ export default function App() {
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                         {fmt(r.date)}
                         {(r.photos || []).length > 0 && (
-                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>?? {r.photos.length}</span>
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
                         )}
                         {sugg && sugg !== "loading" && sugg.length > 0 && (
-                          <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>? {sugg.length} parts</span>
+                          <span style={{ marginLeft: 8, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>
                         )}
                       </div>
                     </>)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">??</button>
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "var(--text-muted)" }} title="Edit">✏️</button>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "?" : "?"}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
 
@@ -5631,7 +5672,7 @@ export default function App() {
                       {["parts", "notes", "photos"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
-                          {t === "parts" ? "?? Parts needed" : t === "notes" ? "?? Notes" : "?? Photos"}
+                          {t === "parts" ? "🔩 Parts needed" : t === "notes" ? "📝 Notes" : "📷 Photos"}
                           {t === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && (
                             <span style={{ marginLeft: 5, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 5px", fontSize: 10 }}>{sugg.length}</span>
                           )}
@@ -5643,11 +5684,11 @@ export default function App() {
                     {(repairTab[r.id] || "parts") === "parts" && (
                       <div style={{ padding: "14px 16px" }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}>
-                          ? AI suggested parts for this repair
+                          ✨ AI suggested parts for this repair
                         </div>
 
                         {sugg === "loading" && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Finding parts for this repair�</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Finding parts for this repair…</div>
                         )}
                         {sugg === "error" && (
                           <div style={{ fontSize: 12, color: "var(--warn-text)", marginBottom: 10 }}>
@@ -5665,14 +5706,14 @@ export default function App() {
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                  <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2, lineHeight: 1.4 }}>?? {part.reason}</div>
+                                  <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 2, lineHeight: 1.4 }}>💡 {part.reason}</div>
                                 </div>
                                 <button onClick={function(e){ e.stopPropagation(); setRejectedParts(function(prev){ const n = Object.assign({}, prev); n["repair-" + r.id + "-" + part.id] = true; return n; }); getSuggestionsForRepair(r); }}
-                                  style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Wrong part">?</button>
+                                  style={{ background: "none", border: "none", color: "var(--border)", fontSize: 14, cursor: "pointer", padding: "0 4px", lineHeight: 1, flexShrink: 0 }} title="Wrong part">✕</button>
                               </div>
                               <button onClick={function(e){ e.stopPropagation(); setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: (function(){ const eq = equipment.find(function(e){ return e.id === r.equipment_id; }); return eq ? eq.name + (eq.model ? " " + eq.model : "") : r.section; })(), repairContext: r.description + " " + r.section }); }}
                                 style={{ marginTop: 8, width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                {"?? Find Part"}
+                                {"🔍 Find Part"}
                               </button>
                             </div>
                           );
@@ -5681,14 +5722,14 @@ export default function App() {
                         {sugg && sugg !== "loading" && (
                           <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
                             style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>
-                            ? Refresh suggestions
+                            ↺ Refresh suggestions
                           </button>
                         )}
 
                         {!sugg && (
                           <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }}
                             style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
-                            ? Find parts for this repair
+                            ✨ Find parts for this repair
                           </button>
                         )}
                       </div>
@@ -5702,7 +5743,7 @@ export default function App() {
                         </div>
                         <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
                           style={{ marginTop: 10, background: "none", border: "none", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, padding: 0 }}>
-                          ?? Edit repair
+                          ✏️ Edit repair
                         </button>
                       </div>
                     )}
@@ -5710,7 +5751,7 @@ export default function App() {
                       <div style={{ padding: "14px 16px" }} onClick={function(e){ e.stopPropagation(); }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>PHOTOS</div>
                         {(r.photos || []).length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet � tap the camera button to document this repair over time.</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>No photos yet — tap the camera button to document this repair over time.</div>
                         )}
                         {(r.photos || []).length > 0 && (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
@@ -5723,7 +5764,7 @@ export default function App() {
                           </div>
                         )}
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingRepairPhoto[r.id] ? "default" : "pointer", fontSize: 12, fontWeight: 600, color: "var(--brand)", background: "var(--bg-subtle)" }}>
-                          {uploadingRepairPhoto[r.id] ? "? Uploading�" : "?? Add Photo"}
+                          {uploadingRepairPhoto[r.id] ? "⏳ Uploading…" : "📷 Add Photo"}
                           {!uploadingRepairPhoto[r.id] && (
                             <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={async function(e){
                               var file = e.target.files && e.target.files[0];
@@ -5753,7 +5794,7 @@ export default function App() {
 
 
 
-        {/* -- URGENCY PANELS -- */}
+        {/* ── URGENCY PANELS ── */}
         {showUrgencyPanel && (
           <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
             onClick={function(){ setShowUrgencyPanel(null); setExpandedTask(null); }}>
@@ -5764,9 +5805,9 @@ export default function App() {
               <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>
-                    {showUrgencyPanel === "Critical" && "?? Critical Tasks"}
-                    {showUrgencyPanel === "Due Soon" && "?? Due Soon"}
-                    {showUrgencyPanel === "Open Repairs" && "?? Open Repairs"}
+                    {showUrgencyPanel === "Critical" && "🔴 Critical Tasks"}
+                    {showUrgencyPanel === "Due Soon" && "🟡 Due Soon"}
+                    {showUrgencyPanel === "Open Repairs" && "🔧 Open Repairs"}
 
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
@@ -5788,7 +5829,7 @@ export default function App() {
                 </div>
                 <button onClick={function(){ setShowUrgencyPanel(null); setExpandedTask(null); }}
                   style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 8, width: 32, height: 32, fontSize: 16, cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  ?
+                  ✕
                 </button>
               </div>
 
@@ -5811,7 +5852,7 @@ export default function App() {
                   });
                   if (panelTasks.length === 0 && adminPanelTasks.length === 0) return (
                     <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-                      <div style={{ fontSize: 32 }}>?</div>
+                      <div style={{ fontSize: 32 }}>✅</div>
                       <div style={{ marginTop: 8, fontSize: 13 }}>All clear!</div>
                     </div>
                   );
@@ -5833,7 +5874,7 @@ export default function App() {
                             if (panelTasks.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600);
                           }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>?</span>}
+                            {isCompleting && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
                           <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{t.task}</div>
@@ -5845,7 +5886,7 @@ export default function App() {
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
                             onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>
-                            {isExpanded ? "?" : "?"}
+                            {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
                         {isExpanded && (
@@ -5853,7 +5894,7 @@ export default function App() {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>INTERVAL</div>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval || (t.interval_days ? t.interval_days + " days" : "�")}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{t.interval || (t.interval_days ? t.interval_days + " days" : "—")}</div>
                               </div>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>LAST SERVICED</div>
@@ -5861,7 +5902,7 @@ export default function App() {
                               </div>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>DUE DATE</div>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.dueDate ? fmt(t.dueDate) : "�"}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--danger-text)" }}>{t.dueDate ? fmt(t.dueDate) : "—"}</div>
                               </div>
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 2 }}>PRIORITY</div>
@@ -5886,26 +5927,26 @@ export default function App() {
                             )}
                             {/* AI parts suggestions for this task */}
                             <div style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>? Suggested parts</div>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", letterSpacing: "0.5px", marginBottom: 8 }}>✨ Suggested parts</div>
                               {(function(){
                                 const sugg = aiSuggestions[t.id];
                                 if (!sugg) return (
                                   <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }}
                                     style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>
-                                    ? Find parts for this task
+                                    ✨ Find parts for this task
                                   </button>
                                 );
-                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts�</div>;
+                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
                                 if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
                                 return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
                                   return (
                                     <div key={part.name} style={{ padding: "7px 0", borderBottom: "1px solid #f9fafb" }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>?? {part.reason}</div>
+                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
                                       <button onClick={function(){ setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: (function(){ const eq = equipment.find(function(e){ return e.id === t.equipment_id; }); return eq ? eq.name : t.section; })(), repairContext: t.task + " " + t.section }); }}
                                         style={{ marginTop: 5, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                        {"?? Find Part"}
+                                        {"🔍 Find Part"}
                                       </button>
                                     </div>
                                   );
@@ -5930,12 +5971,12 @@ export default function App() {
                         <div key={at.id} style={{ borderBottom: "1px solid var(--border)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 10, opacity: completingAdminTask === at.id ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
                           <button onClick={function(){ if (completingAdminTask === at.id) return; completeAdminTask(at, activeVesselId); }}
                             style={{ width: 20, height: 20, borderRadius: "50%", border: "1.5px solid " + (completingAdminTask === at.id ? "var(--ok-text)" : "var(--border)"), background: completingAdminTask === at.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.2s", padding: 0 }}>
-                            {completingAdminTask === at.id && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1 }}>?</span>}
+                            {completingAdminTask === at.id && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                           </button>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{at.icon || "??"} {at.name}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{at.icon || "📋"} {at.name}</div>
                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                              {catLabel}{daysLeft < 0 ? " � " + Math.abs(daysLeft) + "d overdue" : daysLeft === 0 ? " � due today" : " � due in " + daysLeft + "d"}
+                              {catLabel}{daysLeft < 0 ? " · " + Math.abs(daysLeft) + "d overdue" : daysLeft === 0 ? " · due today" : " · due in " + daysLeft + "d"}
                             </div>
                           </div>
                           <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 10, background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)", flexShrink: 0 }}>Admin</span>
@@ -5950,7 +5991,7 @@ export default function App() {
                   const panelRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; });
                   if (panelRepairs.length === 0) return (
                     <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-                      <div style={{ fontSize: 32 }}>?</div>
+                      <div style={{ fontSize: 32 }}>✅</div>
                       <div style={{ marginTop: 8, fontSize: 13 }}>No open repairs!</div>
                     </div>
                   );
@@ -5963,7 +6004,7 @@ export default function App() {
                         <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                           <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); if (panelRepairs.length <= 1) setTimeout(function(){ setShowUrgencyPanel(null); }, 600); }}
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                            {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>?</span>}
+                            {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
                           <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{r.description}</div>
@@ -5971,12 +6012,12 @@ export default function App() {
                               <SectionBadge section={r.section} />
                               {eq && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{eq.name}</span>}
                               <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{fmt(r.date)}</span>
-                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>? {sugg.length} parts</span>}
+                              {sugg && sugg !== "loading" && sugg.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 4, padding: "1px 5px", fontSize: 10, fontWeight: 700 }}>✨ {sugg.length} parts</span>}
                             </div>
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
                             onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>
-                            {isExpanded ? "?" : "?"}
+                            {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
                         {isExpanded && (
@@ -5985,29 +6026,29 @@ export default function App() {
                               {["parts","notes","photos"].map(function(tt){ return (
                                 <button key={tt} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = tt; return n; }); if (tt === "parts" && !sugg) getSuggestionsForRepair(r); }}
                                   style={{ padding: "8px 10px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === tt ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === tt ? "var(--brand)" : "var(--text-muted)" }}>
-                                  {tt === "parts" ? "?? Parts" : "?? Notes"}
+                                  {tt === "parts" ? "🔩 Parts" : "📝 Notes"}
                                   {tt === "parts" && sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && <span style={{ marginLeft: 4, background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "1px 4px", fontSize: 10 }}>{sugg.length}</span>}
                                 </button>
                               ); })}
                             </div>
                             {(repairTab[r.id] || "parts") === "parts" && (
                               <div style={{ padding: "12px 14px" }}>
-                                {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts�</div>}
+                                {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
                                 {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
                                 {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>}
                                 {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
                                   return (
                                     <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid #f9fafb" }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>?? {part.reason}</div>
+                                      <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 1 }}>💡 {part.reason}</div>
                                       <button onClick={function(e){ e.stopPropagation(); setConfirmPart({ part: Object.assign({}, part), source: "ai-repair", equipName: (function(){ const eq2 = equipment.find(function(e2){ return e2.id === r.equipment_id; }); return eq2 ? eq2.name : r.section; })(), repairContext: r.description + " " + r.section }); }}
                                         style={{ marginTop: 6, width: "100%", padding: "5px 8px", border: "none", borderRadius: 6, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                        {"?? Find Part"}
+                                        {"🔍 Find Part"}
                                       </button>
                                     </div>
                                   );
                                 })}
-                                {!sugg && <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>? Find parts</button>}
+                                {!sugg && <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ marginTop: 4, background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>✨ Find parts</button>}
                               </div>
                             )}
                             {(repairTab[r.id] || "parts") === "notes" && (
@@ -6038,7 +6079,7 @@ export default function App() {
           </div>
         )}
 
-        {/* -- MAINTENANCE KANBAN -- */}
+        {/* ── MAINTENANCE KANBAN ── */}
         {view === "customer" && tab === "maintenance-standalone" && (<>
           {tabHeader("Maintenance", boatName, true, function(){ setShowAddTask(true); })}
 
@@ -6058,7 +6099,7 @@ export default function App() {
             ); })}
           </div>
 
-          {/* Kanban board � horizontal scroll */}
+          {/* Kanban board — horizontal scroll */}
           {(function(){
             const vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
             const boardSections = MAINT_SECTIONS.filter(function(sec){
@@ -6067,7 +6108,7 @@ export default function App() {
 
             if (boardSections.length === 0) return (
               <div style={{ textAlign: "center", padding: "60px 24px", color: "var(--text-muted)" }}>
-                <div style={{ fontSize: 40 }}>?</div>
+                <div style={{ fontSize: 40 }}>✅</div>
                 <div style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>No maintenance tasks yet</div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>Tap + to add your first task</div>
               </div>
@@ -6076,7 +6117,7 @@ export default function App() {
             return (
               <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 16, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20 }}>
                 {boardSections.map(function(sec){
-                  const icon = SECTIONS[sec] || "??";
+                  const icon = SECTIONS[sec] || "🔧";
                   const colTasks = vesselTasks.filter(function(t){
                     if (t.section !== sec) return false;
                     if (filterUrgency !== "All") return getTaskUrgency(t) === filterUrgency;
@@ -6129,7 +6170,7 @@ export default function App() {
                               <div style={{ display: "flex", gap: 5, marginTop: 7, flexWrap: "wrap", alignItems: "center" }}>
                                 {t.interval && (
                                   <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 8, background: "var(--bg-subtle)", color: "var(--text-muted)", border: "0.5px solid var(--border)" }}>
-                                    ? {t.interval}
+                                    ↺ {t.interval}
                                   </span>
                                 )}
                                 {daysLabel && (
@@ -6163,15 +6204,15 @@ export default function App() {
           <div style={{ height: 80 }} />
         </>)}
 
-        {/* -- DOCUMENTATION TAB -- */}
+        {/* ── DOCUMENTATION TAB ── */}
         {view === "customer" && tab === "documentation" && (<>
           {tabHeader("Documentation", "Paperwork & renewals", true, function(){ setShowAddDoc(true); })}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
             <UrgencyCard label="Critical" sub="10+ days overdue" val={docUrgencyCounts.critical} color="var(--danger-text)" bg="var(--danger-bg)" active={filterDocUrgency==="critical"} onClick={function(){ setFilterDocUrgency(filterDocUrgency==="critical"?"All":"critical"); }} />
-            <UrgencyCard label="Overdue" sub="5�10 days overdue" val={docUrgencyCounts.overdue} color="var(--warn-text)" bg="var(--overdue-bg)" active={filterDocUrgency==="overdue"} onClick={function(){ setFilterDocUrgency(filterDocUrgency==="overdue"?"All":"overdue"); }} />
+            <UrgencyCard label="Overdue" sub="5–10 days overdue" val={docUrgencyCounts.overdue} color="var(--warn-text)" bg="var(--overdue-bg)" active={filterDocUrgency==="overdue"} onClick={function(){ setFilterDocUrgency(filterDocUrgency==="overdue"?"All":"overdue"); }} />
             <UrgencyCard label="Due Soon" sub="Within 3 days" val={docUrgencyCounts.dueSoon} color="#ca8a04" bg="var(--duesoon-bg)" active={filterDocUrgency==="due-soon"} onClick={function(){ setFilterDocUrgency(filterDocUrgency==="due-soon"?"All":"due-soon"); }} />
           </div>
-          {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}><div style={{ fontSize: 36 }}>??</div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
+          {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}><div style={{ fontSize: 36 }}>📄</div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
           {[...docTasks].filter(function(t){ if (filterDocUrgency === "All") return true; return getTaskUrgency(t) === filterDocUrgency; }).sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; }).map(function(t){
             const badge = getDueBadge(t.dueDate);
             const isExpanded = expandedDoc === t.id;
@@ -6185,16 +6226,16 @@ export default function App() {
                       <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t.task}</span>
                       <span style={{ background: (PRIORITY_CFG[t.priority]||PRIORITY_CFG["medium"]).bg, color: (PRIORITY_CFG[t.priority]||PRIORITY_CFG["medium"]).color, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{t.priority}</span>
                       {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
-                      {atts.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>?? {atts.length}</span>}
+                      {atts.length > 0 && <span style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>📎 {atts.length}</span>}
                     </div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                       {t.dueDate && <span>Due: {fmt(t.dueDate)}</span>}
-                      {t.lastService && <span> � Last renewed: {fmt(t.lastService)}</span>}
+                      {t.lastService && <span> · Last renewed: {fmt(t.lastService)}</span>}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + t.task + "?", function(){ deleteTask(t.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 18 }}>{isExpanded ? "?" : "?"}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 18 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
                 {isExpanded && (
@@ -6205,7 +6246,7 @@ export default function App() {
                       <div key={att.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
                           {att.docType && DOC_TYPE_CFG[att.docType] && <span style={{ background: DOC_TYPE_CFG[att.docType].bg, color: DOC_TYPE_CFG[att.docType].color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{DOC_TYPE_CFG[att.docType].icon} {att.docType}</span>}
-                          <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none" }}>{att.fileName} ?</a>
+                          <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none" }}>{att.fileName} ↗</a>
                         </div>
                         <button onClick={function(){ showConfirm("Remove " + att.fileName + "?", function(){ removeDocAttachment(t.id, att.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }}><TrashIcon /></button>
                       </div>
@@ -6218,7 +6259,7 @@ export default function App() {
                         {Object.keys(DOC_TYPE_CFG).map(function(dt){ return <option key={dt} value={dt}>{DOC_TYPE_CFG[dt].icon} {dt}</option>; })}
                       </select>
                       <label style={{ flex: 1, display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: uploadingDoc ? "default" : "pointer", fontSize: 12, color: uploadingDoc ? "var(--text-muted)" : "var(--text-muted)", textAlign: "center", background: "var(--bg-card)" }}>
-                        {uploadingDoc ? "Uploading�" : "?? Attach a file (PDF, JPG, PNG�)"}
+                        {uploadingDoc ? "Uploading…" : "📎 Attach a file (PDF, JPG, PNG…)"}
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" disabled={uploadingDoc} style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (file) addDocAttachment(t.id, file, t._pendingDocType || "Other"); }} />
                       </label>
                     </div>
@@ -6233,7 +6274,7 @@ export default function App() {
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Document / Renewal</div>
                 <input placeholder="e.g. Boat insurance renewal" value={newDoc.task} onChange={function(e){ setNewDoc(function(d){ return { ...d, task: e.target.value }; }); }} style={s.inp} />
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>RENEWAL / EXPIRY DATE</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>This drives the urgency cards � Critical, Overdue, Due Soon</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>This drives the urgency cards — Critical, Overdue, Due Soon</div>
                 <input type="date" value={newDoc.dueDate} onChange={function(e){ setNewDoc(function(d){ return { ...d, dueDate: e.target.value }; }); }} style={s.inp} />
                 <select value={newDoc.priority} onChange={function(e){ setNewDoc(function(d){ return { ...d, priority: e.target.value }; }); }} style={s.sel}>
                   {["critical","high","medium","low"].map(function(p){ return <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>; })}
@@ -6244,13 +6285,13 @@ export default function App() {
                     {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
                   </select>
                   <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDoc.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDoc.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
-                    {newDoc.fileName ? "?? " + newDoc.fileName : "Choose file� (PDF, JPG, PNG, etc)"}
+                    {newDoc.fileName ? "📎 " + newDoc.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDoc(function(d){ return { ...d, fileObj: file, fileName: file.name }; }); }} />
                   </label>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={function(){ setShowAddDoc(false); setNewDoc({ task: "", dueDate: "", priority: "high", fileObj: null, fileName: "", fileType: "Other" }); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={addDoc} disabled={uploadingDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontWeight: 700 }}>{uploadingDoc ? "Uploading�" : "Add Item"}</button>
+                  <button onClick={addDoc} disabled={uploadingDoc} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: uploadingDoc ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: uploadingDoc ? "default" : "pointer", fontWeight: 700 }}>{uploadingDoc ? "Uploading…" : "Add Item"}</button>
                 </div>
               </div>
             </div>
@@ -6258,11 +6299,11 @@ export default function App() {
         </>)}
       </div>
 
-      {/* -- VESSEL SETTINGS -- */}
+      {/* ── VESSEL SETTINGS ── */}
       {showCopyDialog && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "var(--bg-card)", borderRadius: 16, width: "100%", maxWidth: 400, padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-            <div style={{ fontSize: 28, textAlign: "center", marginBottom: 8 }}>?</div>
+            <div style={{ fontSize: 28, textAlign: "center", marginBottom: 8 }}>⚓</div>
             <div style={{ fontWeight: 800, fontSize: 17, textAlign: "center", marginBottom: 6 }}>Copy from existing vessel?</div>
             <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", marginBottom: 20 }}>Save time by copying equipment and maintenance tasks from one of your other vessels.</div>
 
@@ -6283,13 +6324,13 @@ export default function App() {
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>WHAT TO COPY</div>
               {[
-                { key: "equipment", label: "?? Equipment", sub: "Names, categories, and notes" },
-                { key: "maintenance", label: "?? Maintenance Tasks", sub: "All scheduled tasks and intervals" },
+                { key: "equipment", label: "⚙️ Equipment", sub: "Names, categories, and notes" },
+                { key: "maintenance", label: "📋 Maintenance Tasks", sub: "All scheduled tasks and intervals" },
               ].map(function(opt){ return (
                 <div key={opt.key} onClick={function(){ setCopySelections(function(s){ return { ...s, [opt.key]: !s[opt.key] }; }); }}
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: "2px solid " + (copySelections[opt.key] ? "var(--brand)" : "var(--border)"), borderRadius: 10, marginBottom: 8, cursor: "pointer", background: copySelections[opt.key] ? "var(--brand-deep)" : "var(--bg-subtle)" }}>
                   <div style={{ width: 20, height: 20, borderRadius: 4, border: "2px solid " + (copySelections[opt.key] ? "var(--brand)" : "var(--border)"), background: copySelections[opt.key] ? "var(--brand)" : "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {copySelections[opt.key] && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>?</span>}
+                    {copySelections[opt.key] && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                   </div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: copySelections[opt.key] ? "var(--brand)" : "var(--text-secondary)" }}>{opt.label}</div>
@@ -6308,14 +6349,14 @@ export default function App() {
                 disabled={copyingItems || (!copySelections.equipment && !copySelections.maintenance)}
                 onClick={function(){ copyItemsToVessel(copySelections.sourceVesselId || vessels.find(function(v){ return v.id !== newVesselId; }).id, newVesselId, copySelections.equipment, copySelections.maintenance); }}
                 style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: copyingItems || (!copySelections.equipment && !copySelections.maintenance) ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: copyingItems ? "default" : "pointer" }}>
-                {copyingItems ? "Copying�" : "Copy Items ?"}
+                {copyingItems ? "Copying…" : "Copy Items →"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* -- AI Add Vessel Modal ----------------------------------- */}
+      {/* ── AI Add Vessel Modal ─────────────────────────────────── */}
       {showAddVesselAI && (
         <div style={s.modalBg} onClick={function(){ setShowAddVesselAI(false); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: 20, width: "100%", maxWidth: 460, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }} onClick={function(e){ e.stopPropagation(); }}>
@@ -6323,7 +6364,7 @@ export default function App() {
               <div style={{ fontWeight: 800, fontSize: 16 }}>
                 {avStep === 1 ? "Add Vessel" : avStep === 2 ? "Tell us about your boat" : "Engine hours setup"}
               </div>
-              <button onClick={function(){ setShowAddVesselAI(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>?</button>
+              <button onClick={function(){ setShowAddVesselAI(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
             </div>
             <div style={{ display: "flex", gap: 5, padding: "12px 20px 0" }}>
               {[1,2,3].map(function(n){ return (
@@ -6365,7 +6406,7 @@ export default function App() {
                   if (avError === "__ai_busy__") return (
                     <div style={{ background: "var(--warn-bg)", border: "0.5px solid var(--warn-border)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginBottom: 12 }}>
                       <div style={{ fontWeight: 700, color: "var(--warn-text)", marginBottom: 3 }}>Our AI is busy right now</div>
-                      <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>We\'re getting a lot of requests. Give it 30 seconds and try again � your description is saved.</div>
+                      <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>We\'re getting a lot of requests. Give it 30 seconds and try again — your description is saved.</div>
                       <button onClick={function(){ setAvError(null); }} style={{ marginTop: 8, background: "none", border: "1px solid var(--warn-border)", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 600, color: "var(--warn-text)", cursor: "pointer" }}>Try again</button>
                     </div>
                   );
@@ -6379,8 +6420,8 @@ export default function App() {
                 })()}
                 {(avLoading || saving) && (
                   <div style={{ textAlign: "center", padding: "16px 0" }}>
-                    <div style={{ fontSize: 22, marginBottom: 6 }}>??</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)" }}>{saving ? "Building your boat�" : "Researching your vessel�"}</div>
+                    <div style={{ fontSize: 22, marginBottom: 6 }}>⚙️</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)" }}>{saving ? "Building your boat…" : "Researching your vessel…"}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Generating equipment list and maintenance tasks</div>
                   </div>
                 )}
@@ -6390,16 +6431,16 @@ export default function App() {
                 var curHrs3 = avEngineHours ? parseFloat(avEngineHours) : null;
                 return (<>
                   <div style={{ background: "var(--brand-deep)", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 12px", marginBottom: 14, fontSize: 13, color: "var(--brand)" }}>
-                    <strong>?? Set your next service hours</strong>
-                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, color: "var(--text-muted)" }}>We estimated based on your current hours ({curHrs3 != null ? curHrs3 + " hrs" : "not set"}). Correct any you know � you can always update later.</div>
+                    <strong>⚙️ Set your next service hours</strong>
+                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, color: "var(--text-muted)" }}>We estimated based on your current hours ({curHrs3 != null ? curHrs3 + " hrs" : "not set"}). Correct any you know — you can always update later.</div>
                   </div>
                   {curHrs3 == null && (
                     <div style={{ background: "var(--warn-bg)", border: "1px solid var(--warn-border)", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "var(--warn-text)" }}>
-                      No engine hours entered � <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>add them now</span> for accurate tracking.
+                      No engine hours entered — <span onClick={function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); }} style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>add them now</span> for accurate tracking.
                     </div>
                   )}
                   {engineTasks3.length === 0 && (
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "20px 0" }}>No hour-tracked tasks found � engine tasks will appear in your Maintenance tab.</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "20px 0" }}>No hour-tracked tasks found — engine tasks will appear in your Maintenance tab.</div>
                   )}
                   {engineTasks3.map(function(t){
                     var computed = curHrs3 != null ? curHrs3 + t.interval_hours : null;
@@ -6433,7 +6474,7 @@ export default function App() {
                 <button onClick={function(){
                   if (!avName.trim()) { setAvError("Please enter a vessel name."); return; }
                   setAvError(null); setAvStep(2);
-                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Next ?</button>
+                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Next →</button>
               </>)}
               {avStep === 3 && (<>
                 <button onClick={async function(){
@@ -6462,11 +6503,11 @@ export default function App() {
                   }
                   setShowAddVesselAI(false);
                   setAvStep(1);
-                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>?? Looks good
+                }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700 }}>👍 Looks good
                 </button>
               </>)}
               {avStep === 2 && (<>
-                <button onClick={function(){ setAvStep(1); }} disabled={avLoading || saving} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>? Back</button>
+                <button onClick={function(){ setAvStep(1); }} disabled={avLoading || saving} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600 }}>← Back</button>
                 <button disabled={avLoading || saving} onClick={async function(){
                   if (!avDesc.trim()) { setAvError("Please describe your vessel."); return; }
                   setAvLoading(true); setAvError(null);
@@ -6511,7 +6552,7 @@ export default function App() {
                   }
                   finally { setAvLoading(false); setSaving(false); }
                 }} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: (avLoading || saving) ? "var(--brand-deep)" : "var(--brand)", color: "#fff", cursor: (avLoading || saving) ? "not-allowed" : "pointer", fontWeight: 700 }}>
-                  {avLoading ? "Researching�" : saving ? "Creating�" : "Launch Vessel ?"}
+                  {avLoading ? "Researching…" : saving ? "Creating…" : "Launch Vessel ⚓"}
                 </button>
               </>)}
             </div>
@@ -6524,12 +6565,12 @@ export default function App() {
           <div style={{ background: "var(--bg-card)", borderRadius: 20, width: "100%", maxWidth: 440, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }} onClick={function(e){ e.stopPropagation(); }}>
             <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontWeight: 800, fontSize: 16 }}>{editingVesselId ? "Edit Vessel" : "Add Vessel"}</div>
-              <button onClick={function(){ setShowSettings(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>?</button>
+              <button onClick={function(){ setShowSettings(false); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 8px" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6 }}>VESSEL TYPE</div>
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                {["sail","motor"].map(function(t){ return <button key={t} onClick={function(){ setSettingsForm(function(f){ return { ...f, vesselType: t }; }); }} style={{ flex: 1, padding: 10, borderRadius: 10, border: "2px solid " + (settingsForm.vesselType===t?"var(--brand)":"var(--border)"), background: settingsForm.vesselType===t?"var(--brand-deep)":"var(--bg-subtle)", color: settingsForm.vesselType===t?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{t === "sail" ? "? Sailboat" : "?? Motorboat"}</button>; })}
+                {["sail","motor"].map(function(t){ return <button key={t} onClick={function(){ setSettingsForm(function(f){ return { ...f, vesselType: t }; }); }} style={{ flex: 1, padding: 10, borderRadius: 10, border: "2px solid " + (settingsForm.vesselType===t?"var(--brand)":"var(--border)"), background: settingsForm.vesselType===t?"var(--brand-deep)":"var(--bg-subtle)", color: settingsForm.vesselType===t?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{t === "sail" ? "⛵ Sailboat" : "🚤 Motorboat"}</button>; })}
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6 }}>VESSEL NAME</div>
               <input placeholder="e.g. Irene, Blue Horizon" value={settingsForm.vesselName || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, vesselName: e.target.value }; }); }} style={s.inp} />
@@ -6546,7 +6587,7 @@ export default function App() {
               <input placeholder="e.g. 1980" value={settingsForm.year || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, year: e.target.value }; }); }} style={s.inp} />
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6, marginTop: 14 }}>FUEL BURN RATE <span style={{ fontSize: 10, fontWeight: 400 }}>gal/hr</span></div>
               <input type="number" step="0.1" placeholder="e.g. 0.7" value={settingsForm.fuelBurnRate || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, fuelBurnRate: e.target.value }; }); }} style={s.inp} />
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>Fuel per passage is derived from engine run hours � this rate.</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>Fuel per passage is derived from engine run hours × this rate.</div>
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginBottom: 6 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>VESSEL PHOTO</div>
                 {/* Hidden file input controlled by ref */}
@@ -6578,17 +6619,17 @@ export default function App() {
                   <button onClick={function(){ if (photoInputRef.current) photoInputRef.current.click(); }}
                     disabled={uploadingPhoto}
                     style={{ width: "100%", padding: "14px", border: "1.5px dashed var(--border)", borderRadius: 10, cursor: uploadingPhoto ? "default" : "pointer", textAlign: "center", fontSize: 12, color: "var(--text-muted)", background: "var(--bg-subtle)", display: "block" }}>
-                    {uploadingPhoto ? "? Uploading�" : "?? Upload a photo of your boat"}
+                    {uploadingPhoto ? "⏳ Uploading…" : "📷 Upload a photo of your boat"}
                   </button>
                 )}
               </div>
               {(settingsForm.vesselName || settingsForm.make || settingsForm.model || settingsForm.year) && (
                 <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", marginTop: 16 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6 }}>PREVIEW</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--brand)" }}>{settingsForm.vesselType === "motor" ? "M/V" : "S/V"} {settingsForm.vesselName || "�"}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--brand)" }}>{settingsForm.vesselType === "motor" ? "M/V" : "S/V"} {settingsForm.vesselName || "—"}</div>
                   {(settingsForm.make || settingsForm.model || settingsForm.year) && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>{[settingsForm.year, settingsForm.make, settingsForm.model].filter(Boolean).join(" ")}</div>}
                   {settingsForm.ownerName && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>Capt. {settingsForm.ownerName}</div>}
-                  {settingsForm.address && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>? Home Port: {settingsForm.address}</div>}
+                  {settingsForm.address && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>⚓ Home Port: {settingsForm.address}</div>}
                 </div>
               )}
             </div>
@@ -6597,12 +6638,12 @@ export default function App() {
                 var uid = session && session.user ? session.user.id : null;
                 var isOwner = vesselMembers.some(function(m){ return m.vessel_id === editingVesselId && m.user_id === uid && m.role === "owner"; });
                 if (!isOwner) return null;
-                return <button onClick={function(){ deleteVessel(editingVesselId); }} style={{ width: "100%", padding: 10, border: "1px solid #fca5a5", borderRadius: 8, background: "var(--bg-card)", color: "var(--danger-text)", cursor: "pointer", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>?? Remove This Vessel</button>;
+                return <button onClick={function(){ deleteVessel(editingVesselId); }} style={{ width: "100%", padding: 10, border: "1px solid #fca5a5", borderRadius: 8, background: "var(--bg-card)", color: "var(--danger-text)", cursor: "pointer", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>🗑 Remove This Vessel</button>;
               })()}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={function(){ setShowSettings(false); }} style={{ flex: 1, padding: 11, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
                 <button onClick={saveVessel} style={{ flex: 2, padding: 11, border: "none", borderRadius: 8, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-                  {saving ? "Saving�" : editingVesselId ? "Save Changes" : "Add Vessel"}
+                  {saving ? "Saving…" : editingVesselId ? "Save Changes" : "Add Vessel"}
                 </button>
               </div>
             </div>
@@ -6610,8 +6651,8 @@ export default function App() {
         </div>
       )}
 
-      {/* -- SHOPPING LIST PANEL -- */}
-            {/* -- Upgrade Modal -------------------------------------------- */}
+      {/* ── SHOPPING LIST PANEL ── */}
+            {/* ── Upgrade Modal ──────────────────────────────────────────── */}
       {showUpgradeModal && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowUpgradeModal(false); }}>
@@ -6632,13 +6673,13 @@ export default function App() {
               {userPlan === "pro" ? "Unlock the fleet dashboard and add more vessels." : "Unlock more features for your boat."}
             </div>
 
-            {/* Entry � shown only when on free/null plan */}
+            {/* Entry — shown only when on free/null plan */}
             {(userPlan === "free" || !userPlan) && (
               <div style={{ border: "1.5px solid var(--border)", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "var(--bg-subtle)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)" }}>Entry</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>1 vessel � unlimited equipment � 5 repairs</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>1 vessel · unlimited equipment · 5 repairs</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-secondary)" }}>$2.99</div>
@@ -6656,7 +6697,7 @@ export default function App() {
                   } catch(e) { alert("Error starting checkout: " + e.message); }
                   finally { setCheckoutLoading(false); }
                 }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                  {checkoutLoading ? "Opening checkout�" : "Start Entry � $2.99/mo"}
+                  {checkoutLoading ? "Opening checkout…" : "Start Entry — $2.99/mo"}
                 </button>
               </div>
             )}
@@ -6666,7 +6707,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--brand)" }}>Keeply Pro</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>2 vessels � unlimited equipment � AI features</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>2 vessels · unlimited equipment · AI features</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "var(--brand)" }}>$9.99</div>
@@ -6684,7 +6725,7 @@ export default function App() {
                 } catch(e) { alert("Error starting checkout: " + e.message); }
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout�" : "Subscribe Monthly � $9.99/mo"}
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Monthly — $9.99/mo"}
               </button>
             </div>
 
@@ -6694,7 +6735,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ok-text)" }}>Pro Annual</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Everything in Pro � $5.83/mo effective</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Everything in Pro · $5.83/mo effective</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ok-text)" }}>$69.99</div>
@@ -6712,7 +6753,7 @@ export default function App() {
                 } catch(e) { alert("Error starting checkout: " + e.message); }
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout�" : "Subscribe Annually � $69.99/yr"}
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Annually — $69.99/yr"}
               </button>
             </div>
 
@@ -6721,7 +6762,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)" }}>Keeply Fleet</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>3 vessels included � fleet dashboard � team access</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>3 vessels included · fleet dashboard · team access</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-secondary)" }}>$49.99</div>
@@ -6739,10 +6780,10 @@ export default function App() {
                 } catch(e) { alert("Error starting checkout: " + e.message); }
                 finally { setCheckoutLoading(false); }
               }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid #374151", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout�" : "Subscribe Fleet � $49.99/mo"}
+                {checkoutLoading ? "Opening checkout…" : "Subscribe Fleet — $49.99/mo"}
               </button>
               <div style={{ marginTop: 10, background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#854d0e", textAlign: "center" }}>
-                ?? Beta tester? Use code <strong>BETA2026</strong> at checkout for 100% off Fleet.
+                🎁 Beta tester? Use code <strong>BETA2026</strong> at checkout for 100% off Fleet.
               </div>
             </div>
 
@@ -6751,7 +6792,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#7c3aed" }}>Enterprise</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>15+ assets � dedicated account manager � API access</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>15+ assets · dedicated account manager · API access</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "#7c3aed" }}>Custom</div>
@@ -6760,7 +6801,7 @@ export default function App() {
               </div>
               <a href="mailto:support@keeply.boats?subject=Enterprise enquiry"
                 style={{ display: "block", width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: "#7c3aed", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "none", textAlign: "center" }}>
-                Book a call ?
+                Book a call →
               </a>
             </div>
 
@@ -6772,7 +6813,7 @@ export default function App() {
         </div>
       )}
 
-            {/* -- Profile / Settings Panel --------------------------- */}
+            {/* ── Profile / Settings Panel ─────────────────────────── */}
       {showProfilePanel && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 500 }} onClick={function(){ setShowProfilePanel(false); }}>
           <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(420px, 100vw)", background: "var(--bg-app)", display: "flex", flexDirection: "column", boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }} onClick={function(e){ e.stopPropagation(); }}>
@@ -6780,12 +6821,12 @@ export default function App() {
             {/* Header */}
             <div style={{ background: "var(--brand)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
               <span style={{ color: "#fff", fontSize: 16, fontWeight: 800 }}>Settings</span>
-              <button onClick={function(){ setShowProfilePanel(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>?</button>
+              <button onClick={function(){ setShowProfilePanel(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
 
-              {/* -- Profile -- */}
+              {/* ── Profile ── */}
               <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>PROFILE</div>
               <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
                 {/* Avatar + name */}
@@ -6809,13 +6850,13 @@ export default function App() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Plan</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                      {userPlan === "fleet" ? "Fleet � Multi-vessel" : userPlan === "pro" ? "Pro � 2 vessels" : userPlan === "enterprise" ? "Enterprise � Unlimited" : "Entry � 1 vessel � 5 repairs"}
+                      {userPlan === "fleet" ? "Fleet · Multi-vessel" : userPlan === "pro" ? "Pro · 2 vessels" : userPlan === "enterprise" ? "Enterprise · Unlimited" : "Entry · 1 vessel · 5 repairs"}
                     </div>
                   </div>
                   {(userPlan === "free" || !userPlan || userPlan === "pro") ? (
                     <span onClick={function(){ setShowProfilePanel(false); setUpgradeReason(""); setShowUpgradeModal(true); }}
                       style={{ background: "var(--brand-deep)", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      {userPlan === "pro" ? "Upgrade ?" : "Start trial ?"}
+                      {userPlan === "pro" ? "Upgrade ↗" : "Start trial ↗"}
                     </span>
                   ) : (
                     <span onClick={async function(){
@@ -6824,12 +6865,12 @@ export default function App() {
                         const d = await res.json();
                         if (d.url) window.location.href = d.url;
                       } catch(e) { alert(e.message); }
-                    }} style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manage ?</span>
+                    }} style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manage ↗</span>
                   )}
                 </div>
               </div>
 
-              {/* -- Alert Channels -- */}
+              {/* ── Alert Channels ── */}
               <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ALERT NOTIFICATIONS</div>
               <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
                 {[
@@ -6847,14 +6888,14 @@ export default function App() {
                     </div>
                   </div>
                 ); })}
-                {/* Push notifications � real toggle */}
+                {/* Push notifications — real toggle */}
                 <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: pushStatus === "unsupported" ? "var(--text-muted)" : "var(--text-primary)" }}>Push notifications</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1, lineHeight: 1.4 }}>
                       {pushStatus === "subscribed"   ? "Maintenance reminders active"
-                       : pushStatus === "denied"     ? "Blocked � allow in browser Settings"
-                       : pushStatus === "ios-browser"? "Add Keeply to Home Screen first (Share ? Add to Home Screen)"
+                       : pushStatus === "denied"     ? "Blocked — allow in browser Settings"
+                       : pushStatus === "ios-browser"? "Add Keeply to Home Screen first (Share → Add to Home Screen)"
                        : pushStatus === "unsupported"? "Not supported on this browser"
                        : "Get maintenance reminders on your phone"}
                     </div>
@@ -6871,7 +6912,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* -- Alert Thresholds -- */}
+              {/* ── Alert Thresholds ── */}
               <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ALERT THRESHOLDS</div>
               <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
                 {[
@@ -6894,33 +6935,33 @@ export default function App() {
                 ); })}
               </div>
 
-              {/* -- Email Digest Timing -- */}
+              {/* ── Email Digest Timing ── */}
               {profilePrefs.alertEmail && (
                 <div style={{ padding: "10px 20px 14px" }}>
                   <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Sent every Monday morning with your upcoming tasks and open repairs.</div>
                 </div>
               )}
 
-              {/* -- Account -- */}
+              {/* ── Account ── */}
               <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ACCOUNT</div>
               <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){
                       if (userPlan !== "fleet" && userPlan !== "enterprise") {
                         setShowProfilePanel(false);
-                        setUpgradeReason("The Fleet Dashboard is included with the Fleet plan � manage multiple vessels, track the whole fleet, and assign team access.");
+                        setUpgradeReason("The Fleet Dashboard is included with the Fleet plan — manage multiple vessels, track the whole fleet, and assign team access.");
                         setShowUpgradeModal(true);
                         return;
                       }
                       setShowProfilePanel(false); setView("fleet"); loadFleetData();
                     }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>? Fleet Dashboard</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>�</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>⚓ Fleet Dashboard</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ setShowProfilePanel(false); setShowShare(true); setShareMsg(null); setShareEmail(""); }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>?? Share Vessel</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>�</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>👥 Share Vessel</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
                 {/* Push notifications row */}
                 {pushStatus !== "unsupported" && (
@@ -6928,12 +6969,12 @@ export default function App() {
                     onClick={pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "ios-browser" ? undefined : function(){ enablePushNotifications(); }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
-                        {pushStatus === "subscribed" ? "?? Notifications on" : pushStatus === "denied" ? "?? Notifications blocked" : "?? Enable Notifications"}
+                        {pushStatus === "subscribed" ? "🔔 Notifications on" : pushStatus === "denied" ? "🔕 Notifications blocked" : "🔔 Enable Notifications"}
                       </div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1, lineHeight: 1.4 }}>
                         {pushStatus === "subscribed" ? "Maintenance reminders active"
-                          : pushStatus === "denied" ? "Blocked � allow in browser Settings"
-                          : pushStatus === "ios-browser" ? "Add Keeply to your Home Screen first (Share ? Add to Home Screen)"
+                          : pushStatus === "denied" ? "Blocked — allow in browser Settings"
+                          : pushStatus === "ios-browser" ? "Add Keeply to your Home Screen first (Share → Add to Home Screen)"
                           : "Get maintenance reminders on your phone"}
                       </div>
                     </div>
@@ -6941,8 +6982,8 @@ export default function App() {
                       {pushStatus === "subscribed"
                         ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ok-text)", background: "var(--ok-bg)", padding: "2px 8px", borderRadius: 10 }}>ON</span>
                         : pushStatus === "denied" || pushStatus === "ios-browser"
-                        ? <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{pushStatus === "ios-browser" ? "??" : "Blocked"}</span>
-                        : <span style={{ color: "var(--brand)", fontSize: 14 }}>�</span>
+                        ? <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{pushStatus === "ios-browser" ? "ℹ️" : "Blocked"}</span>
+                        : <span style={{ color: "var(--brand)", fontSize: 14 }}>›</span>
                       }
                     </div>
                   </div>
@@ -6950,22 +6991,22 @@ export default function App() {
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ window.open("/privacy", "_blank"); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Privacy Policy</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>?</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>↗</span>
                 </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ window.open("/terms", "_blank"); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Terms of Service</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>?</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>↗</span>
                 </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ setShowProfilePanel(false); setShowFeedback(true); setFeedbackSent(false); setFeedbackError(null); setFeedbackForm({ category: "General Feedback", message: "" }); }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>?? Send Feedback</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>�</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>💬 Send Feedback</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
                   onClick={function(){ supabase.auth.signOut(); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--danger-text)" }}>Sign out</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>�</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
                   onClick={async function(){
@@ -6979,10 +7020,10 @@ export default function App() {
                     } catch(e) { alert("Error: " + e.message); }
                   }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--danger-text)" }}>Delete account</span>
-                  <span style={{ color: "var(--danger-text)", fontSize: 14, opacity: 0.5 }}>�</span>
+                  <span style={{ color: "var(--danger-text)", fontSize: 14, opacity: 0.5 }}>›</span>
                 </div>
                 <div style={{ padding: "10px 20px" }}>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center" }}>Keeply v1.0 � keeply.boats</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center" }}>Keeply v1.0 · keeply.boats</div>
                 </div>
               </div>
 
@@ -6990,7 +7031,7 @@ export default function App() {
 
             {/* Save button */}
             <div style={{ padding: "14px 20px 24px", background: "var(--bg-card)", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
-              {profileSaved && <div style={{ textAlign: "center", fontSize: 12, color: "var(--ok-text)", marginBottom: 8 }}>? Settings saved</div>}
+              {profileSaved && <div style={{ textAlign: "center", fontSize: 12, color: "var(--ok-text)", marginBottom: 8 }}>✓ Settings saved</div>}
               <button disabled={profileSaving} onClick={async function(){
                 setProfileSaving(true); setProfileSaved(false);
                 try {
@@ -7010,7 +7051,7 @@ export default function App() {
                 } catch(e) { console.error("Profile save error:", e); }
                 finally { setProfileSaving(false); }
               }} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: profileSaving ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: profileSaving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
-                {profileSaving ? "Saving�" : "Save Settings"}
+                {profileSaving ? "Saving…" : "Save Settings"}
               </button>
             </div>
 
@@ -7018,7 +7059,7 @@ export default function App() {
         </div>
       )}
 
-            {/* -- Confirm Part Before Adding to List --------------------------- */}
+            {/* ── Confirm Part Before Adding to List ─────────────────────────── */}
       {confirmPart && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setConfirmPart(null); setFindPartResults([]); setFindPartError(null); }}>
@@ -7028,13 +7069,13 @@ export default function App() {
               <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 16px" }} />
               <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>Add to Shopping List</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
-                {confirmPart.repairContext ? "Repair: " + confirmPart.repairContext.substring(0, 60) + (confirmPart.repairContext.length > 60 ? "�" : "") : confirmPart.equipName ? "For: " + confirmPart.equipName : "Review part details before adding"}
+                {confirmPart.repairContext ? "Repair: " + confirmPart.repairContext.substring(0, 60) + (confirmPart.repairContext.length > 60 ? "…" : "") : confirmPart.equipName ? "For: " + confirmPart.equipName : "Review part details before adding"}
               </div>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 16px" }}>
 
-              {/* -- Web search results -- */}
+              {/* ── Web search results ── */}
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>SEARCH RESULTS</span>
@@ -7048,13 +7089,13 @@ export default function App() {
                       setFindPartResults(data.results || []);
                     } catch(e) { setFindPartError(e.message); }
                     finally { setFindPartLoading(false); }
-                  }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", fontWeight: 700, cursor: "pointer", padding: 0 }}>? Search again</button>}
+                  }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", fontWeight: 700, cursor: "pointer", padding: 0 }}>↺ Search again</button>}
                 </div>
 
                 {findPartLoading && (
                   <div style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: "20px 16px", textAlign: "center" }}>
-                    <div style={{ fontSize: 20, marginBottom: 6 }}>??</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Searching across marine retailers�</div>
+                    <div style={{ fontSize: 20, marginBottom: 6 }}>🔍</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Searching across marine retailers…</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>Fisheries Supply, Defender, West Marine & more</div>
                   </div>
                 )}
@@ -7062,8 +7103,8 @@ export default function App() {
                 {!findPartLoading && findPartError && (
                   <div style={{ background: "var(--overdue-bg)", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "var(--warn-text)", marginBottom: 8 }}>
                     {findPartError === "rate_limited"
-                      ? "Too many searches � please wait 30 seconds then tap Search again."
-                      : "Search unavailable � tap Search again or add manually below."}
+                      ? "Too many searches — please wait 30 seconds then tap Search again."
+                      : "Search unavailable — tap Search again or add manually below."}
                   </div>
                 )}
 
@@ -7080,7 +7121,7 @@ export default function App() {
                         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
                           {(function(){ const p = r.price ? parseFloat(r.price) : null; return p && !isNaN(p) ? <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ok-text)", flexShrink: 0 }}>${p.toFixed(2)}</span> : <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>See site</span>; })()}
                           <a href={r.url} target="_blank" rel="noreferrer" onClick={function(e){ e.stopPropagation(); }}
-                            style={{ fontSize: 10, background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "3px 7px", fontWeight: 600, textDecoration: "none" }}>?</a>
+                            style={{ fontSize: 10, background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "3px 7px", fontWeight: 600, textDecoration: "none" }}>↗</a>
                         </div>
                       </div>
                     ); })}
@@ -7089,12 +7130,12 @@ export default function App() {
 
                 {!findPartLoading && findPartResults.length === 0 && !findPartError && (
                   <div style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
-                    No results yet � tap Search again or fill in manually below.
+                    No results yet — tap Search again or fill in manually below.
                   </div>
                 )}
               </div>
 
-              {/* -- Manual entry � only shown when no results or search failed -- */}
+              {/* ── Manual entry — only shown when no results or search failed ── */}
               {!findPartLoading && (findPartResults.length === 0 || findPartError) && (
                 <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 8 }}>
@@ -7123,11 +7164,11 @@ export default function App() {
                 </div>
               )}
 
-              {/* -- Selected result summary � shown when results exist -- */}
+              {/* ── Selected result summary — shown when results exist ── */}
               {!findPartLoading && findPartResults.length > 0 && confirmPart.part.url && (
                 <div style={{ background: "var(--ok-bg)", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px", marginTop: 8, fontSize: 12, color: "var(--ok-text)" }}>
-                  ? Selected: <strong>{confirmPart.part.name}</strong>
-                  {confirmPart.part.price && <span> � ${parseFloat(confirmPart.part.price).toFixed(2)}</span>}
+                  ✓ Selected: <strong>{confirmPart.part.name}</strong>
+                  {confirmPart.part.price && <span> · ${parseFloat(confirmPart.part.price).toFixed(2)}</span>}
                   {confirmPart.part.vendor && <span> from {confirmPart.part.vendor}</span>}
                 </div>
               )}
@@ -7142,7 +7183,7 @@ export default function App() {
               <button onClick={function(){
                 setConfirmPart(null); setFindPartResults([]); setFindPartError(null);
               }} style={{ flex: 2, padding: 12, border: "none", borderRadius: 10, background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-                ? Add to Shopping List
+                ✓ Add to Shopping List
               </button>
             </div>
           </div>
@@ -7150,7 +7191,7 @@ export default function App() {
       )}
 
 
-      {/* -- COMPLETION NOTE SHEET -- */}
+      {/* ── COMPLETION NOTE SHEET ── */}
       {noteSheetTask && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 450, display: "flex", alignItems: "flex-end" }}
           onClick={function(){ setNoteSheetTask(null); setNoteSheetVal(""); }}>
@@ -7173,7 +7214,7 @@ export default function App() {
                   toggleTask(tid, note);
                 }
               }}
-              placeholder={"e.g. just below full marker, replaced impeller�"}
+              placeholder={"e.g. just below full marker, replaced impeller…"}
               style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", background: "var(--bg-subtle)", color: "var(--text-primary)", marginBottom: 14 }}
             />
             <div style={{ display: "flex", gap: 10 }}>
@@ -7199,7 +7240,7 @@ export default function App() {
         </div>
       )}
 
-            {/* -- PHOTO LIGHTBOX -- */}
+            {/* ── PHOTO LIGHTBOX ── */}
       {lightboxPhoto && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.93)", zIndex: 900, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}
           onClick={function(){ setLightboxPhoto(null); }}>
@@ -7211,7 +7252,7 @@ export default function App() {
             <input
               value={lightboxCaptionEdit}
               onChange={function(e){ setLightboxCaptionEdit(e.target.value); }}
-              placeholder="Add a caption�"
+              placeholder="Add a caption…"
               style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "7px 12px", fontSize: 12, color: "#fff", outline: "none", boxSizing: "border-box" }}
             />
             {lightboxCaptionEdit !== (lightboxPhoto.caption || "") && (
@@ -7276,22 +7317,22 @@ export default function App() {
               setLightboxPhoto(null);
             }}
               style={{ padding: "8px 20px", border: "1px solid rgba(220,38,38,0.6)", borderRadius: 20, background: "none", color: "#fca5a5", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-              ?? Delete
+              🗑 Delete
             </button>
           </div>
         </div>
       )}
 
-      {/* -- SHARE VESSEL MODAL -- */}
+      {/* ── SHARE VESSEL MODAL ── */}
       {showShare && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowShare(false); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)", maxHeight: "80vh", overflowY: "auto" }}
             onClick={function(e){ e.stopPropagation(); }}>
             <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>?? Share Vessel</div>
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>👥 Share Vessel</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 20 }}>
-              {(vessels.find(function(v){ return v.id === activeVesselId; }) || {}).vesselName || "This vessel"} � invite by email
+              {(vessels.find(function(v){ return v.id === activeVesselId; }) || {}).vesselName || "This vessel"} · invite by email
             </div>
 
             {/* Email input + Send */}
@@ -7306,7 +7347,7 @@ export default function App() {
               />
               <button onClick={shareVessel} disabled={shareLoading || !shareEmail.trim()}
                 style={{ padding: "11px 18px", border: "none", borderRadius: 10, background: shareEmail.trim() && !shareLoading ? "var(--brand)" : "var(--border)", color: shareEmail.trim() && !shareLoading ? "#fff" : "var(--text-muted)", fontWeight: 700, fontSize: 13, cursor: shareEmail.trim() && !shareLoading ? "pointer" : "default", whiteSpace: "nowrap", transition: "background 0.15s", fontFamily: "inherit" }}>
-                {shareLoading ? "Sending�" : "Invite"}
+                {shareLoading ? "Sending…" : "Invite"}
               </button>
             </div>
 
@@ -7338,7 +7379,7 @@ export default function App() {
                     return (
                       <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "0.5px solid var(--border)" }}>
                         <div style={{ width: 34, height: 34, borderRadius: "50%", background: isThisOwner ? "var(--brand)" : "var(--bg-subtle)", border: "1.5px solid " + (isThisOwner ? "var(--brand)" : "var(--border)"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <span style={{ fontSize: 14, color: isThisOwner ? "#fff" : "var(--text-muted)" }}>{isThisOwner ? "?" : "??"}</span>
+                          <span style={{ fontSize: 14, color: isThisOwner ? "#fff" : "var(--text-muted)" }}>{isThisOwner ? "⚓" : "👤"}</span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -7346,10 +7387,10 @@ export default function App() {
                             {isMe && <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6 }}>(you)</span>}
                           </div>
                           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1, textTransform: "capitalize" }}>
-                            {isThisOwner ? "Owner" : m.user_id ? "Member � joined" : "Member � invite pending"}
+                            {isThisOwner ? "Owner" : m.user_id ? "Member · joined" : "Member · invite pending"}
                           </div>
                         </div>
-                        {/* Remove button � owner can remove non-owners, can't remove self */}
+                        {/* Remove button — owner can remove non-owners, can't remove self */}
                         {isOwner && !isThisOwner && (
                           <button onClick={function(){ removeMember(m.id); }}
                             style={{ background: "none", border: "1px solid var(--danger-border)", borderRadius: 7, padding: "4px 10px", fontSize: 11, fontWeight: 600, color: "var(--danger-text)", cursor: "pointer" }}>
@@ -7370,14 +7411,14 @@ export default function App() {
         </div>
       )}
 
-      {/* -- UPDATE ENGINE HOURS MODAL -- */}
+      {/* ── UPDATE ENGINE HOURS MODAL ── */}
       {showUpdateHoursModal && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowUpdateHoursModal(false); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
             onClick={function(e){ e.stopPropagation(); }}>
             <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>?? Update Engine Hours</div>
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>⚙️ Update Engine Hours</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Enter current hours from your engine panel</div>
             <input type="number" placeholder="e.g. 1450" value={updateHoursInput}
               onChange={function(e){ setUpdateHoursInput(e.target.value); }}
@@ -7407,14 +7448,14 @@ export default function App() {
         </div>
       )}
 
-      {/* -- ENGINE PICKER MODAL -- */}
+      {/* ── ENGINE PICKER MODAL ── */}
       {showEnginePickerModal && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowEnginePickerModal(false); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
             onClick={function(e){ e.stopPropagation(); }}>
             <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>?? Which engine?</div>
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>⚙️ Which engine?</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Tasks will be linked to the equipment card you choose. You can change this later.</div>
             {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category === "Engine"; }).map(function(eq){ return (
               <button key={eq.id} onClick={async function(){
@@ -7422,7 +7463,7 @@ export default function App() {
                 setDismissedEngineTasksBanner(true);
                 setShowEnginePickerModal(false);
               }} style={{ width: "100%", padding: "14px 16px", marginBottom: 10, border: "1.5px solid var(--border)", borderRadius: 12, background: "var(--bg-subtle)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 22 }}>??</span>
+                <span style={{ fontSize: 22 }}>⚙️</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{eq.name}</div>
                   {(eq.notes || "").match(/Model: ([^|]+)/) && (
@@ -7442,12 +7483,12 @@ export default function App() {
         </div>
       )}
 
-      {/* -- RESET PASSWORD MODAL -- */}
+      {/* ── RESET PASSWORD MODAL ── */}
       {showResetPassword && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ background: "var(--bg-card)", borderRadius: 20, padding: "32px 28px", width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
             <div style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>??</div>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Set new password</div>
               <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6 }}>Choose a strong password for your account.</div>
             </div>
@@ -7489,27 +7530,27 @@ export default function App() {
         </div>
       )}
 
-      {/* -- EQUIPMENT NOTE MODAL -- */}
+      {/* ── EQUIPMENT NOTE MODAL ── */}
       {showEquipNote && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowEquipNote(false); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "24px 24px 36px", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}
             onClick={function(e){ e.stopPropagation(); }}>
             <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>?? Equipment Note</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Quick observation � First Mate will see this</div>
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>📝 Equipment Note</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>Quick observation — First Mate will see this</div>
 
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT</div>
             <select value={equipNoteEqId} onChange={function(e){ setEquipNoteEqId(e.target.value); }}
               style={{ width: "100%", border: "1.5px solid var(--border)", borderRadius: 10, padding: "11px 12px", fontSize: 14, background: "var(--bg-card)", color: "var(--text-primary)", marginBottom: 14, boxSizing: "border-box", outline: "none" }}>
-              <option value="">� Select equipment �</option>
+              <option value="">— Select equipment —</option>
               {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; })
                 .sort(function(a, b){
                   var rank = { "needs-service": 0, "watch": 1, "good": 2 };
                   return (rank[a.status] || 2) - (rank[b.status] || 2);
                 })
                 .map(function(eq){
-                  var statusIcon = eq.status === "needs-service" ? "?? " : eq.status === "watch" ? "?? " : "";
+                  var statusIcon = eq.status === "needs-service" ? "🔴 " : eq.status === "watch" ? "🟡 " : "";
                   return <option key={eq.id} value={eq.id}>{statusIcon}{eq.name}</option>;
                 })}
             </select>
@@ -7517,7 +7558,7 @@ export default function App() {
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>NOTE</div>
             <textarea
               autoFocus
-              placeholder={"e.g. slight vibration at high RPM, oil looked dark, zincs 50% gone�"}
+              placeholder={"e.g. slight vibration at high RPM, oil looked dark, zincs 50% gone…"}
               value={equipNoteText}
               onChange={function(e){ setEquipNoteText(e.target.value); }}
               rows={4}
@@ -7555,13 +7596,13 @@ export default function App() {
         </div>
       )}
 
-      {/* -- CONFIRM DIALOG -- */}
+      {/* ── CONFIRM DIALOG ── */}
       {confirmAction && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
           onClick={function(){ setConfirmAction(null); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: 16, padding: 24, width: "100%", maxWidth: 340, boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}
             onClick={function(e){ e.stopPropagation(); }}>
-            <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>??</div>
+            <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>🗑</div>
             <div style={{ fontSize: 15, fontWeight: 700, textAlign: "center", marginBottom: 8 }}>Are you sure?</div>
             <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", marginBottom: 24 }}>{confirmAction.message}</div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -7579,10 +7620,10 @@ export default function App() {
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Log Repair</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
-                  <option value="">� Not linked to equipment �</option>
+                  <option value="">— Not linked to equipment —</option>
                   {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
-                <textarea placeholder="Describe the repair�" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
+                <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
                 <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
                   {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                 </select>
@@ -7597,7 +7638,7 @@ export default function App() {
           )}
 
 
-      {/* -- FEEDBACK PANEL -- */}
+      {/* ── FEEDBACK PANEL ── */}
       {showFeedback && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 500, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowFeedback(false); }}>
@@ -7608,11 +7649,11 @@ export default function App() {
                 <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)" }}>Send Feedback</div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>We read every message personally</div>
               </div>
-              <button onClick={function(){ setShowFeedback(false); }} style={{ background: "var(--bg-subtle)", border: "none", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16, color: "var(--text-muted)" }}>?</button>
+              <button onClick={function(){ setShowFeedback(false); }} style={{ background: "var(--bg-subtle)", border: "none", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16, color: "var(--text-muted)" }}>✕</button>
             </div>
             {feedbackSent ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>?</div>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>Thanks!</div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Garry reads everything and will be in touch if needed.</div>
                 <button onClick={function(){ setShowFeedback(false); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Done</button>
@@ -7624,7 +7665,7 @@ export default function App() {
                   {["Bug Report","Feature Request","Question","General Feedback"].map(function(cat){ return (
                     <button key={cat} onClick={function(){ setFeedbackForm(function(f){ return { ...f, category: cat }; }); }}
                       style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid " + (feedbackForm.category === cat ? "var(--brand)" : "var(--border)"), background: feedbackForm.category === cat ? "var(--brand-deep)" : "transparent", color: feedbackForm.category === cat ? "var(--brand)" : "var(--text-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                      {cat === "Bug Report" ? "?? " : cat === "Feature Request" ? "? " : cat === "Question" ? "? " : "?? "}{cat}
+                      {cat === "Bug Report" ? "🐛 " : cat === "Feature Request" ? "✨ " : cat === "Question" ? "❓ " : "💬 "}{cat}
                     </button>
                   ); })}
                 </div>
@@ -7634,7 +7675,7 @@ export default function App() {
                 <textarea
                   value={feedbackForm.message}
                   onChange={function(e){ setFeedbackForm(function(f){ return { ...f, message: e.target.value }; }); }}
-                  placeholder={feedbackForm.category === "Bug Report" ? "Describe what happened and how to reproduce it�" : feedbackForm.category === "Feature Request" ? "What would you like to see? How would it help you?" : "What's on your mind?"}
+                  placeholder={feedbackForm.category === "Bug Report" ? "Describe what happened and how to reproduce it…" : feedbackForm.category === "Feature Request" ? "What would you like to see? How would it help you?" : "What's on your mind?"}
                   rows={5}
                   style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", fontSize: 13, lineHeight: 1.6, resize: "none", boxSizing: "border-box", outline: "none", background: "var(--bg-subtle)", color: "var(--text-primary)", fontFamily: "inherit" }}
                 />
@@ -7664,11 +7705,11 @@ export default function App() {
                     setFeedbackSent(true);
                     setFeedbackForm({ category: "General Feedback", message: "" });
                   } catch(e) {
-                    setFeedbackError("Couldn't send � please try again.");
+                    setFeedbackError("Couldn't send — please try again.");
                   } finally { setFeedbackSending(false); }
                 }}
                 style={{ width: "100%", padding: "13px", border: "none", borderRadius: 10, background: feedbackSending || !feedbackForm.message.trim() ? "var(--bg-subtle)" : "var(--brand)", color: feedbackSending || !feedbackForm.message.trim() ? "var(--text-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: feedbackSending || !feedbackForm.message.trim() ? "default" : "pointer" }}>
-                {feedbackSending ? "Sending�" : "Send Feedback ?"}
+                {feedbackSending ? "Sending…" : "Send Feedback →"}
               </button>
             </>)}
           </div>
@@ -7678,4 +7719,3 @@ export default function App() {
     </div>
   );
 }
-
