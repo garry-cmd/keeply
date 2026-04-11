@@ -5415,7 +5415,7 @@ export default function App() {
                 </div>
 
                 {equipAiMode ? (<>
-                  <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "var(--text-muted)" }}>
+                  <div style={{ background: "var(--brand-deep)", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "var(--brand)" }}>
                     Describe the equipment and we'll create the card with maintenance tasks automatically.
                   </div>
                   <textarea
@@ -5546,6 +5546,7 @@ export default function App() {
             onBack={function(){ setTab("boat"); }}
             openAddForm={showAddLog}
             onAddFormOpened={function(){ setShowAddLog(false); }}
+            userPlan={userPlan}
           />
         )}
 

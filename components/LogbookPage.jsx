@@ -137,8 +137,10 @@ function blankForm() {
 
 export default function LogbookPage({
   vesselId, vesselName, vesselType, fuelBurnRate,
-  onBack, openAddForm, onAddFormOpened
+  onBack, openAddForm, onAddFormOpened, userPlan
 }) {
+  const isPro      = userPlan === "pro";
+  const isStandard = userPlan === "standard" || userPlan === "pro";
   // Navigation
   const [logbookTab,   setLogbookTab]   = useState("pre_departure");
   const [showHistory,  setShowHistory]  = useState(false);
@@ -637,12 +639,38 @@ export default function LogbookPage({
           </div>
         </div>
         {/* History link — always accessible */}
-        <button onClick={function(){ setShowHistory(function(h){return !h;}); }}
-          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--brand)", fontFamily: "inherit", padding: "4px 0" }}>
-          {showHistory
-            ? "← Back"
-            : (passages.length > 0 ? passages.length + " passages · " + Math.round(totalNm) + " nm →" : "History →")}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {showHistory && isPro && (
+            <button onClick={function(){
+              const rows = ["Date,From,To,Distance (nm),Departed,Arrived,Sea State,Conditions,Crew,Notes"];
+              entries.filter(function(e){ return e.entry_type === "passage"; }).forEach(function(e){
+                rows.push([
+                  e.entry_date, e.from_location||"", e.to_location||"",
+                  e.distance_nm||"", e.departure_time||"", e.arrival_time||"",
+                  e.sea_state||"", e.conditions||"", e.crew||"",
+                  (e.notes||"").replace(/,/g,"；")
+                ].join(","));
+              });
+              const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url;
+              a.download = "keeply-passages.csv"; a.click();
+              URL.revokeObjectURL(url);
+            }} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer", color: "var(--text-muted)", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              Export CSV
+            </button>
+          )}
+          {showHistory && !isPro && entries.length > 0 && (
+            <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "inherit" }}>Export — Pro</span>
+          )}
+          <button onClick={function(){ setShowHistory(function(h){return !h;}); }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--brand)", fontFamily: "inherit", padding: "4px 0" }}>
+            {showHistory
+              ? "← Back"
+              : (passages.length > 0 ? passages.length + " passages · " + Math.round(totalNm) + " nm →" : "History →")}
+          </button>
+        </div>
       </div>
 
       {/* History view */}
