@@ -4659,7 +4659,14 @@ export default function App() {
                                 return (order[ua]||3) - (order[ub]||3);
                               })
                               .map(function(t){
-                                const badge = getDueBadge(t.dueDate);
+                                const dateBadgeEq  = getDueBadge(t.dueDate, t.interval_days);
+                                const avEq = vessels.find(function(v){ return v.id === activeVesselId; });
+                                const cHEq = avEq ? avEq.engineHours : null;
+                                const hoursBadgeEq = getHoursBadge(t.due_hours, cHEq, t.interval_hours);
+                                const rankEq = { "Critical": 3, "Overdue": 2, "Due Soon": 1 };
+                                const badge = (dateBadgeEq && hoursBadgeEq)
+                                  ? ((rankEq[dateBadgeEq.label] || 0) >= (rankEq[hoursBadgeEq.label] || 0) ? dateBadgeEq : hoursBadgeEq)
+                                  : (dateBadgeEq || hoursBadgeEq);
                                 const isExpanded = expandedTask === t.id;
                                 const isCompleting = completingTask === t.id;
                                 return (
@@ -4685,14 +4692,6 @@ export default function App() {
                                           </div>
                                         </div>
                                         {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge.label}</span>}
-                                        {(function(){
-                                          if (!t.interval_hours) return null;
-                                          var avH = vessels.find(function(v){ return v.id === activeVesselId; });
-                                          var cH = avH ? avH.engineHours : null;
-                                          var hb = getHoursBadge(t.due_hours, cH, t.interval_hours);
-                                          if (!hb) return null;
-                                          return <span style={{ background: hb.bg, color: hb.color, border: "1px solid " + (hb.border||hb.color), borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{hb.label}</span>;
-                                        })()}
                                         <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer", flexShrink: 0 }} onClick={function(){ setExpandedTask(isExpanded ? null : t.id); }}>{isExpanded ? "▾" : "▸"}</span>
                                       </div>
                                       {isExpanded && (
@@ -5623,12 +5622,7 @@ export default function App() {
                       </div>
                     </>)}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
-                      style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", padding: "3px 10px", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}>Edit</button>
-                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
-                  </div>
+                  <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }} onClick={function(e){ e.stopPropagation(); const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !sugg) getSuggestionsForRepair(r); }}>{isExpanded ? "▾" : "▸"}</span>
                 </div>
 
                 {/* Tabbed expanded panel */}
@@ -5636,7 +5630,17 @@ export default function App() {
                   <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
 
                     {/* Tab bar */}
-                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+                    <div style={{ padding: "10px 16px 0", display: "flex", gap: 6, alignItems: "center" }}>
+                      <SectionBadge section={r.section} />
+                      {r.priority && <span style={{ fontSize: 10, fontWeight: 700, background: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].bg : "var(--bg-subtle)", color: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].color : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", textTransform: "uppercase" }}>{r.priority}</span>}
+                      <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
+                          style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", padding: "3px 10px", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}>Edit</button>
+                        <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }}
+                          style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", padding: "3px 8px", display: "flex", alignItems: "center", opacity: 0.7 }}><TrashIcon /></button>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "8px 16px 0", overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
                       {["parts", "notes", "photos"].map(function(t){ return (
                         <button key={t} onClick={function(e){ e.stopPropagation(); setRepairTab(function(prev){ const n = Object.assign({}, prev); n[r.id] = t; return n; }); if (t === "parts" && !sugg) getSuggestionsForRepair(r); }}
                           style={{ padding: "8px 12px", border: "none", background: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", borderBottom: "2px solid " + ((repairTab[r.id] || "parts") === t ? "var(--brand)" : "transparent"), color: (repairTab[r.id] || "parts") === t ? "var(--brand)" : "var(--text-muted)", letterSpacing: "0.3px" }}>
@@ -5829,7 +5833,14 @@ export default function App() {
                       <div style={{ padding: "6px 20px 2px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px" }}>MAINTENANCE</div>
                     )}
                     {panelTasks.map(function(t){
-                    const badge = getDueBadge(t.dueDate);
+                    const dateBadgeP = getDueBadge(t.dueDate, t.interval_days);
+                    const avP = vessels.find(function(v){ return v.id === activeVesselId; });
+                    const cHP = avP ? avP.engineHours : null;
+                    const hoursBadgeP = getHoursBadge(t.due_hours, cHP, t.interval_hours);
+                    const rankP = { "Critical": 3, "Overdue": 2, "Due Soon": 1 };
+                    const badge = (dateBadgeP && hoursBadgeP)
+                      ? ((rankP[dateBadgeP.label] || 0) >= (rankP[hoursBadgeP.label] || 0) ? dateBadgeP : hoursBadgeP)
+                      : (dateBadgeP || hoursBadgeP);
                     const isCompleting = completingTask === t.id;
                     const isExpanded = expandedTask === t.id;
                     const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
@@ -6117,7 +6128,14 @@ export default function App() {
                         )}
                         {colTasks.map(function(t){
                           const urgency = getTaskUrgency(t);
-                          const badge = getDueBadge(t.dueDate);
+                          const dateBadgeKB = getDueBadge(t.dueDate, t.interval_days);
+                          const avKB = vessels.find(function(v){ return v.id === activeVesselId; });
+                          const cHKB = avKB ? avKB.engineHours : null;
+                          const hoursBadgeKB = getHoursBadge(t.due_hours, cHKB, t.interval_hours);
+                          const rankKB = { "Critical": 3, "Overdue": 2, "Due Soon": 1 };
+                          const badge = (dateBadgeKB && hoursBadgeKB)
+                            ? ((rankKB[dateBadgeKB.label] || 0) >= (rankKB[hoursBadgeKB.label] || 0) ? dateBadgeKB : hoursBadgeKB)
+                            : (dateBadgeKB || hoursBadgeKB);
                           const urgencyBorder = urgency === "critical" ? "var(--danger-text)" : urgency === "overdue" ? "var(--warn-text)" : urgency === "due-soon" ? "#ca8a04" : "transparent";
                           const daysUntil = t.dueDate ? Math.round((new Date(t.dueDate) - new Date()) / 86400000) : null;
                           const daysLabel = daysUntil === null ? null : daysUntil < 0 ? Math.abs(daysUntil) + "d overdue" : daysUntil === 0 ? "due today" : "in " + daysUntil + "d";
@@ -6181,7 +6199,14 @@ export default function App() {
           </div>
           {docTasks.length === 0 && <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}><div style={{ fontSize: 36 }}></div><div style={{ marginTop: 8 }}>No paperwork items yet.</div></div>}
           {[...docTasks].filter(function(t){ if (filterDocUrgency === "All") return true; return getTaskUrgency(t) === filterDocUrgency; }).sort(function(a,b){ return (PRIORITY_CFG[a.priority]||PRIORITY_CFG["medium"]).order - (PRIORITY_CFG[b.priority]||PRIORITY_CFG["medium"]).order; }).map(function(t){
-            const badge = getDueBadge(t.dueDate);
+            const dateBadgeDoc = getDueBadge(t.dueDate, t.interval_days);
+            const avDoc = vessels.find(function(v){ return v.id === activeVesselId; });
+            const cHDoc = avDoc ? avDoc.engineHours : null;
+            const hoursBadgeDoc = getHoursBadge(t.due_hours, cHDoc, t.interval_hours);
+            const rankDoc = { "Critical": 3, "Overdue": 2, "Due Soon": 1 };
+            const badge = (dateBadgeDoc && hoursBadgeDoc)
+              ? ((rankDoc[dateBadgeDoc.label] || 0) >= (rankDoc[hoursBadgeDoc.label] || 0) ? dateBadgeDoc : hoursBadgeDoc)
+              : (dateBadgeDoc || hoursBadgeDoc);
             const isExpanded = expandedDoc === t.id;
             const atts = t.attachments || [];
             return (
