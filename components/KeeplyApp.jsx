@@ -2676,7 +2676,7 @@ export default function App() {
         </div>
       </div>
       {/* ── First Mate input bar — sparkle icon, always sticky ── */}
-      <div style={{ background: "#071e3d", padding: "0 14px 11px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ background: "var(--bg-card)", padding: "0 14px 11px", borderBottom: "1px solid var(--border-strong)" }}>
         <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: 13, padding: "9px 10px 9px 12px", display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}
           onClick={function(){ setShowFirstMatePanel(true); }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -3899,8 +3899,7 @@ export default function App() {
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             const daysSinceLogged = r.date ? Math.round((new Date() - new Date(r.date)) / 86400000) : 0;
-            const repairDotColor = daysSinceLogged >= 10 ? "#ef4444" : "#f59e0b";
-            const repairDotShadow = daysSinceLogged >= 10 ? "0 0 6px rgba(239,68,68,0.6)" : "0 0 6px rgba(245,158,11,0.5)";
+
             return (
               <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -3936,8 +3935,8 @@ export default function App() {
                         </div>
                       </div>
                     ) : (<>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.88)", lineHeight: 1.2 }}>{r.description}</div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.96)", lineHeight: 1.2 }}>{r.description}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
                         {daysSinceLogged === 0 ? "Logged today" : "Logged " + daysSinceLogged + " day" + (daysSinceLogged === 1 ? "" : "s") + " ago"}
                         {(r.photos || []).length > 0 && (
                           <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--text-muted)", cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); setExpandedRepair(r.id); setRepairTab(function(prev){ var n = Object.assign({}, prev); n[r.id] = "photos"; return n; }); }}>📷 {r.photos.length}</span>
@@ -3948,19 +3947,19 @@ export default function App() {
                       </div>
                     </>)}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: repairDotColor, boxShadow: repairDotShadow, flexShrink: 0 }} />
-                    <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 13, color: "rgba(255,255,255,0.35)" }} title="Edit">✏️</button>
-                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", opacity: 0.5 }} title="Delete"><TrashIcon /></button>
-                    <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next);  }}>{isExpanded ? "▾" : "▸"}</span>
-                  </div>
+                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, cursor: "pointer", flexShrink: 0 }} onClick={function(e){ e.stopPropagation(); const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
                 </div>
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
-                    <div style={{ padding: "10px 16px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <div style={{ padding: "10px 16px 0", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                       <SectionBadge section={r.section} />
                       {r.priority && <span style={{ fontSize: 10, fontWeight: 700, background: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].bg : "var(--bg-subtle)", color: PRIORITY_CFG[r.priority] ? PRIORITY_CFG[r.priority].color : "var(--text-muted)", borderRadius: 5, padding: "1px 6px", textTransform: "uppercase" }}>{r.priority}</span>}
+                      <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                        <button onClick={function(e){ e.stopPropagation(); setEditingRepair(r.id); setEditRepairForm({ description: r.description, section: r.section, _equipmentId: r.equipment_id || null }); setExpandedRepair(null); }}
+                          style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", padding: "3px 10px", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}>Edit</button>
+                        <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }}
+                          style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", padding: "3px 8px", display: "flex", alignItems: "center", opacity: 0.7 }}><TrashIcon /></button>
+                      </div>
                     </div>
                     <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 16px", marginTop: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
                       {["parts", "notes", "photos"].map(function(t){ return (
