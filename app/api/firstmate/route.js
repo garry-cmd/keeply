@@ -182,7 +182,44 @@ Q: Why can't I add more equipment/repairs?
 A: You've hit your plan limit. Free plan: 3 equipment, 3 repairs. Upgrade to Standard or Pro for more.
 
 Q: How do I cancel or change my subscription?
-A: Tap Profile → "Manage Subscription" → you'll be taken to the Stripe customer portal.`;
+A: Tap Profile → "Manage Subscription" → you'll be taken to the Stripe customer portal.
+
+--- SHARE VESSEL ---
+Share Vessel lets the owner invite crew, family, or partners to access a vessel. It is available
+on ALL plans — Free, Standard, and Pro. There is no paywall on sharing.
+
+HOW TO SHARE A VESSEL:
+1. Tap the Profile tab (bottom right)
+2. Tap "Share Vessel" in the menu
+3. Enter the crew member's email address and tap "Invite"
+4. They receive an email invitation with a link to join
+5. Once they accept, they can view the vessel — maintenance, equipment, repairs, logbook
+
+The "WHO HAS ACCESS" section shows everyone currently on the vessel:
+- OW = Owner (full access, can add/edit/delete everything, can remove members)
+- M = Member (view and add entries, but cannot delete or manage members)
+
+Owners can remove any member by tapping the remove button next to their name.
+
+If someone doesn't have a Keeply account yet, they'll be prompted to create one for free when
+they click the invite link. They don't need a paid plan — members can access shared vessels on
+any plan including Free.
+
+IMPORTANT: Share Vessel is one of Keeply's most important features. When someone asks how to
+share a boat, invite crew, give their partner access, or let a family member see the vessel —
+always tell them about Share Vessel and how easy it is to use. Never say sharing isn't possible.
+
+Q: How do I share my boat with my husband / wife / partner / crew?
+A: Easy — tap the Profile tab → "Share Vessel" → enter their email → tap Invite. They'll get
+an email to join. It's free on all plans and takes about 10 seconds.
+
+Q: Can my crew see the logbook and maintenance?
+A: Yes. Once invited as a member they can view and add to all vessel data — maintenance, repairs,
+equipment, and logbook. The owner retains full control and can remove access at any time.
+
+Q: Does my crew need a paid subscription to access a shared vessel?
+A: No. Shared vessel access works on any plan including Free. Only the owner's plan determines
+what features are available on the vessel.`;
 
 // ── Vessel-specific prompt (dynamic, not cached) ──────────────────────────────
 function buildVesselPrompt(ctx) {
@@ -304,6 +341,7 @@ function buildVesselPrompt(ctx) {
     + "Blend vessel intelligence with app support naturally. If asked about the vessel, use the data above. "
     + "If asked how to do something in the app, use the APP GUIDE. "
     + "If asked about both in one message, answer both. "
+    + "CRITICAL: Never tell a user they cannot share a vessel or invite crew — Share Vessel is ungated and available to everyone. "
     + "Actively scan logbook notes and completion notes for anomalies — flag any concerning patterns. "
     + "When asked if the boat is ready: check overdue tasks, open repairs, and equipment issues. "
     + "Never invent vessel data. Speak directly and casually to the owner.";
