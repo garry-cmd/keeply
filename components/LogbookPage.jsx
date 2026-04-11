@@ -102,7 +102,7 @@ async function upsertChecklist(vesselId, checklistType, checkedItems, lastReset)
     updated_at: new Date().toISOString(),
   };
   await fetch(
-    SUPA_URL + "/rest/v1/vessel_checklists?vessel_id=eq." + vesselId + "&checklist_type=eq." + checklistType,
+    SUPA_URL + "/rest/v1/vessel_checklists?on_conflict=vessel_id,checklist_type",
     {
       method: "POST",
       headers: {
