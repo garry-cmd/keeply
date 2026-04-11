@@ -3773,7 +3773,7 @@ export default function App() {
               if (!engineHours) return { value: lastLogWithHours.hours_end, source: "log", date: lastLogWithHours.entry_date };
               var logDate    = new Date(lastLogWithHours.entry_date);
               var manualDate = lastHoursUpdate ? new Date(lastHoursUpdate) : new Date(0);
-              return manualDate > logDate
+              return manualDate >= logDate
                 ? { value: engineHours,               source: "manual", date: lastHoursUpdate }
                 : { value: lastLogWithHours.hours_end, source: "log",    date: lastLogWithHours.entry_date };
             })();
