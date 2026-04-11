@@ -393,7 +393,6 @@ export default function LogbookPage({
     { id: "passages",      label: "Passages" },
     { id: "pre_departure", label: "Pre-Departure" },
     { id: "arrival",       label: "Arrival" },
-    { id: "reference",     label: "≡" },
   ];
 
   return (
@@ -539,7 +538,7 @@ export default function LogbookPage({
 
       {logbookTab === "pre_departure" && renderChecklist("pre_departure", PRE_DEPARTURE_ITEMS, pdChecked, pdReset)}
       {logbookTab === "arrival"       && renderChecklist("arrival", ARRIVAL_ITEMS, arChecked, arReset)}
-      {logbookTab === "reference"     && renderReference()}
+
 
       {/* Entry detail view */}
       {viewingEntry && (function() {

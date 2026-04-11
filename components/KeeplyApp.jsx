@@ -3245,7 +3245,7 @@ export default function App() {
                     <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.22)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                       onClick={function(e){ e.stopPropagation(); }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        {[["info","ID"],["docs","Docs"],["admin","Admin"]].map(function(pair){
+                        {[["info","ID"],["docs","Docs"],["admin","Admin"],["ref","Ref"]].map(function(pair){
                           return (
                             <button key={pair[0]} onClick={function(){ tapTab(pair[0]); }} style={pillStyle(pair[0])}>
                               <span style={pillText(pair[0])}>{pair[1]}</span>
@@ -3601,6 +3601,31 @@ export default function App() {
                         </div>
                       );
                     })()}
+
+                    {(equipTab[vesselEq.id] || "info") === "ref" && (
+                      <div onClick={function(e){ e.stopPropagation(); }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 10 }}>Reference library</div>
+                        {[
+                          { label: "Rules of the Road",       desc: "Navigation rules & right of way" },
+                          { label: "VHF channel guide",       desc: "Ch 16, 22A, working channels" },
+                          { label: "Distress signals",         desc: "MAYDAY, PAN-PAN, visual signals" },
+                          { label: "Buoy & light patterns",   desc: "IALA-B lateral & cardinal marks" },
+                          { label: "USCG required equipment", desc: "Federal requirements by vessel length" },
+                          { label: "Anchoring guide",          desc: "Scope ratios, holding ground, procedures" },
+                        ].map(function(ref) {
+                          return (
+                            <div key={ref.label} style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "11px 14px", marginBottom: 7, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{ref.label}</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{ref.desc}</div>
+                              </div>
+                              <span style={{ fontSize: 16, color: "var(--text-muted)", marginLeft: 10 }}>›</span>
+                            </div>
+                          );
+                        })}
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 12 }}>More references coming soon</div>
+                      </div>
+                    )}
 
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
                       <div onClick={function(e){ e.stopPropagation(); }}>
