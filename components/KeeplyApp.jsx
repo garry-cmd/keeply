@@ -6786,7 +6786,7 @@ export default function App() {
             {/* ── Profile / Settings Panel ─────────────────────────── */}
       {showProfilePanel && (
         <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 500 }} onClick={function(){ setShowProfilePanel(false); }}>
-          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(420px, 100vw)", background: "var(--bg-app)", display: "flex", flexDirection: "column", boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }} onClick={function(e){ e.stopPropagation(); }}>
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(420px, 100vw)", background: "var(--bg-card)", display: "flex", flexDirection: "column", boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }} onClick={function(e){ e.stopPropagation(); }}>
 
             {/* Header */}
             <div style={{ background: "var(--brand)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
@@ -6797,10 +6797,10 @@ export default function App() {
             <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
 
               {/* ── Profile ── */}
-              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>PROFILE</div>
-              <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.6px" }}>PROFILE</div>
+              <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
                 {/* Avatar + name */}
-                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, borderBottom: "0.5px solid #f3f4f6" }}>
+                <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, borderBottom: "0.5px solid var(--border)" }}>
                   <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--brand-deep)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "var(--brand)", flexShrink: 0 }}>
                     {profilePrefs.displayName ? profilePrefs.displayName.split(" ").map(function(n){ return n[0]; }).join("").substring(0,2).toUpperCase() : "?"}
                   </div>
@@ -6810,7 +6810,7 @@ export default function App() {
                   </div>
                 </div>
                 {/* Display name editable */}
-                <div style={{ padding: "10px 20px", borderBottom: "0.5px solid #f3f4f6" }}>
+                <div style={{ padding: "10px 20px", borderBottom: "0.5px solid var(--border)" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 4 }}>DISPLAY NAME</div>
                   <input value={profilePrefs.displayName} onChange={function(e){ setProfilePrefs(function(p){ return Object.assign({}, p, { displayName: e.target.value }); }); }}
                     placeholder="Your name" style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit", outline: "none" }} />
@@ -6841,20 +6841,20 @@ export default function App() {
               </div>
 
               {/* ── Alert Channels ── */}
-              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ALERT NOTIFICATIONS</div>
-              <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.6px" }}>ALERT NOTIFICATIONS</div>
+              <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
                 {[
                   { key: "alertInApp", label: "In-app alerts", sub: "Bell icon in header", enabled: true },
                   { key: "alertEmail", label: "Email digest", sub: "Daily summary to " + (profilePrefs.emailAddress || "your email"), enabled: true },
                 ].map(function(item, i){ return (
-                  <div key={i} style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid #f3f4f6" }}>
+                  <div key={i} style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid var(--border)" }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{item.label}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{item.sub}</div>
                     </div>
                     <div onClick={function(){ if (!item.key) return; setProfilePrefs(function(p){ const n = Object.assign({}, p); n[item.key] = !p[item.key]; return n; }); }}
                       style={{ width: 40, height: 24, borderRadius: 12, background: profilePrefs[item.key] ? "var(--brand)" : "var(--border)", position: "relative", cursor: "pointer", flexShrink: 0, transition: "background 0.2s" }}>
-                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "var(--bg-card)", top: 3, left: profilePrefs[item.key] ? 19 : 3, transition: "left 0.2s" }} />
+                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "#ffffff", top: 3, left: profilePrefs[item.key] ? 19 : 3, transition: "left 0.2s" }} />
                     </div>
                   </div>
                 ); })}
@@ -6877,21 +6877,21 @@ export default function App() {
                       enablePushNotifications();
                     }}
                     style={{ width: 40, height: 24, borderRadius: 12, background: pushStatus === "subscribed" ? "var(--brand)" : "var(--border)", position: "relative", cursor: pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "unsupported" || pushStatus === "ios-browser" ? "default" : "pointer", flexShrink: 0, opacity: pushStatus === "unsupported" ? 0.4 : 1, transition: "background 0.2s" }}>
-                    <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "var(--bg-card)", top: 3, left: pushStatus === "subscribed" ? 19 : 3, transition: "left 0.2s" }} />
+                    <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "#ffffff", top: 3, left: pushStatus === "subscribed" ? 19 : 3, transition: "left 0.2s" }} />
                   </div>
                 </div>
               </div>
 
               {/* ── Alert Thresholds ── */}
-              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ALERT THRESHOLDS</div>
-              <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.6px" }}>ALERT THRESHOLDS</div>
+              <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
                 {[
                   { key: "alertOverdue", label: "Overdue", sub: "Past due date", dot: "var(--danger-text)" },
                   { key: "alertDayOf",   label: "Day of",  sub: "Due today",     dot: "var(--text-muted)" },
                   { key: "alert3day",    label: "3 days out", sub: "Due in 3 days", dot: "var(--warn-text)" },
                   { key: "alert7day",    label: "7 days out", sub: "Due in 7 days", dot: "#ca8a04" },
                 ].map(function(item, i, arr){ return (
-                  <div key={item.key} style={{ padding: "11px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: i < arr.length-1 ? "0.5px solid #f3f4f6" : "none" }}>
+                  <div key={item.key} style={{ padding: "11px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: i < arr.length-1 ? "0.5px solid var(--border)" : "none" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.dot, flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{item.label}</div>
@@ -6899,7 +6899,7 @@ export default function App() {
                     </div>
                     <div onClick={function(){ setProfilePrefs(function(p){ const n = Object.assign({}, p); n[item.key] = !p[item.key]; return n; }); }}
                       style={{ width: 40, height: 24, borderRadius: 12, background: profilePrefs[item.key] ? "var(--brand)" : "var(--border)", position: "relative", cursor: "pointer", flexShrink: 0, transition: "background 0.2s" }}>
-                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "var(--bg-card)", top: 3, left: profilePrefs[item.key] ? 19 : 3, transition: "left 0.2s" }} />
+                      <div style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "#ffffff", top: 3, left: profilePrefs[item.key] ? 19 : 3, transition: "left 0.2s" }} />
                     </div>
                   </div>
                 ); })}
@@ -6913,9 +6913,9 @@ export default function App() {
               )}
 
               {/* ── Account ── */}
-              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px" }}>ACCOUNT</div>
-              <div style={{ background: "var(--bg-card)", borderTop: "0.5px solid #e2e8f0", borderBottom: "0.5px solid #e2e8f0" }}>
-                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.6px" }}>ACCOUNT</div>
+              <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
                   onClick={function(){
                       if (userPlan !== "fleet" && userPlan !== "enterprise") {
                         setShowProfilePanel(false);
@@ -6928,14 +6928,14 @@ export default function App() {
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>⚓ Fleet Dashboard</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
-                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
                   onClick={function(){ setShowProfilePanel(false); setShowShare(true); setShareMsg(null); setShareEmail(""); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>👥 Share Vessel</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
                 {/* Push notifications row */}
                 {pushStatus !== "unsupported" && (
-                  <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid #f3f4f6", cursor: pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "ios-browser" ? "default" : "pointer" }}
+                  <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid var(--border)", cursor: pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "ios-browser" ? "default" : "pointer" }}
                     onClick={pushStatus === "subscribed" || pushStatus === "denied" || pushStatus === "ios-browser" ? undefined : function(){ enablePushNotifications(); }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
@@ -6958,22 +6958,22 @@ export default function App() {
                     </div>
                   </div>
                 )}
-                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
                   onClick={function(){ window.open("/privacy", "_blank"); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Privacy Policy</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>↗</span>
                 </div>
-                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
                   onClick={function(){ window.open("/terms", "_blank"); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Terms of Service</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>↗</span>
                 </div>
-                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
                   onClick={function(){ setShowProfilePanel(false); setShowFeedback(true); setFeedbackSent(false); setFeedbackError(null); setFeedbackForm({ category: "General Feedback", message: "" }); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>💬 Send Feedback</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
                 </div>
-                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid #f3f4f6" }}
+                <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
                   onClick={function(){ supabase.auth.signOut(); setShowProfilePanel(false); }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--danger-text)" }}>Sign out</span>
                   <span style={{ color: "var(--text-muted)", fontSize: 14 }}>›</span>
