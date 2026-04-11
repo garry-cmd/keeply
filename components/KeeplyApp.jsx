@@ -2695,7 +2695,9 @@ export default function App() {
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400, background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", height: 62, boxShadow: "0 -2px 12px rgba(0,0,0,0.12)" }}>
           {[
             { label: "My Boat",   active: view==="customer" && tab==="boat",                 action: function(){ setView("customer"); setTab("boat"); },
-              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+              svg: settings.vesselType === "motor"
+                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l2-8h12l2 8"/><path d="M2 15 C5 15 6 17 12 17 C18 17 19 15 22 15"/><path d="M2 15 C4 18 7 19 12 19 C17 19 20 18 22 15"/><line x1="9" y1="7" x2="9" y2="4"/><line x1="7" y1="4" x2="14" y2="4"/></svg>
+                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-12z"/><line x1="12" y1="3" x2="12" y2="20"/><path d="M12 8 L7 15 L12 15"/><path d="M3 20 L21 20"/></svg> },
             { label: "Logbook",   active: view==="customer" && tab==="logbook-standalone",   action: function(){ setView("customer"); setTab("logbook-standalone"); },
               svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
             { label: "Equipment", active: view==="customer" && tab==="equipment-standalone", action: function(){ setView("customer"); setTab("equipment-standalone"); },
