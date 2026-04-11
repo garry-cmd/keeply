@@ -5336,11 +5336,11 @@ export default function App() {
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
               {[
-                { label: "Add Equipment", icon: "⚙️", action: function(){
-        setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
-      } },
-                { label: "Add Task", icon: "📋", action: function(){ setShowAddTask(true); setShowFab(false); } },
-                { label: "Add Repair", icon: "🔧", action: function(){
+                { label: "Add Equipment", stroke: "#94a3b8", bg: "rgba(148,163,184,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a1.5 1.5 0 0 0-1.5 1.5v1.1a7 7 0 0 0-2.12.88L7.34 4.44a1.5 1.5 0 0 0-2.12 2.12l1.04 1.04A7 7 0 0 0 5.38 10H4.5a1.5 1.5 0 0 0 0 3h.88a7 7 0 0 0 .88 2.4l-1.04 1.04a1.5 1.5 0 0 0 2.12 2.12l1.04-1.04A7 7 0 0 0 10.5 20.5v.88a1.5 1.5 0 0 0 3 0v-.88a7 7 0 0 0 2.4-.88l1.04 1.04a1.5 1.5 0 0 0 2.12-2.12l-1.04-1.04a7 7 0 0 0 .88-2.4h.88a1.5 1.5 0 0 0 0-3h-.88a7 7 0 0 0-.88-2.4l1.04-1.04a1.5 1.5 0 0 0-2.12-2.12l-1.04 1.04A7 7 0 0 0 13.5 4.6V3.5A1.5 1.5 0 0 0 12 2z"/><circle cx="12" cy="11.5" r="2.8"/></svg>, action: function(){
+                  setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
+                } },
+                { label: "Add Task", stroke: "#34d399", bg: "rgba(52,211,153,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>, action: function(){ setShowAddTask(true); setShowFab(false); } },
+                { label: "Add Repair", stroke: "#f87171", bg: "rgba(248,113,113,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>, action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
                     if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
                       setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs with AI parts suggestions.");
@@ -5350,8 +5350,7 @@ export default function App() {
                     }
                     setShowAddRepair(true); setShowFab(false);
                   } },
-                { label: "Equipment Note", icon: "📝", action: function(){
-                    // Default to most urgent equipment card on this vessel
+                { label: "Equipment Note", stroke: "#a78bfa", bg: "rgba(167,139,250,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>, action: function(){
                     var vesselEq = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; });
                     var urgent = vesselEq.find(function(e){ return e.status === "needs-service"; }) || vesselEq.find(function(e){ return e.status === "watch"; }) || vesselEq[0];
                     setEquipNoteEqId(urgent ? urgent.id : (vesselEq[0] ? vesselEq[0].id : ""));
@@ -5359,11 +5358,11 @@ export default function App() {
                     setShowEquipNote(true);
                     setShowFab(false);
                   } },
-                { label: "Log Entry", icon: "🗺️", action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
+                { label: "Log Entry", stroke: "#7dd3fc", bg: "rgba(125,211,252,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7" strokeWidth="1.3"/><line x1="9" y1="10.5" x2="13" y2="10.5" strokeWidth="1.3"/></svg>, action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
               ].map(function(item){ return (
                 <div key={item.label} onClick={item.action}
-                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid #e2e8f0", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
-                  <span style={{ fontSize: 16 }}>{item.icon}</span>
+                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{item.icon}</div>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>{item.label}</span>
                 </div>
               ); })}
