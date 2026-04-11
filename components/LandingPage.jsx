@@ -1053,7 +1053,7 @@ export default function LandingPage() {
       {showAuth && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, backdropFilter: "blur(6px)" }}
           onClick={function (e) { if (e.target === e.currentTarget) setShowAuth(false); }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 32, width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 32, width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.4)", "--bg-subtle": "#f8fafc", "--bg-card": "#ffffff", "--border": "#e2e8f0", "--text-primary": "#1a1d23", "--text-label": "#6b7280", colorScheme: "light" }}>
             {signupEmail ? (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 40, marginBottom: 16 }}>{"📬"}</div>
@@ -1074,7 +1074,7 @@ export default function LandingPage() {
                     <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>New password</label>
                     <input type="password" value={password} onChange={function (e) { setPassword(e.target.value); }}
                       placeholder={"•".repeat(8)} required minLength={6}
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#fff", color: "#1a1d23" }} />
                   </div>
                   <div style={{ marginBottom: 20 }}>
                     <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Confirm new password</label>
@@ -1126,7 +1126,7 @@ export default function LandingPage() {
                     <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>Email</label>
                     <input type="email" value={email} onChange={function (e) { setEmail(e.target.value); }}
                       placeholder="you@example.com" required
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#fff", color: "#1a1d23" }} />
                   </div>
                   <div style={{ marginBottom: 20 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
@@ -1140,7 +1140,7 @@ export default function LandingPage() {
                     </div>
                     <input type="password" value={password} onChange={function (e) { setPassword(e.target.value); }}
                       placeholder={"•".repeat(8)} required minLength={6}
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#fff", color: "#1a1d23" }} />
                   </div>
                   {error   && <div style={{ fontSize: 13, color: "#dc2626", marginBottom: 12, lineHeight: 1.5 }}>{error}</div>}
                   {message && <div style={{ fontSize: 13, color: "#16a34a", marginBottom: 12, lineHeight: 1.5 }}>{message}</div>}
