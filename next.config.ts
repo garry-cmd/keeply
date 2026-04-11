@@ -3,6 +3,30 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async headers() {
     return [
+      // ─── Security headers — applied to every route ───────────────────────
+      {
+        source: "/(.*)",
+        headers: [
+          // Prevent clickjacking — page cannot be embedded in an iframe
+          { key: "X-Frame-Options", value: "DENY" },
+          // Prevent MIME-type sniffing
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Only send origin in Referer header, strip path/query
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Enforce HTTPS for 2 years, include subdomains
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          // Restrict browser feature access
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+
+      // ─── PWA / manifest ──────────────────────────────────────────────────
       {
         source: "/manifest.json",
         headers: [
