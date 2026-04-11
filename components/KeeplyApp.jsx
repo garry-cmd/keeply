@@ -257,27 +257,27 @@ const PRIORITY_CFG = {
   low:      { color: "var(--priority-low-text)",      bg: "var(--priority-low-bg)",      order: 3 },
 };
 const SECTIONS = {
-  Anchor:      "⚓",
-  Bilge:       "🪣",
-  Deck:        "🛥️",
-  Dinghy:      "🚤",
-  Electrical:  "⚡",
-  Electronics: "📡",
-  Engine:      "🔧",
-  Galley:      "🍳",
-  General:     "🔧",
-  Generator:   "🔌",
-  Hull:        "🚢",
-  Mechanical:  "⚙️",
-  Navigation:  "🗺️",
-  Paperwork:   "📄",
-  Plumbing:    "🚿",
-  Rigging:     "🪢",
-  Safety:      "🛟",
-  Sails:       "⛵",
-  Steering:    "🧭",
-  Vessel:      "⚓",
-  Watermaker:  "💧",
+  Anchor:      "",
+  Bilge:       "",
+  Deck:        "",
+  Dinghy:      "",
+  Electrical:  "",
+  Electronics: "",
+  Engine:      "",
+  Galley:      "",
+  General:     "",
+  Generator:   "",
+  Hull:        "",
+  Mechanical:  "",
+  Navigation:  "",
+  Paperwork:   "",
+  Plumbing:    "",
+  Rigging:     "",
+  Safety:      "",
+  Sails:       "",
+  Steering:    "",
+  Vessel:      "",
+  Watermaker:  "",
 };
 const ALL_SECTIONS   = Object.keys(SECTIONS);
 const MAINT_SECTIONS = ALL_SECTIONS.filter(function(s){ return s !== "Paperwork" && s !== "Vessel"; });
@@ -325,7 +325,7 @@ function PriorityBadge({ priority }) {
   return <Badge label={label} color={c.color} bg={c.bg} />;
 }
 function SectionBadge({ section }) {
-  return <span style={{ fontSize: 10, fontWeight: 700, background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "1px 6px" }}>{SECTIONS[section] || ""} {section}</span>;
+  return <span style={{ fontSize: 10, fontWeight: 700, background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "1px 6px" }}>{section}</span>;
 }
 function StatusBadge({ status }) {
   const c = STATUS_CFG[status] || STATUS_CFG["good"];
@@ -720,7 +720,7 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.task}</span>
             {badge && <span style={{ background: badge.bg, color: badge.color, border: "1px solid " + badge.border, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{badge.label}</span>}
-            {showSection && <span style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 600 }}>{SECTIONS[task.section]} {task.section}</span>}
+            {showSection && <span style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 600 }}>{task.section}</span>}
           </div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
             Every {task.interval || (task.interval_days ? task.interval_days + " days" : "?")}
@@ -4391,7 +4391,7 @@ export default function App() {
                 <select value={equipSectionFilter} onChange={function(e){ setEquipSectionFilter(e.target.value); }}
                   style={{ width: "100%", border: "0.5px solid var(--border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)", cursor: "pointer", appearance: "none", WebkitAppearance: "none" }}>
                   <option value="All">All categories</option>
-                  {cats.map(function(c){ return <option key={c} value={c}>{(SECTIONS[c] || "") + " " + c}</option>; })}
+                  {cats.map(function(c){ return <option key={c} value={c}>{c}</option>; })}
                 </select>
               </div>
             );
@@ -5408,7 +5408,7 @@ export default function App() {
                         <div>
                           <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{equipAiResult.name}</div>
                           <div style={{ fontWeight: 500, color: "var(--text-muted)" }}>
-                            {SECTIONS[equipAiResult.category] || ""} {equipAiResult.category}
+                            {equipAiResult.category}
                             {equipAiResult.manufacturer && <span> · {equipAiResult.manufacturer}</span>}
                             {equipAiResult.model && <span> · {equipAiResult.model}</span>}
                           </div>
@@ -5553,7 +5553,7 @@ export default function App() {
               {MAINT_SECTIONS.map(function(sec){
                 const count = repairs.filter(function(r){ return r.section === sec && r.status !== "closed"; }).length;
                 if (count === 0) return null;
-                return <option key={sec} value={sec}>{(SECTIONS[sec] || "") + " " + sec + " (" + count + ")"}</option>;
+                return <option key={sec} value={sec}>{sec + " (" + count + ")"}</option>;
               })}
             </select>
           </div>
@@ -6083,7 +6083,6 @@ export default function App() {
             return (
               <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 16, marginLeft: -20, marginRight: -20, paddingLeft: 20, paddingRight: 20 }}>
                 {boardSections.map(function(sec){
-                  const icon = SECTIONS[sec] || "🔧";
                   const colTasks = vesselTasks.filter(function(t){
                     if (t.section !== sec) return false;
                     if (filterUrgency !== "All") return getTaskUrgency(t) === filterUrgency;
@@ -6099,7 +6098,7 @@ export default function App() {
                     <div key={sec} style={{ flexShrink: 0, width: 260, display: "flex", flexDirection: "column", gap: 0 }}>
                       {/* Column header */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <span style={{ fontSize: 14 }}>{icon}</span>
+                        {getCategoryIcon(sec, 14).tile}
                         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{sec}</span>
                         <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "DM Mono, monospace", marginLeft: 2 }}>{totalInSection}</span>
                         <div style={{ flex: 1 }} />
