@@ -67,21 +67,21 @@
 
 /* ─── DARK MODE ────────────────────────────────────────────────────────────── Applied when <body class="dark-mode"> — toggled by user preference toggle. ─────────────────────────────────────────────────────────────────────────── */
 body.dark-mode {
-  /* ── Option A: Midnight blue — true navy, not near-black ── */
-  --bg-app: #0e2d52;
-  --bg-card: #132f58;
-  --bg-elevated: #1a3d6b;
-  --bg-subtle: #163461;
+  /* ── Option A: Lifted Navy — deeper base, cards float, rgba borders ── */
+  --bg-app: #091e3a;
+  --bg-card: #112548;
+  --bg-elevated: #1a3560;
+  --bg-subtle: #0d2240;
   --bg-overlay: rgba(0, 0, 0, 0.65);
-  --brand: #4a8ab0;
-  --brand-deep: #1e4a7a;
-  --brand-muted: #3d6a90;
-  --border: #1e4070;
-  --border-strong: #2a5490;
-  --text-primary: #e8f0f8;
-  --text-secondary: #8aaccc;
-  --text-muted: #5a82aa;
-  --text-label: #4a6d90;
+  --brand: #2e7abf;
+  --brand-deep: #1a3d6b;
+  --brand-muted: #4a90c8;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text-primary: #f0f6ff;
+  --text-secondary: #6a96bc;
+  --text-muted: #4a7090;
+  --text-label: #3d5f7a;
   --text-on-brand: #ffffff;
   --ok-text: #2a9e6a;
   --ok-bg: #0d2818;
