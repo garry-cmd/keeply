@@ -168,20 +168,20 @@ function getDueBadge(dueDate, intervalDays) {
   const now = new Date(); now.setHours(0,0,0,0);
   const due = new Date(dueDate); due.setHours(0,0,0,0);
   const diff = Math.round((due - now) / 86400000);
-  if (diff <= -10) return { label: "🔴 Critical",  color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)" };
-  if (diff <= -5)  return { label: "🟠 Overdue",   color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)"  };
+  if (diff <= -10) return { label: "Critical",  color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)" };
+  if (diff <= -5)  return { label: "Overdue",   color: "var(--overdue-text)",  bg: "var(--overdue-bg)",  border: "var(--overdue-border)"  };
   // Due Soon window = half the interval, capped at 10 days
   const dueSoonDays = intervalDays ? Math.min(Math.floor(intervalDays / 2), 21) : 21;
-  if (diff <= dueSoonDays) return { label: "🟡 Due Soon",  color: "var(--duesoon-text)",  bg: "var(--duesoon-bg)",  border: "var(--duesoon-border)"  };
+  if (diff <= dueSoonDays) return { label: "Due Soon",  color: "var(--duesoon-text)",  bg: "var(--duesoon-bg)",  border: "var(--duesoon-border)"  };
   return null;
 }
 
 function getHoursBadge(dueHours, currentHours, intervalHours) {
   if (dueHours == null || currentHours == null) return null;
   var hoursLeft = dueHours - currentHours;
-  if (hoursLeft < 0) return { label: "🔴 Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
+  if (hoursLeft < 0) return { label: "Critical", color: "var(--critical-text)", bg: "var(--critical-bg)", border: "var(--critical-border)", hours: hoursLeft };
   var dueSoon = intervalHours ? Math.floor(intervalHours * 0.25) : 25;
-  if (hoursLeft <= dueSoon) return { label: "🟡 Due Soon", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "var(--duesoon-border)", hours: hoursLeft };
+  if (hoursLeft <= dueSoon) return { label: "Due Soon", color: "var(--duesoon-text)", bg: "var(--duesoon-bg)", border: "var(--duesoon-border)", hours: hoursLeft };
   return null;
 }
 
@@ -4155,7 +4155,14 @@ export default function App() {
                 if (ua !== ub) return ua - ub;
                 return new Date(a.dueDate) - new Date(b.dueDate);
               }).map(function(t){
-                const badge = getDueBadge(t.dueDate, t.interval_days);
+                const dateBadge  = getDueBadge(t.dueDate, t.interval_days);
+                const activeVb   = vessels.find(function(v){ return v.id === activeVesselId; });
+                const curHrsb    = activeVb ? activeVb.engineHours : null;
+                const hoursBadge = getHoursBadge(t.due_hours, curHrsb, t.interval_hours);
+                const rank = { "Critical": 3, "Overdue": 2, "Due Soon": 1 };
+                const badge = (dateBadge && hoursBadge)
+                  ? ((rank[dateBadge.label] || 0) >= (rank[hoursBadge.label] || 0) ? dateBadge : hoursBadge)
+                  : (dateBadge || hoursBadge);
                 const isExpanded = expandedTask === t.id;
                 const isCompleting = completingTask === t.id;
                 const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
@@ -5770,7 +5777,7 @@ export default function App() {
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>
                     {showUrgencyPanel === "Critical" && "🔴 Critical Tasks"}
-                    {showUrgencyPanel === "Due Soon" && "🟡 Due Soon"}
+                    {showUrgencyPanel === "Due Soon" && "Due Soon"}
                     {showUrgencyPanel === "Open Repairs" && "🔧 Open Repairs"}
 
                   </div>
