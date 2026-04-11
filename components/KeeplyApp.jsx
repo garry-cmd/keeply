@@ -3501,7 +3501,7 @@ export default function App() {
                           )}
                           {/* Generate haul plan — Pro feature */}
                           {(function(){
-                            var isPro = userPlan === "pro" || userPlan === "captain" || userPlan === "fleet" || userPlan === "enterprise";
+                            var isPro = userPlan === "pro";
                             return (
                               <div style={{ margin: "14px 0 6px" }}>
                                 {haulPlanMsg && (
@@ -4841,7 +4841,7 @@ export default function App() {
                             No repairs logged.
                             <button onClick={function(){
                               const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                              if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
+                              if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 3) {
                                 setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
                                 setShowUpgradeModal(true);
                                 return;
@@ -4949,7 +4949,7 @@ export default function App() {
                               })}
                           <button onClick={function(){
                             const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                            if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
+                            if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 3) {
                               setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
                               setShowUpgradeModal(true);
                               return;
@@ -5342,8 +5342,8 @@ export default function App() {
                 { label: "Add Task", stroke: "#34d399", bg: "rgba(52,211,153,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>, action: function(){ setShowAddTask(true); setShowFab(false); } },
                 { label: "Add Repair", stroke: "#f87171", bg: "rgba(248,113,113,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>, action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                    if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 5) {
-                      setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs with AI parts suggestions.");
+                    if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 3) {
+                      setUpgradeReason("Free accounts are limited to 3 repairs. Upgrade to Standard or Pro for unlimited repairs.");
                       setShowUpgradeModal(true);
                       setShowFab(false);
                       return;
@@ -6665,88 +6665,91 @@ export default function App() {
               Unlock more vessels, unlimited repairs, and AI features.
             </div>
 
-            {/* Entry — shown only when on free/null plan */}
-            {(userPlan === "free" || !userPlan) && (
-              <div style={{ border: "1.5px solid var(--border)", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "var(--bg-subtle)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+            {/* Standard — shown when on free plan */}
+            {(userPlan === "free" || !userPlan || userPlan === "standard") && (
+              <div style={{ border: userPlan === "standard" ? "2px solid var(--brand)" : "1.5px solid var(--border)", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "var(--bg-elevated)", position: "relative" }}>
+                {userPlan !== "standard" && <div style={{ position: "absolute", top: -10, left: 16, background: "#f59e0b", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>Most popular</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)" }}>Entry</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>1 vessel · unlimited equipment · 5 repairs</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--brand)" }}>Standard</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>1 vessel · 10 equipment · unlimited repairs · First Mate 10/mo</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-secondary)" }}>$2.99</div>
-                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>per month</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--brand)" }}>$15<span style={{ fontSize: 11, fontWeight: 500 }}>/mo</span></div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>or $144/yr ($12/mo)</div>
                   </div>
                 </div>
-                <button onClick={async function(){
-                  if (checkoutLoading) return;
-                  setCheckoutLoading(true);
-                  try {
-                    const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eqmN6Rwr4", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
-                    const data = await res.json();
-                    if (data.url) window.location.href = data.url;
-                  } catch(e) { alert("Error starting checkout: " + e.message); }
-                  finally { setCheckoutLoading(false); }
-                }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                  {checkoutLoading ? "Opening checkout…" : "Start Entry — $2.99/mo"}
-                </button>
+                {userPlan !== "standard" && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button onClick={async function(){
+                      if (checkoutLoading) return; setCheckoutLoading(true);
+                      try {
+                        const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eqmN6Rwr4", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                        const data = await res.json();
+                        if (data.url) window.location.href = data.url;
+                      } catch(e) { alert("Error starting checkout: " + e.message); }
+                      finally { setCheckoutLoading(false); }
+                    }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                      {checkoutLoading ? "Opening…" : "Monthly — $15/mo"}
+                    </button>
+                    <button onClick={async function(){
+                      if (checkoutLoading) return; setCheckoutLoading(true);
+                      try {
+                        const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eroj4WEUp", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                        const data = await res.json();
+                        if (data.url) window.location.href = data.url;
+                      } catch(e) { alert("Error starting checkout: " + e.message); }
+                      finally { setCheckoutLoading(false); }
+                    }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "1px solid var(--brand)", borderRadius: 8, background: "none", color: "var(--brand)", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                      {checkoutLoading ? "Opening…" : "Annual — $144/yr"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Pro Monthly */}
-            <div style={{ border: "2px solid var(--brand)", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "var(--bg-elevated)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+            {/* Pro */}
+            <div style={{ border: userPlan === "pro" ? "2px solid var(--ok-text)" : "1.5px solid var(--border)", borderRadius: 14, padding: "16px 18px", marginBottom: 16, background: "var(--bg-elevated)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--brand)" }}>Keeply Pro</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>2 vessels · unlimited equipment · AI features</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ok-text)" }}>Pro</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>2 vessels · unlimited equipment · First Mate 50/mo · AI logbook</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "var(--brand)" }}>$9.99</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>per month</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ok-text)" }}>$25<span style={{ fontSize: 11, fontWeight: 500 }}>/mo</span></div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>or $240/yr ($20/mo)</div>
                 </div>
               </div>
-              <button onClick={async function(){
-                if (checkoutLoading) return;
-                setCheckoutLoading(true);
-                try {
-                  const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TKJ3TA726uGRX5epzWsSkbN", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
-                } catch(e) { alert("Error starting checkout: " + e.message); }
-                finally { setCheckoutLoading(false); }
-              }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout…" : "Subscribe Monthly — $9.99/mo"}
-              </button>
-            </div>
-
-            {/* Pro Annual */}
-            <div style={{ border: "1.5px solid var(--ok-text)", borderRadius: 14, padding: "16px 18px", marginBottom: 16, background: "var(--bg-elevated)", position: "relative" }}>
-              <div style={{ position: "absolute", top: -10, left: 16, background: "var(--ok-text)", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>Save 42%</div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ok-text)" }}>Pro Annual</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Everything in Pro · $5.83/mo effective</div>
+              {userPlan !== "pro" && (
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button onClick={async function(){
+                    if (checkoutLoading) return; setCheckoutLoading(true);
+                    try {
+                      const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ priceId: "price_1TKJ3TA726uGRX5epzWsSkbN", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                      const data = await res.json();
+                      if (data.url) window.location.href = data.url;
+                    } catch(e) { alert("Error starting checkout: " + e.message); }
+                    finally { setCheckoutLoading(false); }
+                  }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                    {checkoutLoading ? "Opening…" : "Monthly — $25/mo"}
+                  </button>
+                  <button onClick={async function(){
+                    if (checkoutLoading) return; setCheckoutLoading(true);
+                    try {
+                      const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ priceId: "price_1TKJ3kA726uGRX5eRna7Gr4P", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
+                      const data = await res.json();
+                      if (data.url) window.location.href = data.url;
+                    } catch(e) { alert("Error starting checkout: " + e.message); }
+                    finally { setCheckoutLoading(false); }
+                  }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "1px solid var(--ok-text)", borderRadius: 8, background: "none", color: "var(--ok-text)", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
+                    {checkoutLoading ? "Opening…" : "Annual — $240/yr"}
+                  </button>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ok-text)" }}>$69.99</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>per year</div>
-                </div>
-              </div>
-              <button onClick={async function(){
-                if (checkoutLoading) return;
-                setCheckoutLoading(true);
-                try {
-                  const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TKJ3kA726uGRX5eRna7Gr4P", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
-                } catch(e) { alert("Error starting checkout: " + e.message); }
-                finally { setCheckoutLoading(false); }
-              }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout…" : "Subscribe Annually — $69.99/yr"}
-              </button>
+              )}
             </div>
 
 
@@ -6795,13 +6798,13 @@ export default function App() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Plan</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                      {userPlan === "fleet" ? "Fleet · Multi-vessel" : userPlan === "pro" ? "Pro · 2 vessels" : userPlan === "enterprise" ? "Enterprise · Unlimited" : "Entry · 1 vessel · 5 repairs"}
+                      {userPlan === "pro" ? "Pro · 2 vessels" : userPlan === "standard" ? "Standard · 1 vessel" : "Free"}
                     </div>
                   </div>
                   {(userPlan === "free" || !userPlan || userPlan === "pro") ? (
                     <span onClick={function(){ setShowProfilePanel(false); setUpgradeReason(""); setShowUpgradeModal(true); }}
                       style={{ background: "var(--brand-deep)", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      {userPlan === "pro" ? "Upgrade ↗" : "Start trial ↗"}
+                      {userPlan === "pro" ? "Upgrade to Pro ↗" : userPlan === "standard" ? "Upgrade ↗" : "View plans ↗"}
                     </span>
                   ) : (
                     <span onClick={async function(){
@@ -6892,7 +6895,7 @@ export default function App() {
               <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
                 <div style={{ padding: "13px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
                   onClick={function(){
-                      if (userPlan !== "fleet" && userPlan !== "enterprise") {
+                      if (userPlan !== "pro") {
                         setShowProfilePanel(false);
                         setUpgradeReason("The Fleet Dashboard is included with the Fleet plan — manage multiple vessels, track the whole fleet, and assign team access.");
                         setShowUpgradeModal(true);
