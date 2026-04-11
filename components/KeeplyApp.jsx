@@ -2882,7 +2882,7 @@ export default function App() {
                           const cat     = task.category === "registrations" ? "Reg & legal" : task.category === "safety" ? "Safety" : "Survey";
                           return (
                             <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", borderBottom: "0.5px solid var(--border)" }}>
-                              <div style={{ fontSize: 16 }}>{task.icon || "📋"}</div>
+                              
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
                                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{cat} · Every {task.interval_months} mo</div>
@@ -3330,11 +3330,11 @@ export default function App() {
                             {!isRenaming ? (
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                                  <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
-                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
+                                  <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{doc.type}</span>
+                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} "↗"</a>
                                 </div>
                                 <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                                  <button onClick={function(){ setRenamingDoc({ eqId: vesselEq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">✏️</button>
+                                  <button onClick={function(){ setRenamingDoc({ eqId: vesselEq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 12, fontWeight: 600 }} title="Rename">Edit</button>
                                   <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(vesselEq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", flexShrink: 0, display: "flex", alignItems: "center" }}><TrashIcon /></button>
                                 </div>
                               </div>
@@ -3359,7 +3359,7 @@ export default function App() {
                               {["url","file"].map(function(src){ return (
                                 <button key={src} onClick={function(){ setNewDocForm(function(f){ return { ...f, source: src }; }); }}
                                   style={{ flex: 1, padding: "6px", border: "1.5px solid " + (newDocForm.source===src?"var(--brand)":"var(--border)"), borderRadius: 8, background: newDocForm.source===src?"var(--brand-deep)":"var(--bg-subtle)", color: newDocForm.source===src?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                                  {src === "url" ? "🔗 URL" : "📎 File"}
+                                  {src === "url" ? "URL" : "File"}
                                 </button>
                               ); })}
                             </div>
@@ -3370,14 +3370,14 @@ export default function App() {
                                   onChange={function(e){ setNewDocForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
                               : <div style={{ marginBottom: 10 }}>
                                   <label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDocForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
-                                    {newDocForm.fileName ? "📎 " + newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
+                                    {newDocForm.fileName ? newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
                                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }}
                                       onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} />
                                   </label>
                                 </div>
                             }
                             <select value={newDocForm.type} onChange={function(e){ setNewDocForm(function(f){ return { ...f, type: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 10 }}>
-                              {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                              {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{t}</option>; })}
                             </select>
                             <div style={{ display: "flex", gap: 8 }}>
                               <button onClick={function(){ setAddingDocFor(null); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileObj:null, fileName:"" }); }}
@@ -3439,7 +3439,7 @@ export default function App() {
                                             style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (completingAdminTask === task.id ? "var(--ok-text)" : "var(--border)"), background: completingAdminTask === task.id ? "var(--ok-text)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}>
                                             {completingAdminTask === task.id && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                                           </div>
-                                          <div style={{ fontSize: 15, flexShrink: 0 }}>{task.icon || "📋"}</div>
+                                          
                                           <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{task.name}</div>
                                             <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
@@ -4161,7 +4161,7 @@ export default function App() {
                 const isCompleting = completingTask === t.id;
                 const eq = equipment.find(function(e){ return e.id === t.equipment_id; });
                 return (
-                  <div key={t.id} style={{ ...s.card, borderTop: "2px solid var(--brand)", opacity: isCompleting ? 0 : 1, transform: isCompleting ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease", marginBottom: 8 }}>
+                  <div key={t.id} style={{ ...s.card, opacity: isCompleting ? 0 : 1, transform: isCompleting ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease", marginBottom: 8 }}>
                     <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                       <button onClick={function(){
                           if (isCompleting) return;
@@ -5157,11 +5157,11 @@ export default function App() {
                             {!isRenaming ? (
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                                  <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{dc.icon} {doc.type}</span>
-                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} {doc.isFile ? "📎" : "↗"}</a>
+                                  <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{doc.type}</span>
+                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.label} "↗"</a>
                                 </div>
                                 <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                                  <button onClick={function(){ setRenamingDoc({ eqId: eq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 13 }} title="Rename">✏️</button>
+                                  <button onClick={function(){ setRenamingDoc({ eqId: eq.id, docId: doc.id }); setRenameDocLabel(doc.label); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text-muted)", fontSize: 12, fontWeight: 600 }} title="Rename">Edit</button>
                                   <button onClick={function(){ showConfirm("Remove " + doc.label + "?", function(){ removeDoc(eq.id, doc.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center" }} title="Remove"><TrashIcon /></button>
                                 </div>
                               </div>
@@ -5182,11 +5182,11 @@ export default function App() {
                       </>)}
                       {autoSugDocs.length > 0 && (
                         <div style={{ background: "var(--warn-bg)", border: "1px solid #fde68a", borderRadius: 10, padding: 12, marginTop: 12 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--warn-text)", marginBottom: 8 }}>💡 SUGGESTED DOCUMENTS</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--warn-text)", marginBottom: 8 }}>SUGGESTED DOCUMENTS</div>
                           {autoSugDocs.slice(0,3).map(function(doc){ const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG["Other"]; return (
                             <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #fde68a25" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{dc.icon} {doc.type}</span>
+                                <span style={{ background: dc.bg, color: dc.color, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{doc.type}</span>
                                 <a href={doc.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--brand)", textDecoration: "none" }}>{doc.label} ↗</a>
                               </div>
                               <button onClick={function(){ addSuggestedDoc(eq.id, doc); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
@@ -5197,15 +5197,15 @@ export default function App() {
                       {addingDocFor === eq.id ? (
                         <div style={{ marginTop: 12, background: "var(--bg-subtle)", borderRadius: 10, padding: 14 }}>
                           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                            {["url","file"].map(function(src){ return <button key={src} onClick={function(){ setNewDocForm(function(f){ return { ...f, source: src }; }); }} style={{ flex: 1, padding: "6px", border: "1.5px solid " + (newDocForm.source===src?"var(--brand)":"var(--border)"), borderRadius: 8, background: newDocForm.source===src?"var(--brand-deep)":"var(--bg-subtle)", color: newDocForm.source===src?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{src === "url" ? "🔗 URL" : "📎 File"}</button>; })}
+                            {["url","file"].map(function(src){ return <button key={src} onClick={function(){ setNewDocForm(function(f){ return { ...f, source: src }; }); }} style={{ flex: 1, padding: "6px", border: "1.5px solid " + (newDocForm.source===src?"var(--brand)":"var(--border)"), borderRadius: 8, background: newDocForm.source===src?"var(--brand-deep)":"var(--bg-subtle)", color: newDocForm.source===src?"var(--brand)":"var(--text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{src === "url" ? "URL" : "File"}</button>; })}
                           </div>
                           <input placeholder="Document name / label" value={newDocForm.label} onChange={function(e){ setNewDocForm(function(f){ return { ...f, label: e.target.value }; }); }} style={s.inp} />
                           {newDocForm.source === "url"
                             ? <input placeholder="https://…" value={newDocForm.url} onChange={function(e){ setNewDocForm(function(f){ return { ...f, url: e.target.value }; }); }} style={s.inp} />
-                            : <div style={{ marginBottom: 10 }}><label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDocForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>{newDocForm.fileName ? "📎 " + newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} /></label></div>
+                            : <div style={{ marginBottom: 10 }}><label style={{ display: "block", padding: "8px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDocForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDocForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>{newDocForm.fileName ? newDocForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewDocForm(function(f){ return { ...f, fileObj: file, fileName: file.name }; }); }} /></label></div>
                           }
                           <select value={newDocForm.type} onChange={function(e){ setNewDocForm(function(f){ return { ...f, type: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 10 }}>
-                            {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                            {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{t}</option>; })}
                           </select>
                           <div style={{ display: "flex", gap: 8 }}>
                             <button onClick={function(){ setAddingDocFor(null); setNewDocForm({ label:"", url:"", type:"Manual", source:"url", fileObj:null, fileName:"" }); }} style={{ flex: 1, padding: "7px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-card)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Cancel</button>
@@ -5240,11 +5240,11 @@ export default function App() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>ATTACH A FILE (optional)</div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <select value={editEquipForm.fileType || "Manual"} onChange={function(e){ setEditEquipForm(function(f){ return { ...f, fileType: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0, flex: 1 }}>
-                      {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                      {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{t}</option>; })}
                     </select>
                   </div>
                   <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: editEquipForm.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: editEquipForm.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
-                    {uploadingEditDoc ? "⏳ Uploading…" : editEquipForm.fileName ? "📎 " + editEquipForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
+                    {uploadingEditDoc ? "Uploading…" : editEquipForm.fileName ? editEquipForm.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={async function(e){
                       const file = e.target.files[0];
                       if (!file) return;
@@ -5487,11 +5487,11 @@ export default function App() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>ATTACH A FILE (optional)</div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <select value={newEquip.fileType} onChange={function(e){ setNewEquip(function(eq){ return { ...eq, fileType: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 0, flex: 1 }}>
-                      {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                      {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{t}</option>; })}
                     </select>
                   </div>
                   <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newEquip.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newEquip.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
-                    {newEquip.fileName ? "📎 " + newEquip.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
+                    {newEquip.fileName ? newEquip.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style={{ display: "none" }} onChange={function(e){ const file = e.target.files[0]; if (!file) return; setNewEquip(function(eq){ return { ...eq, fileObj: file, fileName: file.name }; }); }} />
                   </label>
                 </div>
@@ -5571,7 +5571,7 @@ export default function App() {
             const isExpanded = expandedRepair === r.id;
             const sugg = aiSuggestions[r.id];
             return (
-              <div key={r.id} style={{ ...s.card, borderTop: "2px solid var(--warn-border)", opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+              <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 {/* Card header */}
                 <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
                   {/* Circle checkbox to clear repair */}
@@ -6246,7 +6246,7 @@ export default function App() {
                 <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginBottom: 10 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10 }}>ATTACH A FILE (optional)</div>
                   <select value={newDoc.fileType} onChange={function(e){ setNewDoc(function(d){ return { ...d, fileType: e.target.value }; }); }} style={{ ...s.sel, marginBottom: 8 }}>
-                    {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{DOC_TYPE_CFG[t].icon} {t}</option>; })}
+                    {Object.keys(DOC_TYPE_CFG).map(function(t){ return <option key={t} value={t}>{t}</option>; })}
                   </select>
                   <label style={{ display: "block", padding: "10px 12px", border: "1.5px dashed var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: newDoc.fileName ? "var(--ok-text)" : "var(--text-muted)", textAlign: "center", background: newDoc.fileName ? "var(--ok-bg)" : "var(--bg-subtle)" }}>
                     {newDoc.fileName ? "📎 " + newDoc.fileName : "Choose file… (PDF, JPG, PNG, etc)"}
