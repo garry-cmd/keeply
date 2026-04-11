@@ -2571,8 +2571,11 @@ export default function App() {
     </div>
   );
 
-  // Not signed in
-  if (!session) return <LandingPage />;
+  // Not signed in — show app login screen if running as installed PWA/TWA, marketing page otherwise
+  if (!session) {
+    const isStandalone = typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches;
+    return isStandalone ? <AuthScreen /> : <LandingPage />;
+  }
 
   // Signed in but no vessel yet
   if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
