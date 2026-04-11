@@ -34,11 +34,11 @@ const CATEGORIES = [
     { q: "What does the free Basic plan include?", a: "Basic is free with no credit card required. You get 1 vessel, unlimited maintenance tasks, 3 equipment cards, 3 repairs, parts catalog, engine hours tracking, and 250MB document storage." },
     { q: "How do I upgrade my plan?", a: "Tap your profile icon, then Upgrade or Manage Subscription. You'll be taken to a secure Stripe checkout. Your upgrade takes effect immediately." },
     { q: "Can I cancel my subscription?", a: "Yes, at any time. Go to Profile → Manage Subscription → Cancel Plan. You keep access until the end of your billing period and won't be billed again." },
-    { q: "Do you offer fleet or commercial pricing?", a: "Yes. Email garry@keeply.boats with your fleet size. We offer custom pricing for marinas, charter operators, and commercial fleets with 4+ vessels." },
+    { q: "Do you offer fleet or commercial pricing?", a: "Yes. Email sales@keeply.boats with your fleet size. We offer custom pricing for marinas, charter operators, and commercial fleets with 4+ vessels." },
     { q: "Is there an annual discount?", a: "Yes — Standard annual saves 20% ($144/yr vs $180/yr). Pro annual saves 20% ($240/yr vs $300/yr). Toggle to Annual on the pricing page to see the discounted rates." },
   ]},
   { icon: "🛠️", title: "Technical Issues", faqs: [
-    { q: "The app isn't loading. What do I do?", a: "Check your internet connection, then try a hard refresh (Ctrl+Shift+R on desktop, or close and reopen on mobile). If it persists, email garry@keeply.boats with your device and browser details." },
+    { q: "The app isn't loading. What do I do?", a: "Check your internet connection, then try a hard refresh (Ctrl+Shift+R on desktop, or close and reopen on mobile). If it persists, email support@keeply.boats with your device and browser details." },
     { q: "My photo didn't attach to a maintenance item.", a: "This is usually an iPhone HEIC format issue. Try taking the photo directly from within Keeply using the camera button rather than uploading from your Photos library." },
     { q: "My engine hours didn't update after logging a passage.", a: "Engine hours update when you fill in the Ending hours field in a logbook entry and save. Make sure this field is populated. Refresh My Boat if hours still don't reflect." },
   ]},
@@ -106,7 +106,7 @@ export default function SupportPage() {
           <p style={{ fontSize: 16, color: "rgba(255,255,255,0.65)", maxWidth: 480, margin: "0 auto 36px", lineHeight: 1.7 }}>
             Find answers to common questions, or reach out to the team.
           </p>
-          <a href="mailto:garry@keeply.boats" style={{ display: "inline-block", background: GOLD, color: "#1a1200", padding: "12px 32px", borderRadius: 9, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+          <a href="mailto:support@keeply.boats" style={{ display: "inline-block", background: GOLD, color: "#1a1200", padding: "12px 32px", borderRadius: 9, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
             Email support →
           </a>
         </div>
