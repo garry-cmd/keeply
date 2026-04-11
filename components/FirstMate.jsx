@@ -4,7 +4,7 @@ import { supabase } from "./supabase-client";
 
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
-const FM_LIMITS = { free: 5, entry: 5, pro: 30, captain: -1, fleet: -1, enterprise: -1 };
+const FM_LIMITS = { free: 0, standard: 10, pro: 50 };
 
 // ── design tokens (dark-always) ───────────────────────────────────────────────
 const D = {
@@ -116,7 +116,7 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
   const messagesRef = useRef(null);
 
   const plan      = userPlan || "free";
-  const limit     = FM_LIMITS[plan] !== undefined ? FM_LIMITS[plan] : 10;
+  const limit     = FM_LIMITS[plan] !== undefined ? FM_LIMITS[plan] : 0;
   const isLimited = limit > 0;
   const isAtLimit = isLimited && fmCount >= limit;
   const usageBadge = isLimited ? (fmCount + "/" + limit) : null;
@@ -297,7 +297,7 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
 
                 {/* Upgrade nudge */}
                 {(!isUser && msg.showNudge) && (function(){
-                  const upgradePlans = { free: "Pro — 30/mo", entry: "Pro — 30/mo", pro: "Captain — unlimited" };
+                  const upgradePlans = { free: "Standard — 10/mo", standard: "Pro — 50/mo", pro: "Pro — 50/mo" };
                   const nextPlan     = upgradePlans[plan] || "Pro";
                   const atLimit      = msg.nudgeCount >= limit;
                   return (
