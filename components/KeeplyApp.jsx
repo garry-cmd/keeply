@@ -265,6 +265,7 @@ const SECTIONS = {
   Electronics: "📡",
   Engine:      "🔧",
   Galley:      "🍳",
+  General:     "🔧",
   Generator:   "🔌",
   Hull:        "🚢",
   Mechanical:  "⚙️",
@@ -302,6 +303,12 @@ function getCategoryIcon(category, size) {
     "Safety":      { stroke: "#a78bfa",  bg: "rgba(196,181,253,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#a78bfa"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg> },
     "Sails":       { stroke: "#7dd3fc",  bg: "rgba(125,211,252,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#7dd3fc"><path d="M3 7C7 7 10 5 15 5C18 5 20 7 22 7"/><path d="M3 12C8 12 12 10 18 10C20.5 10 22 12 22 12"/><path d="M3 17C6 17 9 19 13 19C15.5 19 17 17 17 17"/><path d="M20 5L22 7L20 9" strokeWidth="1.4"/><path d="M20 10L22 12L20 14" strokeWidth="1.4"/></svg> },
     "Steering":    { stroke: "#14b8a6",  bg: "rgba(20,184,166,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#14b8a6"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/><line x1="4.22" y1="4.22" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.78" y2="19.78"/><line x1="19.78" y1="4.22" x2="16.24" y2="7.76"/><line x1="7.76" y1="16.24" x2="4.22" y2="19.78"/></svg> },
+    "General":     { stroke: "#64748b",  bg: "rgba(100,116,139,0.1)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#64748b"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> },
+    "Generator":   { stroke: "#f59e0b",  bg: "rgba(251,191,36,0.1)",    path: <svg {...s} viewBox="0 0 24 24" stroke="#f59e0b"><rect x="3" y="7" width="18" height="12" rx="2"/><circle cx="9" cy="13" r="2.5"/><line x1="14" y1="10.5" x2="19" y2="10.5" strokeWidth="1.3"/><line x1="14" y1="13" x2="19" y2="13" strokeWidth="1.3"/><line x1="14" y1="15.5" x2="17" y2="15.5" strokeWidth="1.3"/><line x1="7" y1="4" x2="9" y2="7" strokeWidth="1.4"/><line x1="12" y1="4" x2="14" y2="7" strokeWidth="1.4"/></svg> },
+    "Mechanical":  { stroke: "#94a3b8",  bg: "rgba(148,163,184,0.12)",  path: <svg {...s} viewBox="0 0 24 24" stroke="#94a3b8"><path d="M12 2a1.5 1.5 0 0 0-1.5 1.5v1.1a7 7 0 0 0-2.12.88L7.34 4.44a1.5 1.5 0 0 0-2.12 2.12l1.04 1.04A7 7 0 0 0 5.38 10H4.5a1.5 1.5 0 0 0 0 3h.88a7 7 0 0 0 .88 2.4l-1.04 1.04a1.5 1.5 0 0 0 2.12 2.12l1.04-1.04A7 7 0 0 0 10.5 20.5v.88a1.5 1.5 0 0 0 3 0v-.88a7 7 0 0 0 2.4-.88l1.04 1.04a1.5 1.5 0 0 0 2.12-2.12l-1.04-1.04a7 7 0 0 0 .88-2.4h.88a1.5 1.5 0 0 0 0-3h-.88a7 7 0 0 0-.88-2.4l1.04-1.04a1.5 1.5 0 0 0-2.12-2.12l-1.04 1.04A7 7 0 0 0 13.5 4.6V3.5A1.5 1.5 0 0 0 12 2z"/><circle cx="12" cy="11.5" r="2.8"/></svg> },
+    "Paperwork":   { stroke: "#64748b",  bg: "rgba(100,116,139,0.1)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#64748b"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> },
+    "Vessel":      { stroke: "#38bdf8",  bg: "rgba(56,189,248,0.1)",    path: <svg {...s} viewBox="0 0 24 24" stroke="#38bdf8"><path d="M3 17l3-8h12l3 8"/><path d="M3 17c2 2 4 2.5 9 2.5S19 19 21 17"/><line x1="12" y1="4" x2="12" y2="9"/><path d="M12 4 L8 9 L12 9"/></svg> },
+    "Watermaker":  { stroke: "#60a5fa",  bg: "rgba(96,165,250,0.12)",   path: <svg {...s} viewBox="0 0 24 24" stroke="#60a5fa"><path d="M12 3C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-12z"/><line x1="8.5" y1="14" x2="15.5" y2="14" strokeWidth="1.3"/><line x1="9.5" y1="16.5" x2="14.5" y2="16.5" strokeWidth="1.3"/><line x1="10.5" y1="19" x2="13.5" y2="19" strokeWidth="1.3"/></svg> },
   };
   var ic = icons[category];
   if (!ic) ic = { stroke: "#64748b", bg: "rgba(100,116,139,0.1)", path: <svg {...s} viewBox="0 0 24 24" stroke="#64748b"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> };
@@ -2257,7 +2264,7 @@ export default function App() {
     const status = row.status || "good";
     const notes = row.notes || row["description"] || row["note"] || "";
     // Normalize category to known values
-    const cats = ["Engine","Rigging","Deck","Electrical","Electronics","Navigation","Bilge","Plumbing","Safety","Galley","Watermaker","Hydrovane","General","Anchor","Dink"];
+    const cats = ["Engine","Rigging","Deck","Electrical","Electronics","Navigation","Bilge","Plumbing","Safety","Galley","Watermaker","Steering","General","Anchor","Dinghy"];
     const matchedCat = cats.find(function(c){ return c.toLowerCase() === category.toLowerCase(); }) || "General";
     const statuses = ["good","watch","needs-service"];
     const matchedStatus = statuses.find(function(s){ return s.toLowerCase() === status.toLowerCase().replace(" ","-"); }) || "good";
@@ -2269,7 +2276,7 @@ export default function App() {
     const section = row.section || row["category"] || row["type"] || "General";
     const interval = row.interval || row["frequency"] || row["interval_days"] || "30 days";
     const priority = row.priority || "medium";
-    const sections = ["Engine","Rigging","Deck","Electrical","Electronics","Navigation","Bilge","Plumbing","Safety","Galley","Watermaker","Hydrovane","General","Anchor","Dink","Paperwork"];
+    const sections = ["Engine","Rigging","Deck","Electrical","Electronics","Navigation","Bilge","Plumbing","Safety","Galley","Watermaker","Steering","General","Anchor","Dinghy","Paperwork"];
     const matchedSection = sections.find(function(s){ return s.toLowerCase() === section.toLowerCase(); }) || "General";
     const priorities = ["critical","high","medium","low"];
     const matchedPriority = priorities.find(function(p){ return p.toLowerCase() === priority.toLowerCase(); }) || "medium";
