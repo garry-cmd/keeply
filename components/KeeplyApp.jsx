@@ -4490,11 +4490,6 @@ export default function App() {
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, boxShadow: dotShadow, flexShrink: 0 }} />
                       );
                     })()}
-                    <button onClick={function(e){ e.stopPropagation(); setExpandedEquip(eq.id); setEquipTab(function(prev){ var n = Object.assign({}, prev); n[eq.id] = "edit"; return n; }); }} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", padding: "3px 8px", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }} title="Edit equipment">Edit</button>                    <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete " + eq.name + "?", function(){ deleteEquipment(eq.id); }); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text-muted)", opacity: 0.5 }}
-                      title="Delete equipment">
-                      <TrashIcon />
-                    </button>
                     <span style={{ color: "var(--text-muted)", fontSize: 16 }}>{isExpanded ? "▾" : "▸"}</span>
                   </div>
                 </div>
