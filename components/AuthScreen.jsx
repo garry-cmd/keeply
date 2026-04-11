@@ -11,7 +11,7 @@ export default function AuthScreen() {
   const [message, setMessage]   = useState(null);
 
   const s = {
-    wrap:  { minHeight: "100vh", background: "#f4f6f9", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: "'DM Sans','Helvetica Neue',sans-serif", colorScheme: "light" },
+    wrap:  { minHeight: "100vh", background: "#f4f6f9", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: "'DM Sans','Helvetica Neue',sans-serif", colorScheme: "light", "--bg-subtle": "#f8fafc", "--bg-card": "#ffffff", "--border": "#e2e8f0", "--border-strong": "#cbd5e1", "--text-primary": "#1a1d23", "--text-secondary": "#374151", "--text-muted": "#9ca3af", "--text-label": "#6b7280" },
     card:  { background: "#ffffff", borderRadius: 20, padding: 36, width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(0,0,0,0.14)" },
     inp:   { width: "100%", border: "1px solid #e2e8f0", borderRadius: 10, padding: "11px 14px", fontSize: 14, boxSizing: "border-box", outline: "none", marginBottom: 12, background: "#ffffff", color: "#1a1d23" },
     btn:   { width: "100%", border: "none", borderRadius: 10, padding: 13, fontSize: 15, fontWeight: 700, cursor: "pointer" },
