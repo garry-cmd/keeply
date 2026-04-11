@@ -28,7 +28,7 @@ const SEA_STATES = ["Calm", "Light chop", "Moderate", "Rough", "Very rough"];
 const CONDITIONS = ["Motoring", "Motor sailing", "Close hauled", "Broad reach", "Downwind", "Drifting"];
 const WIND_DIRS = ["N","NE","E","SE","S","SW","W","NW"];
 
-export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurnRate, onBack }) {
+export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurnRate, onBack, openAddForm, onAddFormOpened }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,6 +48,15 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
   }, [vesselId]);
 
   useEffect(function() { load(); }, [load]);
+
+  useEffect(function() {
+    if (openAddForm) {
+      setForm(Object.assign({}, BLANK_FORM, { entry_date: today() }));
+      setEditingId(null);
+      setShowForm(true);
+      if (onAddFormOpened) onAddFormOpened();
+    }
+  }, [openAddForm]);
 
   const openAdd = function() {
     setForm(Object.assign({}, BLANK_FORM, { entry_date: today() }));

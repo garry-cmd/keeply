@@ -5514,6 +5514,8 @@ export default function App() {
             vesselType={settings.vesselType}
             fuelBurnRate={settings.fuelBurnRate || null}
             onBack={function(){ setTab("boat"); }}
+            openAddForm={showAddLog}
+            onAddFormOpened={function(){ setShowAddLog(false); }}
           />
         )}
 
