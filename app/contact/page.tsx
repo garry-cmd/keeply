@@ -11,7 +11,13 @@ const GOLD  = "#f5a623";
 export default function ContactPage() {
   const options = [
     {
-      icon: "🛟",
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#22c55e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="16" cy="16" r="12"/>
+          <circle cx="16" cy="16" r="5"/>
+          <path d="M10.5 10.5l3.5 3.5M18 18l3.5 3.5M21.5 10.5L18 14M10.5 21.5L14 18"/>
+        </svg>
+      ),
       title: "General Support",
       desc: "Questions about the app, bugs, or account issues.",
       link: "mailto:support@keeply.boats?subject=Keeply Support",
@@ -21,7 +27,14 @@ export default function ContactPage() {
       border: "rgba(34,197,94,0.2)",
     },
     {
-      icon: "⚓",
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16 4C16 4 8 10 8 18a8 8 0 0 0 16 0C24 10 16 4 16 4z"/>
+          <circle cx="16" cy="18" r="2.5"/>
+          <line x1="16" y1="27" x2="16" y2="29"/>
+          <line x1="10" y1="29" x2="22" y2="29"/>
+        </svg>
+      ),
       title: "Fleet & Commercial",
       desc: "Custom pricing for marinas, charter fleets, and commercial operators.",
       link: "mailto:sales@keeply.boats?subject=Keeply Fleet enquiry",
@@ -31,7 +44,13 @@ export default function ContactPage() {
       border: "rgba(77,166,255,0.2)",
     },
     {
-      icon: "💡",
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16 4a8 8 0 0 1 4 15v3H12v-3A8 8 0 0 1 16 4z"/>
+          <line x1="12" y1="25" x2="20" y2="25"/>
+          <line x1="13" y1="28" x2="19" y2="28"/>
+        </svg>
+      ),
       title: "Feature Requests",
       desc: "Tell us what you'd like Keeply to do. We read every message.",
       link: "mailto:support@keeply.boats?subject=Keeply Feature Request",
@@ -98,7 +117,7 @@ export default function ContactPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {options.map((opt, i) => (
               <div key={i} style={{ background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: `1px solid ${opt.border}`, borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
-                <span style={{ fontSize: 32 }}>{opt.icon}</span>
+                <div style={{ marginBottom: 4 }}>{opt.icon}</div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 6 }}>{opt.title}</div>
                   <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{opt.desc}</div>
@@ -112,7 +131,12 @@ export default function ContactPage() {
 
           {/* Response time note */}
           <div style={{ marginTop: 48, background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "20px 24px", display: "flex", gap: 16, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 20, flexShrink: 0 }}>⏱</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <circle cx="12" cy="13" r="8"/>
+            <path d="M12 9v4l3 3"/>
+            <path d="M9 3h6"/>
+            <path d="M12 3v2"/>
+          </svg>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 4 }}>Response times</div>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.7 }}>
