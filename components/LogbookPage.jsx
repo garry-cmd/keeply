@@ -136,7 +136,7 @@ export default function LogbookPage({
   const [editingId,    setEditingId]    = useState(null);
   const [saving,       setSaving]       = useState(false);
   const [viewingEntry, setViewingEntry] = useState(null);
-  const [logbookTab,   setLogbookTab]   = useState("passages");
+  const [logbookTab,   setLogbookTab]   = useState("pre_departure");
   const [pdChecked,    setPdChecked]    = useState([]);
   const [pdReset,      setPdReset]      = useState(null);
   const [arChecked,    setArChecked]    = useState([]);
@@ -390,8 +390,8 @@ export default function LogbookPage({
   }
 
   const TABS = [
-    { id: "passages",      label: "Passages" },
     { id: "pre_departure", label: "Pre-Departure" },
+    { id: "passages",      label: "Passages" },
     { id: "arrival",       label: "Arrival" },
   ];
 
