@@ -207,7 +207,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
       </div>
 
       {/* ── Stats strip ── */}
-      <div style={{ display: "flex", gap: 1, background: "#1a3a5c", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "2px solid #1a3a5c" }}>
+      <div style={{ display: "flex", gap: 1, background: "var(--bg-elevated)", borderRadius: 10, overflow: "hidden", marginBottom: 20, border: "2px solid var(--bg-elevated)" }}>
         {[
           { label: "Passages", val: passages.length || "0" },
           { label: "nm logged", val: totalNm > 0 ? Math.round(totalNm).toLocaleString() : "—" },
@@ -274,7 +274,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
               if (entry.crew) chips.push({ t: "Crew: " + entry.crew, c: "var(--text-muted)", bg: "var(--bg-subtle)" });
 
               return (
-                <div key={entry.id} style={{ ...s.card, borderLeft: "3px solid " + (isPassage ? "#0f4c8a" : "var(--border)"), borderRadius: "0 12px 12px 0" }}>
+                <div key={entry.id} style={{ ...s.card, borderLeft: "3px solid " + (isPassage ? "var(--brand)" : "var(--border)") }}>
                   {isPassage ? (
                     <div style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "stretch", cursor: "pointer" }} onClick={function() { setViewingEntry(entry); }}>
                       {/* Date */}
@@ -314,7 +314,7 @@ export default function LogbookPage({ vesselId, vesselName, vesselType, fuelBurn
                     </div>
                   ) : (
                     <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }} onClick={function() { setViewingEntry(entry); }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 6, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}>📝</div>
+                      
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{entry.title || "Note"}</div>
