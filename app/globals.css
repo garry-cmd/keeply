@@ -1,166 +1,127 @@
-/* ─── KEEPLY DESIGN TOKENS ───────────────────────────────────────────────────
-   Light mode is the default (:root).
-   Dark mode applied via body.dark-mode — toggled by user preference.
-   Admin dashboard uses the same light tokens (no extra wrapper needed).
-   ─────────────────────────────────────────────────────────────────────────── */
-
+/* ─── KEEPLY DESIGN TOKENS ─────────────────────────────────────────────────── Light mode is the default (:root). Dark mode applied via body.dark-mode — toggled by user preference. Admin dashboard uses the same light tokens (no extra wrapper needed). ─────────────────────────────────────────────────────────────────────────── */
 :root {
-
   /* ── Backgrounds ────────────────────────────────────────────────────────── */
-  --bg-app:        #f4f6f9;
-  --bg-card:       #ffffff;
-  --bg-elevated:   #ffffff;
-  --bg-subtle:     #f8fafc;
-  --bg-overlay:    rgba(0, 0, 0, 0.4);
-
+  --bg-app: #f4f6f9;
+  --bg-card: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-subtle: #f8fafc;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
   /* ── Brand ──────────────────────────────────────────────────────────────── */
-  --brand:         #0f4c8a;
-  --brand-deep:    #eff6ff;
-  --brand-muted:   #3b82f6;
-
+  --brand: #0f4c8a;
+  --brand-deep: #eff6ff;
+  --brand-muted: #3b82f6;
   /* ── Borders ────────────────────────────────────────────────────────────── */
-  --border:        #e2e8f0;
+  --border: #e2e8f0;
   --border-strong: #cbd5e1;
-
   /* ── Text ───────────────────────────────────────────────────────────────── */
-  --text-primary:   #1a1d23;
+  --text-primary: #1a1d23;
   --text-secondary: #374151;
-  --text-muted:     #9ca3af;
-  --text-label:     #6b7280;
-  --text-on-brand:  #ffffff;
-
+  --text-muted: #9ca3af;
+  --text-label: #6b7280;
+  --text-on-brand: #ffffff;
   /* ── Semantic: Status ───────────────────────────────────────────────────── */
-  --ok-text:        #16a34a;
-  --ok-bg:          #f0fdf4;
-  --ok-border:      #bbf7d0;
-
-  --warn-text:      #d97706;
-  --warn-bg:        #fffbeb;
-  --warn-border:    #fde68a;
-
-  --danger-text:    #dc2626;
-  --danger-bg:      #fef2f2;
-  --danger-border:  #fca5a5;
-
-  --info-text:      #1e40af;
-  --info-bg:        #dbeafe;
-  --info-border:    #93c5fd;
-
+  --ok-text: #16a34a;
+  --ok-bg: #f0fdf4;
+  --ok-border: #bbf7d0;
+  --warn-text: #d97706;
+  --warn-bg: #fffbeb;
+  --warn-border: #fde68a;
+  --danger-text: #dc2626;
+  --danger-bg: #fef2f2;
+  --danger-border: #fca5a5;
+  --info-text: #1e40af;
+  --info-bg: #dbeafe;
+  --info-border: #93c5fd;
   /* ── Semantic: Due badges ───────────────────────────────────────────────── */
-  --critical-text:  #dc2626;
-  --critical-bg:    #fee2e2;
+  --critical-text: #dc2626;
+  --critical-bg: #fee2e2;
   --critical-border:#fca5a5;
-
-  --overdue-text:   #ea580c;
-  --overdue-bg:     #fff7ed;
+  --overdue-text: #ea580c;
+  --overdue-bg: #fff7ed;
   --overdue-border: #fed7aa;
-
-  --duesoon-text:   #ca8a04;
-  --duesoon-bg:     #fefce8;
+  --duesoon-text: #ca8a04;
+  --duesoon-bg: #fefce8;
   --duesoon-border: #fde68a;
-
   /* ── Priority ───────────────────────────────────────────────────────────── */
-  --priority-critical-text:  #dc2626;
-  --priority-critical-bg:    #fee2e2;
-  --priority-high-text:      #ea580c;
-  --priority-high-bg:        #fff7ed;
-  --priority-medium-text:    #ca8a04;
-  --priority-medium-bg:      #fefce8;
-  --priority-low-text:       #16a34a;
-  --priority-low-bg:         #f0fdf4;
-
+  --priority-critical-text: #dc2626;
+  --priority-critical-bg: #fee2e2;
+  --priority-high-text: #ea580c;
+  --priority-high-bg: #fff7ed;
+  --priority-medium-text: #ca8a04;
+  --priority-medium-bg: #fefce8;
+  --priority-low-text: #16a34a;
+  --priority-low-bg: #f0fdf4;
   /* ── Order status ───────────────────────────────────────────────────────── */
-  --order-pending-text:   #854d0e;
-  --order-pending-bg:     #fef9c3;
-  --order-ordered-text:   #1e40af;
-  --order-ordered-bg:     #dbeafe;
+  --order-pending-text: #854d0e;
+  --order-pending-bg: #fef9c3;
+  --order-ordered-text: #1e40af;
+  --order-ordered-bg: #dbeafe;
   --order-fulfilled-text: #166534;
-  --order-fulfilled-bg:   #dcfce7;
-
+  --order-fulfilled-bg: #dcfce7;
   /* ── Radius ─────────────────────────────────────────────────────────────── */
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
-  --radius-xl:  20px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
 }
 
-
-/* ─── DARK MODE ──────────────────────────────────────────────────────────────
-   Applied when <body class="dark-mode"> — toggled by user preference toggle.
-   ─────────────────────────────────────────────────────────────────────────── */
-
+/* ─── DARK MODE ────────────────────────────────────────────────────────────── Applied when <body class="dark-mode"> — toggled by user preference toggle. ─────────────────────────────────────────────────────────────────────────── */
 body.dark-mode {
-  --bg-app:        #0a0f1a;
-  --bg-card:       #0d1520;
-  --bg-elevated:   #111e2e;
-  --bg-subtle:     #0f1a28;
-  --bg-overlay:    rgba(0, 0, 0, 0.65);
-
-  --brand:         #4a8ab0;
-  --brand-deep:    #1e3a5a;
-  --brand-muted:   #2d5070;
-
-  --border:        #1a2535;
-  --border-strong: #1e3a5a;
-
-  --text-primary:   #e8f0f8;
+  /* ── Option A: Midnight blue — true navy, not near-black ── */
+  --bg-app: #0e2d52;
+  --bg-card: #132f58;
+  --bg-elevated: #1a3d6b;
+  --bg-subtle: #163461;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+  --brand: #4a8ab0;
+  --brand-deep: #1e4a7a;
+  --brand-muted: #3d6a90;
+  --border: #1e4070;
+  --border-strong: #2a5490;
+  --text-primary: #e8f0f8;
   --text-secondary: #8aaccc;
-  --text-muted:     #3d5a78;
-  --text-label:     #2d4460;
-  --text-on-brand:  #ffffff;
-
-  --ok-text:        #2a9e6a;
-  --ok-bg:          #0a1a12;
-  --ok-border:      #2a6e4a;
-
-  --warn-text:      #c87a20;
-  --warn-bg:        #1a1208;
-  --warn-border:    #6e4a0a;
-
-  --danger-text:    #c84040;
-  --danger-bg:      #1a0a0a;
-  --danger-border:  #7f1d1d;
-
-  --info-text:      #4a8ab0;
-  --info-bg:        #0d1828;
-  --info-border:    #1e3a5a;
-
-  --critical-text:  #f87171;
-  --critical-bg:    #2a0f0f;
+  --text-muted: #5a82aa;
+  --text-label: #4a6d90;
+  --text-on-brand: #ffffff;
+  --ok-text: #2a9e6a;
+  --ok-bg: #0d2818;
+  --ok-border: #2a6e4a;
+  --warn-text: #c87a20;
+  --warn-bg: #251a08;
+  --warn-border: #6e4a0a;
+  --danger-text: #c84040;
+  --danger-bg: #280e0e;
+  --danger-border: #7f1d1d;
+  --info-text: #4a8ab0;
+  --info-bg: #112038;
+  --info-border: #1e3a5a;
+  --critical-text: #f87171;
+  --critical-bg: #381515;
   --critical-border:#7f1d1d;
-
-  --overdue-text:   #fb923c;
-  --overdue-bg:     #2a1400;
+  --overdue-text: #fb923c;
+  --overdue-bg: #381c00;
   --overdue-border: #7c2d12;
-
-  --duesoon-text:   #fbbf24;
-  --duesoon-bg:     #1a1400;
+  --duesoon-text: #fbbf24;
+  --duesoon-bg: #251c00;
   --duesoon-border: #78350f;
-
-  --priority-critical-text:  #f87171;
-  --priority-critical-bg:    #2a0f0f;
-  --priority-high-text:      #fb923c;
-  --priority-high-bg:        #2a1400;
-  --priority-medium-text:    #fbbf24;
-  --priority-medium-bg:      #1a1400;
-  --priority-low-text:       #4ade80;
-  --priority-low-bg:         #0a2010;
-
-  --order-pending-text:   #fbbf24;
-  --order-pending-bg:     #1a1400;
-  --order-ordered-text:   #60a5fa;
-  --order-ordered-bg:     #0d1828;
+  --priority-critical-text: #f87171;
+  --priority-critical-bg: #381515;
+  --priority-high-text: #fb923c;
+  --priority-high-bg: #381c00;
+  --priority-medium-text: #fbbf24;
+  --priority-medium-bg: #251c00;
+  --priority-low-text: #4ade80;
+  --priority-low-bg: #0d2a18;
+  --order-pending-text: #fbbf24;
+  --order-pending-bg: #251c00;
+  --order-ordered-text: #60a5fa;
+  --order-ordered-bg: #112038;
   --order-fulfilled-text: #4ade80;
-  --order-fulfilled-bg:   #0a2010;
+  --order-fulfilled-bg: #0d2a18;
 }
-
 
 /* ─── BASE RESETS ────────────────────────────────────────────────────────────*/
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
+*, *::before, *::after { box-sizing: border-box; }
 body {
   margin: 0;
   background: var(--bg-app);
@@ -171,26 +132,18 @@ body {
 }
 
 /* ─── FORM ELEMENTS ──────────────────────────────────────────────────────────*/
-
 input, select, textarea {
-  background:  var(--bg-subtle);
-  color:       var(--text-primary);
-  border:      1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: inherit;
-  font-size:   13px;
-  outline:     none;
-  transition:  border-color 0.15s;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
 }
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--border-strong);
-}
-
-input::placeholder, textarea::placeholder {
-  color: var(--text-label);
-}
-
+input:focus, select:focus, textarea:focus { border-color: var(--border-strong); }
+input::placeholder, textarea::placeholder { color: var(--text-label); }
 select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -198,7 +151,6 @@ select {
   background-position: right 10px center;
   padding-right: 28px;
 }
-
-::-webkit-scrollbar        { width: 4px; height: 4px; }
-::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: var(--border-strong); border-radius: 2px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
