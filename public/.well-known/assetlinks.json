@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "boats.keeply.app",
+    "sha256_cert_fingerprints": ["3E:4F:F2:38:50:2C:DB:B6:50:B7:3C:5E:A1:42:FF:E0:EC:E0:F4:2A:9D:B4:FB:2C:42:90:3A:FA:37:F2:B0:92"]
+  }
+}]
