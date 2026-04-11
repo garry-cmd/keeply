@@ -2571,11 +2571,8 @@ export default function App() {
     </div>
   );
 
-  // Not signed in — show app login screen if running as installed PWA/TWA, marketing page otherwise
-  if (!session) {
-    const isStandalone = typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches;
-    return isStandalone ? <AuthScreen /> : <LandingPage />;
-  }
+  // Not signed in
+  if (!session) return <LandingPage />;
 
   // Signed in but no vessel yet
   if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
@@ -2702,7 +2699,7 @@ export default function App() {
                 ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l2-8h12l2 8"/><path d="M2 15 C5 15 6 17 12 17 C18 17 19 15 22 15"/><path d="M2 15 C4 18 7 19 12 19 C17 19 20 18 22 15"/><line x1="9" y1="7" x2="9" y2="4"/><line x1="7" y1="4" x2="14" y2="4"/></svg>
                 : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-12z"/><line x1="12" y1="3" x2="12" y2="20"/><path d="M12 8 L7 15 L12 15"/><path d="M3 20 L21 20"/></svg> },
             { label: "Logbook",   active: view==="customer" && tab==="logbook-standalone",   action: function(){ setView("customer"); setTab("logbook-standalone"); },
-              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 4 L14.5 12 L12 20 L9.5 12 Z" stroke="none" fill="currentColor" opacity="0.25"/><path d="M12 4 L14.5 12 L12 10 L9.5 12 Z" stroke="none" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="white" stroke="none"/></svg> },
+              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
             { label: "Equipment", active: view==="customer" && tab==="equipment-standalone", action: function(){ setView("customer"); setTab("equipment-standalone"); },
               svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
             { label: "Profile",   active: false,                                             action: function(){ setShowProfilePanel(true); },
@@ -3248,7 +3245,7 @@ export default function App() {
                     <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.22)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                       onClick={function(e){ e.stopPropagation(); }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        {[["info","ID"],["docs","Docs"],["admin","Admin"],["ref","Ref"]].map(function(pair){
+                        {[["info","ID"],["docs","Docs"],["admin","Admin"]].map(function(pair){
                           return (
                             <button key={pair[0]} onClick={function(){ tapTab(pair[0]); }} style={pillStyle(pair[0])}>
                               <span style={pillText(pair[0])}>{pair[1]}</span>
@@ -3605,31 +3602,6 @@ export default function App() {
                       );
                     })()}
 
-                    {(equipTab[vesselEq.id] || "info") === "ref" && (
-                      <div onClick={function(e){ e.stopPropagation(); }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 10 }}>Reference library</div>
-                        {[
-                          { label: "Rules of the Road",       desc: "Navigation rules & right of way" },
-                          { label: "VHF channel guide",       desc: "Ch 16, 22A, working channels" },
-                          { label: "Distress signals",         desc: "MAYDAY, PAN-PAN, visual signals" },
-                          { label: "Buoy & light patterns",   desc: "IALA-B lateral & cardinal marks" },
-                          { label: "USCG required equipment", desc: "Federal requirements by vessel length" },
-                          { label: "Anchoring guide",          desc: "Scope ratios, holding ground, procedures" },
-                        ].map(function(ref) {
-                          return (
-                            <div key={ref.label} style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "11px 14px", marginBottom: 7, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                              <div>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{ref.label}</div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{ref.desc}</div>
-                              </div>
-                              <span style={{ fontSize: 16, color: "var(--text-muted)", marginLeft: 10 }}>›</span>
-                            </div>
-                          );
-                        })}
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 12 }}>More references coming soon</div>
-                      </div>
-                    )}
-
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
                       <div onClick={function(e){ e.stopPropagation(); }}>
                         {/* ── Vessel details (name / make / model / year) ── */}
@@ -3794,18 +3766,29 @@ export default function App() {
             var updateHours = function(){ setUpdateHoursInput(""); setShowUpdateHoursModal(true); };
             const cellStyle = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "13px 14px" };
             const labelStyle = { fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 5 };
+            // Resolve engine hours display: prefer whichever source is more recent
+            const displayEngHrs = (function(){
+              if (!lastLogWithHours && !engineHours) return null;
+              if (!lastLogWithHours) return { value: engineHours, source: "manual", date: lastHoursUpdate };
+              if (!engineHours) return { value: lastLogWithHours.hours_end, source: "log", date: lastLogWithHours.entry_date };
+              var logDate    = new Date(lastLogWithHours.entry_date);
+              var manualDate = lastHoursUpdate ? new Date(lastHoursUpdate) : new Date(0);
+              return manualDate > logDate
+                ? { value: engineHours,               source: "manual", date: lastHoursUpdate }
+                : { value: lastLogWithHours.hours_end, source: "log",    date: lastLogWithHours.entry_date };
+            })();
             return (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
 
-                {/* Row 1 Cell 1 — Engine hours (from last logbook hours_end or manual) */}
+                {/* Row 1 Cell 1 — Engine hours (more-recent of manual update or logbook entry) */}
                 <div style={cellStyle}>
                   <div style={labelStyle}>Engine hrs</div>
-                  {(lastLogWithHours || engineHours) ? (<>
+                  {displayEngHrs ? (<>
                     <div onClick={updateHours} style={{ fontSize: 22, fontWeight: 800, color: "#4da6ff", fontFamily: "DM Mono, monospace", lineHeight: 1, cursor: "pointer" }}>
-                      {(lastLogWithHours ? lastLogWithHours.hours_end : engineHours).toLocaleString()}
+                      {parseFloat(displayEngHrs.value).toLocaleString()}
                     </div>
                     <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>
-                      {lastLogWithHours ? "from log · " + fmt(lastLogWithHours.entry_date) : "manually entered"} · <span onClick={updateHours} style={{ color: "var(--brand)", cursor: "pointer" }}>update</span>
+                      {displayEngHrs.source === "log" ? "from log · " + fmt(displayEngHrs.date) : "manually entered"} · <span onClick={updateHours} style={{ color: "var(--brand)", cursor: "pointer" }}>update</span>
                     </div>
                   </>) : (<>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Not logged</div>
@@ -5386,7 +5369,7 @@ export default function App() {
                     setShowEquipNote(true);
                     setShowFab(false);
                   } },
-                { label: "Log Entry", stroke: "#7dd3fc", bg: "rgba(125,211,252,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" stroke="#7dd3fc" strokeWidth="1.6"/><path d="M12 4 L14.5 12 L12 20 L9.5 12 Z" stroke="none" fill="#7dd3fc" opacity="0.25"/><path d="M12 4 L14.5 12 L12 10 L9.5 12 Z" stroke="none" fill="#7dd3fc"/><circle cx="12" cy="12" r="1.8" fill="rgba(13,27,46,1)" stroke="none"/></svg>, action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
+                { label: "Log Entry", stroke: "#7dd3fc", bg: "rgba(125,211,252,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7" strokeWidth="1.3"/><line x1="9" y1="10.5" x2="13" y2="10.5" strokeWidth="1.3"/></svg>, action: function(){ setTab("logbook-standalone"); setLogForm({ entry_type: "passage", entry_date: today() }); setEditingLog(null); setShowAddLog(true); setShowFab(false); } },
               ].map(function(item){ return (
                 <div key={item.label} onClick={item.action}
                   style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "var(--bg-card)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 24, padding: "8px 16px 8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
@@ -5546,7 +5529,6 @@ export default function App() {
             onBack={function(){ setTab("boat"); }}
             openAddForm={showAddLog}
             onAddFormOpened={function(){ setShowAddLog(false); }}
-            userPlan={userPlan}
           />
         )}
 
