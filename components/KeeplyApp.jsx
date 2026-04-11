@@ -3829,48 +3829,7 @@ export default function App() {
 
 
 
-          {/* ── Overdue & due soon tasks on My Boat ── */}
-          {(function(){
-            var vesselTasks = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
-            var urgentTasks = vesselTasks.filter(function(t){
-              var u = getTaskUrgency(t);
-              return u === "critical" || u === "overdue" || u === "due-soon";
-            }).sort(function(a,b){
-              var order = { critical: 0, overdue: 1, "due-soon": 2 };
-              return (order[getTaskUrgency(a)] || 3) - (order[getTaskUrgency(b)] || 3);
-            });
-            if (urgentTasks.length === 0) return null;
-            return (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 8px" }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.28)", letterSpacing: "1.2px", textTransform: "uppercase" }}>Overdue &amp; due soon</span>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{urgentTasks.length}</span>
-                </div>
-                {urgentTasks.map(function(t){
-                  var u = getTaskUrgency(t);
-                  var dotColor = u === "critical" || u === "overdue" ? "#ef4444" : "#f59e0b";
-                  var dotShadow = u === "critical" || u === "overdue" ? "0 0 5px rgba(239,68,68,0.55)" : "0 0 5px rgba(245,158,11,0.45)";
-                  var daysLabel = (function(){
-                    if (!t.due_date) return "";
-                    var diff = Math.round((new Date(t.due_date) - new Date()) / 86400000);
-                    if (diff < -1) return Math.abs(diff) + "d over";
-                    if (diff === -1) return "1d over";
-                    if (diff === 0) return "Due today";
-                    return diff + "d";
-                  })();
-                  var textColor = u === "critical" || u === "overdue" ? "#f87171" : "#fbbf24";
-                  return (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}
-                      onClick={function(){ setExpandedTask(t.id); }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, boxShadow: dotShadow, flexShrink: 0 }} />
-                      <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>{t.task}</div>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: textColor, flexShrink: 0 }}>{daysLabel}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+
 
           {/* ── Engine tasks import banner ── */}
           {(function(){
