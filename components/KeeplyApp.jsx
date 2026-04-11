@@ -6653,16 +6653,16 @@ export default function App() {
             <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "0 auto 20px" }} />
 
             {upgradeReason && (
-              <div style={{ background: "var(--overdue-bg)", border: "1px solid #fed7aa", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "var(--warn-text)", marginBottom: 16 }}>
+              <div style={{ background: "var(--warn-bg)", border: "1px solid var(--warn-border)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "var(--warn-text)", marginBottom: 16 }}>
                 {upgradeReason}
               </div>
             )}
 
             <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>
-              {userPlan === "pro" ? "Upgrade to Fleet" : userPlan === "free" || !userPlan ? "Upgrade your plan" : "Upgrade Keeply"}
+              Upgrade Keeply
             </div>
             <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-              {userPlan === "pro" ? "Unlock the fleet dashboard and add more vessels." : "Unlock more features for your boat."}
+              Unlock more vessels, unlimited repairs, and AI features.
             </div>
 
             {/* Entry — shown only when on free/null plan */}
@@ -6695,7 +6695,7 @@ export default function App() {
             )}
 
             {/* Pro Monthly */}
-            <div style={{ border: "2px solid #0f4c8a", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "#fafeff" }}>
+            <div style={{ border: "2px solid var(--brand)", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "var(--bg-elevated)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--brand)" }}>Keeply Pro</div>
@@ -6722,7 +6722,7 @@ export default function App() {
             </div>
 
             {/* Pro Annual */}
-            <div style={{ border: "1.5px solid #16a34a", borderRadius: 14, padding: "16px 18px", marginBottom: 10, background: "#fafffe", position: "relative" }}>
+            <div style={{ border: "1.5px solid var(--ok-text)", borderRadius: 14, padding: "16px 18px", marginBottom: 16, background: "var(--bg-elevated)", position: "relative" }}>
               <div style={{ position: "absolute", top: -10, left: 16, background: "var(--ok-text)", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>Save 42%</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
@@ -6749,55 +6749,8 @@ export default function App() {
               </button>
             </div>
 
-            {/* Fleet */}
-            <div style={{ border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)" }}>Keeply Fleet</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>3 vessels included · fleet dashboard · team access</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-secondary)" }}>$49.99</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>per month</div>
-                </div>
-              </div>
-              <button onClick={async function(){
-                if (checkoutLoading) return;
-                setCheckoutLoading(true);
-                try {
-                  const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eroj4WEUp", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
-                } catch(e) { alert("Error starting checkout: " + e.message); }
-                finally { setCheckoutLoading(false); }
-              }} disabled={checkoutLoading} style={{ width: "100%", padding: "10px 0", border: "1.5px solid #374151", borderRadius: 8, background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
-                {checkoutLoading ? "Opening checkout…" : "Subscribe Fleet — $49.99/mo"}
-              </button>
-              <div style={{ marginTop: 10, background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#854d0e", textAlign: "center" }}>
-                🎁 Beta tester? Use code <strong>BETA2026</strong> at checkout for 100% off Fleet.
-              </div>
-            </div>
 
-            {/* Enterprise */}
-            <div style={{ border: "1.5px solid #7c3aed", borderRadius: 14, padding: "14px 18px", marginBottom: 10, background: "#faf8ff" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#7c3aed" }}>Enterprise</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>15+ assets · dedicated account manager · API access</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#7c3aed" }}>Custom</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>sales call</div>
-                </div>
-              </div>
-              <a href="mailto:support@keeply.boats?subject=Enterprise enquiry"
-                style={{ display: "block", width: "100%", padding: "10px 0", border: "none", borderRadius: 8, background: "#7c3aed", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "none", textAlign: "center" }}>
-                Book a call →
-              </a>
-            </div>
-
-            <button onClick={function(){ setShowUpgradeModal(false); }}
+                        <button onClick={function(){ setShowUpgradeModal(false); }}
               style={{ width: "100%", padding: "10px 0", border: "none", background: "none", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}>
               Maybe later
             </button>
