@@ -2676,7 +2676,7 @@ export default function App() {
         </div>
       </div>
       {/* ── First Mate input bar — sparkle icon, always sticky ── */}
-      <div style={{ background: "var(--bg-card)", padding: "0 14px 11px", borderBottom: "1px solid var(--border-strong)" }}>
+      <div style={{ background: "var(--bg-app)", padding: "8px 14px 11px", borderBottom: "none" }}>
         <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: 13, padding: "9px 10px 9px 12px", display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}
           onClick={function(){ setShowFirstMatePanel(true); }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
