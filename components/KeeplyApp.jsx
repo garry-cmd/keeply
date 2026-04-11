@@ -2643,14 +2643,14 @@ export default function App() {
               {boatName} <span style={{ opacity: 0.7 }}>▾</span>
             </button>
             {showVesselDropdown && (
-              <div style={{ position: "absolute", top: 38, left: 0, background: "var(--bg-card)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", minWidth: 220, zIndex: 100, overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 38, left: 0, background: "var(--bg-elevated)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.25)", minWidth: 220, zIndex: 100, overflow: "hidden", border: "1px solid var(--border-strong)" }}>
                 {vessels.map(function(v){
                   const pf = v.vesselType === "motor" ? "M/V" : "S/V";
                   return (
-                    <div key={v.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", cursor: "pointer", background: v.id === activeVesselId ? "#f0f7ff" : "#fff", borderBottom: "1px solid var(--border)" }}
+                    <div key={v.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", cursor: "pointer", background: v.id === activeVesselId ? "var(--bg-card)" : "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}
                       onClick={function(){ switchVessel(v.id); setShowVesselDropdown(false); }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        {v.photoUrl ? <img src={v.photoUrl} alt={v.vesselName} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--bg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{v.vesselType === "motor" ? "🚤" : "⛵"}</div>}
+                        {v.photoUrl ? <img src={v.photoUrl} alt={v.vesselName} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--bg-card)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{v.vesselType === "motor" ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l2-8h12l2 8"/><path d="M2 15 C5 15 6 17 12 17 C18 17 19 15 22 15"/><path d="M2 15 C4 18 7 19 12 19 C17 19 20 18 22 15"/><line x1="9" y1="7" x2="9" y2="4"/><line x1="7" y1="4" x2="14" y2="4"/></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-12z"/><line x1="12" y1="3" x2="12" y2="20"/><path d="M12 8 L7 15 L12 15"/><path d="M3 20 L21 20"/></svg>}</div>}
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: v.id === activeVesselId ? "var(--brand)" : "var(--text-primary)" }}>{pf} {v.vesselName}</div>
                           {v.make && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{v.year} {v.make}</div>}
