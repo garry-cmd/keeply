@@ -3901,11 +3901,9 @@ export default function App() {
             const daysSinceLogged = r.date ? Math.round((new Date() - new Date(r.date)) / 86400000) : 0;
             const repairDotColor = daysSinceLogged >= 10 ? "#ef4444" : "#f59e0b";
             const repairDotShadow = daysSinceLogged >= 10 ? "0 0 6px rgba(239,68,68,0.6)" : "0 0 6px rgba(245,158,11,0.5)";
-            const catIcon = getCategoryIcon(r.section, 14);
             return (
               <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-                  {catIcon.tile}
                   <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
                     style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.2)"), background: completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.05)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
                     title="Mark complete">
