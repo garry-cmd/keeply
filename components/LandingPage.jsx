@@ -55,104 +55,15 @@ const FEATURE_ICONS = [
 ];
 
 function MaintenanceVisual() {
-  var ref      = useRef(null);
-  var [zoomed,   setZoomed]   = useState(false);
-  var [cardIn,   setCardIn]   = useState(false);
-  var [hrsCount, setHrsCount] = useState(0);
-  var [pulsing,  setPulsing]  = useState(false);
-
-  function runAnimation() {
-    // Reset
-    setZoomed(false); setCardIn(false); setHrsCount(0); setPulsing(false);
-
-    // Ken Burns — start zoom almost immediately so the 8s transition
-    // is perceptible across the full time the section is in view
-    setTimeout(function() { setZoomed(true); }, 80);
-
-    // Alert card slides up from the bottom of the photo
-    setTimeout(function() { setCardIn(true); }, 650);
-
-    // Counter ticks up + pulse dot activates once the card is settled
-    setTimeout(function() {
-      setPulsing(true);
-      var target   = 1200;
-      var duration = 1400;      // ms to reach 1,200
-      var tick     = 16;        // ~60fps
-      var steps    = duration / tick;
-      var inc      = target / steps;
-      var cur      = 0;
-      var t = setInterval(function() {
-        cur = Math.min(cur + inc, target);
-        setHrsCount(Math.round(cur));
-        if (cur >= target) clearInterval(t);
-      }, tick);
-    }, 1150);
-  }
-
-  // Fire once when 30% of the visual is scrolled into view
-  useEffect(function() {
-    var el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    var io = new IntersectionObserver(function(entries) {
-      if (entries[0].isIntersecting) { runAnimation(); io.disconnect(); }
-    }, { threshold: 0.3 });
-    io.observe(el);
-    return function() { io.disconnect(); };
-  }, []);
-
   return (
-    <div ref={ref} style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "4/3" }}>
-
-      {/* Keyframes for the pulsing overdue dot */}
-      <style dangerouslySetInnerHTML={{ __html:
-        "@keyframes kp-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.6)}}" +
-        ".kp-pulse{animation:kp-pulse 1.4s ease infinite}"
-      }} />
-
-      {/* Photo with Ken Burns zoom */}
-      <img
-        src="/images/failed-impeller.jpg"
-        alt="Failed impeller"
-        style={{
-          width: "100%", height: "100%",
-          objectFit: "cover", objectPosition: "center",
-          display: "block",
-          transform: zoomed ? "scale(1.07)" : "scale(1)",
-          transition: "transform 8s ease",
-        }}
-      />
-
-      {/* Gradient overlay — unchanged */}
+    <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "4/3" }}>
+      <img src="/images/failed-impeller.jpg" alt="Failed impeller"
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.1) 0%, rgba(7,30,61,0.75) 100%)" }} />
-
-      {/* Alert card — slides up from below the photo */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        padding: "20px 20px 22px",
-        transform: cardIn ? "translateY(0)" : "translateY(105%)",
-        transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
-      }}>
-
-        {/* OVERDUE label with pulsing dot */}
-        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-          <span
-            className={pulsing ? "kp-pulse" : ""}
-            style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#ef4444", flexShrink: 0 }}
-          />
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.8px", textTransform: "uppercase" }}>
-            Overdue
-          </span>
-        </div>
-
-        <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", lineHeight: 1.2, marginBottom: 4 }}>
-          Impeller replacement
-        </div>
-
-        {/* hrs counter ticks up to 1,200 */}
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-          Last changed 14 months ago &middot; {hrsCount.toLocaleString()} hrs on unit
-        </div>
-
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 20px 22px" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Overdue</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", lineHeight: 1.2, marginBottom: 4 }}>Impeller replacement</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Last changed 14 months ago · 1,200 hrs on unit</div>
       </div>
     </div>
   );
@@ -636,9 +547,9 @@ const FEATURES = [
 
 
 const PLANS = [
-  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "250MB document storage"] },
-  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr ($12/mo)", subheader: "Everything in Basic, plus", cta: "Get started →", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
-  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr ($20/mo)", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook"] },
+  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "Pre-departure & arrival checklists", "Passage logbook", "250MB document storage"] },
+  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr ($12/mo)", subheader: "Everything in Basic, plus", cta: "Get started →", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "Customizable checklists", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
+  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr ($20/mo)", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
 
 
@@ -1081,14 +992,18 @@ export default function LandingPage() {
                     ["Push notifications",    "\u2713",    "\u2713",      "\u2713"],
                     ["Admin task tracking",   "\u2713",    "\u2713",      "\u2713"],
                     ["Crew / shared access",  "\u2713",    "\u2713",      "\u2713"],
+                    ["Departure & arrival checklists", "\u2713", "\u2713",  "\u2713"],
+                    ["Customizable checklists", "\u2014",    "\u2713",      "\u2713"],
                     ["Repair log & logbook",  "\u2014",    "\u2713",      "\u2713"],
                     ["Haul-out planner",      "\u2014",    "\u2014",      "\u2713"],
                     ["First Mate AI",         "\u2014",    "10 / mo",     "50 / mo"],
                     ["AI vessel setup",       "\u2014",    "\u2713",      "\u2713"],
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
+                    ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
+                    ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
                     ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
                   ].map(function (row, ri) {
-                    var isLast = ri === 15;
+                    var isLast = ri === 18;
                     return (
                       <tr key={ri} style={{ background: ri % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)" }}>
                         <td style={{ padding: "12px 16px", color: "rgba(255,255,255,0.7)", fontWeight: isLast ? 700 : 400 }}>{row[0]}</td>
