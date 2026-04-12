@@ -834,15 +834,31 @@ export default function App() {
 
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
   const [tab, setTab]   = useState("boat");
-  const [darkMode, setDarkMode] = useState(true);
+  const [theme, setTheme] = useState(function(){
+    if (typeof window === "undefined") return "auto";
+    const saved = localStorage.getItem("keeply-theme");
+    if (saved === "light" || saved === "dark" || saved === "auto") return saved;
+    // Legacy: migrate old keeply-dark key
+    const legacy = localStorage.getItem("keeply-dark");
+    if (legacy === "0") return "light";
+    return "auto"; // default to OS preference
+  });
 
   useEffect(function(){
-    if (typeof document !== "undefined") {
-      if (darkMode) { document.body.classList.add("dark-mode"); }
-      else { document.body.classList.remove("dark-mode"); }
-      localStorage.setItem("keeply-dark", darkMode ? "1" : "0");
-    }
-  }, [darkMode]);
+    if (typeof document === "undefined") return;
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = theme === "dark" || (theme === "auto" && prefersDark);
+    if (isDark) { document.body.classList.add("dark-mode"); }
+    else { document.body.classList.remove("dark-mode"); }
+    localStorage.setItem("keeply-theme", theme);
+  }, [theme]);
+
+  // Keep darkMode as a derived boolean for any legacy references
+  const darkMode = (function(){
+    if (typeof window === "undefined") return true;
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return theme === "dark" || (theme === "auto" && prefersDark);
+  })();
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [fleetPanel, setFleetPanel]     = useState(null); // { vesselId, type, vesselName }
@@ -6836,6 +6852,33 @@ export default function App() {
                       } catch(e) { alert(e.message); }
                     }} style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manage ↗</span>
                   )}
+                </div>
+              </div>
+
+              {/* ── Appearance ── */}
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.6px" }}>APPEARANCE</div>
+              <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
+                <div style={{ padding: "14px 20px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 10 }}>Theme</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {[
+                      { val: "light", label: "Day",   icon: "☀️" },
+                      { val: "auto",  label: "Auto",  icon: "⚙️" },
+                      { val: "dark",  label: "Night", icon: "🌙" },
+                    ].map(function(opt) {
+                      const active = theme === opt.val;
+                      return (
+                        <button key={opt.val} onClick={function(){ setTheme(opt.val); }}
+                          style={{ flex: 1, padding: "10px 4px", border: active ? "2px solid var(--brand)" : "1px solid var(--border)", borderRadius: 10, background: active ? "var(--brand-deep)" : "var(--bg-card)", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all 0.15s" }}>
+                          <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                          <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, color: active ? "var(--brand)" : "var(--text-muted)" }}>{opt.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8 }}>
+                    Auto follows your device setting
+                  </div>
                 </div>
               </div>
 
