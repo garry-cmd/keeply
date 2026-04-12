@@ -26,6 +26,13 @@ interface AdminStats {
     trialing: number
     planBreakdown: Record<string, number>
   }
+  engagement: {
+    activatedUsers: number
+    activationRate: number
+    day7Retention: number | null
+    cohort7Size: number
+    firstMateThisMonth: number | null
+  }
   fetchedAt: string
 }
 
@@ -301,7 +308,7 @@ export default function AdminPage() {
 
   if (!stats) return null
 
-  const { users, product, revenue } = stats
+  const { users, product, revenue, engagement } = stats
   const freeUsers = Math.max(0, users.total - revenue.activeSubscriptions - revenue.trialing)
 
   return (
@@ -430,6 +437,56 @@ export default function AdminPage() {
               label="Open Repairs"
               value={fmt(product.openRepairs)}
               accent={product.openRepairs > 0 ? '#fb923c' : '#e2e8f0'}
+            />
+          </div>
+        </div>
+
+        {/* ── Engagement ───────────────────────────────────────────────────── */}
+        <div style={s.section}>
+          <div style={s.sectionLabel}>Engagement</div>
+          <div style={s.grid(4)}>
+            <StatCard
+              label="Activation Rate"
+              value={`${engagement.activationRate}%`}
+              sub={`${engagement.activatedUsers} of ${users.total} users added a vessel`}
+              accent={engagement.activationRate >= 50 ? '#34d399' : engagement.activationRate >= 25 ? '#fbbf24' : '#f87171'}
+            />
+            <StatCard
+              label="Day-7 Retention"
+              value={engagement.day7Retention !== null ? `${engagement.day7Retention}%` : '—'}
+              sub={
+                engagement.day7Retention !== null
+                  ? `n=${engagement.cohort7Size} · target 35%+`
+                  : engagement.cohort7Size === 0
+                    ? 'No users older than 7 days yet'
+                    : `n=${engagement.cohort7Size} · cohort building`
+              }
+              accent={
+                engagement.day7Retention === null ? undefined
+                  : engagement.day7Retention >= 35 ? '#34d399'
+                  : engagement.day7Retention >= 20 ? '#fbbf24'
+                  : '#f87171'
+              }
+            />
+            <StatCard
+              label="Free → Paid Conv."
+              value={users.total > 0 ? `${Math.round((revenue.activeSubscriptions / users.total) * 100)}%` : '—'}
+              sub={`${revenue.activeSubscriptions} paid · ${revenue.trialing} trialing · target 5–10%`}
+              accent={
+                users.total === 0 ? undefined
+                  : (revenue.activeSubscriptions / users.total) >= 0.05 ? '#34d399'
+                  : (revenue.activeSubscriptions / users.total) >= 0.02 ? '#fbbf24'
+                  : '#f87171'
+              }
+            />
+            <StatCard
+              label="First Mate Queries"
+              value={engagement.firstMateThisMonth !== null ? engagement.firstMateThisMonth.toLocaleString() : '—'}
+              sub={
+                engagement.firstMateThisMonth !== null
+                  ? 'AI queries this month'
+                  : 'Needs first_mate_queries table'
+              }
             />
           </div>
         </div>

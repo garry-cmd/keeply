@@ -40,8 +40,9 @@ export async function GET(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
   const now = Date.now()
-  const oneWeekAgo  = new Date(now - 7  * 24 * 60 * 60 * 1000)
-  const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000)
+  const oneWeekAgo    = new Date(now - 7  * 24 * 60 * 60 * 1000)
+  const oneMonthAgo   = new Date(now - 30 * 24 * 60 * 60 * 1000)
+  const MS_PER_DAY    = 24 * 60 * 60 * 1000
 
   // ── Fetch everything in parallel ─────────────────────────────────────────────
   const [
@@ -53,6 +54,8 @@ export async function GET(req: NextRequest) {
     openRepairsResult,
     stripeActiveResult,
     stripeTrialResult,
+    vesselUsersResult,       // distinct user_ids who have a vessel (activation)
+    firstMateResult,         // First Mate queries this month
   ] = await Promise.allSettled([
     supabase.auth.admin.listUsers({ perPage: 1000 }),
     supabase.from('vessels').select('*', { count: 'exact', head: true }),
@@ -62,6 +65,13 @@ export async function GET(req: NextRequest) {
     supabase.from('repairs').select('*', { count: 'exact', head: true }).eq('status', 'open'),
     stripe.subscriptions.list({ status: 'active',   limit: 100 }),
     stripe.subscriptions.list({ status: 'trialing', limit: 100 }),
+    // Activation: fetch all vessel user_ids so we can deduplicate in JS
+    supabase.from('vessels').select('user_id'),
+    // First Mate: queries this month — needs a first_mate_queries table with
+    // columns: id, user_id, created_at. Falls back to null if table missing.
+    supabase.from('first_mate_queries')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', oneMonthAgo.toISOString()),
   ])
 
   // ── Process users ─────────────────────────────────────────────────────────────
@@ -103,6 +113,38 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Activation rate ───────────────────────────────────────────────────────────
+  // A user is "activated" if they have created at least one vessel
+  const vesselUserIds  = vesselUsersResult.status === 'fulfilled'
+    ? [...new Set((vesselUsersResult.value.data ?? []).map((v: { user_id: string }) => v.user_id))]
+    : []
+  const activatedUsers = vesselUserIds.length
+  const activationRate = allUsers.length > 0
+    ? Math.round((activatedUsers / allUsers.length) * 100)
+    : 0
+
+  // ── Day-7 retention ───────────────────────────────────────────────────────────
+  // Cohort: users who signed up > 7 days ago (7-day window has fully closed)
+  // Retained: signed in at least once after their personal day-7 mark
+  const MS_PER_DAY = 24 * 60 * 60 * 1000
+  const cohort7    = allUsers.filter(u => new Date(u.created_at).getTime() < now - 7 * MS_PER_DAY)
+  const retained7  = cohort7.filter(u => {
+    if (!u.last_sign_in_at) return false
+    const signedInAt = new Date(u.last_sign_in_at).getTime()
+    const createdAt  = new Date(u.created_at).getTime()
+    return signedInAt > createdAt + 7 * MS_PER_DAY
+  })
+  const day7Retention = cohort7.length > 0
+    ? Math.round((retained7.length / cohort7.length) * 100)
+    : null  // null = insufficient cohort data, UI shows "—"
+
+  // ── First Mate usage ──────────────────────────────────────────────────────────
+  // Requires a `first_mate_queries` table with columns: id, user_id, created_at
+  // Returns null if table doesn't exist yet — UI shows "—" rather than 0
+  const firstMateThisMonth = firstMateResult.status === 'fulfilled'
+    ? (firstMateResult.value.count ?? null)
+    : null
+
   // ── Build response ────────────────────────────────────────────────────────────
   return NextResponse.json({
     users: {
@@ -125,6 +167,13 @@ export async function GET(req: NextRequest) {
       activeSubscriptions: realActiveSubs.length,
       trialing:            trialSubs.length,
       planBreakdown,
+    },
+    engagement: {
+      activatedUsers,            // users with ≥1 vessel
+      activationRate,            // % of total users who activated
+      day7Retention,             // % of 7-day-old cohort who returned after day 7 (null if no data)
+      cohort7Size:   cohort7.length,   // so UI can show "n=X" context
+      firstMateThisMonth,        // AI queries this month (null if table missing)
     },
     fetchedAt: new Date().toISOString(),
   })
