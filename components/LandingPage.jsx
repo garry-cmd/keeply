@@ -577,9 +577,9 @@ const FEATURES = [
 
 
 const PLANS = [
-  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "AI vessel setup", "1 equipment card visible", "Unlimited maintenance tasks", "3 First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Pre-departure checklists", "Passage logbook"] },
-  { name: "Standard", price: "$15",   period: "/mo", sub: "14-day free trial · No credit card", subheader: "Everything in Basic, plus", cta: "Start free trial →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "Repair log & full logbook"] },
-  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr ($20/mo)", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
+  { name: "Free",     price: "Free",  period: "",    sub: "After your 14-day trial",   subheader: "Includes after trial",        cta: "Start free trial →", features: ["1 vessel", "1 equipment card visible", "Unlimited maintenance tasks", "3 First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Pre-departure checklists", "Passage logbook"] },
+  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr · save $36",        subheader: "Everything in Free, plus",    cta: "Start free trial →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI — 10 queries/mo", "Repair log & full logbook"] },
+  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr · save $60",        subheader: "Everything in Standard, plus", cta: "Start free trial →", features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
 
 
@@ -896,8 +896,8 @@ export default function LandingPage() {
       {/* Trial banner */}
       <div style={{ background: "rgba(245,166,35,0.12)", borderBottom: "1px solid rgba(245,166,35,0.25)", padding: "8px 16px", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.85)", position: "relative", zIndex: 300 }}>
         <span style={{ marginRight: 6 }}>✦</span>
-        <strong style={{ color: GOLD }}>14-day free trial</strong> on Standard — no credit card required.{" "}
-        <button onClick={scrollToPricing} style={{ background: "none", border: "none", color: GOLD, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0, textDecoration: "underline", fontFamily: "inherit" }}>Start now →</button>
+        <strong style={{ color: GOLD }}>14-day free trial</strong> — full Pro access, no credit card required.{" "}
+        <button onClick={scrollToPricing} style={{ background: "none", border: "none", color: GOLD, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0, textDecoration: "underline", fontFamily: "inherit" }}>Start free →</button>
       </div>
 
       {/* Nav */}
@@ -949,7 +949,7 @@ export default function LandingPage() {
               </button>
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", letterSpacing: "0.2px" }}>
-              14-day free trial on Standard &middot; No credit card required
+              14-day free trial · Full Pro access · No credit card required
             </div>
           </div>
 
@@ -985,8 +985,12 @@ export default function LandingPage() {
       <section id="pricing" style={{ padding: isMobile ? "56px 16px" : "100px 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Simple pricing</h2>
-            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Start free. Upgrade when you're ready.</p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80" }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>14-day free trial · Full Pro access · No credit card</span>
+            </div>
+            <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Start free. Choose your plan after.</h2>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Every account gets 14 days of full Pro access — no credit card required.</p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
               <span style={{ fontSize: 13, color: annual ? "rgba(255,255,255,0.4)" : WHITE, fontWeight: annual ? 400 : 600 }}>Monthly</span>
               <div onClick={function () { setAnnual(function (a) { return !a; }); }} style={{ width: 44, height: 24, background: annual ? ACCENT : "rgba(255,255,255,0.2)", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
@@ -1039,7 +1043,7 @@ export default function LandingPage() {
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left", padding: "12px 16px", color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.6px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>Feature</th>
-                    {["Basic", "Standard", "Pro"].map(function (p, i) {
+                    {["Free", "Standard", "Pro"].map(function (p, i) {
                       return <th key={i} style={{ textAlign: "center", padding: "12px 16px", color: i === 1 ? ACCENT : "rgba(255,255,255,0.8)", fontWeight: 700, fontSize: 13, borderBottom: "1px solid rgba(255,255,255,0.1)", minWidth: 100 }}>{p}</th>;
                     })}
                   </tr>
@@ -1048,7 +1052,7 @@ export default function LandingPage() {
                   {[
                     ["Vessels",               "1",         "1",           "2"],
                     ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
-                    ["Equipment cards",        "1",         "10",          "Unlimited"],
+                    ["Equipment cards",        "1 visible", "Unlimited",   "Unlimited"],
                     ["Repairs",               "3",         "Unlimited",   "Unlimited"],
                     ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
                     ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
@@ -1065,6 +1069,7 @@ export default function LandingPage() {
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
                     ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
                     ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
+                    ["14-day Pro trial",      "\u2713",   "\u2713",     "\u2713"],
                     ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
                   ].map(function (row, ri) {
                     var isLast = ri === 18;
@@ -1090,7 +1095,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
-            Standard plan includes a 14-day free trial. No credit card required. Cancel any time.
+            Every plan starts with a 14-day free trial of Pro — no credit card required. After your trial, continue free or choose Standard or Pro. Cancel any time.
           </p>
           <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
             Commercial or fleet manager?{" "}
