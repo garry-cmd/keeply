@@ -4015,7 +4015,7 @@ export default function App() {
                 preview: oldestRepair ? (oldestRepair.description.length > 18 ? oldestRepair.description.substring(0,18) + "…" : oldestRepair.description) : null,
                 previewColor: "rgba(77,166,255,0.45)" },
             ];
-            return (
+            return (<>
               {/* ── 2-KPI strip: Engine Hours + NM Logged ── */}
               {(function(){
                 var activeV = vessels.find(function(v){ return v.id === activeVesselId; });
@@ -4053,7 +4053,7 @@ export default function App() {
                   </div>
                 ); })}
               </div>
-            );
+            </>);
           })()}
 
 
