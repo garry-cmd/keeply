@@ -126,7 +126,6 @@ export async function GET(req: NextRequest) {
   // ── Day-7 retention ───────────────────────────────────────────────────────────
   // Cohort: users who signed up > 7 days ago (7-day window has fully closed)
   // Retained: signed in at least once after their personal day-7 mark
-  const MS_PER_DAY = 24 * 60 * 60 * 1000
   const cohort7    = allUsers.filter(u => new Date(u.created_at).getTime() < now - 7 * MS_PER_DAY)
   const retained7  = cohort7.filter(u => {
     if (!u.last_sign_in_at) return false
