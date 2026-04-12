@@ -5454,6 +5454,28 @@ export default function App() {
             </div>
           )}
 
+
+          {/* ── Free plan equipment locked banner ── */}
+          {(function(){
+            if (userPlan !== "free" && userPlan) return null;
+            const totalEquip = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
+            const lockedCount = totalEquip - 1;
+            if (lockedCount <= 0) return null;
+            return (
+              <div onClick={function(){ setShowUpgradeModal(true); }}
+                style={{ background: "var(--brand-deep)", border: "1.5px dashed var(--brand)", borderRadius: 12, padding: "20px 18px", marginBottom: 12, cursor: "pointer", textAlign: "center" }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "var(--brand)", lineHeight: 1, marginBottom: 4 }}>+{lockedCount}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)", marginBottom: 4 }}>
+                  {lockedCount} more equipment item{lockedCount === 1 ? "" : "s"} waiting
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                  First Mate found your full equipment list. Upgrade to Standard to unlock it.
+                </div>
+                <div style={{ display: "inline-block", background: "var(--brand)", color: "#fff", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700 }}>Unlock full equipment list →</div>
+              </div>
+            );
+          })()}
+
         </>)}
 
           {showAddTask && (
@@ -5512,27 +5534,6 @@ export default function App() {
 
       {/* Floating Action Button */}
       {view === "customer" && tab === "boat" && (
-          {/* ── Free plan equipment locked banner ── */}
-          {(function(){
-            if (userPlan !== "free" && userPlan) return null;
-            const totalEquip = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
-            const lockedCount = totalEquip - 1;
-            if (lockedCount <= 0) return null;
-            return (
-              <div onClick={function(){ setShowUpgradeModal(true); }}
-                style={{ background: "var(--brand-deep)", border: "1.5px dashed var(--brand)", borderRadius: 12, padding: "20px 18px", marginBottom: 10, cursor: "pointer", textAlign: "center" }}>
-                <div style={{ fontSize: 26, fontWeight: 800, color: "var(--brand)", lineHeight: 1, marginBottom: 4 }}>+{lockedCount}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)", marginBottom: 4 }}>
-                  {lockedCount} more equipment item{lockedCount === 1 ? "" : "s"} waiting
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-                  First Mate found your full equipment list. Upgrade to Standard to unlock it and get your complete maintenance schedule.
-                </div>
-                <div style={{ display: "inline-block", background: "var(--brand)", color: "#fff", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700 }}>Unlock full equipment list →</div>
-              </div>
-            );
-          })()}
-
         <div style={{ position: "fixed", bottom: 84, right: 20, zIndex: 200 }}>
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>
