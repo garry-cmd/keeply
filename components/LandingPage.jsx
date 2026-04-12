@@ -547,8 +547,8 @@ const FEATURES = [
 
 
 const PLANS = [
-  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "1 Equipment Card (Engine)", "3 repairs", "Parts catalog", "Engine hours tracking", "Pre-departure & arrival checklists", "Passage logbook", "250MB document storage"] },
-  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr ($12/mo)", subheader: "Everything in Basic, plus", cta: "Get started →", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "Customizable checklists", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
+  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "Pre-departure & arrival checklists", "Passage logbook", "250MB document storage"] },
+  { name: "Standard", price: "$15",   period: "/mo", sub: "14-day free trial · No credit card", subheader: "Everything in Basic, plus", cta: "Start free trial →", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "Customizable checklists", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
   { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr ($20/mo)", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
 
@@ -906,7 +906,7 @@ export default function LandingPage() {
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
                 <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
-                <button onClick={scrollToPricing} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try it free {"\u2192"}</button>
+                <button onClick={scrollToPricing} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try free for 14 days {"\u2192"}</button>
               </div>
               <div style={{ order: isMobile ? 1 : (isEven ? 1 : 0) }}><V /></div>
             </div>
@@ -1025,7 +1025,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <p style={{ textAlign: "center", marginTop: 48, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
+          <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
+            Standard plan includes a 14-day free trial. No credit card required. Cancel any time.
+          </p>
+          <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
             Commercial or fleet manager?{" "}
             <a href="mailto:sales@keeply.boats?subject=Keeply Fleet enquiry" style={{ color: ACCENT, textDecoration: "none", fontWeight: 600 }}>Talk to us about Fleet {"\u2192"}</a>
           </p>
