@@ -6,206 +6,135 @@ import { supabase } from '@/components/supabase-client'
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface AdminStats {
   users: {
-    total: number
-    confirmed: number
-    newThisWeek: number
-    newLastWeek: number
-    newThisMonth: number
+    total: number; confirmed: number
+    newThisWeek: number; newLastWeek: number; newThisMonth: number
     recentSignups: { email: string; createdAt: string; confirmed: boolean }[]
   }
   product: {
-    vessels: number
-    equipment: number
-    tasks: number
-    repairs: number
-    openRepairs: number
-    vesselsThisWeek: number
-    vesselsLastWeek: number
-    repairsThisWeek: number
-    repairsLastWeek: number
+    vessels: number; equipment: number; tasks: number; repairs: number; openRepairs: number
+    vesselsThisWeek: number; vesselsLastWeek: number
+    repairsThisWeek: number; repairsLastWeek: number
   }
   revenue: {
-    mrr: number
-    arr: number
-    activeSubscriptions: number
-    trialing: number
-    planBreakdown: Record<string, number>
+    mrr: number; arr: number; activeSubscriptions: number; trialing: number
+    planBreakdown: Record<string, number>; arpu: number; annualPct: number
   }
   engagement: {
-    activatedUsers: number
-    activationRate: number
-    day7Retention: number | null
-    cohort7Size: number
-    firstMateThisMonth: number | null
+    activatedUsers: number; activationRate: number
+    day7Retention: number | null; cohort7Size: number
+    firstMateThisMonth: number | null; avgTimeToActivationMins: number | null
+  }
+  appStore: { iosRating: number | null; androidRating: number | null; totalReviews: number | null }
+  geography: {
+    regions: { region: string; count: number; isIcp: boolean }[]
+    icpCoverage: number
+    dataQuality: { withHomePort: number; total: number }
   }
   fetchedAt: string
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+// ── Goals (business targets) ──────────────────────────────────────────────────
+const GOALS = {
+  mrr:              5000,
+  conversionRate:   10,    // %
+  day7Retention:    35,    // %
+  activationRate:   80,    // %
+  timeToActivation: 15,    // minutes
+  weeklySignups:    50,
+  totalSignups:     500,   // month-1 target per marketing plan
+  appRating:        4.4,
+  appReviews:       50,
+}
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const pct = (a: number, b: number) => b > 0 ? Math.round((a / b) * 100) : 0
 
-function wowDelta(thisWeek: number, lastWeek: number): { pct: number | null; dir: 'up' | 'down' | 'flat' } {
-  if (lastWeek === 0 && thisWeek === 0) return { pct: null, dir: 'flat' }
-  if (lastWeek === 0) return { pct: null, dir: 'up' }
-  const pct = Math.round(((thisWeek - lastWeek) / lastWeek) * 100)
-  return { pct, dir: pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat' }
+function wowLabel(thisW: number, lastW: number): { text: string; color: string; bg: string } {
+  if (lastW === 0 && thisW === 0) return { text: '—', color: '#4a6fa5', bg: '#4a6fa518' }
+  if (lastW === 0) return { text: '▲ new', color: '#34d399', bg: '#34d39918' }
+  const p = Math.round(((thisW - lastW) / lastW) * 100)
+  if (p > 0) return { text: `▲ ${p}% WoW`, color: '#34d399', bg: '#34d39918' }
+  if (p < 0) return { text: `▼ ${Math.abs(p)}% WoW`, color: '#f87171', bg: '#f8717118' }
+  return { text: '→ flat', color: '#4a6fa5', bg: '#4a6fa518' }
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
+const dark = '#060d1a'
+const card  = '#0d1829'
+const bdr   = '#1a2d4a'
+const muted = '#4a6fa5'
+const text  = '#e2e8f0'
+const mono  = "'SF Mono','Fira Code','Cascadia Code',monospace"
+const sans  = 'system-ui,sans-serif'
+const green = '#34d399'
+const red   = '#f87171'
+const amber = '#fbbf24'
+const blue  = '#7eb3f0'
+
 const s = {
-  page: {
-    minHeight: '100vh',
-    background: '#060d1a',
-    color: '#e2e8f0',
-    fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
-  } as React.CSSProperties,
-
-  header: {
-    background: '#0a1628',
-    borderBottom: '1px solid #1a2d4a',
-    padding: '16px 32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  } as React.CSSProperties,
-
-  logo: { display: 'flex', alignItems: 'center', gap: 10 } as React.CSSProperties,
-
-  logoText: {
-    fontSize: 18, fontWeight: 700, color: '#e2e8f0',
-    letterSpacing: '0.04em', fontFamily: 'system-ui, sans-serif',
-  } as React.CSSProperties,
-
-  badge: {
-    fontSize: 10, fontWeight: 700, background: '#0f4c8a', color: '#93c5fd',
-    borderRadius: 4, padding: '2px 7px', letterSpacing: '0.1em',
-  } as React.CSSProperties,
-
-  body: { padding: '28px 32px', maxWidth: 1200, margin: '0 auto' } as React.CSSProperties,
-  section: { marginBottom: 36 } as React.CSSProperties,
-
-  sectionLabel: {
-    fontSize: 11, fontWeight: 700, color: '#4a6fa5',
-    letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 12,
-  } as React.CSSProperties,
-
-  grid: (cols: number) => ({
-    display: 'grid',
-    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-    gap: 12,
-  }) as React.CSSProperties,
-
-  card: {
-    background: '#0d1829', border: '1px solid #1a2d4a',
-    borderRadius: 10, padding: '18px 20px',
-  } as React.CSSProperties,
-
-  statLabel: {
-    fontSize: 11, color: '#4a6fa5', letterSpacing: '0.08em',
-    marginBottom: 6, fontFamily: 'system-ui, sans-serif',
-  } as React.CSSProperties,
-
-  statValue: {
-    fontSize: 28, fontWeight: 700, color: '#e2e8f0',
-    lineHeight: 1, letterSpacing: '-0.02em',
-  } as React.CSSProperties,
-
-  statSub: {
-    fontSize: 12, color: '#4a6fa5', marginTop: 4,
-    fontFamily: 'system-ui, sans-serif',
-  } as React.CSSProperties,
-
-  accentValue: (color: string) => ({
-    fontSize: 28, fontWeight: 700, color, lineHeight: 1, letterSpacing: '-0.02em',
-  }) as React.CSSProperties,
-
-  table: { width: '100%', borderCollapse: 'collapse' as const } as React.CSSProperties,
-
-  th: {
-    fontSize: 10, fontWeight: 700, color: '#4a6fa5', letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const, padding: '6px 12px', textAlign: 'left' as const,
-    borderBottom: '1px solid #1a2d4a', fontFamily: 'system-ui, sans-serif',
-  } as React.CSSProperties,
-
-  td: {
-    fontSize: 13, color: '#94a3b8', padding: '8px 12px',
-    borderBottom: '1px solid #0f1f35', fontFamily: 'system-ui, sans-serif',
-  } as React.CSSProperties,
-
-  link: {
-    display: 'inline-flex', alignItems: 'center', gap: 6,
-    background: '#0d1829', border: '1px solid #1a2d4a', borderRadius: 8,
-    padding: '10px 16px', color: '#7eb3f0', fontSize: 13,
-    textDecoration: 'none', fontFamily: 'system-ui, sans-serif', cursor: 'pointer',
-  } as React.CSSProperties,
-
-  pill: (color: string, bg: string) => ({
-    fontSize: 11, fontWeight: 700, color, background: bg,
-    borderRadius: 4, padding: '2px 7px', fontFamily: 'system-ui, sans-serif',
-  }) as React.CSSProperties,
+  page:   { minHeight: '100vh', background: dark, color: text, fontFamily: mono } as React.CSSProperties,
+  header: { background: '#0a1628', borderBottom: `1px solid ${bdr}`, padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } as React.CSSProperties,
+  body:   { padding: '28px 32px', maxWidth: 1200, margin: '0 auto' } as React.CSSProperties,
+  sec:    { marginBottom: 32 } as React.CSSProperties,
+  sl:     { fontSize: 11, fontWeight: 700, color: muted, letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 12, fontFamily: sans } as React.CSSProperties,
+  card:   { background: card, border: `1px solid ${bdr}`, borderRadius: 10, padding: '16px 18px' } as React.CSSProperties,
+  grid:   (n: number) => ({ display: 'grid', gridTemplateColumns: `repeat(${n},minmax(0,1fr))`, gap: 10 }) as React.CSSProperties,
+  lbl:    { fontSize: 10, color: muted, letterSpacing: '0.08em', marginBottom: 8, fontFamily: sans } as React.CSSProperties,
+  link:   { display: 'inline-flex', alignItems: 'center', gap: 6, background: card, border: `1px solid ${bdr}`, borderRadius: 8, padding: '10px 16px', color: blue, fontSize: 13, textDecoration: 'none', fontFamily: sans, cursor: 'pointer' } as React.CSSProperties,
+  pill:   (c: string, bg: string) => ({ fontSize: 11, fontWeight: 700, color: c, background: bg, borderRadius: 4, padding: '2px 7px', fontFamily: sans }) as React.CSSProperties,
+  th:     { fontSize: 10, fontWeight: 700, color: muted, letterSpacing: '0.1em', textTransform: 'uppercase' as const, padding: '6px 12px', textAlign: 'left' as const, borderBottom: `1px solid ${bdr}`, fontFamily: sans } as React.CSSProperties,
+  td:     { fontSize: 13, color: '#94a3b8', padding: '8px 12px', borderBottom: `1px solid #0f1f35`, fontFamily: sans } as React.CSSProperties,
 }
 
-// ── Trend Badge ───────────────────────────────────────────────────────────────
-function Trend({ thisWeek, lastWeek, label = 'WoW' }: { thisWeek: number; lastWeek: number; label?: string }) {
-  const { pct, dir } = wowDelta(thisWeek, lastWeek)
-  if (pct === null && dir === 'flat') return null
-
-  const color  = dir === 'up' ? '#34d399' : dir === 'down' ? '#f87171' : '#94a3b8'
-  const arrow  = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '—'
-  const text   = pct !== null ? `${arrow} ${Math.abs(pct)}%` : `${arrow} new`
-
-  return (
-    <span style={{
-      fontSize: 11, fontWeight: 700, color,
-      background: color + '18', borderRadius: 4,
-      padding: '2px 6px', marginLeft: 8,
-      fontFamily: 'system-ui, sans-serif',
-    }}>
-      {text} <span style={{ fontWeight: 400, opacity: 0.7 }}>{label}</span>
-    </span>
-  )
-}
-
-// ── Stat Card ─────────────────────────────────────────────────────────────────
-function StatCard({
-  label, value, sub, accent, thisWeek, lastWeek,
-}: {
-  label: string; value: string | number; sub?: string; accent?: string
-  thisWeek?: number; lastWeek?: number
-}) {
+// ── Goal Card ─────────────────────────────────────────────────────────────────
+function GoalCard({ label, actual, goal, unit = '', sub, status, wow }:
+  { label: string; actual: string | number | null; goal: string | number; unit?: string; sub?: string; status: 'above' | 'below' | 'warn' | 'na'; wow?: { thisW: number; lastW: number } }
+) {
+  const colors = { above: green, below: red, warn: amber, na: muted }
+  const badges = { above: { text: '▲ above goal', c: green, bg: '#34d39918' }, below: { text: '▼ below goal', c: red, bg: '#f8717118' }, warn: { text: '~ near goal', c: amber, bg: '#fbbf2418' }, na: { text: 'not tracked', c: muted, bg: '#4a6fa518' } }
+  const b = badges[status]
+  const w = wow ? wowLabel(wow.thisW, wow.lastW) : null
   return (
     <div style={s.card}>
-      <div style={s.statLabel}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap' as const }}>
-        <div style={accent ? s.accentValue(accent) : s.statValue}>{value}</div>
-        {thisWeek !== undefined && lastWeek !== undefined && (
-          <Trend thisWeek={thisWeek} lastWeek={lastWeek} />
-        )}
+      <div style={s.lbl}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap' as const, marginBottom: 6 }}>
+        <span style={{ fontSize: 26, fontWeight: 700, color: actual === null ? muted : colors[status], lineHeight: 1, letterSpacing: '-0.02em' }}>
+          {actual === null ? '—' : `${actual}${unit}`}
+        </span>
+        <span style={{ fontSize: 14, color: '#2d4a6a', margin: '0 2px' }}>/</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: muted }}>{goal}{unit}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: b.c, background: b.bg, borderRadius: 4, padding: '2px 6px', fontFamily: sans, marginLeft: 4 }}>{b.text}</span>
       </div>
-      {sub && <div style={s.statSub}>{sub}</div>}
+      {w && <span style={{ fontSize: 10, fontWeight: 700, color: w.color, background: w.bg, borderRadius: 4, padding: '2px 6px', fontFamily: sans, marginRight: 6 }}>{w.text}</span>}
+      {sub && <div style={{ fontSize: 11, color: muted, marginTop: 4, fontFamily: sans }}>{sub}</div>}
     </div>
   )
 }
 
-// ── Access Denied ─────────────────────────────────────────────────────────────
-function AccessDenied() {
+// ── Stat Card (no goal) ───────────────────────────────────────────────────────
+function StatCard({ label, value, sub, accent, wow }:
+  { label: string; value: string | number; sub?: string; accent?: string; wow?: { thisW: number; lastW: number } }
+) {
+  const w = wow ? wowLabel(wow.thisW, wow.lastW) : null
   return (
-    <div style={{ ...s.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>⚓</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#e2e8f0', marginBottom: 8, fontFamily: 'system-ui, sans-serif' }}>
-          Access Denied
-        </div>
-        <div style={{ fontSize: 14, color: '#4a6fa5', fontFamily: 'system-ui, sans-serif' }}>
-          This area is restricted to Keeply administrators.
-        </div>
+    <div style={s.card}>
+      <div style={s.lbl}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' as const }}>
+        <span style={{ fontSize: 26, fontWeight: 700, color: accent ?? text, lineHeight: 1, letterSpacing: '-0.02em' }}>{value}</span>
+        {w && <span style={{ fontSize: 10, fontWeight: 700, color: w.color, background: w.bg, borderRadius: 4, padding: '2px 6px', fontFamily: sans }}>{w.text}</span>}
       </div>
+      {sub && <div style={{ fontSize: 11, color: muted, marginTop: 4, fontFamily: sans }}>{sub}</div>}
     </div>
   )
+}
+
+// ── Access Denied / Loading / Error ───────────────────────────────────────────
+function Centered({ children }: { children: React.ReactNode }) {
+  return <div style={{ ...s.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ textAlign: 'center' }}>{children}</div></div>
 }
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
@@ -217,215 +146,304 @@ export default function AdminPage() {
   const [signupsOpen, setSignupsOpen] = useState(false)
 
   const fetchStats = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { setAuthorized(false); setLoading(false); return }
-
-      const res = await fetch('/api/admin/stats', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
+      const res = await fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${session.access_token}` } })
       if (res.status === 403 || res.status === 401) { setAuthorized(false); setLoading(false); return }
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-      const data = await res.json()
-      setStats(data)
-      setAuthorized(true)
+      setStats(await res.json()); setAuthorized(true)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load stats')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { fetchStats() }, [fetchStats])
 
-  if (authorized === false) return <AccessDenied />
+  if (authorized === false) return (
+    <Centered><div style={{ fontSize: 40, marginBottom: 16 }}>⚓</div>
+      <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, fontFamily: sans }}>Access Denied</div>
+      <div style={{ fontSize: 14, color: muted, fontFamily: sans }}>Restricted to Keeply administrators.</div>
+    </Centered>
+  )
+  if (loading) return <Centered><div style={{ fontSize: 13, color: muted, letterSpacing: '0.1em', fontFamily: sans }}>LOADING TELEMETRY...</div></Centered>
+  if (error)   return <Centered><div style={{ color: red, marginBottom: 12, fontFamily: sans }}>{error}</div><button onClick={fetchStats} style={{ ...s.link, background: '#0f4c8a', color: '#fff', border: 'none' }}>Retry</button></Centered>
+  if (!stats)  return null
 
-  if (loading) {
-    return (
-      <div style={{ ...s.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#4a6fa5', fontFamily: 'system-ui, sans-serif' }}>
-          <div style={{ fontSize: 13, letterSpacing: '0.1em' }}>LOADING TELEMETRY...</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div style={{ ...s.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ color: '#f87171', marginBottom: 12, fontFamily: 'system-ui, sans-serif' }}>{error}</div>
-          <button onClick={fetchStats} style={{ ...s.link, background: '#0f4c8a', color: '#fff', border: 'none' }}>
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!stats) return null
-
-  const { users, product, revenue, engagement } = stats
-  const freeUsers = Math.max(0, users.total - revenue.activeSubscriptions - revenue.trialing)
+  const { users, product, revenue, engagement, appStore, geography } = stats
+  const freeUsers    = Math.max(0, users.total - revenue.activeSubscriptions - revenue.trialing)
+  const convRate     = pct(revenue.activeSubscriptions, users.total)
+  const mrrPct       = pct(revenue.mrr, GOALS.mrr)
+  const payingNeeded = Math.ceil(GOALS.mrr / Math.max(revenue.arpu || 22, 1))
+  const signupsNeeded = convRate > 0 ? Math.ceil(payingNeeded / (convRate / 100)) : null
+  const weeksToGoal  = GOALS.weeklySignups > 0 && signupsNeeded
+    ? Math.ceil((signupsNeeded - users.total) / GOALS.weeklySignups)
+    : null
+  const maxRegion    = Math.max(...geography.regions.map(r => r.count), 1)
 
   return (
     <div style={s.page}>
 
       {/* Header */}
       <div style={s.header}>
-        <div style={s.logo}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 20 }}>⚓</span>
-          <span style={s.logoText}>Keeply</span>
-          <span style={s.badge}>ADMIN</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: text, letterSpacing: '0.04em', fontFamily: sans }}>Keeply</span>
+          <span style={{ fontSize: 10, fontWeight: 700, background: '#0f4c8a', color: '#93c5fd', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.1em' }}>ADMIN</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 12, color: '#4a6fa5', fontFamily: 'system-ui, sans-serif' }}>
-            Last synced {fmtTime(stats.fetchedAt)}
-          </span>
-          <button onClick={fetchStats} style={{ ...s.link, padding: '6px 14px', fontSize: 12 }}>
-            ↻ Refresh
-          </button>
+          <span style={{ fontSize: 12, color: muted, fontFamily: sans }}>Last synced {fmtTime(stats.fetchedAt)}</span>
+          <button onClick={fetchStats} style={{ ...s.link, padding: '6px 14px', fontSize: 12 }}>↻ Refresh</button>
         </div>
       </div>
 
       <div style={s.body}>
 
+        {/* ── MRR Goal ─────────────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>MRR Goal Progress</div>
+          <div style={s.card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontSize: 28, fontWeight: 700, color: green, letterSpacing: '-0.02em' }}>${revenue.mrr.toLocaleString()}</span>
+                  <span style={{ fontSize: 15, color: '#2d4a6a' }}>/ ${GOALS.mrr.toLocaleString()}</span>
+                </div>
+                <div style={{ fontSize: 11, color: muted, marginTop: 3, fontFamily: sans }}>Monthly recurring revenue · $5K goal</div>
+              </div>
+              <div style={{ textAlign: 'right', fontSize: 22, fontWeight: 700, color: muted, fontFamily: sans }}>{mrrPct}%<br/><span style={{ fontSize: 10, fontWeight: 400 }}>of goal</span></div>
+            </div>
+            <div style={{ background: bdr, borderRadius: 4, height: 6, overflow: 'hidden', marginBottom: 8 }}>
+              <div style={{ background: green, height: 6, borderRadius: 4, width: `${Math.min(mrrPct, 100)}%`, minWidth: 2 }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              {['$500', '$1K', '$2.5K', '$5K ✓'].map(m => (
+                <div key={m} style={{ fontSize: 10, color: m.includes('✓') ? green : '#2d4a6a', fontFamily: sans }}>{m}</div>
+              ))}
+            </div>
+            <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 10, display: 'flex', gap: 20, flexWrap: 'wrap' as const }}>
+              <div style={{ fontSize: 11, color: muted, fontFamily: sans }}>~{payingNeeded} paying users needed</div>
+              {signupsNeeded && <div style={{ fontSize: 11, color: muted, fontFamily: sans }}>At {convRate}% conv. → <span style={{ color: blue, fontWeight: 700 }}>~{signupsNeeded.toLocaleString()} signups</span></div>}
+              <div style={{ fontSize: 11, color: amber, fontFamily: sans }}>
+                {users.newThisWeek}/wk current pace · need <span style={{ fontWeight: 700 }}>{GOALS.weeklySignups}/wk</span>
+                {weeksToGoal && <span> → ~{weeksToGoal} weeks at target pace</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* ── Engagement ───────────────────────────────────────────────────── */}
-        <div style={s.section}>
-          <div style={s.sectionLabel}>Engagement</div>
+        <div style={s.sec}>
+          <div style={s.sl}>Engagement</div>
           <div style={s.grid(4)}>
-            <StatCard
-              label="Activation Rate"
-              value={`${engagement.activationRate}%`}
+            <GoalCard
+              label="Free → Paid Conv." actual={convRate} goal={GOALS.conversionRate} unit="%"
+              status={convRate >= GOALS.conversionRate ? 'above' : convRate >= GOALS.conversionRate * 0.7 ? 'warn' : 'below'}
+              sub={`${revenue.activeSubscriptions} paid · ${revenue.trialing} trialing`}
+            />
+            <GoalCard
+              label="Day-7 Retention" actual={engagement.day7Retention} goal={GOALS.day7Retention} unit="%"
+              status={engagement.day7Retention === null ? 'na' : engagement.day7Retention >= GOALS.day7Retention ? 'above' : engagement.day7Retention >= GOALS.day7Retention * 0.8 ? 'warn' : 'below'}
+              sub={`n=${engagement.cohort7Size} · target ${GOALS.day7Retention}%+`}
+            />
+            <GoalCard
+              label="Activation Rate" actual={engagement.activationRate} goal={GOALS.activationRate} unit="%"
+              status={engagement.activationRate >= GOALS.activationRate ? 'above' : engagement.activationRate >= GOALS.activationRate * 0.8 ? 'warn' : 'below'}
               sub={`${engagement.activatedUsers} of ${users.total} users added a vessel`}
-              accent={engagement.activationRate >= 50 ? '#34d399' : engagement.activationRate >= 25 ? '#fbbf24' : '#f87171'}
             />
-            <StatCard
-              label="Day-7 Retention"
-              value={engagement.day7Retention !== null ? `${engagement.day7Retention}%` : '—'}
-              sub={
-                engagement.day7Retention !== null
-                  ? `n=${engagement.cohort7Size} · target 35%+`
-                  : engagement.cohort7Size === 0 ? 'No users older than 7 days yet'
-                  : `n=${engagement.cohort7Size} · cohort building`
-              }
-              accent={
-                engagement.day7Retention === null ? undefined
-                  : engagement.day7Retention >= 35 ? '#34d399'
-                  : engagement.day7Retention >= 20 ? '#fbbf24' : '#f87171'
-              }
-            />
-            <StatCard
-              label="Free → Paid Conv."
-              value={users.total > 0 ? `${Math.round((revenue.activeSubscriptions / users.total) * 100)}%` : '—'}
-              sub={`${revenue.activeSubscriptions} paid · ${revenue.trialing} trialing · target 5–10%`}
-              accent={
-                users.total === 0 ? undefined
-                  : (revenue.activeSubscriptions / users.total) >= 0.05 ? '#34d399'
-                  : (revenue.activeSubscriptions / users.total) >= 0.02 ? '#fbbf24' : '#f87171'
-              }
-            />
-            <StatCard
-              label="First Mate Queries"
-              value={engagement.firstMateThisMonth !== null ? engagement.firstMateThisMonth.toLocaleString() : '—'}
-              sub={engagement.firstMateThisMonth !== null ? 'AI queries this month' : 'Needs firstmate_usage data'}
+            <GoalCard
+              label="Time to Activation"
+              actual={engagement.avgTimeToActivationMins !== null ? engagement.avgTimeToActivationMins : null}
+              goal={GOALS.timeToActivation} unit="min"
+              status={engagement.avgTimeToActivationMins === null ? 'na' : engagement.avgTimeToActivationMins <= GOALS.timeToActivation ? 'above' : engagement.avgTimeToActivationMins <= GOALS.timeToActivation * 2 ? 'warn' : 'below'}
+              sub="median mins signup → first vessel"
             />
           </div>
         </div>
 
-        {/* ── Revenue ──────────────────────────────────────────────────────── */}
-        <div style={s.section}>
-          <div style={s.sectionLabel}>Revenue</div>
+        {/* ── Growth ───────────────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>Growth</div>
           <div style={s.grid(4)}>
-            <StatCard
-              label="MRR"
-              value={`$${revenue.mrr.toLocaleString()}`}
-              sub={`$${revenue.arr.toLocaleString()} ARR`}
-              accent="#34d399"
+            <GoalCard
+              label="Weekly Signups" actual={users.newThisWeek} goal={GOALS.weeklySignups}
+              status={users.newThisWeek >= GOALS.weeklySignups ? 'above' : users.newThisWeek >= GOALS.weeklySignups * 0.5 ? 'warn' : 'below'}
+              sub={`${users.newLastWeek} last week`}
+              wow={{ thisW: users.newThisWeek, lastW: users.newLastWeek }}
             />
-            <StatCard label="Active Subscriptions" value={revenue.activeSubscriptions} sub={`${revenue.trialing} in trial`} />
-            <StatCard label="Free Users" value={freeUsers} sub="no paid plan" />
-            <StatCard
-              label="Conversion Rate"
-              value={users.total > 0 ? `${Math.round((revenue.activeSubscriptions / users.total) * 100)}%` : '—'}
-              sub="paid / total users"
+            <GoalCard
+              label="Total Signups" actual={users.total} goal={GOALS.totalSignups}
+              status={users.total >= GOALS.totalSignups ? 'above' : users.total >= GOALS.totalSignups * 0.5 ? 'warn' : 'below'}
+              sub="month-1 target per marketing plan"
+            />
+            <StatCard label="First Mate Queries"
+              value={engagement.firstMateThisMonth !== null ? engagement.firstMateThisMonth : '—'}
+              sub="AI queries this month"
+            />
+            <StatCard label="ICP Region Coverage"
+              value={`${geography.icpCoverage}%`}
+              accent={geography.icpCoverage >= 60 ? green : geography.icpCoverage >= 40 ? amber : muted}
+              sub={`${geography.dataQuality.withHomePort} of ${geography.dataQuality.total} vessels have home port`}
             />
           </div>
-          {Object.keys(revenue.planBreakdown).length > 0 && (
-            <div style={{ ...s.card, marginTop: 12, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' as const }}>
-              <span style={{ fontSize: 11, color: '#4a6fa5', letterSpacing: '0.08em', fontFamily: 'system-ui, sans-serif' }}>
-                PLAN BREAKDOWN
-              </span>
-              {Object.entries(revenue.planBreakdown).map(([plan, count]) => (
-                <div key={plan} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>{count}</span>
-                  <span style={{ fontSize: 12, color: '#4a6fa5', fontFamily: 'system-ui, sans-serif' }}>{plan}</span>
+        </div>
+
+        {/* ── App Store Ratings ─────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>App Store Ratings</div>
+          <div style={s.grid(4)}>
+            <GoalCard
+              label="App Store (iOS)" actual={appStore.iosRating} goal={GOALS.appRating}
+              status={appStore.iosRating === null ? 'na' : appStore.iosRating >= GOALS.appRating ? 'above' : appStore.iosRating >= GOALS.appRating - 0.3 ? 'warn' : 'below'}
+              sub="target 4.4+ by day 60 post-launch"
+            />
+            <GoalCard
+              label="Google Play (Android)" actual={appStore.androidRating} goal={GOALS.appRating}
+              status={appStore.androidRating === null ? 'na' : appStore.androidRating >= GOALS.appRating ? 'above' : appStore.androidRating >= GOALS.appRating - 0.3 ? 'warn' : 'below'}
+              sub="target 4.4+ by day 60 post-launch"
+            />
+            <GoalCard
+              label="Total Reviews" actual={appStore.totalReviews} goal={GOALS.appReviews}
+              status={appStore.totalReviews === null ? 'na' : appStore.totalReviews >= GOALS.appReviews ? 'above' : appStore.totalReviews >= GOALS.appReviews * 0.5 ? 'warn' : 'below'}
+              sub="combined iOS + Android · day 60 target"
+            />
+            <div style={s.card}>
+              <div style={s.lbl}>Search Rank</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 }}>
+                <span style={{ fontSize: 26, fontWeight: 700, color: muted }}>—</span>
+                <span style={{ fontSize: 14, color: '#2d4a6a', margin: '0 2px' }}>/</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: muted }}>Top 20</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: muted, background: '#4a6fa518', borderRadius: 4, padding: '2px 6px', fontFamily: sans, marginLeft: 4 }}>pre-launch</span>
+              </div>
+              <div style={{ fontSize: 11, color: muted, fontFamily: sans }}>"boat maintenance app" · day 90 target</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Plan Breakdown ────────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>Plan Breakdown</div>
+          <div style={s.grid(2)}>
+            <div style={s.card}>
+              <div style={s.lbl}>Subscribers by plan</div>
+              {[
+                { name: 'Pro Monthly ($25/mo)',      color: blue,   key: 'Pro Monthly'      },
+                { name: 'Pro Annual ($20/mo)',        color: green,  key: 'Pro Annual'       },
+                { name: 'Standard Monthly ($15/mo)', color: '#7c6fa5', key: 'Standard Monthly' },
+                { name: 'Standard Annual ($12/mo)',   color: muted,  key: 'Standard Annual'  },
+              ].map(({ name, color, key }) => {
+                const count = revenue.planBreakdown[key] || 0
+                const total = Math.max(revenue.activeSubscriptions, 1)
+                return (
+                  <div key={key} style={{ marginBottom: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: sans }}>{name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: text, fontFamily: sans }}>{count} user{count !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div style={{ background: bdr, borderRadius: 3, height: 5 }}>
+                      <div style={{ background: color, height: 5, borderRadius: 3, width: `${pct(count, total)}%`, minWidth: count > 0 ? 4 : 0 }} />
+                    </div>
+                  </div>
+                )
+              })}
+              <div style={{ borderTop: `1px solid ${bdr}`, marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, color: muted, fontFamily: sans }}>{revenue.activeSubscriptions} paid · {freeUsers} free</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: green, fontFamily: sans }}>${revenue.mrr} MRR</span>
+              </div>
+            </div>
+            <div style={s.card}>
+              <div style={s.lbl}>Revenue metrics</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[
+                  { label: 'Blended ARPU',     value: revenue.arpu > 0 ? `$${revenue.arpu}` : '—',     sub: 'per paying user' },
+                  { label: 'Annual vs Monthly', value: `${revenue.annualPct}%`,                          sub: 'on annual billing' },
+                  { label: 'ARR',               value: `$${revenue.arr.toLocaleString()}`,               sub: 'annualised' },
+                  { label: 'Trialing',          value: revenue.trialing,                                 sub: 'in free trial' },
+                ].map(({ label, value, sub }) => (
+                  <div key={label} style={{ background: '#0a1628', borderRadius: 8, padding: 12 }}>
+                    <div style={{ fontSize: 10, color: muted, fontFamily: sans, marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: text, letterSpacing: '-0.01em' }}>{value}</div>
+                    <div style={{ fontSize: 10, color: muted, fontFamily: sans, marginTop: 3 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Geography ────────────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>Geography</div>
+          <div style={s.grid(2)}>
+            <div style={s.card}>
+              <div style={s.lbl}>Vessels by ICP region · source: home_port</div>
+              {geography.regions.map(r => (
+                <div key={r.region} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: `1px solid #0f1f35` }}>
+                  <span style={{ fontSize: 12, color: '#94a3b8', fontFamily: sans, flex: 1 }}>{r.region}</span>
+                  {r.isIcp && <span style={{ fontSize: 9, fontWeight: 700, color: green, background: '#34d39918', borderRadius: 3, padding: '1px 5px', fontFamily: sans }}>ICP</span>}
+                  <div style={{ flex: 2, background: bdr, borderRadius: 3, height: 4 }}>
+                    <div style={{ height: 4, borderRadius: 3, background: r.isIcp ? '#0f4c8a' : muted, width: `${pct(r.count, maxRegion)}%`, minWidth: r.count > 0 ? 4 : 0 }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: text, fontFamily: sans, minWidth: 16, textAlign: 'right' }}>{r.count}</span>
                 </div>
               ))}
+              <div style={{ marginTop: 10, fontSize: 10, color: muted, fontFamily: sans }}>
+                {geography.dataQuality.withHomePort} of {geography.dataQuality.total} vessels have home port set · free-text parsed
+              </div>
             </div>
-          )}
+            <div style={s.card}>
+              <div style={s.lbl}>ICP coverage</div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontSize: 28, fontWeight: 700, color: geography.icpCoverage >= 60 ? green : geography.icpCoverage >= 40 ? amber : muted, letterSpacing: '-0.02em' }}>{geography.icpCoverage}%</span>
+                  <span style={{ fontSize: 13, color: muted, fontFamily: sans }}>in ICP regions</span>
+                </div>
+                <div style={{ fontSize: 11, color: muted, fontFamily: sans }}>of vessels with home port data</div>
+              </div>
+              <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 12 }}>
+                <div style={{ fontSize: 11, color: muted, fontFamily: sans, marginBottom: 8 }}>
+                  ICP targets: Pacific NW, Florida/Gulf, Northeast, Great Lakes
+                </div>
+                <div style={{ fontSize: 11, color: '#4a6fa5', fontFamily: sans }}>
+                  Note: home_port is free text — accuracy improves with more users. Stripe billing address is an alternative once paid base grows.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── Users ────────────────────────────────────────────────────────── */}
-        <div style={s.section}>
-          <div style={s.sectionLabel}>Users</div>
+        <div style={s.sec}>
+          <div style={s.sl}>Users</div>
           <div style={s.grid(4)}>
             <StatCard label="Total Signups"  value={users.total}        sub={`${users.confirmed} confirmed`} />
-            <StatCard
-              label="New This Week"
-              value={users.newThisWeek}
-              thisWeek={users.newThisWeek}
-              lastWeek={users.newLastWeek}
+            <GoalCard label="Weekly Signups" actual={users.newThisWeek} goal={GOALS.weeklySignups}
+              status={users.newThisWeek >= GOALS.weeklySignups ? 'above' : 'below'}
               sub={`${users.newLastWeek} last week`}
+              wow={{ thisW: users.newThisWeek, lastW: users.newLastWeek }}
             />
             <StatCard label="New This Month" value={users.newThisMonth} />
             <StatCard label="Unconfirmed"    value={users.total - users.confirmed} sub="email not verified" />
           </div>
-
-          {/* Collapsible recent signups */}
-          <div style={{ ...s.card, marginTop: 12, padding: 0, overflow: 'hidden' }}>
-            <button
-              onClick={() => setSignupsOpen(o => !o)}
-              style={{
-                width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-                padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}
-            >
-              <span style={{ fontSize: 11, color: '#4a6fa5', letterSpacing: '0.1em', fontFamily: 'system-ui, sans-serif' }}>
-                RECENT SIGNUPS
-              </span>
-              <span style={{ fontSize: 11, color: '#4a6fa5', fontFamily: 'system-ui, sans-serif' }}>
-                {signupsOpen ? '▲ collapse' : `▼ show ${users.recentSignups.length}`}
-              </span>
+          <div style={{ ...s.card, marginTop: 10, padding: 0, overflow: 'hidden' }}>
+            <button onClick={() => setSignupsOpen(o => !o)}
+              style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: muted, letterSpacing: '0.1em', fontFamily: sans }}>RECENT SIGNUPS</span>
+              <span style={{ fontSize: 11, color: muted, fontFamily: sans }}>{signupsOpen ? '▲ collapse' : `▼ show ${users.recentSignups.length}`}</span>
             </button>
             {signupsOpen && (
-              <table style={s.table}>
-                <thead>
-                  <tr>
-                    <th style={s.th}>Email</th>
-                    <th style={s.th}>Joined</th>
-                    <th style={s.th}>Status</th>
-                  </tr>
-                </thead>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr><th style={s.th}>Email</th><th style={s.th}>Joined</th><th style={s.th}>Status</th></tr></thead>
                 <tbody>
                   {users.recentSignups.map((u, i) => (
                     <tr key={i}>
                       <td style={{ ...s.td, color: '#cbd5e1' }}>{u.email}</td>
                       <td style={s.td}>{fmtDate(u.createdAt)}</td>
-                      <td style={s.td}>
-                        {u.confirmed
-                          ? <span style={s.pill('#34d399', '#052e1c')}>Confirmed</span>
-                          : <span style={s.pill('#fb923c', '#2c1006')}>Pending</span>
-                        }
-                      </td>
+                      <td style={s.td}>{u.confirmed ? <span style={s.pill(green, '#052e1c')}>Confirmed</span> : <span style={s.pill('#fb923c', '#2c1006')}>Pending</span>}</td>
                     </tr>
                   ))}
-                  {users.recentSignups.length === 0 && (
-                    <tr><td colSpan={3} style={{ ...s.td, textAlign: 'center', padding: '20px' }}>No signups yet</td></tr>
-                  )}
+                  {users.recentSignups.length === 0 && <tr><td colSpan={3} style={{ ...s.td, textAlign: 'center', padding: 20 }}>No signups yet</td></tr>}
                 </tbody>
               </table>
             )}
@@ -433,48 +451,30 @@ export default function AdminPage() {
         </div>
 
         {/* ── Product ──────────────────────────────────────────────────────── */}
-        <div style={s.section}>
-          <div style={s.sectionLabel}>Product</div>
+        <div style={s.sec}>
+          <div style={s.sl}>Product</div>
           <div style={s.grid(5)}>
-            <StatCard
-              label="Vessels"
-              value={product.vessels}
-              thisWeek={product.vesselsThisWeek}
-              lastWeek={product.vesselsLastWeek}
-              sub={`${product.vesselsThisWeek} this week`}
-            />
-            <StatCard label="Equipment Items"    value={product.equipment} />
-            <StatCard label="Maintenance Tasks"  value={product.tasks} />
-            <StatCard
-              label="Total Repairs"
-              value={product.repairs}
-              thisWeek={product.repairsThisWeek}
-              lastWeek={product.repairsLastWeek}
-              sub={`${product.repairsThisWeek} this week`}
-            />
-            <StatCard
-              label="Open Repairs"
-              value={product.openRepairs}
-              accent={product.openRepairs > 0 ? '#fb923c' : '#e2e8f0'}
-            />
+            <StatCard label="Vessels"          value={product.vessels}    wow={{ thisW: product.vesselsThisWeek, lastW: product.vesselsLastWeek }} sub={`${product.vesselsThisWeek} this week`} />
+            <StatCard label="Equipment Items"  value={product.equipment} />
+            <StatCard label="Maintenance Tasks" value={product.tasks} />
+            <StatCard label="Total Repairs"    value={product.repairs}    wow={{ thisW: product.repairsThisWeek, lastW: product.repairsLastWeek }} sub={`${product.repairsThisWeek} this week`} />
+            <StatCard label="Open Repairs"     value={product.openRepairs} accent={product.openRepairs > 0 ? '#fb923c' : text} />
           </div>
         </div>
 
         {/* ── System Links ─────────────────────────────────────────────────── */}
-        <div style={s.section}>
-          <div style={s.sectionLabel}>System</div>
+        <div style={s.sec}>
+          <div style={s.sl}>System</div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
             {[
               { label: 'Supabase',    href: 'https://supabase.com/dashboard/project/waapqyshmqaaamiiitso', icon: '🗄' },
               { label: 'Vercel',      href: 'https://vercel.com/garry-cmds-projects/keeply',               icon: '▲' },
               { label: 'Stripe',      href: 'https://dashboard.stripe.com',                                icon: '$' },
               { label: 'Anthropic',   href: 'https://console.anthropic.com',                               icon: '◆' },
-              { label: 'keeply.boats',href: 'https://keeply.boats',                                        icon: '⚓' },
+              { label: 'keeply.boats', href: 'https://keeply.boats',                                       icon: '⚓' },
             ].map(({ label, href, icon }) => (
               <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={s.link}>
-                <span style={{ fontSize: 14 }}>{icon}</span>
-                <span>{label}</span>
-                <span style={{ fontSize: 11, color: '#4a6fa5' }}>↗</span>
+                <span style={{ fontSize: 14 }}>{icon}</span><span>{label}</span><span style={{ fontSize: 11, color: muted }}>↗</span>
               </a>
             ))}
           </div>
