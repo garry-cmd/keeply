@@ -789,6 +789,13 @@ export default function LandingPage() {
   var [annual, setAnnual]           = useState(false);
   var [isRecovery, setIsRecovery]   = useState(false);
 
+  // LandingPage is always dark — ensure body reflects this regardless of
+  // whether KeeplyApp loaded (it no longer does for logged-out visitors)
+  useEffect(function() {
+    document.body.classList.add("dark-mode");
+    return function() { document.body.classList.remove("dark-mode"); };
+  }, []);
+
   useEffect(function () {
     var onScroll = function () { setScrolled(window.scrollY > 60); };
     window.addEventListener("scroll", onScroll);
