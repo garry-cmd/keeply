@@ -2575,7 +2575,7 @@ export default function App() {
   if (!session) return <LandingPage />;
 
   // Signed in but no vessel yet
-  if (needsSetup) return <VesselSetup userId={session.user.id} onComplete={function(vessel){
+  if (needsSetup) return <VesselSetup userId={session.user.id} userPlan={userPlan} onComplete={function(vessel){
     setNeedsSetup(false);
     const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "", engineHours: vessel.engine_hours || null, engineHoursDate: vessel.engine_hours_date || null, fuelBurnRate: vessel.fuel_burn_rate || null };
     setVessels([normalized]);
