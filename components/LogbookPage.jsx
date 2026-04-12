@@ -32,26 +32,21 @@ function clearDraft(vesselId) {
 // ── Checklist items ────────────────────────────────────────────────────────
 
 const PRE_DEPARTURE_ITEMS = [
-  { id: "pd-oil",          category: "Engine & mechanical", label: "Engine oil level checked" },
-  { id: "pd-fuel",         category: "Engine & mechanical", label: "Fuel sufficient for trip + reserve" },
-  { id: "pd-bilge",        category: "Engine & mechanical", label: "Bilge dry, pump working" },
-  { id: "pd-battery",      category: "Engine & mechanical", label: "Battery fully charged" },
-  { id: "pd-coolant",      category: "Engine & mechanical", label: "Coolant level checked" },
-  { id: "pd-pfds",         category: "Safety equipment",    label: "PFDs for all aboard" },
-  { id: "pd-throwable",    category: "Safety equipment",    label: "Throwable device on deck" },
-  { id: "pd-flares",       category: "Safety equipment",    label: "Flares in date & accessible" },
-  { id: "pd-extinguisher", category: "Safety equipment",    label: "Fire extinguisher charged" },
-  { id: "pd-firstaid",     category: "Safety equipment",    label: "First aid kit aboard" },
-  { id: "pd-epirb",        category: "Safety equipment",    label: "EPIRB / PLB checked" },
-  { id: "pd-weather",      category: "Nav & comms",         label: "Weather forecast checked" },
-  { id: "pd-vhf",          category: "Nav & comms",         label: "VHF radio on, Ch 16 monitored" },
-  { id: "pd-navlights",    category: "Nav & comms",         label: "Nav lights tested" },
-  { id: "pd-charts",       category: "Nav & comms",         label: "Charts / GPS aboard" },
-  { id: "pd-float",        category: "Nav & comms",         label: "Float plan filed" },
-  { id: "pd-docklines",    category: "Lines & rigging",     label: "Dock lines ready to cast off" },
-  { id: "pd-rigging",      category: "Lines & rigging",     label: "Standing rigging checked" },
-  { id: "pd-running",      category: "Lines & rigging",     label: "Running rigging clear" },
-  { id: "pd-anchor",       category: "Lines & rigging",     label: "Anchor & rode ready" },
+  { id: "pd-oil",       label: "Check engine oil" },
+  { id: "pd-coolant",   label: "Check coolant level" },
+  { id: "pd-drippan",   label: "Check engine drip pan for leaks" },
+  { id: "pd-fuel",      label: "Check fuel — sufficient for trip + reserve" },
+  { id: "pd-bilge-e",   label: "Test electric bilge pump" },
+  { id: "pd-bilge-m",   label: "Test manual bilge pump" },
+  { id: "pd-pfds",      label: "Check PFDs accessible for all aboard" },
+  { id: "pd-vhf",       label: "Test VHF radio — Ch 16" },
+  { id: "pd-ais",       label: "Test AIS transponder" },
+  { id: "pd-navlights", label: "Check navigation lights" },
+  { id: "pd-anchor",    label: "Check anchor secured" },
+  { id: "pd-elec",      label: "Shore power / electric cord unplugged" },
+  { id: "pd-halyards",  label: "Halyards running free", sailOnly: true },
+  { id: "pd-reefing",   label: "Reefing lines clear", sailOnly: true },
+  { id: "pd-sheets",    label: "Sheets running free", sailOnly: true },
 ];
 
 const ARRIVAL_ITEMS = [
@@ -376,18 +371,16 @@ export default function LogbookPage({
   // ── Checklist renderer ─────────────────────────────────────────────────
 
   function renderChecklist(type, items, checked, resetTs) {
-    const doneCount = items.filter(function(it) { return checked.includes(it.id); }).length;
-    const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
-    const cats = [];
-    items.forEach(function(it) {
-      const ex = cats.find(function(c) { return c.cat === it.category; });
-      if (ex) { ex.items.push(it); } else { cats.push({ cat: it.category, items: [it] }); }
-    });
+    // Filter sailOnly items based on vessel type
+    const isSail = vesselType === "sail";
+    const visibleItems = items.filter(function(it) { return !it.sailOnly || isSail; });
+    const doneCount = visibleItems.filter(function(it) { return checked.includes(it.id); }).length;
+    const pct = visibleItems.length > 0 ? Math.round((doneCount / visibleItems.length) * 100) : 0;
     return (
       <div style={{ paddingBottom: 80 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0 4px" }}>
           <div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{doneCount} of {items.length} complete</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{doneCount} of {visibleItems.length} complete</span>
             {resetTs && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>Last reset: {fmtReset(resetTs)}</div>}
           </div>
           <button onClick={function() { resetChecklist(type); }} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 8, padding: "5px 12px", fontSize: 12, cursor: "pointer", color: "var(--text-muted)", fontFamily: "inherit" }}>↺ Reset</button>
@@ -395,26 +388,26 @@ export default function LogbookPage({
         <div style={{ background: "var(--bg-elevated)", borderRadius: 4, height: 4, overflow: "hidden", marginBottom: 14 }}>
           <div style={{ width: pct + "%", height: 4, background: pct === 100 ? "#5aaa6a" : "var(--brand)", borderRadius: 4, transition: "width 0.3s" }} />
         </div>
-        {cats.map(function(group) {
-          const color = CATEGORY_COLORS[group.cat] || "var(--brand)";
+        {visibleItems.map(function(item, idx) {
+          const done = checked.includes(item.id);
+          const isSailSection = item.sailOnly;
+          const prevSail = idx > 0 && visibleItems[idx-1].sailOnly;
           return (
-            <div key={group.cat} style={{ marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: "0.6px" }}>{group.cat}</span>
+            <div key={item.id}>
+              {isSailSection && !prevSail && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 8px" }}>
+                  <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.6px", whiteSpace: "nowrap" }}>Sailboat</span>
+                  <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
+                </div>
+              )}
+              <div onClick={function() { toggleItem(type, item.id); }}
+                style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 5, background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "10px 12px", cursor: "pointer", userSelect: "none" }}>
+                <div style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, border: done ? "none" : "1.5px solid var(--border)", background: done ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {done && <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </div>
+                <span style={{ fontSize: 13, color: done ? "var(--text-muted)" : "var(--text-primary)", textDecoration: done ? "line-through" : "none", lineHeight: 1.3 }}>{item.label}</span>
               </div>
-              {group.items.map(function(item) {
-                const done = checked.includes(item.id);
-                return (
-                  <div key={item.id} onClick={function() { toggleItem(type, item.id); }}
-                    style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 5, background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "10px 12px", cursor: "pointer", userSelect: "none" }}>
-                    <div style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, border: done ? "none" : "1.5px solid var(--border)", background: done ? "var(--brand)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {done && <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </div>
-                    <span style={{ fontSize: 13, color: done ? "var(--text-muted)" : "var(--text-primary)", textDecoration: done ? "line-through" : "none", lineHeight: 1.3 }}>{item.label}</span>
-                  </div>
-                );
-              })}
             </div>
           );
         })}
@@ -752,6 +745,7 @@ export default function LogbookPage({
         const dateStr = dp.length===3 ? MONTHS[parseInt(dp[1])-1]+" "+parseInt(dp[2])+", "+dp[0] : e.entry_date;
         // Calculate derived stats from saved data
         var timeLabel = null; var avgSpd = null; var fuelUsed = null;
+        // Time at sea + avg speed (requires both times)
         if (e.departure_time && e.arrival_time) {
           const d2 = e.departure_time.split(":").map(Number);
           const a2 = e.arrival_time.split(":").map(Number);
@@ -760,14 +754,19 @@ export default function LogbookPage({
           const hrs2 = diff2 / 60;
           timeLabel = Math.floor(hrs2) + "h " + Math.round((hrs2%1)*60) + "m";
           if (e.distance_nm && hrs2 > 0) avgSpd = (parseFloat(e.distance_nm)/hrs2).toFixed(1);
-          if (e.hours_end && fuelBurnRate) {
-            const prevP = entries
-              .filter(function(p){ return p.entry_type==="passage" && p.hours_end && p.id!==e.id && p.entry_date<=e.entry_date; })
-              .sort(function(a,b){ return b.entry_date.localeCompare(a.entry_date); })[0];
-            if (prevP && prevP.hours_end) {
-              const runH = parseFloat(e.hours_end) - parseFloat(prevP.hours_end);
-              if (runH > 0) fuelUsed = (runH * fuelBurnRate).toFixed(1);
-            }
+        }
+        // Fuel consumed — independent of departure/arrival times, needs hours_end + burn rate
+        if (e.hours_end && fuelBurnRate) {
+          const passages = entries.filter(function(p){
+            return p.entry_type==="passage" && p.hours_end && p.id!==e.id;
+          });
+          // Find the most recent prior passage with hours_end
+          const prevP = passages
+            .filter(function(p){ return p.entry_date < e.entry_date || (p.entry_date === e.entry_date && parseFloat(p.hours_end) < parseFloat(e.hours_end)); })
+            .sort(function(a,b){ return parseFloat(b.hours_end) - parseFloat(a.hours_end); })[0];
+          if (prevP) {
+            const runH = parseFloat(e.hours_end) - parseFloat(prevP.hours_end);
+            if (runH > 0 && runH < 500) fuelUsed = (runH * fuelBurnRate).toFixed(1);
           }
         }
         const statCells = [
