@@ -834,7 +834,13 @@ export default function App() {
 
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
   const [tab, setTab]   = useState("boat");
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(function(){
+    if (typeof localStorage !== "undefined") {
+      var saved = localStorage.getItem("keeply-dark");
+      if (saved !== null) return saved === "1";
+    }
+    return true; // default: dark mode
+  });
 
   useEffect(function(){
     if (typeof document !== "undefined") {
@@ -7064,6 +7070,21 @@ export default function App() {
                       } catch(e) { alert(e.message); }
                     }} style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manage ↗</span>
                   )}
+                </div>
+              </div>
+
+              {/* ── Appearance ── */}
+              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.6px" }}>APPEARANCE</div>
+              <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
+                <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Dark mode</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{darkMode ? "On — tap to switch to light" : "Off — tap to switch to dark"}</div>
+                  </div>
+                  <div onClick={function(){ setDarkMode(function(d){ return !d; }); }}
+                    style={{ width: 44, height: 24, background: darkMode ? "var(--brand)" : "rgba(0,0,0,0.15)", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0, border: "1px solid var(--border)" }}>
+                    <div style={{ position: "absolute", width: 18, height: 18, background: "#fff", borderRadius: "50%", top: 2, left: darkMode ? 22 : 2, transition: "left 0.2s" }} />
+                  </div>
                 </div>
               </div>
 
