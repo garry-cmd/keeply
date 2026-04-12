@@ -58,8 +58,8 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
 
       await supabase.from("vessel_members").insert({ vessel_id: vessel.id, user_id: userId, role: "owner" });
 
-      // Auto-create a generic Engine card for free users
-      await supabase.from("equipment").insert({
+      // Auto-create a generic Engine card with 8 basic maintenance tasks for free users
+      const { data: engineCard } = await supabase.from("equipment").insert({
         vessel_id: vessel.id,
         name: "Engine",
         category: "Engine",
@@ -68,7 +68,35 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
         custom_parts: [],
         docs: [],
         logs: [],
-      });
+      }).select().single();
+
+      if (engineCard) {
+        const engineTasks = [
+          { task: "Engine oil & filter change",          interval_days: 365,  priority: "high"   },
+          { task: "Raw water impeller inspection",       interval_days: 365,  priority: "high"   },
+          { task: "Primary fuel filter replacement",     interval_days: 365,  priority: "high"   },
+          { task: "Secondary fuel filter replacement",   interval_days: 730,  priority: "medium" },
+          { task: "Drive belts inspection & tension",    interval_days: 365,  priority: "medium" },
+          { task: "Zinc anodes inspection & replace",    interval_days: 180,  priority: "high"   },
+          { task: "Coolant level & condition check",     interval_days: 365,  priority: "medium" },
+          { task: "Transmission fluid check",            interval_days: 365,  priority: "medium" },
+        ].map(function(t) {
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + t.interval_days);
+          return {
+            vessel_id:     vessel.id,
+            equipment_id:  engineCard.id,
+            task:          t.task,
+            section:       "Engine",
+            interval_days: t.interval_days,
+            priority:      t.priority,
+            last_service:  today,
+            due_date:      dueDate.toISOString().split("T")[0],
+            service_logs:  [],
+          };
+        });
+        await supabase.from("maintenance_tasks").insert(engineTasks);
+      }
 
       // Default welcome repair tasks
       await supabase.from("repairs").insert([
