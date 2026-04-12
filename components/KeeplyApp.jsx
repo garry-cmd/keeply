@@ -4016,6 +4016,29 @@ export default function App() {
                 previewColor: "rgba(77,166,255,0.45)" },
             ];
             return (
+              {/* ── 2-KPI strip: Engine Hours + NM Logged ── */}
+              {(function(){
+                var activeV = vessels.find(function(v){ return v.id === activeVesselId; });
+                var engHrs = activeV ? activeV.engineHours : null;
+                var nmLogged = Math.round(logStats.totalNm || 0);
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                    <div style={{ background: "rgba(77,166,255,0.08)", border: "1px solid rgba(77,166,255,0.18)", borderRadius: 12, padding: "10px 14px", textAlign: "center" }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: "#4da6ff", lineHeight: 1 }}>
+                        {engHrs != null ? engHrs.toLocaleString() : "—"}
+                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(77,166,255,0.55)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.4px" }}>Engine Hrs</div>
+                    </div>
+                    <div style={{ background: "rgba(77,166,255,0.08)", border: "1px solid rgba(77,166,255,0.18)", borderRadius: 12, padding: "10px 14px", textAlign: "center" }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: "#4da6ff", lineHeight: 1 }}>
+                        {nmLogged > 0 ? nmLogged.toLocaleString() : "—"}
+                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(77,166,255,0.55)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.4px" }}>NM Logged</div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
                 {cards.map(function(card){ return (
                   <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label === "Repairs" ? "Open Repairs" : card.label); }}
@@ -7070,21 +7093,6 @@ export default function App() {
                       } catch(e) { alert(e.message); }
                     }} style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Manage ↗</span>
                   )}
-                </div>
-              </div>
-
-              {/* ── Appearance ── */}
-              <div style={{ padding: "16px 20px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.6px" }}>APPEARANCE</div>
-              <div style={{ background: "var(--bg-elevated)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
-                <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Dark mode</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{darkMode ? "On — tap to switch to light" : "Off — tap to switch to dark"}</div>
-                  </div>
-                  <div onClick={function(){ setDarkMode(function(d){ return !d; }); }}
-                    style={{ width: 44, height: 24, background: darkMode ? "var(--brand)" : "rgba(0,0,0,0.15)", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0, border: "1px solid var(--border)" }}>
-                    <div style={{ position: "absolute", width: 18, height: 18, background: "#fff", borderRadius: "50%", top: 2, left: darkMode ? 22 : 2, transition: "left 0.2s" }} />
-                  </div>
                 </div>
               </div>
 
