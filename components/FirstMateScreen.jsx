@@ -57,13 +57,19 @@ async function fetchVesselContext(vesselId) {
   };
 }
 
-function AnchorIcon({ size = 14 }) {
+function HelmIcon({ size = 14 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-      stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="5" r="3" />
-      <line x1="12" y1="8" x2="12" y2="22" />
-      <path d="M5 15H2a10 10 0 0 0 20 0h-3" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="2.8" fill="rgba(255,255,255,0.92)"/>
+      <circle cx="12" cy="12" r="7" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8"/>
+      <line x1="12" y1="5" x2="12" y2="2" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="12" y1="19" x2="12" y2="22" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="5" y1="12" x2="2" y2="12" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="19" y1="12" x2="22" y2="12" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="6.93" y1="6.93" x2="4.93" y2="4.93" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="17.07" y1="17.07" x2="19.07" y2="19.07" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="6.93" y1="17.07" x2="4.93" y2="19.07" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="17.07" y1="6.93" x2="19.07" y2="4.93" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -73,7 +79,7 @@ function Avatar({ size = 28 }) {
     <div style={{ width: size, height: size, borderRadius: "50%",
       background: "linear-gradient(135deg,#0f4c8a,#4da6ff)",
       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <AnchorIcon size={Math.round(size * 0.44)} />
+      <HelmIcon size={Math.round(size * 0.44)} />
     </div>
   );
 }
