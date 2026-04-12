@@ -90,7 +90,10 @@ export async function GET(req: NextRequest) {
   let mrr = 0
   const planBreakdown: Record<string, number> = {}
 
-  for (const sub of activeSubs) {
+  // Exclude subs cancelled but not yet expired
+  const realActiveSubs = activeSubs.filter(s => !s.cancel_at_period_end)
+
+  for (const sub of realActiveSubs) {
     for (const item of sub.items.data) {
       const info = PRICE_MAP[item.price.id]
       if (info) {
@@ -98,14 +101,6 @@ export async function GET(req: NextRequest) {
         planBreakdown[info.plan] = (planBreakdown[info.plan] || 0) + 1
       }
     }
-  }
-
-  // ── Debug: capture raw stripe price IDs ──────────────────────────────────────
-  const stripeDebug = {
-    activeSubCount: activeSubs.length,
-    trialSubCount: trialSubs.length,
-    stripeError: stripeActiveResult.status === 'rejected' ? String(stripeActiveResult.reason) : null,
-    priceIdsFound: activeSubs.flatMap(s => s.items.data.map(i => i.price.id)),
   }
 
   // ── Build response ────────────────────────────────────────────────────────────
@@ -127,11 +122,10 @@ export async function GET(req: NextRequest) {
     revenue: {
       mrr,
       arr:                 mrr * 12,
-      activeSubscriptions: activeSubs.length,
+      activeSubscriptions: realActiveSubs.length,
       trialing:            trialSubs.length,
       planBreakdown,
     },
     fetchedAt: new Date().toISOString(),
-    _debug: stripeDebug,
   })
 }
