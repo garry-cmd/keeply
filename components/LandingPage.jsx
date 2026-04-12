@@ -547,7 +547,7 @@ const FEATURES = [
 
 
 const PLANS = [
-  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "Pre-departure & arrival checklists", "Passage logbook", "250MB document storage"] },
+  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "1 Equipment Card (Engine)", "3 repairs", "Parts catalog", "Engine hours tracking", "Pre-departure & arrival checklists", "Passage logbook", "250MB document storage"] },
   { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr ($12/mo)", subheader: "Everything in Basic, plus", cta: "Get started →", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "Customizable checklists", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
   { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr ($20/mo)", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
