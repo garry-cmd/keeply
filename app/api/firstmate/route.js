@@ -9,7 +9,7 @@ function getAdmin() {
 }
 
 // ── Plan limits ───────────────────────────────────────────────────────────────
-const FM_LIMITS = { free: 0, standard: 10, pro: 50 };
+const FM_LIMITS = { free: 3, standard: 10, pro: 50 };
 
 // ── Static app knowledge — cached by Anthropic, charged once per session ─────
 // Update this section whenever features change. Keep it accurate.
@@ -247,8 +247,8 @@ engine hours, and how the Keeply app works. Ask anything:
 - Analysis: "Have there been any trends in my maintenance notes?"
 
 --- PLANS & PRICING ---
-Free:     1 vessel · 3 equipment cards · 3 repairs · no First Mate · 250MB storage
-Standard: $15/mo or $144/yr · 1 vessel · 10 equipment · unlimited repairs · First Mate 10/mo · 1GB storage
+Free:     1 vessel · AI vessel setup · 1 equipment card visible · unlimited tasks · First Mate 3/mo · 250MB storage
+Standard: $15/mo or $144/yr · 1 vessel · unlimited equipment · unlimited repairs · First Mate 10/mo · 1GB storage
 Pro:      $25/mo or $240/yr · 2 vessels · unlimited equipment · unlimited repairs · First Mate 50/mo · unlimited storage
 
 To upgrade: Profile tab → tap your plan name or the "Upgrade" button.

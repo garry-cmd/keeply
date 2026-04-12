@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "./supabase-client";
 
 export default function VesselSetup({ userId, userPlan, onComplete }) {
-  const isPaid = userPlan === "standard" || userPlan === "pro" || userPlan === "fleet";
+  const isPaid = true; // AI onboarding is now available to all users
 
   // Shared fields (step 1 for paid, all fields for free)
   const [vesselName,    setVesselName]    = useState("");
@@ -283,25 +283,7 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
             }} style={{ ...s.btn, background: "#0f4c8a", color: "#fff" }}>
               Next →
             </button>
-          ) : (
-            <>
-              <button onClick={handleManualSave} disabled={loading}
-                style={{ ...s.btn, background: loading ? "#6b9fd4" : "#0f4c8a", color: "#fff", marginBottom: 14 }}>
-                {loading ? "Setting up…" : "Launch Keeply ⚓"}
-              </button>
-              <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 10, padding: "12px 14px", textAlign: "center" }}>
-                <div style={{ fontSize: 13, color: "#0369a1", marginBottom: 6 }}>
-                  <strong>Want AI to build your full equipment list?</strong>
-                </div>
-                <div style={{ fontSize: 12, color: "#0369a1", marginBottom: 10 }}>
-                  Upgrade to Standard and First Mate will set up your complete maintenance schedule automatically.
-                </div>
-                <a href="/#pricing" style={{ fontSize: 13, fontWeight: 700, color: "#0f4c8a", textDecoration: "none" }}>
-                  See Standard plan →
-                </a>
-              </div>
-            </>
-          )}
+          ) : null}
         </>)}
 
         {/* ── Step 2 — paid AI flow only ── */}

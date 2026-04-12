@@ -4561,10 +4561,7 @@ export default function App() {
         {view === "customer" && tab === "equipment-standalone" && (<>
           {tabHeader("Equipment", boatName + " · " + equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length + " items", true, function(){
             var vesselEqCount = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
-            var isFreeUser = !userPlan || userPlan === "free";
-            if (isFreeUser && vesselEqCount >= 1) {
-              setShowUpgradeModal(true); return;
-            }
+            // Free users can add equipment — visibility is gated below, not creation
             setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true);
           })}
 
@@ -4605,7 +4602,11 @@ export default function App() {
             if (statusDiff !== 0) return statusDiff;
             // 4. Within category + status: name
             return a.name.localeCompare(b.name);
-          }).filter(function(eq){ return eq.category !== "Vessel"; }).map(function(eq){
+          }).filter(function(eq){ return eq.category !== "Vessel"; }).filter(function(eq, idx){
+            // Free users: only show first card; rest are locked behind upgrade banner
+            if (userPlan === "free" || !userPlan) return idx === 0;
+            return true;
+          }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
             const activeTab  = equipTab[eq.id] || "maintenance";
             const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function(d){ return !(eq.docs||[]).find(function(ed){ return ed.id === d.id; }); });
@@ -5511,6 +5512,27 @@ export default function App() {
 
       {/* Floating Action Button */}
       {view === "customer" && tab === "boat" && (
+          {/* ── Free plan equipment locked banner ── */}
+          {(function(){
+            if (userPlan !== "free" && userPlan) return null;
+            const totalEquip = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
+            const lockedCount = totalEquip - 1;
+            if (lockedCount <= 0) return null;
+            return (
+              <div onClick={function(){ setShowUpgradeModal(true); }}
+                style={{ background: "var(--brand-deep)", border: "1.5px dashed var(--brand)", borderRadius: 12, padding: "20px 18px", marginBottom: 10, cursor: "pointer", textAlign: "center" }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "var(--brand)", lineHeight: 1, marginBottom: 4 }}>+{lockedCount}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)", marginBottom: 4 }}>
+                  {lockedCount} more equipment item{lockedCount === 1 ? "" : "s"} waiting
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                  First Mate found your full equipment list. Upgrade to Standard to unlock it and get your complete maintenance schedule.
+                </div>
+                <div style={{ display: "inline-block", background: "var(--brand)", color: "#fff", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700 }}>Unlock full equipment list →</div>
+              </div>
+            );
+          })()}
+
         <div style={{ position: "fixed", bottom: 84, right: 20, zIndex: 200 }}>
           {showFab && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, marginBottom: 12 }}>

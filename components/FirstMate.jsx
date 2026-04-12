@@ -4,7 +4,7 @@ import { supabase } from "./supabase-client";
 
 const SUPA_URL = "https://waapqyshmqaaamiiitso.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE";
-const FM_LIMITS = { free: 0, standard: 10, pro: 50 };
+const FM_LIMITS = { free: 3, standard: 10, pro: 50 };
 
 // ── design tokens (dark-always) ───────────────────────────────────────────────
 const D = {
