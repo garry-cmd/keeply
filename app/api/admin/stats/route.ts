@@ -100,6 +100,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Debug: capture raw stripe price IDs ──────────────────────────────────────
+  const stripeDebug = {
+    activeSubCount: activeSubs.length,
+    trialSubCount: trialSubs.length,
+    stripeError: stripeActiveResult.status === 'rejected' ? String(stripeActiveResult.reason) : null,
+    priceIdsFound: activeSubs.flatMap(s => s.items.data.map(i => i.price.id)),
+  }
+
   // ── Build response ────────────────────────────────────────────────────────────
   return NextResponse.json({
     users: {
@@ -124,5 +132,6 @@ export async function GET(req: NextRequest) {
       planBreakdown,
     },
     fetchedAt: new Date().toISOString(),
+    _debug: stripeDebug,
   })
 }
