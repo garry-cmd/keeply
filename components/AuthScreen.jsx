@@ -129,7 +129,7 @@ export default function AuthScreen() {
               {loading ? "Signing in…" : "Sign In"}
             </button>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <button onClick={function(){ setMode("signup"); setError(null); setMessage(null); }} style={s.link}>Create account</button>
+              <button onClick={function(){ window.posthog?.capture('signup_started'); setMode("signup"); setError(null); setMessage(null); }} style={s.link}>Create account</button>
               <button onClick={function(){ setMode("reset"); setError(null); setMessage(null); }} style={{ ...s.link, color: "#9ca3af", fontWeight: 500 }}>Forgot password?</button>
             </div>
           </>

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from 'next/script'
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -53,6 +54,11 @@ gtag('config', 'G-FZWNP48NHN');`,
 }`,
           }}
         />
+      
+      <Script id="posthog" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
+        !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}var u=e;for(var c=0;c<["capture","identify","alias","people.set","people.set_once","set","set_once","unset","increment","append","union","track_links","track_forms","track_pageview","register","register_once","unregister","reset","isFeatureEnabled","reloadFeatureFlags","group","resetGroups","startSessionRecording","stopSessionRecording"].length;c++)g(u,["capture","identify","alias","people.set","people.set_once","set","set_once","unset","increment","append","union","track_links","track_forms","track_pageview","register","register_once","unregister","reset","isFeatureEnabled","reloadFeatureFlags","group","resetGroups","startSessionRecording","stopSessionRecording"][c]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||(window.posthog=[]));
+        posthog.init('phc_ABYwoFdJFXnSD5QZc25DivMHPULWCgGSyutHX7jia4VD',{api_host:'https://us.i.posthog.com',capture_pageview:true,autocapture:false,person_profiles:'identified_only'});
+      ` }} />
       </body>
     </html>
   );
