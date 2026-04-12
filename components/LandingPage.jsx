@@ -9,6 +9,29 @@ const ACCENT   = "#4da6ff";
 const GOLD     = "#f5a623";
 const WHITE    = "#ffffff";
 
+// Runs setup() when element enters viewport, calls cleanup when it leaves.
+// This prevents animation loops running while off-screen.
+function useWhenVisible(ref, setup) {
+  useEffect(function() {
+    var cleanup = null;
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          if (!cleanup) cleanup = setup() || null;
+        } else {
+          if (cleanup) { cleanup(); cleanup = null; }
+        }
+      });
+    }, { threshold: 0.1 });
+    if (ref.current) observer.observe(ref.current);
+    return function() {
+      observer.disconnect();
+      if (cleanup) cleanup();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
+
 function Logo({ size }) {
   size = size || 28;
   return (
@@ -71,6 +94,7 @@ function MaintenanceVisual() {
 
 function FirstMateVisual() {
   var BLUE = "#4da6ff";
+  var containerRef = useRef(null);
   var exchanges = [
     {
       q: "When did I last change the raw water impeller?",
@@ -92,8 +116,9 @@ function FirstMateVisual() {
   var [visibleExchanges, setVisibleExchanges] = useState([]);
   var [dots, setDots] = useState('');
 
-  useEffect(function() {
+  useWhenVisible(containerRef, function() {
     var timers = [];
+    setVisibleExchanges([]); setStep(0); setShowQ(false); setShowThinking(false); setShowA(false);
     function runCycle() {
       setVisibleExchanges([]); setStep(0); setShowQ(false); setShowThinking(false); setShowA(false);
       var delay = 600;
@@ -114,7 +139,7 @@ function FirstMateVisual() {
     }
     runCycle();
     return function(){ timers.forEach(clearTimeout); };
-  }, []);
+  });
 
   useEffect(function() {
     if (!showThinking) { setDots(''); return; }
@@ -124,7 +149,7 @@ function FirstMateVisual() {
   }, [showThinking]);
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
       <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
@@ -195,6 +220,7 @@ function FirstMateVisual() {
 
 function LogbookVisual() {
   var BLUE = "#4da6ff";
+  var containerRef = useRef(null);
   var narrative = "Light SW, 8-12 kts. Glassy through Admiralty Inlet. Passed the shipping lanes at 0820 with 2nm clearance. Anchored Friday Harbor 1235. Engine hours 847\u2192854.";
   var [phase, setPhase] = useState(0);
   var [shownChars, setShownChars] = useState(0);
@@ -202,7 +228,8 @@ function LogbookVisual() {
   var [statsVisible, setStatsVisible] = useState(false);
   var [dots, setDots] = useState('');
 
-  useEffect(function() {
+  useWhenVisible(containerRef, function() {
+    setPhase(0); setFieldsVisible(0); setShownChars(0); setStatsVisible(false);
     var timers = [];
     function runCycle() {
       setPhase(0); setFieldsVisible(0); setShownChars(0); setStatsVisible(false);
@@ -230,7 +257,7 @@ function LogbookVisual() {
     }
     runCycle();
     return function(){ timers.forEach(function(t){ try{ clearTimeout(t); clearInterval(t); } catch(e){} }); };
-  }, []);
+  });
 
   useEffect(function() {
     if (phase !== 1) { setDots(''); return; }
@@ -247,7 +274,7 @@ function LogbookVisual() {
   ];
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
       <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
         {/* Header */}
         <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
@@ -342,6 +369,7 @@ function LogbookVisual() {
 function MyBoatVisual() {
   var NAVY = "#071e3d";
   var BLUE = "#4da6ff";
+  var containerRef = useRef(null);
   var [phase, setPhase] = useState(0);
   var [criticalCount, setCriticalCount] = useState(13);
   var [sheetVisible, setSheetVisible] = useState(false);
@@ -358,8 +386,10 @@ function MyBoatVisual() {
     { name: "Shaft zinc",                 age: "15d over" },
   ];
 
-  useEffect(function() {
+  useWhenVisible(containerRef, function() {
     var timers = [];
+    setCriticalCount(13); setPhase(0); setSheetVisible(false);
+    setCompletingIdx(-1); setCompletedIdx(-1); setCardPulse(false);
     function runCycle() {
       setCriticalCount(13); setPhase(0); setSheetVisible(false);
       setCompletingIdx(-1); setCompletedIdx(-1); setCardPulse(false);
@@ -383,7 +413,7 @@ function MyBoatVisual() {
     }
     runCycle();
     return function(){ timers.forEach(clearTimeout); };
-  }, []);
+  });
 
   var wrenchIcon = (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -392,7 +422,7 @@ function MyBoatVisual() {
   );
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
       <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: NAVY, borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif", position: "relative" }}>
 
         {/* Top bar */}
@@ -588,6 +618,7 @@ function TestimonialsStrip() {
 
 
 function OnboardingVisual() {
+  var containerRef = useRef(null);
   var [phase, setPhase] = useState(0);
   var [taskCount, setTaskCount] = useState(0);
   var [dots, setDots] = useState('');
@@ -608,8 +639,9 @@ function OnboardingVisual() {
     ["Model", "Baba 35"],
   ];
 
-  useEffect(function() {
+  useWhenVisible(containerRef, function() {
     var timers = [];
+    setPhase(0); setTaskCount(0);
     function runCycle() {
       setPhase(0); setTaskCount(0);
       // Phase 0 → 1: show form for 2.5s
@@ -625,7 +657,7 @@ function OnboardingVisual() {
     }
     runCycle();
     return function() { timers.forEach(clearTimeout); };
-  }, []);
+  });
 
   // Animated dots for building phase
   useEffect(function() {
@@ -639,7 +671,7 @@ function OnboardingVisual() {
   }, [phase]);
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
       <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
 
         {/* Top bar */}
