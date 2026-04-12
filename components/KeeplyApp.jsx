@@ -2640,10 +2640,25 @@ export default function App() {
           </svg>
           {/* Vessel switcher */}
           <div style={{ position: "relative" }} onClick={function(e){ e.stopPropagation(); }}>
-            <button onClick={function(){ setShowVesselDropdown(function(v){ return !v; }); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-              {settings.photoUrl && <img src={settings.photoUrl} alt={boatName} style={{ width: 24, height: 24, borderRadius: 5, objectFit: "cover", border: "1px solid rgba(255,255,255,0.3)" }} />}
-              {boatName} <span style={{ opacity: 0.7 }}>▾</span>
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <button onClick={function(){ setShowVesselDropdown(function(v){ return !v; }); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "5px 12px", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                {settings.photoUrl && <img src={settings.photoUrl} alt={boatName} style={{ width: 24, height: 24, borderRadius: 5, objectFit: "cover", border: "1px solid rgba(255,255,255,0.3)" }} />}
+                {boatName} <span style={{ opacity: 0.7 }}>▾</span>
+              </button>
+              {(function(){
+                const lastP = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.entry_type === "passage"; })
+                  .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0];
+                if (!lastP) return null;
+                const daysAgo = Math.round((new Date() - new Date(lastP.entry_date)) / 86400000);
+                const route = lastP.from_location && lastP.to_location ? lastP.from_location + " → " + lastP.to_location : null;
+                const label = daysAgo === 0 ? "Sailed today" : daysAgo === 1 ? "Sailed yesterday" : "Last sailed " + daysAgo + "d ago";
+                return (
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", paddingLeft: 2 }}>
+                    {label}{route ? " · " + route : ""}{lastP.distance_nm ? " · " + lastP.distance_nm + " nm" : ""}
+                  </div>
+                );
+              })()}
+            </div>
             {showVesselDropdown && (
               <div style={{ position: "absolute", top: 38, left: 0, background: "var(--bg-elevated)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.25)", minWidth: 220, zIndex: 100, overflow: "hidden", border: "1px solid var(--border-strong)" }}>
                 {vessels.map(function(v){
@@ -3239,20 +3254,43 @@ export default function App() {
                 {/* Banner header */}
                 <div style={{ background: "#1a3a5c", cursor: "pointer", padding: "18px 20px 16px" }}
                   onClick={function(){ setExpandedEquip(isExpanded ? null : vesselEq.id); if (!isExpanded) setEquipTab(function(prev){ const n = Object.assign({}, prev); n[vesselEq.id] = "info"; return n; }); }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", marginBottom: 2 }}>{vesselEq.name}</div>
-                      {makeModel && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: (info.hin || info.uscg_doc || info.home_port) ? 10 : 0 }}>{makeModel}</div>}
-                      {(info.hin || info.uscg_doc || info.home_port) && (
-                        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 8 }}>
-                          {info.hin && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>HIN</div><div style={{ fontSize: 12, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.hin}</div></div>}
-                          {info.uscg_doc && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>Doc No.</div><div style={{ fontSize: 12, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.uscg_doc}</div></div>}
-                          {info.home_port && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>Home Port</div><div style={{ fontSize: 12, color: "#fff", fontWeight: 600 }}>{info.home_port}</div></div>}
+                  {(function(){
+                    const vesselTasksAll = tasks.filter(function(t){ return t._vesselId === activeVesselId; });
+                    const totalTasks = vesselTasksAll.length;
+                    const overdueTaskCount = vesselTasksAll.filter(function(t){ const u = getTaskUrgency(t); return u === "critical" || u === "overdue"; }).length;
+                    const openRepairCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+                    const needsServiceCount = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.status === "needs-service"; }).length;
+                    const deductions = Math.min(overdueTaskCount * 5, 35) + Math.min(openRepairCount * 4, 20) + Math.min(needsServiceCount * 5, 15);
+                    const health = Math.max(100 - deductions, 0);
+                    const healthColor = health >= 80 ? "#4ade80" : health >= 60 ? "#fbbf24" : "#f87171";
+                    const healthBg = health >= 80 ? "rgba(74,222,128,0.15)" : health >= 60 ? "rgba(251,191,36,0.15)" : "rgba(248,113,113,0.15)";
+                    const healthBorder = health >= 80 ? "rgba(74,222,128,0.3)" : health >= 60 ? "rgba(251,191,36,0.3)" : "rgba(248,113,113,0.3)";
+                    return (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", marginBottom: 2 }}>{vesselEq.name}</div>
+                          {makeModel && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: (info.hin || info.uscg_doc || info.home_port) ? 10 : 0 }}>{makeModel}</div>}
+                          {(info.hin || info.uscg_doc || info.home_port) && (
+                            <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 8 }}>
+                              {info.hin && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>HIN</div><div style={{ fontSize: 12, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.hin}</div></div>}
+                              {info.uscg_doc && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>Doc No.</div><div style={{ fontSize: 12, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.uscg_doc}</div></div>}
+                              {info.home_port && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>Home Port</div><div style={{ fontSize: 12, color: "#fff", fontWeight: 600 }}>{info.home_port}</div></div>}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, flexShrink: 0, paddingLeft: 12 }}>{isExpanded ? "▾" : "▸"}</span>
-                  </div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, marginLeft: 12 }}>
+                          <div style={{ background: healthBg, border: "1px solid " + healthBorder, borderRadius: 10, padding: "6px 10px", textAlign: "center", flexShrink: 0 }}>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: healthColor, lineHeight: 1 }}>{health}%</div>
+                            <div style={{ fontSize: 8, fontWeight: 700, color: healthColor, opacity: 0.7, letterSpacing: "0.5px", marginTop: 2 }}>HEALTH</div>
+                          </div>
+                          <div style={{ width: 48, height: 3, background: "rgba(255,255,255,0.1)", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ width: health + "%", height: 3, background: healthColor, borderRadius: 2 }} />
+                          </div>
+                          <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 2 }}>{isExpanded ? "▾" : "▸"}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {/* Vessel card action footer — Option B */}
                 {(function(){
@@ -3949,10 +3987,12 @@ export default function App() {
                 ? { value: engineHours,               source: "manual", date: lastHoursUpdate }
                 : { value: lastLogWithHours.hours_end, source: "log",    date: lastLogWithHours.entry_date };
             })();
+            const openRepairCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; }).length;
+            const staleRepairCount = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed" && r.date && Math.round((new Date() - new Date(r.date)) / 86400000) > 30; }).length;
             return (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
 
-                {/* Row 1 Cell 1 — Engine hours (more-recent of manual update or logbook entry) */}
+                {/* Engine hours */}
                 <div style={cellStyle}>
                   <div style={labelStyle}>Engine hrs</div>
                   {displayEngHrs ? (<>
@@ -3968,7 +4008,7 @@ export default function App() {
                   </>)}
                 </div>
 
-                {/* Row 2 — NM logged */}
+                {/* NM logged */}
                 <div style={{ ...cellStyle, cursor: logStats.passages > 0 ? "pointer" : "default" }}
                   onClick={logStats.passages > 0 ? function(){ setTab("logbook-standalone"); } : undefined}>
                   <div style={labelStyle}>NM logged</div>
@@ -3980,8 +4020,38 @@ export default function App() {
                   )}
                 </div>
 
+                {/* Next due task */}
+                <div style={{ ...cellStyle, cursor: nextDue ? "pointer" : "default" }}
+                  onClick={nextDue ? function(){ setShowUrgencyPanel("Due Soon"); } : undefined}>
+                  <div style={labelStyle}>Next due</div>
+                  {nextDue ? (<>
+                    <div style={{ fontSize: nextDue.dueDate ? 16 : 13, fontWeight: 800, color: nextColor, fontFamily: "DM Mono, monospace", lineHeight: 1, paddingTop: nextDue.dueDate ? 2 : 0 }}>
+                      {nextDue.dueDate ? new Date(nextDue.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                    </div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {nextDue.task.length > 22 ? nextDue.task.substring(0, 22) + "…" : nextDue.task}
+                      {daysLabel ? " · " + daysLabel : ""}
+                    </div>
+                  </>) : (
+                    <div style={{ fontSize: 11, color: "var(--ok-text)" }}>All good</div>
+                  )}
+                </div>
 
-
+                {/* Open repairs */}
+                <div style={{ ...cellStyle, cursor: openRepairCount > 0 ? "pointer" : "default" }}
+                  onClick={openRepairCount > 0 ? function(){ setTab("repairs-standalone"); } : undefined}>
+                  <div style={labelStyle}>Open repairs</div>
+                  {openRepairCount > 0 ? (<>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: openRepairCount > 0 ? "#f87171" : "#4ade80", fontFamily: "DM Mono, monospace", lineHeight: 1 }}>
+                      {openRepairCount}
+                    </div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>
+                      {staleRepairCount > 0 ? staleRepairCount + " open >30 days" : "in progress"}
+                    </div>
+                  </>) : (
+                    <div style={{ fontSize: 11, color: "var(--ok-text)" }}>No open repairs</div>
+                  )}
+                </div>
 
               </div>
             );
@@ -4000,19 +4070,38 @@ export default function App() {
             var dueSoonTotal  = dueSoonCount + adminDueSoon.length;
             var criticalSub = overdueCount > 0 && adminOverdue.length > 0 ? overdueCount + " tasks · " + adminOverdue.length + " admin" : "Tasks & admin overdue";
             var dueSoonSub  = dueSoonCount > 0 && adminDueSoon.length > 0 ? dueSoonCount + " tasks · " + adminDueSoon.length + " admin" : "Overdue or due shortly";
+            // Preview items for each card
+            const criticalPreviewTask = tasks.filter(function(t){
+              return t._vesselId === activeVesselId && (getTaskUrgency(t) === "critical" || getTaskUrgency(t) === "overdue");
+            }).sort(function(a,b){ return new Date(a.dueDate||"2099") - new Date(b.dueDate||"2099"); })[0];
+            const dueSoonPreviewTask = tasks.filter(function(t){
+              return t._vesselId === activeVesselId && getTaskUrgency(t) === "due-soon";
+            }).sort(function(a,b){ return new Date(a.dueDate||"2099") - new Date(b.dueDate||"2099"); })[0];
+            const oldestRepair = repairs.filter(function(r){ return r._vesselId === activeVesselId && r.status !== "closed"; })
+              .sort(function(a,b){ return new Date(a.date||"2099") - new Date(b.date||"2099"); })[0];
             const cards = [
-              { label: "Critical",     val: criticalTotal, sub: criticalSub,           numColor: "#f87171", bg: "rgba(239,68,68,0.1)",  border: "1px solid rgba(239,68,68,0.22)",  lblColor: "rgba(248,113,113,0.65)" },
-              { label: "Due Soon",     val: dueSoonTotal,  sub: dueSoonSub,            numColor: "#fbbf24", bg: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.22)", lblColor: "rgba(251,191,36,0.65)"  },
-              { label: "Open Repairs", val: openRepairs,   sub: "Repairs in progress", numColor: "#4da6ff", bg: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.22)", lblColor: "rgba(77,166,255,0.65)"  },
+              { label: "Critical",     val: criticalTotal, numColor: "#f87171", bg: "rgba(239,68,68,0.1)",  border: "1px solid rgba(239,68,68,0.22)",  lblColor: "rgba(248,113,113,0.65)",
+                preview: criticalPreviewTask ? criticalPreviewTask.task : (adminOverdue[0] ? adminOverdue[0].task : null),
+                previewColor: "rgba(248,113,113,0.5)" },
+              { label: "Due Soon",     val: dueSoonTotal,  numColor: "#fbbf24", bg: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.22)", lblColor: "rgba(251,191,36,0.65)",
+                preview: dueSoonPreviewTask ? dueSoonPreviewTask.task : (adminDueSoon[0] ? adminDueSoon[0].task : null),
+                previewColor: "rgba(251,191,36,0.45)" },
+              { label: "Repairs",      val: openRepairs,   numColor: "#4da6ff", bg: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.22)", lblColor: "rgba(77,166,255,0.65)",
+                preview: oldestRepair ? (oldestRepair.description.length > 18 ? oldestRepair.description.substring(0,18) + "…" : oldestRepair.description) : null,
+                previewColor: "rgba(77,166,255,0.45)" },
             ];
             return (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
                 {cards.map(function(card){ return (
-                  <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label); }}
-                    style={{ background: card.bg, border: card.border, borderRadius: 13, padding: "12px 8px 10px", textAlign: "center", cursor: "pointer", userSelect: "none" }}>
+                  <div key={card.label} onClick={function(){ setShowUrgencyPanel(card.label === "Repairs" ? "Open Repairs" : card.label); }}
+                    style={{ background: card.bg, border: card.border, borderRadius: 13, padding: "10px 8px 9px", textAlign: "center", cursor: "pointer", userSelect: "none" }}>
                     <div style={{ fontSize: 24, fontWeight: 800, color: card.numColor, lineHeight: 1 }}>{card.val}</div>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: card.lblColor, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.3px" }}>{card.label}</div>
-                    <div style={{ fontSize: 8, color: "rgba(255,255,255,0.22)", marginTop: 2 }}>{card.sub}</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: card.lblColor, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.3px" }}>{card.label}</div>
+                    {card.preview && card.val > 0 && (
+                      <div style={{ fontSize: 8, color: card.previewColor, marginTop: 5, paddingTop: 5, borderTop: "0.5px solid rgba(255,255,255,0.08)", lineHeight: 1.3 }}>
+                        {card.preview.length > 22 ? card.preview.substring(0,22) + "…" : card.preview}
+                      </div>
+                    )}
                   </div>
                 ); })}
               </div>
@@ -4085,8 +4174,13 @@ export default function App() {
             const sugg = aiSuggestions[r.id];
             const daysSinceLogged = r.date ? Math.round((new Date() - new Date(r.date)) / 86400000) : 0;
 
+            const repairAgeDays = r.date ? Math.round((new Date() - new Date(r.date)) / 86400000) : 0;
+            const repairUrgencyColor = repairAgeDays > 30 ? "#ef4444" : repairAgeDays > 7 ? "#f59e0b" : "#4da6ff";
+            const repairAgeLabel = repairAgeDays === 0 ? "today" : repairAgeDays === 1 ? "1d" : repairAgeDays + "d";
             return (
-              <div key={r.id} style={{ ...s.card, opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+              <div key={r.id} style={{ opacity: completingRepair === r.id ? 0 : 1, transform: completingRepair === r.id ? "scale(0.97)" : "scale(1)", transition: "opacity 0.5s ease, transform 0.5s ease", background: "var(--bg-card)", borderRadius: "var(--radius-lg, 12px)", marginBottom: 8, overflow: "hidden", border: "0.5px solid var(--border)", display: "flex" }}>
+                <div style={{ width: 3, background: repairUrgencyColor, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
                 <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
                   <button onClick={function(e){ e.stopPropagation(); completeRepair(r.id); }}
                     style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.2)"), background: completingRepair === r.id ? "#22c55e" : "rgba(255,255,255,0.05)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
@@ -4132,7 +4226,11 @@ export default function App() {
                       </div>
                     </>)}
                   </div>
-                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, cursor: "pointer", flexShrink: 0 }} onClick={function(e){ e.stopPropagation(); const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, marginLeft: 4 }}>
+                    <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 16, cursor: "pointer" }} onClick={function(e){ e.stopPropagation(); const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
+                    <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 8, background: repairAgeDays > 30 ? "rgba(239,68,68,0.15)" : repairAgeDays > 7 ? "rgba(245,158,11,0.15)" : "rgba(77,166,255,0.12)", color: repairUrgencyColor }}>{repairAgeLabel}</span>
+                  </div>
+                </div>
                 </div>
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }} onClick={function(e){ e.stopPropagation(); }}>
