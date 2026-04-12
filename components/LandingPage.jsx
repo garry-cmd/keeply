@@ -885,7 +885,7 @@ export default function LandingPage() {
             autoPlay muted loop playsInline
             style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 38%" }}
           >
-            <source src="/videos/sailing-hero.mp4" type="video/mp4" />
+            <source src="/videos/sailing-hero-web.mp4" type="video/mp4" />
           </video>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(7,30,61,0.55) 0%, rgba(7,30,61,0.2) 40%, rgba(7,30,61,0.7) 80%, rgba(7,30,61,0.97) 100%)" }} />
         </div>
