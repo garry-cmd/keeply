@@ -854,7 +854,8 @@ export default function App() {
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
-  const [userPlan, setUserPlan]               = useState('free'); // 'free'|'pro'|'fleet'
+  const [userPlan, setUserPlan]               = useState('free'); // 'free'|'standard'|'pro'|'fleet'
+  const [trialActive,  setTrialActive]         = useState(false); // true if free user within 14-day trial
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [checkoutLoading, setCheckoutLoading]     = useState(false);
   const [upgradeReason, setUpgradeReason]     = useState('');
@@ -1036,8 +1037,19 @@ export default function App() {
       if (res.data.session) {
         var user = res.data.session.user;
         // Load plan from user_profiles
-        supabase.from('user_profiles').select('plan').eq('id', user.id).single()
-          .then(function(r){ if (r.data) setUserPlan(r.data.plan || 'free'); });
+        supabase.from('user_profiles').select('plan,created_at').eq('id', user.id).single()
+          .then(function(r){
+            if (r.data) {
+              var plan = r.data.plan || 'free';
+              setUserPlan(plan);
+              if (plan === 'free' && r.data.created_at) {
+                var daysSince = (Date.now() - new Date(r.data.created_at).getTime()) / 86400000;
+                setTrialActive(daysSince < 14);
+              } else {
+                setTrialActive(false);
+              }
+            }
+          });
         // Load alert prefs from user metadata
         var meta = user.user_metadata || {};
         setProfilePrefs(function(prev){ return Object.assign({}, prev, {
@@ -1300,8 +1312,17 @@ export default function App() {
       setTimeout(async function(){
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
-          supabase.from("user_profiles").select("plan").eq("id", session.user.id).single()
-            .then(function(r){ if (r.data) setUserPlan(r.data.plan || "free"); });
+          supabase.from("user_profiles").select("plan,created_at").eq("id", session.user.id).single()
+            .then(function(r){
+              if (r.data) {
+                var plan = r.data.plan || "free";
+                setUserPlan(plan);
+                if (plan === "free" && r.data.created_at) {
+                  var daysSince = (Date.now() - new Date(r.data.created_at).getTime()) / 86400000;
+                  setTrialActive(daysSince < 14);
+                } else { setTrialActive(false); }
+              }
+            });
         }
       }, 2000);
     }
@@ -1349,8 +1370,14 @@ export default function App() {
     try {
       var { data: { session: sess } } = await supabase.auth.getSession();
       if (sess && sess.user) {
-        var pr = await supabase.from("user_profiles").select("plan").eq("id", sess.user.id).single();
-        if (pr.data && pr.data.plan) { livePlan = pr.data.plan; setUserPlan(pr.data.plan); }
+        var pr = await supabase.from("user_profiles").select("plan,created_at").eq("id", sess.user.id).single();
+        if (pr.data && pr.data.plan) {
+          livePlan = pr.data.plan; setUserPlan(pr.data.plan);
+          if (pr.data.plan === "free" && pr.data.created_at) {
+            var daysSince = (Date.now() - new Date(pr.data.created_at).getTime()) / 86400000;
+            setTrialActive(daysSince < 14);
+          } else { setTrialActive(false); }
+        }
       }
     } catch(e) {}
     const userId = sess && sess.user ? sess.user.id : (session && session.user ? session.user.id : null);
@@ -2576,7 +2603,7 @@ export default function App() {
   if (!session) return null;
 
   // Signed in but no vessel yet
-  if (needsSetup) return <VesselSetup userId={session.user.id} userPlan={userPlan} onComplete={function(vessel){
+  if (needsSetup) return <VesselSetup userId={session.user.id} userPlan={userPlan} trialActive={trialActive} onComplete={function(vessel){
     setNeedsSetup(false);
     const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "", engineHours: vessel.engine_hours || null, engineHoursDate: vessel.engine_hours_date || null, fuelBurnRate: vessel.fuel_burn_rate || null };
     setVessels([normalized]);
@@ -4604,7 +4631,7 @@ export default function App() {
             return a.name.localeCompare(b.name);
           }).filter(function(eq){ return eq.category !== "Vessel"; }).filter(function(eq, idx){
             // Free users: only show first card; rest are locked behind upgrade banner
-            if (userPlan === "free" || !userPlan) return idx === 0;
+            if ((userPlan === "free" || !userPlan) && !trialActive) return idx === 0;
             return true;
           }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
@@ -5021,7 +5048,7 @@ export default function App() {
                             No repairs logged.
                             <button onClick={function(){
                               const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                              if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 3) {
+                              if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
                                 setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
                                 setShowUpgradeModal(true);
                                 return;
@@ -5129,7 +5156,7 @@ export default function App() {
                               })}
                           <button onClick={function(){
                             const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                            if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 3) {
+                            if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
                               setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
                               setShowUpgradeModal(true);
                               return;
@@ -5457,7 +5484,7 @@ export default function App() {
 
           {/* ── Free plan equipment locked banner ── */}
           {(function(){
-            if (userPlan !== "free" && userPlan) return null;
+            if ((userPlan !== "free" && userPlan) || trialActive) return null;
             const totalEquip = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
             const lockedCount = totalEquip - 1;
             if (lockedCount <= 0) return null;
@@ -5541,13 +5568,13 @@ export default function App() {
                 { label: "Add Equipment", stroke: "#94a3b8", bg: "rgba(148,163,184,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a1.5 1.5 0 0 0-1.5 1.5v1.1a7 7 0 0 0-2.12.88L7.34 4.44a1.5 1.5 0 0 0-2.12 2.12l1.04 1.04A7 7 0 0 0 5.38 10H4.5a1.5 1.5 0 0 0 0 3h.88a7 7 0 0 0 .88 2.4l-1.04 1.04a1.5 1.5 0 0 0 2.12 2.12l1.04-1.04A7 7 0 0 0 10.5 20.5v.88a1.5 1.5 0 0 0 3 0v-.88a7 7 0 0 0 2.4-.88l1.04 1.04a1.5 1.5 0 0 0 2.12-2.12l-1.04-1.04a7 7 0 0 0 .88-2.4h.88a1.5 1.5 0 0 0 0-3h-.88a7 7 0 0 0-.88-2.4l1.04-1.04a1.5 1.5 0 0 0-2.12-2.12l-1.04 1.04A7 7 0 0 0 13.5 4.6V3.5A1.5 1.5 0 0 0 12 2z"/><circle cx="12" cy="11.5" r="2.8"/></svg>, action: function(){
                   var fabEqCount = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
                   var fabIsFree = !userPlan || userPlan === "free";
-                  if (fabIsFree && fabEqCount >= 1) { setShowFab(false); setShowUpgradeModal(true); return; }
+                  if (fabIsFree && !trialActive && fabEqCount >= 1) { setShowFab(false); setShowUpgradeModal(true); return; }
                   setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
                 } },
                 { label: "Add Task", stroke: "#34d399", bg: "rgba(52,211,153,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>, action: function(){ setShowAddTask(true); setShowFab(false); } },
                 { label: "Add Repair", stroke: "#f87171", bg: "rgba(248,113,113,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>, action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                    if ((userPlan === "free" || !userPlan) && vesselRepairs.length >= 3) {
+                    if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
                       setUpgradeReason("Free accounts are limited to 3 repairs. Upgrade to Standard or Pro for unlimited repairs.");
                       setShowUpgradeModal(true);
                       setShowFab(false);
@@ -5724,6 +5751,7 @@ export default function App() {
               repairs={repairs.filter(function(r){ return r._vesselId === activeVesselId; })}
               equipment={equipment.filter(function(e){ return e._vesselId === activeVesselId; })}
               userPlan={userPlan}
+              trialActive={trialActive}
             />
           </div>
         )}
@@ -5751,6 +5779,7 @@ export default function App() {
             onMessageSent={function(){ setFmPending(""); }}
             onClose={function(){ setShowFirstMatePanel(false); }}
             userPlan={userPlan}
+            trialActive={trialActive}
           />
         )}
 

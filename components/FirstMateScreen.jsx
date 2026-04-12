@@ -104,7 +104,7 @@ const SUGGESTED = [
   "What should I do before haul-out?",
 ];
 
-export default function FirstMateScreen({ vesselId, vesselName, vesselType, tasks, repairs, equipment, userPlan }) {
+export default function FirstMateScreen({ vesselId, vesselName, vesselType, tasks, repairs, equipment, userPlan, trialActive }) {
   const [messages,    setMessages]    = useState([]);
   const [input,       setInput]       = useState("");
   const [loading,     setLoading]     = useState(false);
@@ -115,7 +115,8 @@ export default function FirstMateScreen({ vesselId, vesselName, vesselType, task
   const scrollRef   = useRef(null);
 
   const plan      = userPlan || "free";
-  const limit     = FM_LIMITS[plan] !== undefined ? FM_LIMITS[plan] : 0;
+  const effectivePlan = (plan === "free" && trialActive) ? "pro" : plan;
+  const limit     = FM_LIMITS[effectivePlan] !== undefined ? FM_LIMITS[effectivePlan] : 0;
   const isLimited = limit > 0;
   const isAtLimit = isLimited && fmCount >= limit;
 

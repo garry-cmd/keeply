@@ -544,9 +544,15 @@ export async function POST(request) {
       const admin = getAdmin();
       const { data: { user }, error: authErr } = await admin.auth.getUser(token);
       if (!authErr && user) {
-        const { data: profile } = await admin.from("user_profiles").select("plan").eq("id", user.id).single();
+        const { data: profile } = await admin.from("user_profiles").select("plan,created_at").eq("id", user.id).single();
         const plan  = profile?.plan || "free";
-        const limit = FM_LIMITS[plan] !== undefined ? FM_LIMITS[plan] : 0;
+        // Trial: free users within 14 days of signup get Pro-level access
+        const daysSinceSignup = profile?.created_at
+          ? (Date.now() - new Date(profile.created_at).getTime()) / 86400000
+          : 999;
+        const trialActive   = plan === "free" && daysSinceSignup < 14;
+        const effectivePlan = trialActive ? "pro" : plan;
+        const limit = FM_LIMITS[effectivePlan] !== undefined ? FM_LIMITS[effectivePlan] : 0;
         if (limit === 0) {
           return Response.json({ error: "First Mate is not available on the Free plan. Upgrade to Standard or Pro to chat with First Mate." }, { status: 403 });
         }

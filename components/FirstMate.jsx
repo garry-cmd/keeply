@@ -111,7 +111,7 @@ async function fetchVesselContext(vesselId) {
   };
 }
 
-export default function FirstMate({ vesselId, vesselName, openPanel, pendingMessage, onMessageSent, onClose, userPlan }) {
+export default function FirstMate({ vesselId, vesselName, openPanel, pendingMessage, onMessageSent, onClose, userPlan, trialActive }) {
   const [messages,   setMessages]   = useState([]);
   const [input,      setInput]      = useState("");
   const [loading,    setLoading]    = useState(false);
@@ -122,7 +122,8 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
   const messagesRef = useRef(null);
 
   const plan      = userPlan || "free";
-  const limit     = FM_LIMITS[plan] !== undefined ? FM_LIMITS[plan] : 0;
+  const effectivePlan = (plan === "free" && trialActive) ? "pro" : plan;
+  const limit     = FM_LIMITS[effectivePlan] !== undefined ? FM_LIMITS[effectivePlan] : 0;
   const isLimited = limit > 0;
   const isAtLimit = isLimited && fmCount >= limit;
   const usageBadge = isLimited ? (fmCount + "/" + limit) : null;
