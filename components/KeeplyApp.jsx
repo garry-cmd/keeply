@@ -4602,19 +4602,18 @@ export default function App() {
             </div>
           )}
           {[...filteredEquip].sort(function(a,b){
-            // 1. Engine always first
+            // 1. Engine / Generator always first
             var aIsEngine = a.category === "Engine" || a.category === "Generator";
             var bIsEngine = b.category === "Engine" || b.category === "Generator";
             if (aIsEngine !== bIsEngine) return aIsEngine ? -1 : 1;
-            // 2. Status urgency
+            // 2. Group by category alphabetically
+            var catDiff = (a.category || "").localeCompare(b.category || "");
+            if (catDiff !== 0) return catDiff;
+            // 3. Within category: status urgency
             var statusOrder = { "needs-service": 0, "watch": 1, "good": 2 };
             var statusDiff = (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2);
             if (statusDiff !== 0) return statusDiff;
-            // 3. Most maintenance tasks first
-            var aTaskCount = tasks.filter(function(t){ return t.equipment_id === a.id; }).length;
-            var bTaskCount = tasks.filter(function(t){ return t.equipment_id === b.id; }).length;
-            if (bTaskCount !== aTaskCount) return bTaskCount - aTaskCount;
-            // 4. Alphabetical
+            // 4. Within category + status: name
             return a.name.localeCompare(b.name);
           }).filter(function(eq){ return eq.category !== "Vessel"; }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
