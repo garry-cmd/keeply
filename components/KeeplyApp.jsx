@@ -962,6 +962,7 @@ export default function App() {
   const [equipFilter, setEquipFilter]       = useState("All");
   const [equipSectionFilter, setEquipSectionFilter] = useState("All");
   const [showAddEquip, setShowAddEquip]     = useState(false);
+  const [refSection,    setRefSection]      = useState(null); // which ref section is open
   const [newEquip, setNewEquip]             = useState({ name: "", category: "Engine", status: "good", notes: "", model: "", serial: "", fileObj: null, fileName: "", fileType: "Manual" });
   const [addingPartFor, setAddingPartFor]   = useState(null);
   const [newPartForm, setNewPartForm]       = useState({ name: "", url: "", price: "", sku: "", notes: "" });
@@ -3245,7 +3246,7 @@ export default function App() {
                     <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.22)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                       onClick={function(e){ e.stopPropagation(); }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        {[["info","ID"],["docs","Docs"],["admin","Admin"]].map(function(pair){
+                        {[["info","ID"],["docs","Docs"],["admin","Admin"],["ref","Ref"]].map(function(pair){
                           return (
                             <button key={pair[0]} onClick={function(){ tapTab(pair[0]); }} style={pillStyle(pair[0])}>
                               <span style={pillText(pair[0])}>{pair[1]}</span>
@@ -3601,6 +3602,136 @@ export default function App() {
                         </div>
                       );
                     })()}
+
+                    {(equipTab[vesselEq.id] || "info") === "ref" && (
+                      <div onClick={function(e){ e.stopPropagation(); }} style={{ paddingBottom: 8 }}>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", padding: "2px 0 12px" }}>Quick reference — tap to expand</div>
+                        {[
+                          {
+                            id: "vhf", title: "VHF radio", sub: "Channels · calls · procedure",
+                            link: "https://www.navcen.uscg.gov/?pageName=mtVhf", linkLabel: "USCG VHF guide",
+                            content: function() { return (<>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
+                                {[["Ch 16","Distress & hailing","var(--danger-text)","var(--danger-bg)"],["Ch 22A","Coast Guard","var(--brand)","var(--brand-deep)"],["Ch 13","Bridge-to-bridge","var(--brand)","var(--brand-deep)"],["Ch 9","Hailing (NE/NY)","var(--warn-text)","var(--warn-bg)"],["Ch 68/69/71/72","Working channels","var(--ok-text)","var(--ok-bg)"]].map(function(pill){ return (
+                                  <span key={pill[0]} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, color: pill[2], background: pill[3] }}>{pill[0]} — {pill[1]}</span>
+                                ); })}
+                              </div>
+                              {[["MAYDAY — immediate danger","Mayday Mayday Mayday. This is [vessel x3]. Position [lat/lon]. [Distress]. [Souls]. Over."],["PAN-PAN — urgent, not life-threatening","Pan-Pan Pan-Pan Pan-Pan. This is [vessel x3]. [Situation]. Over."],["SÉCURITÉ — navigation hazard","Sécurité Sécurité Sécurité. This is [vessel]. [Hazard]. Out."]].map(function(box){ return (
+                                <div key={box[0]} style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: "8px 10px", marginBottom: 6 }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 3 }}>{box[0]}</div>
+                                  <div style={{ fontSize: 11, color: "var(--text-primary)", fontFamily: "DM Mono, monospace", lineHeight: 1.5 }}>{box[1]}</div>
+                                </div>
+                              ); })}
+                              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>Monitor Ch 16 at all times underway. OVER when expecting reply. OUT to end. Never "Over and Out."</div>
+                            </>); }
+                          },
+                          {
+                            id: "ror", title: "Rules of the road", sub: "Right of way hierarchy",
+                            link: "https://www.navcen.uscg.gov/pdf/navRules/navrules.pdf", linkLabel: "USCG Navigation Rules (PDF)",
+                            content: function() { return (<>
+                              <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 8 }}>Stand-on = maintains course. Give-way = yields early.</div>
+                              {[[1,"Not under command","Breakdown, loss of steering","var(--danger-text)","var(--danger-bg)"],[2,"Restricted maneuverability","Dredging, cable-laying, towing","var(--danger-text)","var(--danger-bg)"],[3,"Constrained by draft","Large ships in channels","var(--warn-text)","var(--warn-bg)"],[4,"Fishing vessels","Nets/trawls deployed — not trolling","var(--warn-text)","var(--warn-bg)"],[5,"Sailing vessel (sail only)","Motor on = powerboat, even sails up","var(--ok-text)","var(--ok-bg)"],[6,"Power vessel","Must give way to all above","var(--brand)","var(--brand-deep)"]].map(function(row){ return (
+                                <div key={row[0]} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 0", borderBottom: "0.5px solid var(--border)" }}>
+                                  <div style={{ width: 20, height: 20, borderRadius: "50%", background: row[4], color: row[3], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{row[0]}</div>
+                                  <div><div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{row[1]}</div><div style={{ fontSize: 10, color: "var(--text-muted)" }}>{row[2]}</div></div>
+                                </div>
+                              ); })}
+                              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "0.5px solid var(--border)" }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4 }}>SAILBOAT VS SAILBOAT (S.L.O.)</div>
+                                {[["Starboard tack","Stand-on over port tack"],["Leeward","Stand-on over windward (same tack)"],["Overtaken","Always stand-on — overtaker gives way"]].map(function(row){ return (
+                                  <div key={row[0]} style={{ display: "flex", gap: 8, padding: "4px 0", fontSize: 11 }}>
+                                    <div style={{ color: "var(--text-muted)", minWidth: 90 }}>{row[0]}</div>
+                                    <div style={{ color: "var(--text-primary)" }}>{row[1]}</div>
+                                  </div>
+                                ); })}
+                              </div>
+                            </>); }
+                          },
+                          {
+                            id: "lights", title: "Navigation lights", sub: "What each color means at night",
+                            link: "https://www.boatus.org/study-guide/navigation/lights", linkLabel: "BoatUS nav lights guide",
+                            content: function() { return (<>
+                              {[["Red (port)","Left side — 112.5° arc","#dc2626"],["Green (starboard)","Right side — 112.5° arc","#16a34a"],["White (stern)","Rear 135°. Red+Green = head-on. White only = safe to overtake.","var(--text-primary)"],["White (masthead)","Power vessels — forward 225°","var(--text-primary)"]].map(function(row){ return (
+                                <div key={row[0]} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: "0.5px solid var(--border)" }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: row[2], minWidth: 90, flexShrink: 0 }}>{row[0]}</div>
+                                  <div style={{ fontSize: 11, color: "var(--text-primary)" }}>{row[1]}</div>
+                                </div>
+                              ); })}
+                              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6 }}>Red over white = fishing. Two whites vertical = towing. Three whites = aground. Red right returning (entering port).</div>
+                            </>); }
+                          },
+                          {
+                            id: "alpha", title: "Phonetic alphabet", sub: "NATO standard",
+                            link: null, linkLabel: null,
+                            content: function() { return (
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px 8px" }}>
+                                {[["A","Alpha"],["B","Bravo"],["C","Charlie"],["D","Delta"],["E","Echo"],["F","Foxtrot"],["G","Golf"],["H","Hotel"],["I","India"],["J","Juliet"],["K","Kilo"],["L","Lima"],["M","Mike"],["N","November"],["O","Oscar"],["P","Papa"],["Q","Quebec"],["R","Romeo"],["S","Sierra"],["T","Tango"],["U","Uniform"],["V","Victor"],["W","Whiskey"],["X","X-ray"],["Y","Yankee"],["Z","Zulu"]].map(function(pair){ return (
+                                  <div key={pair[0]} style={{ fontSize: 11, color: "var(--text-primary)", padding: "2px 0" }}>{pair[0]} — <span style={{ color: "var(--text-muted)" }}>{pair[1]}</span></div>
+                                ); })}
+                              </div>
+                            ); }
+                          },
+                          {
+                            id: "conv", title: "Units & conversions", sub: "Nautical math at a glance",
+                            link: null, linkLabel: null,
+                            content: function() { return (<>
+                              {[["1 knot","1.15 mph · 1.85 km/h"],["1 nautical mile","1.15 miles · 1,852m · 1 min of latitude"],["1 fathom","6 feet · 1.83 meters"],["Speed formula","Distance (nm) ÷ Time (hrs) = knots"],["Beaufort","F0 calm · F4 11-16 kts · F7 near gale · F10 storm"]].map(function(row){ return (
+                                <div key={row[0]} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "0.5px solid var(--border)", fontSize: 11 }}>
+                                  <div style={{ color: "var(--text-muted)", minWidth: 100, flexShrink: 0 }}>{row[0]}</div>
+                                  <div style={{ color: "var(--text-primary)" }}>{row[1]}</div>
+                                </div>
+                              ); })}
+                            </>); }
+                          },
+                          {
+                            id: "anchor", title: "Anchoring", sub: "Scope, swing, signals",
+                            link: "https://www.boatus.org/study-guide/anchoring", linkLabel: "BoatUS anchoring guide",
+                            content: function() { return (<>
+                              {[["Scope (chain)","7:1 normal · 5:1 all-chain · 10:1+ storm"],["Scope (rope/chain)","7:1 minimum"],["Swing room","Scope + vessel length all directions"],["Anchor light","All-round white, 2nm visibility — required"],["Day signal","Black ball forward in traffic areas"],["Fog signal","Ring bell 5 sec every minute"]].map(function(row){ return (
+                                <div key={row[0]} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "0.5px solid var(--border)", fontSize: 11 }}>
+                                  <div style={{ color: "var(--text-muted)", minWidth: 100, flexShrink: 0 }}>{row[0]}</div>
+                                  <div style={{ color: "var(--text-primary)" }}>{row[1]}</div>
+                                </div>
+                              ); })}
+                            </>); }
+                          },
+                        ].map(function(section) {
+                          const isOpen = refSection === section.id;
+                          return (
+                            <div key={section.id} style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, marginBottom: 6, overflow: "hidden" }}>
+                              <div onClick={function(){ setRefSection(isOpen ? null : section.id); }}
+                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", cursor: "pointer", userSelect: "none" }}>
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{section.title}</div>
+                                  <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{section.sub}</div>
+                                </div>
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s", flexShrink: 0 }}>
+                                  <path d="M3 2l4 3-4 3" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                              {isOpen && (
+                                <div style={{ padding: "0 12px 12px", borderTop: "0.5px solid var(--border)" }}>
+                                  <div style={{ paddingTop: 10 }}>{section.content()}</div>
+                                  {section.link && (
+                                    <a href={section.link} target="_blank" rel="noopener noreferrer"
+                                      style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 10, fontSize: 11, color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}>
+                                      {section.linkLabel}
+                                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M5 3H3a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M8 2h2v2M10 2L6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <div style={{ textAlign: "center", marginTop: 8 }}>
+                          <a href="https://www.navcen.uscg.gov" target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 10, color: "var(--text-muted)", textDecoration: "none" }}>
+                            Full USCG Navigation Rules →
+                          </a>
+                        </div>
+                      </div>
+                    )}
 
                     {(equipTab[vesselEq.id] || "info") === "edit" && (
                       <div onClick={function(e){ e.stopPropagation(); }}>

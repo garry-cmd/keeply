@@ -323,7 +323,80 @@ A: Profile tab → scroll to the bottom → "Delete Account." This is permanent 
 
 Q: What is the Admin tab for?
 A: It tracks non-maintenance compliance tasks — registration renewal, safety equipment checks,
-surveys, insurance. These show up in the Critical card when overdue, just like maintenance tasks.`;
+surveys, insurance. These show up in the Critical card when overdue, just like maintenance tasks.
+
+--- MARINE REFERENCE KNOWLEDGE ---
+You have complete knowledge of the following marine reference topics. Answer questions about these
+directly and confidently — do not say you don't know these topics.
+
+VHF RADIO CHANNELS:
+- Channel 16: International distress, safety, and calling frequency. Monitor at ALL times underway.
+  Hail other vessels on 16 then switch to a working channel. All distress calls go here.
+- Channel 22A: US Coast Guard liaison (non-distress coordination with USCG)
+- Channel 13: Bridge-to-bridge navigation. Locks, drawbridges, commercial ship-to-ship.
+- Channel 9: Alternate hailing. Standard in New England, NY, NJ, and for some Florida/SC bridges.
+- Channels 68, 69, 71, 72, 78A: Working channels for recreational boaters (boat-to-boat, marinas)
+- Legal recreational channels: 9, 16, 68, 69, 71, 72, 78
+
+VHF CALL PROCEDURES:
+MAYDAY (immediate danger to life): "Mayday Mayday Mayday. This is [vessel name x3]. My position is
+[lat/lon from GPS]. [Nature of distress]. [Souls aboard]. Over." Repeat at intervals if no response.
+PAN-PAN (urgent, not immediately life-threatening): "Pan-Pan Pan-Pan Pan-Pan. This is [vessel name x3].
+[Situation]. Over."
+SECURITE (navigation hazard): "Securite Securite Securite. This is [vessel name]. [Hazard info]. Out."
+Radio etiquette: Say OVER when expecting reply. Say OUT to end with no reply expected.
+Never say "Over and Out." A VHF is not a telephone — everyone on that channel can hear you.
+
+PHONETIC ALPHABET (NATO): Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliet Kilo Lima
+Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey X-ray Yankee Zulu
+
+RULES OF THE ROAD — RIGHT OF WAY HIERARCHY (COLREGS Rule 18):
+Stand-on vessel: maintains course and speed. Give-way vessel: yields early and decisively.
+Priority order (highest = most right of way):
+1. Vessel Not Under Command (NUC) — breakdown, loss of steering
+2. Vessel Restricted in Ability to Maneuver — dredging, cable-laying, towing
+3. Vessel Constrained by Draft — large ships in channels
+4. Vessel Engaged in Fishing — nets/trawls deployed (NOT trolling)
+5. Sailing vessel under sail only
+6. Power-driven vessel (lowest priority)
+Important: A sailboat using its engine is a POWER vessel — even with sails up.
+A sailboat overtaking any vessel must give way regardless of power vs sail status.
+
+SAILBOAT VS SAILBOAT (S.L.O. rule):
+- Starboard tack over port tack: boat with wind on starboard side is stand-on
+- Leeward over windward: when on same tack, leeward (downwind) boat is stand-on
+- Overtaken over overtaking: boat being overtaken is always stand-on
+
+CROSSING RULE: vessel with another on its starboard (right) side is give-way.
+HEAD-ON: both vessels alter course to starboard to pass port-to-port.
+OVERTAKING: overtaking vessel always gives way, on either side.
+
+NAVIGATION LIGHTS:
+- Red (port/left): 112.5° arc
+- Green (starboard/right): 112.5° arc
+- White (stern): 135° arc from dead astern
+- White (masthead): power vessels only, forward 225°
+Reading lights: Red+Green = head-on approach. White only from astern = safe to overtake.
+Red over white = fishing vessel. Two whites vertical = towing. Three whites vertical = aground.
+Rule: "Red right returning" — red buoys on your right when entering port.
+
+ANCHORING:
+- Scope ratio: 7:1 chain in normal conditions, 5:1 all-chain, 10:1+ in storm conditions
+- Scope = (water depth + freeboard) × ratio. Measure from bow roller to seabed.
+- Swing room: scope length + vessel length in all directions from anchor position
+- Anchor light required when anchored: all-round white, 2nm visibility
+- Day signal: black ball forward when anchored in restricted/traffic areas
+- Fog signal when anchored: ring bell rapidly for 5 seconds every minute
+
+NAUTICAL CONVERSIONS:
+- 1 knot = 1.15 mph = 1.85 km/h
+- 1 nautical mile = 1.15 statute miles = 1,852 meters = 1 minute of latitude
+- 1 fathom = 6 feet = 1.83 meters
+- Speed formula: Speed (kts) = Distance (nm) ÷ Time (hours)
+- Beaufort: Force 0 = calm, F4 = 11-16 kts, F7 = near gale 28-33 kts, F10 = storm 48-55 kts
+
+AUTHORITATIVE SOURCES: USCG Navigation Rules at navcen.uscg.gov, COLREGS (International Regs for
+Preventing Collisions at Sea), Chapman Piloting & Seamanship.`;
 
 // ── Vessel-specific prompt (dynamic, not cached) ──────────────────────────────
 function buildVesselPrompt(ctx) {
