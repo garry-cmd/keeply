@@ -547,7 +547,7 @@ const FEATURES = [
 
 
 const PLANS = [
-  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "3 equipment cards", "3 repairs", "Parts catalog", "Engine hours tracking", "Pre-departure & arrival checklists", "Passage logbook", "250MB document storage"] },
+  { name: "Basic",    price: "Free",  period: "",    sub: "No credit card required", subheader: "Includes",                    cta: "Start for free",        features: ["1 vessel", "Unlimited maintenance tasks", "1 equipment card", "3 repairs", "Parts catalog", "Engine hours tracking", "Pre-departure & arrival checklists", "Passage logbook", "250MB document storage"] },
   { name: "Standard", price: "$15",   period: "/mo", sub: "14-day free trial · No credit card", subheader: "Everything in Basic, plus", cta: "Start free trial →", highlight: true, badge: "Most popular", features: ["10 equipment cards", "Unlimited repairs", "Repair log & logbook", "Customizable checklists", "1GB document storage", "First Mate AI \u2014 10 queries/mo", "AI vessel setup"] },
   { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr ($20/mo)", subheader: "Everything in Standard, plus", cta: "Get Pro",              features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI \u2014 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
@@ -1009,7 +1009,7 @@ export default function LandingPage() {
                   {[
                     ["Vessels",               "1",         "1",           "2"],
                     ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
-                    ["Equipment cards",        "3",         "10",          "Unlimited"],
+                    ["Equipment cards",        "1",         "10",          "Unlimited"],
                     ["Repairs",               "3",         "Unlimited",   "Unlimited"],
                     ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
                     ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
