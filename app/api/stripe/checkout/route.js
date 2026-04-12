@@ -20,11 +20,10 @@ function encode(obj, prefix) {
 }
 
 const PLAN_MAP = {
-  "price_1TIeLpA726uGRX5et6I8xTAE": "entry",  // Entry $2.99/mo
-  "price_1TIWK2A726uGRX5e93qsNEDD": "pro",    // Pro Monthly $9.99
-  "price_1TIe58A726uGRX5eCugFA44l": "pro",    // Pro Annual $69.99
-  "price_1TIWK0A726uGRX5eDS58dYIl": "pro",    // Pro Annual $59.99 (legacy)
-  "price_1TIWK0A726uGRX5ea2FiNpyw": "fleet",  // Fleet $49.99/mo
+  "price_1TKJ3GA726uGRX5eqmN6Rwr4": "standard", // Standard Monthly $15
+  "price_1TKJ3GA726uGRX5eroj4WEUp": "standard", // Standard Annual $144
+  "price_1TKJ3TA726uGRX5epzWsSkbN": "pro",      // Pro Monthly $25
+  "price_1TKJ3kA726uGRX5eRna7Gr4P": "pro",      // Pro Annual $240
 };
 
 export async function POST(request) {
@@ -44,6 +43,9 @@ export async function POST(request) {
     const successUrl = baseUrl + (baseUrl.includes("?") ? "&" : "?") + "upgraded=1";
     const plan = PLAN_MAP[priceId] || "entry";
 
+    const TRIAL_DAYS = { standard: 14 };
+    const trialDays = TRIAL_DAYS[plan] || null;
+
     const sessionData = {
       mode: "subscription",
       allow_promotion_codes: "true",
@@ -56,6 +58,10 @@ export async function POST(request) {
       "subscription_data[metadata][userId]": userId,
       "subscription_data[metadata][plan]": plan,
     };
+
+    if (trialDays) {
+      sessionData["subscription_data[trial_period_days]"] = String(trialDays);
+    }
 
     if (existingCustomerId) { sessionData.customer = existingCustomerId; }
     else if (userEmail) { sessionData.customer_email = userEmail; }
