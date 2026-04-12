@@ -58,6 +58,18 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
 
       await supabase.from("vessel_members").insert({ vessel_id: vessel.id, user_id: userId, role: "owner" });
 
+      // Auto-create a generic Engine card for free users
+      await supabase.from("equipment").insert({
+        vessel_id: vessel.id,
+        name: "Engine",
+        category: "Engine",
+        status: "good",
+        notes: "",
+        custom_parts: [],
+        docs: [],
+        logs: [],
+      });
+
       // Default welcome repair tasks
       await supabase.from("repairs").insert([
         { vessel_id: vessel.id, date: today, section: "General", description: "Add your equipment cards — tap the Equipment tab to get started", status: "open", equipment_id: null, due_date: null },
