@@ -7,6 +7,7 @@ import VesselSetup from "./VesselSetup";
 import LogbookPage from "./LogbookPage";
 import PartsPage from "./PartsPage";
 import FirstMate from "./FirstMate";
+import FirstMateScreen from "./FirstMateScreen";
 
 // ── Part search helpers ──────────────────────────────────────────────────────
 // Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
@@ -2677,7 +2678,7 @@ export default function App() {
         </div>
       </div>
       {/* ── First Mate input bar — sparkle icon, always sticky ── */}
-      <div style={{ background: "var(--bg-app)", padding: "8px 14px 11px", borderBottom: "none" }}>
+      {tab !== "firstmate-standalone" && <div style={{ background: "var(--bg-app)", padding: "8px 14px 11px", borderBottom: "none" }}>
         <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: 13, padding: "9px 10px 9px 12px", display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}
           onClick={function(){ setShowFirstMatePanel(true); }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -2689,30 +2690,70 @@ export default function App() {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* ── BOTTOM TAB BAR — white footer, SVG icons ── */}
       {(view === "customer" || view === "fleet") && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400, background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", height: 62, boxShadow: "0 -2px 12px rgba(0,0,0,0.12)" }}>
-          {[
-            { label: "My Boat",   active: view==="customer" && tab==="boat",                 action: function(){ setView("customer"); setTab("boat"); },
-              svg: settings.vesselType === "motor"
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l2-8h12l2 8"/><path d="M2 15 C5 15 6 17 12 17 C18 17 19 15 22 15"/><path d="M2 15 C4 18 7 19 12 19 C17 19 20 18 22 15"/><line x1="9" y1="7" x2="9" y2="4"/><line x1="7" y1="4" x2="14" y2="4"/></svg>
-                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-12z"/><line x1="12" y1="3" x2="12" y2="20"/><path d="M12 8 L7 15 L12 15"/><path d="M3 20 L21 20"/></svg> },
-            { label: "Logbook",   active: view==="customer" && tab==="logbook-standalone",   action: function(){ setView("customer"); setTab("logbook-standalone"); },
-              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
-            { label: "Equipment", active: view==="customer" && tab==="equipment-standalone", action: function(){ setView("customer"); setTab("equipment-standalone"); },
-              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
-            { label: "Profile",   active: false,                                             action: function(){ setShowProfilePanel(true); },
-              svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-          ].map(function(item){ return (
-            <button key={item.label} onClick={item.action}
-              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "8px 0",
-                color: item.active ? "#0f4c8a" : "rgba(7,30,61,0.32)", fontFamily: "inherit" }}>
-              {item.svg}
-              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase" }}>{item.label}</span>
-            </button>
-          ); })}
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400, background: "#071e3d", borderTop: "0.5px solid rgba(255,255,255,0.08)", display: "flex", height: 64, alignItems: "flex-end", paddingBottom: "env(safe-area-inset-bottom)", boxShadow: "0 -2px 20px rgba(0,0,0,0.4)" }}>
+          {/* Logbook */}
+          {(function(){
+            const active = view==="customer" && tab==="logbook-standalone";
+            return (
+              <button onClick={function(){ setView("customer"); setTab("logbook-standalone"); }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "0 0 10px", color: active ? "#f5a623" : "rgba(255,255,255,0.28)", fontFamily: "inherit" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase" }}>Logbook</span>
+              </button>
+            );
+          })()}
+          {/* Equipment */}
+          {(function(){
+            const active = view==="customer" && tab==="equipment-standalone";
+            return (
+              <button onClick={function(){ setView("customer"); setTab("equipment-standalone"); }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "0 0 10px", color: active ? "#f5a623" : "rgba(255,255,255,0.28)", fontFamily: "inherit" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase" }}>Equipment</span>
+              </button>
+            );
+          })()}
+          {/* MY BOAT — center, elevated */}
+          {(function(){
+            const active = view==="customer" && tab==="boat";
+            const boatSvg = settings.vesselType === "motor"
+              ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15l2-8h12l2 8"/><path d="M2 15 C5 15 6 17 12 17 C18 17 19 15 22 15"/><path d="M2 15 C4 18 7 19 12 19 C17 19 20 18 22 15"/><line x1="9" y1="7" x2="9" y2="4"/><line x1="7" y1="4" x2="14" y2="4"/></svg>
+              : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-12z"/><line x1="12" y1="3" x2="12" y2="20"/><path d="M12 8 L7 15 L12 15"/><path d="M3 20 L21 20"/></svg>;
+            return (
+              <div style={{ flex: 1.2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 3, padding: "0 0 8px", cursor: "pointer" }}
+                onClick={function(){ setView("customer"); setTab("boat"); }}>
+                <div style={{ width: 46, height: 46, borderRadius: 14, background: active ? "#f5a623" : "#0f4c8a", display: "flex", alignItems: "center", justifyContent: "center", marginTop: -10, border: "2px solid rgba(255,255,255,0.1)", boxShadow: active ? "0 4px 16px rgba(245,166,35,0.4)" : "0 4px 16px rgba(15,76,138,0.6)", transition: "all 0.15s" }}>
+                  {boatSvg}
+                </div>
+                <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase", color: active ? "#f5a623" : "rgba(255,255,255,0.5)" }}>My Boat</span>
+              </div>
+            );
+          })()}
+          {/* First Mate */}
+          {(function(){
+            const active = view==="customer" && tab==="firstmate-standalone";
+            return (
+              <button onClick={function(){ setView("customer"); setTab("firstmate-standalone"); }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "0 0 10px", color: active ? "#f5a623" : "rgba(255,255,255,0.28)", fontFamily: "inherit" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+                <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase" }}>First Mate</span>
+              </button>
+            );
+          })()}
+          {/* Profile */}
+          {(function(){
+            return (
+              <button onClick={function(){ setShowProfilePanel(true); }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 3, border: "none", background: "none", cursor: "pointer", padding: "0 0 10px", color: "rgba(255,255,255,0.28)", fontFamily: "inherit" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase" }}>Profile</span>
+              </button>
+            );
+          })()}
         </div>
       )}
 
@@ -5659,6 +5700,21 @@ export default function App() {
           )}
         
 
+
+        {/* ── FIRST MATE SCREEN ── */}
+        {view === "customer" && tab === "firstmate-standalone" && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 64, zIndex: 50, maxWidth: 480, margin: "0 auto" }}>
+            <FirstMateScreen
+              vesselId={activeVesselId}
+              vesselName={boatName}
+              vesselType={settings.vesselType}
+              tasks={tasks.filter(function(t){ return t._vesselId === activeVesselId; })}
+              repairs={repairs.filter(function(r){ return r._vesselId === activeVesselId; })}
+              equipment={equipment.filter(function(e){ return e._vesselId === activeVesselId; })}
+              userPlan={userPlan}
+            />
+          </div>
+        )}
 
         {/* ── LOGBOOK PAGE ── */}
         {view === "customer" && tab === "logbook-standalone" && (
