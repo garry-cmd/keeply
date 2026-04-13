@@ -262,6 +262,45 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* ── Revenue ──────────────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>Revenue</div>
+          <div style={s.grid(4)}>
+            <StatCard
+              label="MRR"
+              value={`$${revenue.mrr.toLocaleString()}`}
+              sub={`$${revenue.arr.toLocaleString()} ARR`}
+              accent={green}
+            />
+            <StatCard
+              label="Active Subscriptions"
+              value={revenue.activeSubscriptions}
+              sub={`${revenue.trialing} in trial`}
+            />
+            <StatCard
+              label="Free Users"
+              value={freeUsers}
+              sub="no paid plan"
+            />
+            <StatCard
+              label="Blended ARPU"
+              value={revenue.arpu > 0 ? `$${revenue.arpu}` : '—'}
+              sub={`${revenue.annualPct}% on annual billing`}
+            />
+          </div>
+          {Object.keys(revenue.planBreakdown).length > 0 && (
+            <div style={{ ...s.card, marginTop: 10, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' as const }}>
+              <span style={{ fontSize: 11, color: muted, letterSpacing: '0.08em', fontFamily: sans }}>PLAN BREAKDOWN</span>
+              {Object.entries(revenue.planBreakdown).map(([plan, count]) => (
+                <div key={plan} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: text }}>{count}</span>
+                  <span style={{ fontSize: 12, color: muted, fontFamily: sans }}>{plan}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* ── Growth ───────────────────────────────────────────────────────── */}
         <div style={s.sec}>
           <div style={s.sl}>Growth</div>
