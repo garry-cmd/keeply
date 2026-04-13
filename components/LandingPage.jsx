@@ -896,6 +896,13 @@ export default function LandingPage() {
   return (
     <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
 
+      {/* Beta banner */}
+      <div style={{ background: "rgba(77,166,255,0.1)", borderBottom: "1px solid rgba(77,166,255,0.2)", padding: "6px 16px", textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.6)", position: "relative", zIndex: 300 }}>
+        <span style={{ marginRight: 6 }}>🚧</span>
+        Keeply is in <strong style={{ color: ACCENT, fontWeight: 700 }}>beta</strong> — you{"'"}re among the first. Feedback welcome at{" "}
+        <a href="mailto:support@keeply.boats" style={{ color: ACCENT, textDecoration: "underline", fontFamily: "inherit" }}>support@keeply.boats</a>
+      </div>
+
       {/* Trial banner */}
       <div style={{ background: "rgba(245,166,35,0.12)", borderBottom: "1px solid rgba(245,166,35,0.25)", padding: "8px 16px", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.85)", position: "relative", zIndex: 300 }}>
         <span style={{ marginRight: 6 }}>✦</span>
@@ -904,7 +911,7 @@ export default function LandingPage() {
       </div>
 
       {/* Nav */}
-      <nav style={{ position: "fixed", top: 37, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 16px" : "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
+      <nav style={{ position: "fixed", top: 65, left: 0, right: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 16px" : "0 32px", height: 60, background: scrolled ? "rgba(7,30,61,0.96)" : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none", transition: "all 0.3s" }}>
         <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
           <Logo size={28} />
           <span style={{ fontSize: 18, fontWeight: 700, color: WHITE, letterSpacing: "-0.3px" }}>Keeply</span>
