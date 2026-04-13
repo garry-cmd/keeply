@@ -1334,6 +1334,56 @@ export default function App() {
     }
   }, []);
 
+  // Auto-launch Stripe checkout if user arrived via the plan picker on the landing page
+  useEffect(function() {
+    if (!session?.user?.id) return; // wait until authenticated
+    var pending = null;
+    // First try URL param (survives email verification redirect across browser contexts)
+    try {
+      var urlParams = new URLSearchParams(window.location.search);
+      var urlPlan = urlParams.get("plan");
+      if (urlPlan) {
+        pending = urlPlan;
+        // Clean the URL so it doesn't re-trigger on refresh
+        var cleanUrl = window.location.pathname + (urlParams.get("login") ? "?login=1" : "");
+        window.history.replaceState({}, "", cleanUrl);
+      }
+    } catch(e) {}
+    // Fall back to localStorage (same-browser signups without email confirmation)
+    if (!pending) {
+      try { pending = localStorage.getItem("keeply_pending_plan"); } catch(e) {}
+    }
+    if (!pending) return;
+    try { localStorage.removeItem("keeply_pending_plan"); } catch(e) {}
+
+    var PLAN_PRICE = {
+      standard: "price_1TKJ3GA726uGRX5eqmN6Rwr4", // Standard Monthly $15
+      pro:      "price_1TKJ3TA726uGRX5epzWsSkbN",  // Pro Monthly $25
+    };
+    var priceId = PLAN_PRICE[pending];
+    if (!priceId) return;
+
+    // Small delay so the app renders before redirecting to Stripe
+    setTimeout(async function() {
+      try {
+        var res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            priceId: priceId,
+            userId: session.user.id,
+            userEmail: session.user.email,
+            returnUrl: window.location.href,
+          }),
+        });
+        var data = await res.json();
+        if (data.url) window.location.href = data.url;
+      } catch(e) {
+        console.error("Pending plan checkout error:", e);
+      }
+    }, 800);
+  }, [session]); // re-runs when session resolves after email verification
+
   // Handle push notification tap-through — open the right urgency panel
   useEffect(function(){
     if (typeof window === "undefined") return;

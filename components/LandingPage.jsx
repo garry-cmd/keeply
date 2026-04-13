@@ -789,6 +789,7 @@ export default function LandingPage() {
   var [annual, setAnnual]           = useState(false);
   var [isRecovery, setIsRecovery]   = useState(false);
   var [showPlanPicker, setShowPlanPicker] = useState(false);
+  var [pendingPlan, setPendingPlan] = useState(null);
 
   // LandingPage is always dark — ensure body reflects this regardless of
   // whether KeeplyApp loaded (it no longer does for logged-out visitors)
@@ -844,7 +845,8 @@ export default function LandingPage() {
     setLoading(true); setError(null); setMessage(null);
     try {
       if (mode === "signup") {
-        var result = await supabase.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.origin + "/?login=1" } });
+        var planParam = pendingPlan ? "&plan=" + pendingPlan : "";
+        var result = await supabase.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.origin + "/?login=1" + planParam } });
         if (result.error) throw result.error;
         if (result.data && result.data.user && result.data.user.identities && result.data.user.identities.length === 0) {
           setError("An account with this email already exists. Try logging in instead.");
@@ -1153,6 +1155,7 @@ export default function LandingPage() {
               <div
                 onClick={function(){
                   localStorage.setItem("keeply_pending_plan", "standard");
+                  setPendingPlan("standard");
                   setShowPlanPicker(false);
                   openAuth("signup");
                 }}
@@ -1189,6 +1192,7 @@ export default function LandingPage() {
               <div
                 onClick={function(){
                   localStorage.setItem("keeply_pending_plan", "pro");
+                  setPendingPlan("pro");
                   setShowPlanPicker(false);
                   openAuth("signup");
                 }}
