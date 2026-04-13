@@ -788,6 +788,7 @@ export default function LandingPage() {
   var [isMobile, setIsMobile]       = useState(false);
   var [annual, setAnnual]           = useState(false);
   var [isRecovery, setIsRecovery]   = useState(false);
+  var [showPlanPicker, setShowPlanPicker] = useState(false);
 
   // LandingPage is always dark — ensure body reflects this regardless of
   // whether KeeplyApp loaded (it no longer does for logged-out visitors)
@@ -912,7 +913,7 @@ export default function LandingPage() {
           {!isMobile && <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>}
           {!isMobile && <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>}
           <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
-          <button onClick={scrollToPricing} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Start free trial {"\u2192"}</button>
+          <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Start free trial {"\u2192"}</button>
         </div>
       </nav>
 
@@ -941,7 +942,7 @@ export default function LandingPage() {
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-              <button onClick={scrollToPricing} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
+              <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
                 Start free trial {"→"}
               </button>
               <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: WHITE, padding: "14px 28px", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
@@ -970,7 +971,7 @@ export default function LandingPage() {
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
                 <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
-                <button onClick={scrollToPricing} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try free for 14 days {"\u2192"}</button>
+                <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try free for 14 days {"\u2192"}</button>
               </div>
               <div style={{ order: isMobile ? 1 : (isEven ? 1 : 0) }}><V /></div>
             </div>
@@ -1120,6 +1121,127 @@ export default function LandingPage() {
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>{"\u00A9"} {new Date().getFullYear()} Keeply</div>
         </div>
       </footer>
+
+
+      {/* ── Plan Picker Modal ── */}
+      {showPlanPicker && (
+        <div
+          onClick={function(e){ if(e.target===e.currentTarget) setShowPlanPicker(false); }}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:1000,
+                   display:"flex", alignItems:"center", justifyContent:"center",
+                   padding:16, backdropFilter:"blur(8px)" }}>
+          <div style={{ background:"#071e3d", borderRadius:20, padding:"32px 28px",
+                        width:"100%", maxWidth:480, boxShadow:"0 32px 80px rgba(0,0,0,0.6)",
+                        border:"1px solid rgba(255,255,255,0.1)" }}>
+            {/* Header */}
+            <div style={{ textAlign:"center", marginBottom:28 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#f5a623",
+                            letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
+                Start your free trial
+              </div>
+              <div style={{ fontSize:22, fontWeight:800, color:"#fff", marginBottom:6 }}>
+                Choose your plan
+              </div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)" }}>
+                14 days free · No credit card required
+              </div>
+            </div>
+
+            {/* Plan cards */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:24 }}>
+              {/* Standard */}
+              <div
+                onClick={function(){
+                  localStorage.setItem("keeply_pending_plan", "standard");
+                  setShowPlanPicker(false);
+                  openAuth("signup");
+                }}
+                style={{ background:"rgba(255,255,255,0.06)", border:"1.5px solid rgba(255,255,255,0.15)",
+                         borderRadius:14, padding:"20px 16px", cursor:"pointer",
+                         transition:"border-color 0.15s" }}
+                onMouseEnter={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
+                onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.15)"; }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.6)",
+                              textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:8 }}>
+                  Standard
+                </div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:3, marginBottom:12 }}>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff" }}>$15</span>
+                  <span style={{ fontSize:13, color:"rgba(255,255,255,0.5)" }}>/mo</span>
+                </div>
+                {["1 vessel", "Unlimited equipment", "Maintenance scheduling",
+                  "Repair log & logbook", "First Mate AI — 10/mo"].map(function(f){
+                  return (
+                    <div key={f} style={{ display:"flex", alignItems:"center", gap:7,
+                                         marginBottom:6, fontSize:12, color:"rgba(255,255,255,0.7)" }}>
+                      <span style={{ color:"#4da6ff", fontSize:14 }}>✓</span> {f}
+                    </div>
+                  );
+                })}
+                <div style={{ marginTop:16, padding:"9px 0", background:"rgba(255,255,255,0.1)",
+                              borderRadius:8, textAlign:"center", fontSize:13,
+                              fontWeight:700, color:"#fff" }}>
+                  Try free →
+                </div>
+              </div>
+
+              {/* Pro — highlighted */}
+              <div
+                onClick={function(){
+                  localStorage.setItem("keeply_pending_plan", "pro");
+                  setShowPlanPicker(false);
+                  openAuth("signup");
+                }}
+                style={{ background:"linear-gradient(145deg,#1a4080,#0f4c8a)",
+                         border:"2px solid #f5a623", borderRadius:14, padding:"20px 16px",
+                         cursor:"pointer", position:"relative", transition:"transform 0.15s" }}
+                onMouseEnter={function(e){ e.currentTarget.style.transform="translateY(-2px)"; }}
+                onMouseLeave={function(e){ e.currentTarget.style.transform="translateY(0)"; }}>
+                {/* Badge */}
+                <div style={{ position:"absolute", top:-11, left:"50%", transform:"translateX(-50%)",
+                              background:"#f5a623", color:"#1a1200", fontSize:11, fontWeight:800,
+                              padding:"3px 12px", borderRadius:20, whiteSpace:"nowrap" }}>
+                  RECOMMENDED
+                </div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#f5a623",
+                              textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:8 }}>
+                  Pro
+                </div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:3, marginBottom:12 }}>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff" }}>$25</span>
+                  <span style={{ fontSize:13, color:"rgba(255,255,255,0.6)" }}>/mo</span>
+                </div>
+                {["2 vessels", "Unlimited equipment", "Maintenance scheduling",
+                  "Repair log & logbook", "First Mate AI — 50/mo",
+                  "AI-enriched logbook"].map(function(f){
+                  return (
+                    <div key={f} style={{ display:"flex", alignItems:"center", gap:7,
+                                         marginBottom:6, fontSize:12, color:"rgba(255,255,255,0.85)" }}>
+                      <span style={{ color:"#f5a623", fontSize:14 }}>✓</span> {f}
+                    </div>
+                  );
+                })}
+                <div style={{ marginTop:16, padding:"9px 0", background:"#f5a623",
+                              borderRadius:8, textAlign:"center", fontSize:13,
+                              fontWeight:700, color:"#1a1200" }}>
+                  Try free →
+                </div>
+              </div>
+            </div>
+
+            {/* Footer note */}
+            <div style={{ textAlign:"center", fontSize:12, color:"rgba(255,255,255,0.35)" }}>
+              Not sure? Pick Pro — you can downgrade anytime.
+            </div>
+            <button
+              onClick={function(){ setShowPlanPicker(false); }}
+              style={{ display:"block", margin:"16px auto 0", background:"none", border:"none",
+                       color:"rgba(255,255,255,0.3)", fontSize:12, cursor:"pointer" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Auth Modal */}
       {showAuth && (
