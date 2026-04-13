@@ -2,9 +2,22 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Keeply — Your vessel's First Mate, always ready",
-  description: "AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI always ready when you are. 14-day free trial, no credit card required.",
+  title: "Keeply — Boat Maintenance App & Vessel Tracker",
+  description: "Keeply is the AI-powered boat maintenance app for serious boat owners. Track maintenance schedules, equipment, repairs, and logbook entries — with First Mate AI always ready. 14-day free trial, no credit card required.",
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "https://www.keeply.boats",
+  },
+  keywords: [
+    "boat maintenance app",
+    "vessel maintenance tracker",
+    "boat maintenance log",
+    "sailboat maintenance app",
+    "marine maintenance software",
+    "boat equipment tracker",
+    "boat repair log",
+    "liveaboard app",
+  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -44,6 +57,49 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        {/* ── Structured Data (JSON-LD) ── */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Keeply",
+              "applicationCategory": "UtilitiesApplication",
+              "operatingSystem": "Web, iOS, Android",
+              "url": "https://www.keeply.boats",
+              "description": "AI-powered boat maintenance app for serious vessel owners. Track maintenance schedules, equipment, repairs, and logbook entries with First Mate AI.",
+              "offers": [
+                {
+                  "@type": "Offer",
+                  "name": "Basic",
+                  "price": "0",
+                  "priceCurrency": "USD",
+                  "description": "Free plan — 1 vessel, basic maintenance tracking"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Standard",
+                  "price": "15",
+                  "priceCurrency": "USD",
+                  "description": "First Mate AI, logbook, unlimited maintenance tracking"
+                },
+                {
+                  "@type": "Offer",
+                  "name": "Pro",
+                  "price": "25",
+                  "priceCurrency": "USD",
+                  "description": "Full voice, weather, departure checks, 50 First Mate queries/month"
+                }
+              ],
+              "publisher": {
+                "@type": "Organization",
+                "name": "Keeply",
+                "url": "https://www.keeply.boats"
+              }
+            }),
+          }}
+        />
         {/* ── Google Analytics 4 ── */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-FZWNP48NHN" />
         <script
