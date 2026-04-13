@@ -1327,6 +1327,25 @@ export default function App() {
                   var daysSince = (Date.now() - new Date(r.data.created_at).getTime()) / 86400000;
                   setTrialActive(daysSince < 14);
                 } else { setTrialActive(false); }
+                // Fire GA4 purchase event for Google Ads conversion tracking
+                if (plan !== "free") {
+                  var planValue = plan === "pro" ? 25.00 : 15.00;
+                  try {
+                    if (typeof window.gtag === "function") {
+                      window.gtag("event", "purchase", {
+                        transaction_id: session.user.id + "_" + Date.now(),
+                        value: planValue,
+                        currency: "USD",
+                        items: [{ item_id: plan, item_name: "Keeply " + plan.charAt(0).toUpperCase() + plan.slice(1), price: planValue, quantity: 1 }]
+                      });
+                      window.gtag("event", "manual_event_PURCHASE", {
+                        transaction_id: session.user.id + "_" + Date.now(),
+                        value: planValue,
+                        currency: "USD"
+                      });
+                    }
+                  } catch(e) { /* non-blocking */ }
+                }
               }
             });
         }
