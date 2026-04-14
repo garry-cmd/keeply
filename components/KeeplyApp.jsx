@@ -2619,7 +2619,7 @@ export default function App() {
   if (!session) return null;
 
   // Signed in but no vessel yet
-  if (needsSetup) return <VesselSetup userId={session.user.id} userPlan={userPlan} trialActive={trialActive} onComplete={async function(vessel){
+  if (needsSetup) return <VesselSetup userId={session.user.id} userPlan={userPlan} trialActive={trialActive} onComplete={function(vessel){
     setNeedsSetup(false);
     const normalized = { id: vessel.id, vesselType: vessel.vessel_type || "sail", vesselName: vessel.vessel_name || "", ownerName: vessel.owner_name || "", address: vessel.home_port || "", make: vessel.make || "", model: vessel.model || "", year: vessel.year || "", photoUrl: vessel.photo_url || "", engineHours: vessel.engine_hours || null, engineHoursDate: vessel.engine_hours_date || null, fuelBurnRate: vessel.fuel_burn_rate || null };
     setVessels([normalized]);
@@ -2628,31 +2628,7 @@ export default function App() {
     createDefaultAdminTasks(vessel.id, session.user.id);
     // Load all equipment and tasks that were just created by AI onboarding
     switchVessel(vessel.id);
-    // After vessel setup, check for a pending paid plan and launch Stripe
-    try {
-      var pendingPlan = null;
-      try { pendingPlan = localStorage.getItem("keeply_pending_plan"); } catch(e) {}
-      if (!pendingPlan) {
-        var freshSess = await supabase.auth.getSession();
-        pendingPlan = freshSess?.data?.session?.user?.user_metadata?.pending_plan || null;
-      }
-      if (pendingPlan && (pendingPlan === "pro" || pendingPlan === "standard")) {
-        var PLAN_PRICE = {
-          standard: "price_1TKJ3GA726uGRX5eqmN6Rwr4",
-          pro:      "price_1TKJ3TA726uGRX5epzWsSkbN",
-        };
-        var priceId = PLAN_PRICE[pendingPlan];
-        try { localStorage.removeItem("keeply_pending_plan"); } catch(e) {}
-        try { await supabase.auth.updateUser({ data: { pending_plan: null } }); } catch(e) {}
-        var res = await fetch("/api/stripe/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priceId, userId: session.user.id, userEmail: session.user.email, returnUrl: window.location.href }),
-        });
-        var data = await res.json();
-        if (data.url) { window.location.href = data.url; return; }
-      }
-    } catch(e) { console.error("Post-setup Stripe error:", e); }
+    // Stripe is now triggered immediately after signup in LandingPage.jsx
   }} />;
 
   if (loading) return (

@@ -780,10 +780,12 @@ export default function LandingPage() {
     return function () { window.removeEventListener("resize", check); };
   }, []);
 
+  var [stripeSuccess, setStripeSuccess] = useState(false);
   useEffect(function () {
     var p = new URLSearchParams(window.location.search);
     if (p.get("signup") === "1") { setMode("signup"); setShowAuth(true); }
     if (p.get("login")  === "1") { setMode("login");  setShowAuth(true); }
+    if (p.get("upgraded") === "1") { setStripeSuccess(true); setShowAuth(true); setSignupEmail("your account"); }
   }, []);
 
   useEffect(function () {
@@ -816,12 +818,29 @@ export default function LandingPage() {
       if (mode === "signup") {
         // Fall back to localStorage in case React state was lost (mobile page reload / remount)
         var effectivePlan = pendingPlan || (function(){ try { return localStorage.getItem("keeply_pending_plan"); } catch(e){ return null; } }()) || null;
-        var planParam = effectivePlan ? "&plan=" + effectivePlan : "";
-        var result = await supabase.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.origin + "/?login=1" + planParam, data: { pending_plan: effectivePlan } } });
+        var result = await supabase.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.origin + "/?login=1", data: { pending_plan: effectivePlan } } });
         if (result.error) throw result.error;
         if (result.data && result.data.user && result.data.user.identities && result.data.user.identities.length === 0) {
           setError("An account with this email already exists. Try logging in instead.");
-        } else { setSignupEmail(email); }
+        } else {
+          // Fire Stripe immediately for paid plans — don't wait for email confirmation
+          var PLAN_PRICE = { standard: "price_1TKJ3GA726uGRX5eqmN6Rwr4", pro: "price_1TKJ3TA726uGRX5epzWsSkbN" };
+          var priceId = effectivePlan && PLAN_PRICE[effectivePlan];
+          var userId = result.data.user && result.data.user.id;
+          if (priceId && userId) {
+            try {
+              try { localStorage.removeItem("keeply_pending_plan"); } catch(e) {}
+              var checkoutRes = await fetch("/api/stripe/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ priceId: priceId, userId: userId, userEmail: email, returnUrl: window.location.origin + "/?upgraded=1" }),
+              });
+              var checkoutData = await checkoutRes.json();
+              if (checkoutData.url) { window.location.href = checkoutData.url; return; }
+            } catch(stripeErr) { console.error("Stripe checkout error:", stripeErr); }
+          }
+          setSignupEmail(email);
+        }
       } else {
         var loginResult = await supabase.auth.signInWithPassword({ email: email, password: password });
         if (loginResult.error) throw loginResult.error;
@@ -1231,10 +1250,13 @@ export default function LandingPage() {
           <div style={{ background: "#fff", borderRadius: 16, padding: 32, width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.4)", "--bg-subtle": "#f8fafc", "--bg-card": "#ffffff", "--border": "#e2e8f0", "--text-primary": "#1a1d23", "--text-label": "#6b7280", colorScheme: "light" }}>
             {signupEmail ? (
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 40, marginBottom: 16 }}>{"📬"}</div>
-                <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Check your inbox</div>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>{stripeSuccess ? "🎉" : "📬"}</div>
+                <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>{stripeSuccess ? "Payment confirmed!" : "Check your inbox"}</div>
                 <div style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6 }}>
-                  We sent a confirmation link to <strong>{signupEmail}</strong>. Click it to activate your account.
+                  {stripeSuccess
+                    ? "Your subscription is active. Check your email and click the confirmation link to log in to Keeply."
+                    : <span>We sent a confirmation link to <strong>{signupEmail}</strong>. Click it to activate your account and access Keeply.</span>
+                  }
                 </div>
               </div>
             ) : isRecovery ? (
