@@ -108,6 +108,7 @@ export async function GET(req: NextRequest) {
   const vesselUserIds  = [...new Set(vesselData.map(v => v.user_id))]
   const activatedUsers = vesselUserIds.length
   const activationRate = allUsers.length > 0 ? Math.round((activatedUsers / allUsers.length) * 100) : 0
+  const neverActivated = allUsers.filter(u => u.email_confirmed_at && !vesselUserIds.includes(u.id)).length
 
   // WoW vessels
   const vesselsThisWeek = vesselData.filter(v => new Date(v.created_at) > oneWeekAgo).length
@@ -178,7 +179,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    users: { total: allUsers.length, confirmed, newThisWeek, newLastWeek, newThisMonth, recentSignups },
+    users: { total: allUsers.length, confirmed, newThisWeek, newLastWeek, newThisMonth, neverActivated, recentSignups },
     product: {
       vessels:      vesselsResult.status     === 'fulfilled' ? (vesselsResult.value.count     ?? 0) : 0,
       equipment:    equipmentResult.status   === 'fulfilled' ? (equipmentResult.value.count   ?? 0) : 0,

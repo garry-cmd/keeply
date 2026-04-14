@@ -6,7 +6,7 @@ import { supabase } from '@/components/supabase-client'
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface AdminStats {
   users: {
-    total: number; confirmed: number
+    total: number; confirmed: number; neverActivated: number
     newThisWeek: number; newLastWeek: number; newThisMonth: number
     recentSignups: { email: string; createdAt: string; confirmed: boolean }[]
   }
@@ -455,15 +455,16 @@ export default function AdminPage() {
         {/* ── Users ────────────────────────────────────────────────────────── */}
         <div style={s.sec}>
           <div style={s.sl}>Users</div>
-          <div style={s.grid(4)}>
-            <StatCard label="Total Signups"  value={users.total}        sub={`${users.confirmed} confirmed`} />
-            <GoalCard label="Weekly Signups" actual={users.newThisWeek} goal={GOALS.weeklySignups}
+          <div style={s.grid(5)}>
+            <StatCard label="Total Signups"   value={users.total}        sub={`${users.confirmed} confirmed`} />
+            <GoalCard label="Weekly Signups"  actual={users.newThisWeek} goal={GOALS.weeklySignups}
               status={users.newThisWeek >= GOALS.weeklySignups ? 'above' : 'below'}
               sub={`${users.newLastWeek} last week`}
               wow={{ thisW: users.newThisWeek, lastW: users.newLastWeek }}
             />
-            <StatCard label="New This Month" value={users.newThisMonth} />
-            <StatCard label="Unconfirmed"    value={users.total - users.confirmed} sub="email not verified" />
+            <StatCard label="New This Month"  value={users.newThisMonth} />
+            <StatCard label="Unconfirmed"     value={users.total - users.confirmed} sub="email not verified" />
+            <StatCard label="Never Activated" value={users.neverActivated} sub="confirmed, no vessel" />
           </div>
           <div style={{ ...s.card, marginTop: 10, padding: 0, overflow: 'hidden' }}>
             <button onClick={() => setSignupsOpen(o => !o)}
