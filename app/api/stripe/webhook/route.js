@@ -191,7 +191,74 @@ export async function POST(request) {
       }
 
       case "invoice.payment_failed": {
-        console.log("Payment failed, customer:", event.data.object.customer, "attempt:", event.data.object.attempt_count);
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        const attemptCount = invoice.attempt_count || 1;
+
+        // Find the user
+        const userId = await getUserIdByCustomerId(customerId);
+        if (!userId) { console.log("Payment failed: cannot identify user", customerId); break; }
+
+        // Get their email from Supabase auth
+        const userRes = await fetch(SUPABASE_URL + "/auth/v1/admin/users/" + userId, {
+          headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": "Bearer " + SUPABASE_SERVICE_KEY }
+        });
+        const userData = await userRes.json();
+        const userEmail = userData?.email;
+        if (!userEmail) { console.log("Payment failed: no email for userId", userId); break; }
+
+        // Generate a one-click billing portal URL for them
+        let portalUrl = "https://keeply.boats";
+        try {
+          const portalBody = new URLSearchParams({
+            customer: customerId,
+            return_url: "https://keeply.boats"
+          });
+          const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + process.env.STRIPE_SECRET_KEY, "Content-Type": "application/x-www-form-urlencoded" },
+            body: portalBody.toString()
+          });
+          const portal = await portalRes.json();
+          if (portal.url) portalUrl = portal.url;
+        } catch(e) { console.error("Portal URL error:", e); }
+
+        // Send email to the user
+        if (process.env.RESEND_API_KEY) {
+          const html = `
+            <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+              <div style="background: #0f4c8a; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+                <span style="color: white; font-size: 18px; font-weight: 700;">⚓ Keeply</span>
+              </div>
+              <div style="border: 1px solid #e2e8f0; border-top: none; padding: 28px 24px; border-radius: 0 0 8px 8px; background: #f8fafc;">
+                <div style="font-size: 22px; font-weight: 800; color: #1e293b; margin-bottom: 8px;">There was a problem with your payment</div>
+                <p style="font-size: 15px; color: #475569; line-height: 1.6; margin: 0 0 20px;">
+                  We weren't able to process your Keeply subscription payment${attemptCount > 1 ? " (attempt " + attemptCount + ")" : ""}. This can happen when a card expires or a bank declines a charge.
+                </p>
+                <p style="font-size: 15px; color: #475569; line-height: 1.6; margin: 0 0 24px;">
+                  Your data is safe — please update your payment method to keep your plan active. Stripe will retry automatically, but updating your card now is the quickest fix.
+                </p>
+                <a href="${portalUrl}" style="display: inline-block; background: #0f4c8a; color: white; text-decoration: none; padding: 13px 28px; border-radius: 8px; font-size: 15px; font-weight: 700; margin-bottom: 24px;">
+                  Update payment method →
+                </a>
+                <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 0;">
+                  If you have questions, reply to this email or contact us at <a href="mailto:support@keeply.boats" style="color: #0f4c8a;">support@keeply.boats</a>. The link above expires in 24 hours.
+                </p>
+              </div>
+            </div>
+          `;
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: "Keeply <notifications@keeply.boats>",
+              to: [userEmail],
+              subject: "Action needed: Update your Keeply payment method",
+              html
+            })
+          });
+        }
+        console.log("Payment failed — email sent to:", userEmail, "attempt:", attemptCount);
         break;
       }
 
