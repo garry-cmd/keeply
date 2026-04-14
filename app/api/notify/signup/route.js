@@ -1,11 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Supabase admin client to look up email from auth.users
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 export async function POST(request) {
   try {
     // Verify webhook secret to prevent unauthorized calls
@@ -22,6 +16,12 @@ export async function POST(request) {
     }
 
     const { id, plan } = payload.record;
+
+    // Init Supabase admin client inside handler (not at module level — avoids build-time crash)
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
     // Look up email from auth.users
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(id);
