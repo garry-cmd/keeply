@@ -875,7 +875,7 @@ export default function LandingPage() {
       {/* Trial banner */}
       <div style={{ background: "rgba(245,166,35,0.12)", borderBottom: "1px solid rgba(245,166,35,0.25)", padding: "8px 16px", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.85)", position: "relative", zIndex: 300 }}>
         <span style={{ marginRight: 6 }}>✦</span>
-        <strong style={{ color: GOLD }}>14-day free trial</strong> — full Pro access, no credit card required.{" "}
+        Start free, or try <strong style={{ color: GOLD }}>Standard or Pro free for 14 days</strong> — no credit card required.{" "}
         <button onClick={scrollToPricing} style={{ background: "none", border: "none", color: GOLD, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0, textDecoration: "underline", fontFamily: "inherit" }}>Start free →</button>
       </div>
 
@@ -928,7 +928,7 @@ export default function LandingPage() {
               </button>
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", letterSpacing: "0.2px" }}>
-              14-day free trial · Full Pro access · No credit card required
+              Standard & Pro include a 14-day free trial · No credit card required
             </div>
           </div>
 
@@ -965,10 +965,10 @@ export default function LandingPage() {
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>14-day free trial · Full Pro access · No credit card</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Standard & Pro · 14-day free trial · No credit card</span>
             </div>
             <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Start free. Choose your plan after.</h2>
-            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Every account gets 14 days of full Pro access — no credit card required.</p>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Standard and Pro include a 14-day free trial. No credit card required.</p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
               <span style={{ fontSize: 13, color: annual ? "rgba(255,255,255,0.4)" : WHITE, fontWeight: annual ? 400 : 600 }}>Monthly</span>
               <div onClick={function () { setAnnual(function (a) { return !a; }); }} style={{ width: 44, height: 24, background: annual ? ACCENT : "rgba(255,255,255,0.2)", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
@@ -1047,7 +1047,7 @@ export default function LandingPage() {
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
                     ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
                     ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
-                    ["14-day Pro trial",      "\u2713",   "\u2713",     "\u2713"],
+                    ["14-day trial",          "\u2014",   "\u2713",     "\u2713"],
                     ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
                   ].map(function (row, ri) {
                     var isLast = ri === 18;
@@ -1073,7 +1073,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
-            Every plan starts with a 14-day free trial of Pro — no credit card required. After your trial, continue free or choose Standard or Pro. Cancel any time.
+            Standard and Pro include a 14-day free trial — no credit card required. Cancel any time.
           </p>
           <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
             Commercial or fleet manager?{" "}

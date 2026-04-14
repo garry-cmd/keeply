@@ -1048,12 +1048,7 @@ export default function App() {
             if (r.data) {
               var plan = r.data.plan || 'free';
               setUserPlan(plan);
-              if (plan === 'free' && r.data.created_at) {
-                var daysSince = (Date.now() - new Date(r.data.created_at).getTime()) / 86400000;
-                setTrialActive(daysSince < 14);
-              } else {
-                setTrialActive(false);
-              }
+              setTrialActive(false);
             }
           });
         // Load alert prefs from user metadata
@@ -1323,10 +1318,7 @@ export default function App() {
               if (r.data) {
                 var plan = r.data.plan || "free";
                 setUserPlan(plan);
-                if (plan === "free" && r.data.created_at) {
-                  var daysSince = (Date.now() - new Date(r.data.created_at).getTime()) / 86400000;
-                  setTrialActive(daysSince < 14);
-                } else { setTrialActive(false); }
+                setTrialActive(false);
                 // Fire GA4 purchase event for Google Ads conversion tracking
                 if (plan !== "free") {
                   var planValue = plan === "pro" ? 25.00 : 15.00;
@@ -1448,10 +1440,7 @@ export default function App() {
         var pr = await supabase.from("user_profiles").select("plan,created_at").eq("id", sess.user.id).single();
         if (pr.data && pr.data.plan) {
           livePlan = pr.data.plan; setUserPlan(pr.data.plan);
-          if (pr.data.plan === "free" && pr.data.created_at) {
-            var daysSince = (Date.now() - new Date(pr.data.created_at).getTime()) / 86400000;
-            setTrialActive(daysSince < 14);
-          } else { setTrialActive(false); }
+          setTrialActive(false);
         }
       }
     } catch(e) {}
@@ -5891,7 +5880,15 @@ export default function App() {
 
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs-standalone" && (<>
-          {tabHeader("Repairs", boatName + " · " + repairs.filter(function(r){ return r.status !== "closed"; }).length + " open", true, function(){ setShowAddRepair(true); })}
+          {tabHeader("Repairs", boatName + " · " + repairs.filter(function(r){ return r.status !== "closed"; }).length + " open", true, function(){
+            const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
+            if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
+              setUpgradeReason("Free accounts are limited to 3 repairs. Upgrade to Standard or Pro for unlimited repairs.");
+              setShowUpgradeModal(true);
+              return;
+            }
+            setShowAddRepair(true);
+          })}
 
           {/* Section filter dropdown */}
           <div style={{ marginBottom: 16 }}>
