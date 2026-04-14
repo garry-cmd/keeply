@@ -578,8 +578,8 @@ const FEATURES = [
 
 const PLANS = [
   { name: "Free",     price: "$0",    period: "/mo", sub: "",                            subheader: "What's included",             cta: "Get started free", features: ["Automated boat setup", "1 vessel", "1 equipment card visible", "Unlimited maintenance tasks", "3 First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
-  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr · save $36",        subheader: "Everything in Free, plus",    cta: "Start free trial →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI — 10 queries/mo", "Repair log & full logbook"] },
-  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr · save $60",        subheader: "Everything in Standard, plus", cta: "Start free trial →", features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
+  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr · save $36",        subheader: "Everything in Free, plus",    cta: "Buy now →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI — 10 queries/mo", "Repair log & full logbook"] },
+  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr · save $60",        subheader: "Everything in Standard, plus", cta: "Buy now →", features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
 
 
@@ -877,7 +877,7 @@ export default function LandingPage() {
       {/* Trial banner */}
       <div style={{ background: "rgba(245,166,35,0.12)", borderBottom: "1px solid rgba(245,166,35,0.25)", padding: "8px 16px", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.85)", position: "relative", zIndex: 300 }}>
         <span style={{ marginRight: 6 }}>✦</span>
-        Start free, or try <strong style={{ color: GOLD }}>Standard or Pro free for 14 days</strong> — no credit card required.{" "}
+        Use code <strong style={{ color: GOLD }}>BETA2026</strong> at checkout for 100% off — no credit card needed.{" "}
         <button onClick={scrollToPricing} style={{ background: "none", border: "none", color: GOLD, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0, textDecoration: "underline", fontFamily: "inherit" }}>Start free →</button>
       </div>
 
@@ -893,7 +893,7 @@ export default function LandingPage() {
           {!isMobile && <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>}
           {!isMobile && <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>}
           <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
-          <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Start free trial {"\u2192"}</button>
+          <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Buy now {"\u2192"}</button>
         </div>
       </nav>
 
@@ -923,14 +923,14 @@ export default function LandingPage() {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
               <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-                Start free trial {"→"}
+                Buy now {"→"}
               </button>
               <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: WHITE, padding: "14px 28px", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
                 Log in
               </button>
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", letterSpacing: "0.2px" }}>
-              Standard & Pro include a 14-day free trial · No credit card required
+              Use code BETA2026 at checkout · No credit card needed
             </div>
           </div>
 
@@ -951,7 +951,7 @@ export default function LandingPage() {
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
                 <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
-                <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Try free for 14 days {"\u2192"}</button>
+                <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Buy now {"\u2192"}</button>
               </div>
               <div style={{ order: isMobile ? 1 : (isEven ? 1 : 0) }}><V /></div>
             </div>
@@ -967,10 +967,10 @@ export default function LandingPage() {
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Standard & Pro · 14-day free trial · No credit card</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Use code BETA2026 for 100% off · No credit card needed</span>
             </div>
             <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Start free. Choose your plan after.</h2>
-            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Standard and Pro include a 14-day free trial. No credit card required.</p>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Use discount code BETA2026 at checkout for 100% off during beta.</p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
               <span style={{ fontSize: 13, color: annual ? "rgba(255,255,255,0.4)" : WHITE, fontWeight: annual ? 400 : 600 }}>Monthly</span>
               <div onClick={function () { setAnnual(function (a) { return !a; }); }} style={{ width: 44, height: 24, background: annual ? ACCENT : "rgba(255,255,255,0.2)", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
@@ -1049,7 +1049,7 @@ export default function LandingPage() {
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
                     ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
                     ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
-                    ["14-day trial",          "\u2014",   "\u2713",     "\u2713"],
+                    ["Discount code",         "\u2014",   "BETA2026",  "BETA2026"],
                     ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
                   ].map(function (row, ri) {
                     var isLast = ri === 18;
@@ -1075,7 +1075,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
-            Standard and Pro include a 14-day free trial — no credit card required. Cancel any time.
+            Use discount code BETA2026 at checkout for 100% off. Cancel any time.
           </p>
           <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
             Commercial or fleet manager?{" "}
@@ -1116,13 +1116,13 @@ export default function LandingPage() {
             <div style={{ textAlign:"center", marginBottom:28 }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#f5a623",
                             letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
-                Start your free trial
+                Choose a plan
               </div>
               <div style={{ fontSize:22, fontWeight:800, color:"#fff", marginBottom:6 }}>
                 Choose your plan
               </div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)" }}>
-                14 days free · No credit card required
+                No credit card required with discount code
               </div>
             </div>
 
@@ -1161,7 +1161,7 @@ export default function LandingPage() {
                 <div style={{ marginTop:16, padding:"9px 0", background:"rgba(255,255,255,0.1)",
                               borderRadius:8, textAlign:"center", fontSize:13,
                               fontWeight:700, color:"#fff" }}>
-                  Try free →
+                  Buy now →
                 </div>
               </div>
 
@@ -1205,7 +1205,7 @@ export default function LandingPage() {
                 <div style={{ marginTop:16, padding:"9px 0", background:"#f5a623",
                               borderRadius:8, textAlign:"center", fontSize:13,
                               fontWeight:700, color:"#1a1200" }}>
-                  Try free →
+                  Buy now →
                 </div>
               </div>
             </div>

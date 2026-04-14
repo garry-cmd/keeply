@@ -43,8 +43,7 @@ export async function POST(request) {
     const successUrl = baseUrl + (baseUrl.includes("?") ? "&" : "?") + "upgraded=1";
     const plan = PLAN_MAP[priceId] || "entry";
 
-    const TRIAL_DAYS = { standard: 14 };
-    const trialDays = TRIAL_DAYS[plan] || null;
+
 
     const sessionData = {
       mode: "subscription",
@@ -60,9 +59,6 @@ export async function POST(request) {
       "subscription_data[metadata][plan]": plan,
     };
 
-    if (trialDays) {
-      sessionData["subscription_data[trial_period_days]"] = String(trialDays);
-    }
 
     if (existingCustomerId) { sessionData.customer = existingCustomerId; }
     else if (userEmail) { sessionData.customer_email = userEmail; }
