@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Auto-reply to the sender
     await resend.emails.send({
-      from: 'Garry at Keeply <garry@keeply.boats>',
+      from: 'Keeply Support <support@keeply.boats>',
       to: email,
       subject: "We got your message — Keeply",
       html: `
