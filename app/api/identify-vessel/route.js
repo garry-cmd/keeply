@@ -30,12 +30,19 @@ Maintenance intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Be sp
 
 The user has this vessel: "${description.trim()}"
 
-Generate a complete, specific equipment list that an owner of this exact vessel would track for maintenance. Be specific to this make/model/year — not generic. For example, if it's a 2018 Ranger Tug R-27, list the actual Volvo IPS engine, bow thruster, specific electronics typically fitted, generator, etc.
+First, extract the vessel identity. Then generate a complete, specific equipment list an owner of this exact vessel would track for maintenance. Be specific to this make/model/year — not generic.
 
-Return ONLY valid JSON — no prose, no markdown, no code fences. The JSON must be an array of objects:
-[{ "name": "string", "manufacturer": "string|null", "model": "string|null", "category": "string (Engine|Electrical|Electronics|Rigging|Sails|Plumbing|Safety|Navigation|Deck|Bilge|Hull|Dinghy|Generator|Galley|Anchor|Mechanical|Steering|Watermaker)", "tasks": [{ "task": "string", "interval_days": number }] }]
+Return ONLY valid JSON — no prose, no markdown, no code fences. The JSON must be an object with two keys:
+{
+  "vesselInfo": {
+    "year": "4-digit year string, or empty string if not found",
+    "make": "manufacturer name only — max 30 characters, no dimensions, specs, or extra attributes (e.g. 'Fountaine Pajot', 'Catalina', 'Ranger Tug')",
+    "model": "model name only — max 40 characters, no dimensions, specs, or extra attributes (e.g. 'Elba 45', '30', 'R-27')"
+  },
+  "equipment": [{ "name": "string", "manufacturer": "string|null", "model": "string|null", "category": "string (Engine|Electrical|Electronics|Rigging|Sails|Plumbing|Safety|Navigation|Deck|Bilge|Hull|Dinghy|Generator|Galley|Anchor|Mechanical|Steering|Watermaker)", "tasks": [{ "task": "string", "interval_days": number }] }]
+}
 
-Include 12-22 items, each with 2-5 tasks and realistic intervals (365=annual, 180=biannual, 90=quarterly, 730=2years).`;
+Include 12-22 equipment items, each with 2-5 tasks and realistic intervals (365=annual, 180=biannual, 90=quarterly, 730=2years).`;
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -55,7 +62,6 @@ Include 12-22 items, each with 2-5 tasks and realistic intervals (365=annual, 18
     if (data.error) {
       const errType = data.error.type || "";
       const errMsg  = data.error.message || "";
-      // Rate limit / capacity errors — don't expose internals
       if (errType === "rate_limit_error" || errType === "overloaded_error" ||
           errMsg.includes("rate limit") || errMsg.includes("overloaded") ||
           errMsg.includes("token") || errMsg.includes("capacity") || errMsg.includes("quota")) {
@@ -71,9 +77,17 @@ Include 12-22 items, each with 2-5 tasks and realistic intervals (365=annual, 18
 
     const parsed = JSON.parse(raw);
 
-    // singleItem returns object, vessel returns array
-    const equipment = isSingleItem ? parsed : parsed;
-    return Response.json({ equipment });
+    // singleItem returns a single equipment object
+    if (isSingleItem) {
+      return Response.json({ equipment: parsed });
+    }
+
+    // Vessel identification: AI now returns { vesselInfo, equipment }
+    // Gracefully handle legacy array response just in case
+    const equipment = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.equipment) ? parsed.equipment : []);
+    const vesselInfo = parsed.vesselInfo || null;
+    return Response.json({ equipment, vesselInfo });
+
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }

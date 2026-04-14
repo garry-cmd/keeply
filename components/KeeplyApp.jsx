@@ -1456,7 +1456,7 @@ export default function App() {
     setSaving(true);
     try {
       const userId = session && session.user ? session.user.id : null;
-      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: settingsForm.make, model: settingsForm.model, year: settingsForm.year, user_id: userId, photo_url: settingsForm.photoUrl || null, fuel_burn_rate: settingsForm.fuelBurnRate ? parseFloat(settingsForm.fuelBurnRate) : null };
+      const payload = { vessel_name: settingsForm.vesselName, vessel_type: settingsForm.vesselType, owner_name: settingsForm.ownerName, home_port: settingsForm.address, make: (settingsForm.make || "").slice(0, 50), model: (settingsForm.model || "").slice(0, 60), year: (settingsForm.year || "").slice(0, 4), user_id: userId, photo_url: settingsForm.photoUrl || null, fuel_burn_rate: settingsForm.fuelBurnRate ? parseFloat(settingsForm.fuelBurnRate) : null };
       if (editingVesselId) {
         await supa("vessels", { method: "PATCH", query: "id=eq." + editingVesselId, body: payload, prefer: "return=minimal" });
         setVessels(function(vs){ return vs.map(function(v){ return v.id === editingVesselId ? { ...settingsForm, id: editingVesselId } : v; }); });
@@ -3312,7 +3312,7 @@ export default function App() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", marginBottom: 2 }}>{vesselEq.name}</div>
-                          {makeModel && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: (info.hin || info.uscg_doc || info.home_port) ? 10 : 0 }}>{makeModel}</div>}
+                          {makeModel && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: (info.hin || info.uscg_doc || info.home_port) ? 10 : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{makeModel}</div>}
                           {(info.hin || info.uscg_doc || info.home_port) && (
                             <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 8 }}>
                               {info.hin && <div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 2 }}>HIN</div><div style={{ fontSize: 12, color: "#fff", fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{info.hin}</div></div>}
@@ -6806,14 +6806,19 @@ export default function App() {
                     const data = await res.json();
                     if (data.error) throw new Error(data.error);
                     const aiResult = Array.isArray(data.equipment) ? data.equipment : [];
+                    const aiVessel = data.vesselInfo || {};
                     setAvLoading(false); setSaving(true);
                     // Step 2: Save everything
                     const hasRigging = aiResult.some(function(i){ return i.category === "Rigging" || i.category === "Sails"; });
+                    // Use AI-extracted vessel fields (clean year/make/model), fall back to string splitting
                     const parts = avDesc.trim().split(" ");
-                    const year = parts.find(function(p){ return /^\d{4}$/.test(p); }) || "";
-                    const rest = parts.filter(function(p){ return p !== year; });
+                    const fallbackYear = parts.find(function(p){ return /^\d{4}$/.test(p); }) || "";
+                    const fallbackRest = parts.filter(function(p){ return p !== fallbackYear; });
+                    const year = (aiVessel.year || fallbackYear).slice(0, 4);
+                    const make = (aiVessel.make || fallbackRest[0] || "").slice(0, 50);
+                    const model = (aiVessel.model || fallbackRest.slice(1).join(" ") || "").slice(0, 60);
                     const today = new Date().toISOString().split("T")[0];
-                    const payload = { vessel_name: avName, vessel_type: hasRigging ? "sail" : "motor", owner_name: avOwner, home_port: avPort, make: rest[0] || "", model: rest.slice(1).join(" ") || "", year, user_id: session.user.id, engine_hours: avEngineHours ? parseFloat(avEngineHours) : null, engine_hours_date: avEngineHours ? today : null, fuel_burn_rate: avFuelBurnRate ? parseFloat(avFuelBurnRate) : null };
+                    const payload = { vessel_name: avName, vessel_type: hasRigging ? "sail" : "motor", owner_name: avOwner, home_port: avPort, make, model, year, user_id: session.user.id, engine_hours: avEngineHours ? parseFloat(avEngineHours) : null, engine_hours_date: avEngineHours ? today : null, fuel_burn_rate: avFuelBurnRate ? parseFloat(avFuelBurnRate) : null };
                     const created = await supa("vessels", { method: "POST", body: payload });
                     const nv = created[0];
                     const normalized = { id: nv.id, vesselType: nv.vessel_type || "sail", vesselName: nv.vessel_name || "", ownerName: nv.owner_name || "", address: nv.home_port || "", make: nv.make || "", model: nv.model || "", year: nv.year || "", photoUrl: "", engineHours: nv.engine_hours || null, engineHoursDate: nv.engine_hours_date || null, fuelBurnRate: nv.fuel_burn_rate || null };
@@ -6869,11 +6874,11 @@ export default function App() {
               <input placeholder="City (e.g. Seattle, La Cruz)" value={settingsForm.address || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, address: e.target.value }; }); }} style={s.inp} />
               <div style={{ borderTop: "1px solid var(--border)", marginBottom: 16 }} />
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6 }}>VESSEL MAKE</div>
-              <input placeholder="e.g. Hallberg-Rassy, Nordhavn, Baba" value={settingsForm.make || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, make: e.target.value }; }); }} style={s.inp} />
+              <input placeholder="e.g. Hallberg-Rassy, Nordhavn, Baba" value={settingsForm.make || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, make: e.target.value }; }); }} maxLength={50} style={s.inp} />
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6 }}>MODEL</div>
-              <input placeholder="e.g. 35, 42, 40" value={settingsForm.model || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, model: e.target.value }; }); }} style={s.inp} />
+              <input placeholder="e.g. 35, 42, 40" value={settingsForm.model || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, model: e.target.value }; }); }} maxLength={60} style={s.inp} />
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6 }}>YEAR</div>
-              <input placeholder="e.g. 1980" value={settingsForm.year || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, year: e.target.value }; }); }} style={s.inp} />
+              <input placeholder="e.g. 1980" value={settingsForm.year || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, year: e.target.value }; }); }} maxLength={4} style={s.inp} />
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.6px", marginBottom: 6, marginTop: 14 }}>FUEL BURN RATE <span style={{ fontSize: 10, fontWeight: 400 }}>gal/hr</span></div>
               <input type="number" step="0.1" placeholder="e.g. 0.7" value={settingsForm.fuelBurnRate || ""} onChange={function(e){ setSettingsForm(function(f){ return { ...f, fuelBurnRate: e.target.value }; }); }} style={s.inp} />
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>Fuel per passage is derived from engine run hours × this rate.</div>
