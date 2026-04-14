@@ -1145,8 +1145,45 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Plan cards */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:24 }}>
+            {/* Plan cards — 3 col matching pricing section */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+
+              {/* Free */}
+              <div
+                onClick={function(){
+                  localStorage.setItem("keeply_pending_plan", "free");
+                  setPendingPlan("free");
+                  setShowPlanPicker(false);
+                  openAuth("signup");
+                }}
+                style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)",
+                         borderRadius:14, padding:"18px 14px", cursor:"pointer",
+                         display:"flex", flexDirection:"column", transition:"border-color 0.15s" }}
+                onMouseEnter={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.3)"; }}
+                onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)",
+                              textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Free</div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>$0</span>
+                </div>
+                <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
+                <div style={{ flex:1, marginBottom:16 }}>
+                  {["1 vessel", "Basic maintenance", "3 repairs", "Parts catalog"].map(function(f){
+                    return (
+                      <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
+                                           marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.55)" }}>
+                        <span style={{ color:"#4ade80", flexShrink:0, marginTop:1 }}>✓</span> {f}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ padding:"8px 0", border:"1px solid rgba(255,255,255,0.15)",
+                              borderRadius:8, textAlign:"center", fontSize:12,
+                              fontWeight:700, color:"rgba(255,255,255,0.6)" }}>
+                  Start free →
+                </div>
+              </div>
+
               {/* Standard */}
               <div
                 onClick={function(){
@@ -1155,36 +1192,43 @@ export default function LandingPage() {
                   setShowPlanPicker(false);
                   openAuth("signup");
                 }}
-                style={{ background:"rgba(255,255,255,0.06)", border:"1.5px solid rgba(255,255,255,0.15)",
-                         borderRadius:14, padding:"20px 16px", cursor:"pointer",
+                style={{ background:"rgba(77,166,255,0.08)", border:"2px solid rgba(77,166,255,0.5)",
+                         borderRadius:14, padding:"18px 14px", cursor:"pointer",
+                         display:"flex", flexDirection:"column", position:"relative",
                          transition:"border-color 0.15s" }}
-                onMouseEnter={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.4)"; }}
-                onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.15)"; }}>
-                <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.6)",
-                              textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:8 }}>
-                  Standard
+                onMouseEnter={function(e){ e.currentTarget.style.borderColor="rgba(77,166,255,0.8)"; }}
+                onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(77,166,255,0.5)"; }}>
+                <div style={{ position:"absolute", top:-11, left:"50%", transform:"translateX(-50%)",
+                              background:"#f5a623", color:"#1a1200", fontSize:10, fontWeight:800,
+                              padding:"3px 10px", borderRadius:20, whiteSpace:"nowrap" }}>
+                  MOST POPULAR
                 </div>
-                <div style={{ display:"flex", alignItems:"baseline", gap:3, marginBottom:12 }}>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#fff" }}>$15</span>
-                  <span style={{ fontSize:13, color:"rgba(255,255,255,0.5)" }}>/mo</span>
+                <div style={{ fontSize:11, fontWeight:700, color:"#4da6ff",
+                              textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Standard</div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
+                  <span style={{ fontSize:20, fontWeight:700, color:"#fff", alignSelf:"flex-start", marginTop:6 }}>$</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>15</span>
+                  <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>/mo</span>
                 </div>
-                {["1 vessel", "Unlimited equipment", "Maintenance scheduling",
-                  "Repair log & logbook", "First Mate AI — 10/mo"].map(function(f){
-                  return (
-                    <div key={f} style={{ display:"flex", alignItems:"center", gap:7,
-                                         marginBottom:6, fontSize:12, color:"rgba(255,255,255,0.7)" }}>
-                      <span style={{ color:"#4da6ff", fontSize:14 }}>✓</span> {f}
-                    </div>
-                  );
-                })}
-                <div style={{ marginTop:16, padding:"9px 0", background:"rgba(255,255,255,0.1)",
-                              borderRadius:8, textAlign:"center", fontSize:13,
-                              fontWeight:700, color:"#fff" }}>
+                <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
+                <div style={{ flex:1, marginBottom:16 }}>
+                  {["Unlimited equipment", "Unlimited repairs", "First Mate AI — 10/mo", "Repair log & logbook"].map(function(f){
+                    return (
+                      <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
+                                           marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.75)" }}>
+                        <span style={{ color:"#4da6ff", flexShrink:0, marginTop:1 }}>✓</span> {f}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ padding:"8px 0", background:"#f5a623",
+                              borderRadius:8, textAlign:"center", fontSize:12,
+                              fontWeight:700, color:"#1a1200" }}>
                   Buy now →
                 </div>
               </div>
 
-              {/* Pro — highlighted */}
+              {/* Pro */}
               <div
                 onClick={function(){
                   localStorage.setItem("keeply_pending_plan", "pro");
@@ -1192,77 +1236,36 @@ export default function LandingPage() {
                   setShowPlanPicker(false);
                   openAuth("signup");
                 }}
-                style={{ background:"linear-gradient(145deg,#1a4080,#0f4c8a)",
-                         border:"2px solid #f5a623", borderRadius:14, padding:"20px 16px",
-                         cursor:"pointer", position:"relative", transition:"transform 0.15s" }}
-                onMouseEnter={function(e){ e.currentTarget.style.transform="translateY(-2px)"; }}
-                onMouseLeave={function(e){ e.currentTarget.style.transform="translateY(0)"; }}>
-                {/* Badge */}
-                <div style={{ position:"absolute", top:-11, left:"50%", transform:"translateX(-50%)",
-                              background:"#f5a623", color:"#1a1200", fontSize:11, fontWeight:800,
-                              padding:"3px 12px", borderRadius:20, whiteSpace:"nowrap" }}>
-                  RECOMMENDED
+                style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)",
+                         borderRadius:14, padding:"18px 14px", cursor:"pointer",
+                         display:"flex", flexDirection:"column", transition:"border-color 0.15s" }}
+                onMouseEnter={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.3)"; }}
+                onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)",
+                              textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Pro</div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
+                  <span style={{ fontSize:20, fontWeight:700, color:"#fff", alignSelf:"flex-start", marginTop:6 }}>$</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>25</span>
+                  <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>/mo</span>
                 </div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#f5a623",
-                              textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:8 }}>
-                  Pro
-                </div>
-                <div style={{ display:"flex", alignItems:"baseline", gap:3, marginBottom:12 }}>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#fff" }}>$25</span>
-                  <span style={{ fontSize:13, color:"rgba(255,255,255,0.6)" }}>/mo</span>
-                </div>
-                {["2 vessels", "Unlimited equipment", "Maintenance scheduling",
-                  "Repair log & logbook", "First Mate AI — 50/mo",
-                  "AI-enriched logbook"].map(function(f){
-                  return (
-                    <div key={f} style={{ display:"flex", alignItems:"center", gap:7,
-                                         marginBottom:6, fontSize:12, color:"rgba(255,255,255,0.85)" }}>
-                      <span style={{ color:"#f5a623", fontSize:14 }}>✓</span> {f}
-                    </div>
-                  );
-                })}
-                <div style={{ marginTop:16, padding:"9px 0", background:"#f5a623",
-                              borderRadius:8, textAlign:"center", fontSize:13,
-                              fontWeight:700, color:"#1a1200" }}>
-                  Buy now →
-                </div>
-              </div>
-            </div>
-
-            {/* Free plan */}
-            <div
-              onClick={function(){
-                localStorage.setItem("keeply_pending_plan", "free");
-                setPendingPlan("free");
-                setShowPlanPicker(false);
-                openAuth("signup");
-              }}
-              style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)",
-                       borderRadius:12, padding:"14px 18px", cursor:"pointer", marginBottom:16,
-                       display:"flex", alignItems:"center", justifyContent:"space-between",
-                       transition:"border-color 0.15s" }}
-              onMouseEnter={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.25)"; }}
-              onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; }}>
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)",
-                              textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>
-                  Free
-                </div>
-                <div style={{ display:"flex", gap:12 }}>
-                  {["1 vessel", "Basic maintenance", "3 repairs"].map(function(f){
+                <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
+                <div style={{ flex:1, marginBottom:16 }}>
+                  {["2 vessels", "First Mate AI — 50/mo", "AI-enriched logbook", "Unlimited storage"].map(function(f){
                     return (
-                      <div key={f} style={{ fontSize:11, color:"rgba(255,255,255,0.4)",
-                                           display:"flex", alignItems:"center", gap:4 }}>
-                        <span style={{ color:"rgba(255,255,255,0.25)" }}>✓</span> {f}
+                      <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
+                                           marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.55)" }}>
+                        <span style={{ color:"#4ade80", flexShrink:0, marginTop:1 }}>✓</span> {f}
                       </div>
                     );
                   })}
                 </div>
+                <div style={{ padding:"8px 0", border:"1px solid rgba(255,255,255,0.15)",
+                              borderRadius:8, textAlign:"center", fontSize:12,
+                              fontWeight:700, color:"rgba(255,255,255,0.6)" }}>
+                  Buy now →
+                </div>
               </div>
-              <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.35)",
-                            whiteSpace:"nowrap", paddingLeft:12 }}>
-                Start free →
-              </div>
+
             </div>
 
             {/* Footer note */}
