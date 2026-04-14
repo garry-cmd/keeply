@@ -1364,6 +1364,10 @@ export default function App() {
     if (!pending) {
       try { pending = localStorage.getItem("keeply_pending_plan"); } catch(e) {}
     }
+    // Final fallback: user metadata stored at signup — survives cross-browser + localStorage clear
+    if (!pending) {
+      try { pending = session.user.user_metadata?.pending_plan || null; } catch(e) {}
+    }
     if (!pending) return;
     try { localStorage.removeItem("keeply_pending_plan"); } catch(e) {}
 
@@ -1388,7 +1392,11 @@ export default function App() {
           }),
         });
         var data = await res.json();
-        if (data.url) window.location.href = data.url;
+        if (data.url) {
+          // Clear metadata so this doesn't re-trigger if user navigates back
+          try { await supabase.auth.updateUser({ data: { pending_plan: null } }); } catch(e) {}
+          window.location.href = data.url;
+        }
       } catch(e) {
         console.error("Pending plan checkout error:", e);
       }

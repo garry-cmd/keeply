@@ -815,7 +815,7 @@ export default function LandingPage() {
     try {
       if (mode === "signup") {
         var planParam = pendingPlan ? "&plan=" + pendingPlan : "";
-        var result = await supabase.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.origin + "/?login=1" + planParam } });
+        var result = await supabase.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.origin + "/?login=1" + planParam, data: { pending_plan: pendingPlan || null } } });
         if (result.error) throw result.error;
         if (result.data && result.data.user && result.data.user.identities && result.data.user.identities.length === 0) {
           setError("An account with this email already exists. Try logging in instead.");
