@@ -1691,7 +1691,6 @@ export default function App() {
 
   const addTask = async function(){
     if (!newTask.task.trim()) return;
-    if (!newTask._equipmentId) return;
     const days = intervalToDays(newTask.interval);
     const due  = newTask.dueDate || (days > 0 ? addDays(today(), days) : "");
     setSaving(true);
@@ -2689,7 +2688,19 @@ export default function App() {
                 {settings.photoUrl && <img src={settings.photoUrl} alt={boatName} style={{ width: 24, height: 24, borderRadius: 5, objectFit: "cover", border: "1px solid rgba(255,255,255,0.3)" }} />}
                 {boatName} <span style={{ opacity: 0.7 }}>▾</span>
               </button>
-
+              {(function(){
+                const lastP = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.entry_type === "passage"; })
+                  .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0];
+                if (!lastP) return null;
+                const daysAgo = Math.round((new Date() - new Date(lastP.entry_date)) / 86400000);
+                const route = lastP.from_location && lastP.to_location ? lastP.from_location + " → " + lastP.to_location : null;
+                const label = daysAgo === 0 ? "Sailed today" : daysAgo === 1 ? "Sailed yesterday" : "Last sailed " + daysAgo + "d ago";
+                return (
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", paddingLeft: 2 }}>
+                    {label}{route ? " · " + route : ""}{lastP.distance_nm ? " · " + lastP.distance_nm + " nm" : ""}
+                  </div>
+                );
+              })()}
             </div>
             {showVesselDropdown && (
               <div style={{ position: "absolute", top: 38, left: 0, background: "var(--bg-elevated)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.25)", minWidth: 220, zIndex: 100, overflow: "hidden", border: "1px solid var(--border-strong)" }}>
@@ -4153,7 +4164,7 @@ export default function App() {
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           <option value="">— No equipment linked —</option>
-                          {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
+                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
@@ -5537,13 +5548,11 @@ export default function App() {
           {showAddTask && (
             <div style={s.modalBg} onClick={function(){ setShowAddTask(false); }}>
               <div style={s.modalBox} onClick={function(e){ e.stopPropagation(); }}>
-                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Maintenance Task</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT</div>
+                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Task</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newTask._equipmentId || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || t.section : t.section }; }); }} style={s.sel}>
-                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).length === 0
-                    ? <option value="">— No equipment yet —</option>
-                    : equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })
-                  }
+                  <option value="">— Not linked to equipment —</option>
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
                 <input placeholder="Task description" value={newTask.task} onChange={function(e){ setNewTask(function(t){ return { ...t, task: e.target.value }; }); }} style={s.inp} />
                 <select value={newTask.section} onChange={function(e){ setNewTask(function(t){ return { ...t, section: e.target.value }; }); }} style={s.sel}>
@@ -5572,7 +5581,7 @@ export default function App() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
                   <option value="">— Not linked to equipment —</option>
-                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
                 <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
                 <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
@@ -5602,10 +5611,7 @@ export default function App() {
                   if (fabIsFree && !trialActive && fabEqCount >= 1) { setShowFab(false); setShowUpgradeModal(true); return; }
                   setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
                 } },
-                { label: "Add Maintenance", stroke: "#34d399", bg: "rgba(52,211,153,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>, action: function(){
-                  var firstEq = equipment.find(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; });
-                  setNewTask(function(t){ return { ...t, _equipmentId: firstEq ? firstEq.id : null, section: firstEq ? firstEq.category : "General" }; });
-                  setShowAddTask(true); setShowFab(false); } },
+                { label: "Add Task", stroke: "#34d399", bg: "rgba(52,211,153,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>, action: function(){ setShowAddTask(true); setShowFab(false); } },
                 { label: "Add Repair", stroke: "#f87171", bg: "rgba(248,113,113,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>, action: function(){
                     const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
                     if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
@@ -5892,7 +5898,7 @@ export default function App() {
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           <option value="">— No equipment linked —</option>
-                          {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
+                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
@@ -6829,6 +6835,8 @@ export default function App() {
                     setAvEngineTaskEdits({});
                     setAvStep(3);
                     setView("customer");
+                    // Track signup conversion via GA4 (imported into Google Ads)
+                    try { if (typeof window !== "undefined" && window.gtag) { window.gtag("event", "sign_up", { method: "email" }); } } catch(e) {}
                   } catch(e) {
                     if (e.message === "__ai_busy__") { setAvError("__ai_busy__"); }
                     else { setAvError("__ai_error__"); }
@@ -7859,7 +7867,7 @@ export default function App() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
                   <option value="">— Not linked to equipment —</option>
-                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
                 <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
                 <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
