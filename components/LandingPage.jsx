@@ -1229,9 +1229,45 @@ export default function LandingPage() {
               </div>
             </div>
 
+            {/* Free plan */}
+            <div
+              onClick={function(){
+                localStorage.setItem("keeply_pending_plan", "free");
+                setPendingPlan("free");
+                setShowPlanPicker(false);
+                openAuth("signup");
+              }}
+              style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)",
+                       borderRadius:12, padding:"14px 18px", cursor:"pointer", marginBottom:16,
+                       display:"flex", alignItems:"center", justifyContent:"space-between",
+                       transition:"border-color 0.15s" }}
+              onMouseEnter={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.25)"; }}
+              onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)",
+                              textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>
+                  Free
+                </div>
+                <div style={{ display:"flex", gap:12 }}>
+                  {["1 vessel", "Basic maintenance", "3 repairs"].map(function(f){
+                    return (
+                      <div key={f} style={{ fontSize:11, color:"rgba(255,255,255,0.4)",
+                                           display:"flex", alignItems:"center", gap:4 }}>
+                        <span style={{ color:"rgba(255,255,255,0.25)" }}>✓</span> {f}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.35)",
+                            whiteSpace:"nowrap", paddingLeft:12 }}>
+                Start free →
+              </div>
+            </div>
+
             {/* Footer note */}
             <div style={{ textAlign:"center", fontSize:12, color:"rgba(255,255,255,0.35)" }}>
-              Not sure? Pick Pro — you can downgrade anytime.
+              Upgrade or downgrade anytime.
             </div>
             <button
               onClick={function(){ setShowPlanPicker(false); }}
