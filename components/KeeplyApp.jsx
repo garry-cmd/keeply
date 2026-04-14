@@ -4165,7 +4165,7 @@ export default function App() {
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           <option value="">— No equipment linked —</option>
-                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
+                          {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
@@ -5552,9 +5552,9 @@ export default function App() {
                 <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Maintenance Task</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT</div>
                 <select value={newTask._equipmentId || ""} onChange={function(e){ setNewTask(function(t){ return { ...t, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || t.section : t.section }; }); }} style={s.sel}>
-                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).length === 0
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).length === 0
                     ? <option value="">— No equipment yet —</option>
-                    : equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })
+                    : equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })
                   }
                 </select>
                 <input placeholder="Task description" value={newTask.task} onChange={function(e){ setNewTask(function(t){ return { ...t, task: e.target.value }; }); }} style={s.inp} />
@@ -5584,7 +5584,7 @@ export default function App() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
                   <option value="">— Not linked to equipment —</option>
-                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
                 <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
                 <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
@@ -5904,7 +5904,7 @@ export default function App() {
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
                           style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
                           <option value="">— No equipment linked —</option>
-                          {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
+                          {equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={function(){ setEditingRepair(null); }} style={{ flex: 1, padding: "5px", border: "1px solid var(--border)", borderRadius: 6, background: "var(--bg-card)", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
@@ -7871,7 +7871,7 @@ export default function App() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>EQUIPMENT (optional)</div>
                 <select value={newRepair._equipmentId || ""} onChange={function(e){ setNewRepair(function(r){ return { ...r, _equipmentId: e.target.value || null, section: e.target.value ? (equipment.find(function(eq){ return eq.id === e.target.value; }) || {}).category || r.section : r.section }; }); }} style={s.sel}>
                   <option value="">— Not linked to equipment —</option>
-                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
+                  {equipment.filter(function(eq){ return eq._vesselId === activeVesselId && eq.category !== "Vessel"; }).map(function(eq){ return <option key={eq.id} value={eq.id}>{eq.name}</option>; })}
                 </select>
                 <textarea placeholder="Describe the repair…" value={newRepair.description} onChange={function(e){ setNewRepair(function(r){ return { ...r, description: e.target.value }; }); }} style={{ ...s.inp, height: 80, resize: "vertical" }} />
                 <select value={newRepair.section} onChange={function(e){ setNewRepair(function(r){ return { ...r, section: e.target.value }; }); }} style={s.sel}>
