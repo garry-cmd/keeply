@@ -7061,13 +7061,18 @@ export default function App() {
 
             {/* ── Profile / Settings Panel ─────────────────────────── */}
       {showProfilePanel && (
-        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 500 }} onClick={function(){ setShowProfilePanel(false); }}>
-          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(420px, 100vw)", background: "var(--bg-card)", display: "flex", flexDirection: "column", boxShadow: "-4px 0 32px rgba(0,0,0,0.15)" }} onClick={function(e){ e.stopPropagation(); }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 500, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={function(){ setShowProfilePanel(false); }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, maxHeight: "88vh", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
 
-            {/* Header */}
-            <div style={{ background: "var(--brand)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <span style={{ color: "#fff", fontSize: 16, fontWeight: 800 }}>Settings</span>
-              <button onClick={function(){ setShowProfilePanel(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
+            {/* Drag handle + Header */}
+            <div style={{ flexShrink: 0 }}>
+              <div style={{ display: "flex", justifyContent: "center", paddingTop: 10, paddingBottom: 4 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)" }} />
+              </div>
+              <div style={{ padding: "8px 20px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "0.5px solid var(--border)" }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>Profile & Settings</span>
+                <button onClick={function(){ setShowProfilePanel(false); }} style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", color: "var(--text-muted)", width: 44, height: 44, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              </div>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "0 0 32px" }}>
@@ -7275,9 +7280,13 @@ export default function App() {
 
             </div>
 
-            {/* Save button */}
-            <div style={{ padding: "14px 20px 24px", background: "var(--bg-card)", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
+            {/* Save + Done button */}
+            <div style={{ padding: "14px 20px 32px", background: "var(--bg-card)", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", gap: 10 }}>
               {profileSaved && <div style={{ textAlign: "center", fontSize: 12, color: "var(--ok-text)", marginBottom: 8 }}>✓ Settings saved</div>}
+              <button onClick={function(){ setShowProfilePanel(false); }}
+                style={{ padding: 13, border: "0.5px solid var(--border)", borderRadius: 10, background: "var(--bg-subtle)", color: "var(--text-secondary)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minWidth: 80 }}>
+                Done
+              </button>
               <button disabled={profileSaving} onClick={async function(){
                 setProfileSaving(true); setProfileSaved(false);
                 try {
@@ -7293,10 +7302,10 @@ export default function App() {
                     timezone:     profilePrefs.timezone,
                   }});
                   setProfileSaved(true);
-                  setTimeout(function(){ setProfileSaved(false); }, 3000);
+                  setTimeout(function(){ setProfileSaved(false); setShowProfilePanel(false); }, 1500);
                 } catch(e) { console.error("Profile save error:", e); }
                 finally { setProfileSaving(false); }
-              }} style={{ width: "100%", padding: 13, border: "none", borderRadius: 10, background: profileSaving ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: profileSaving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+              }} style={{ flex: 1, padding: 13, border: "none", borderRadius: 10, background: profileSaving ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: profileSaving ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
                 {profileSaving ? "Saving…" : "Save Settings"}
               </button>
             </div>
