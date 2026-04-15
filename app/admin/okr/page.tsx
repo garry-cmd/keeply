@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const ADMIN_EMAIL = "garry@svirene.com";
+const ADMIN_EMAIL = "garry@keeply.boats";
 
 // ─── DATA — update this each session ─────────────────────────────────────────
 // Last updated: April 14, 2026
