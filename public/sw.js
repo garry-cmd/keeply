@@ -1,7 +1,97 @@
-// Keeply Service Worker — handles push notifications
+// Keeply Service Worker — offline caching + push notifications
+// v1.1 — April 2026
 
-self.addEventListener('install', function(e) { self.skipWaiting(); });
-self.addEventListener('activate', function(e) { e.waitUntil(self.clients.claim()); });
+var CACHE_NAME = 'keeply-shell-v1';
+
+// App shell — pages and assets to cache on install
+var SHELL_ASSETS = [
+  '/',
+  '/manifest.json',
+  '/favicon.ico',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+];
+
+// ── Install: cache the app shell ─────────────────────────────────────────────
+self.addEventListener('install', function(e) {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(SHELL_ASSETS);
+    }).then(function() {
+      return self.skipWaiting();
+    })
+  );
+});
+
+// ── Activate: clean up old caches ────────────────────────────────────────────
+self.addEventListener('activate', function(e) {
+  e.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(key) { return key !== CACHE_NAME; })
+            .map(function(key) { return caches.delete(key); })
+      );
+    }).then(function() {
+      return self.clients.claim();
+    })
+  );
+});
+
+// ── Fetch: network-first for API/auth, cache-first for shell assets ──────────
+self.addEventListener('fetch', function(e) {
+  var url = new URL(e.request.url);
+
+  // Never cache: Supabase, Anthropic API, any POST/non-GET
+  if (e.request.method !== 'GET') return;
+  if (url.hostname.includes('supabase.co')) return;
+  if (url.hostname.includes('anthropic.com')) return;
+  if (url.pathname.startsWith('/api/')) return;
+
+  // Navigation requests (HTML): network first, fall back to cached '/'
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then(function(response) {
+          var clone = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(e.request, clone);
+          });
+          return response;
+        })
+        .catch(function() {
+          return caches.match('/') || caches.match(e.request);
+        })
+    );
+    return;
+  }
+
+  // Static assets (_next/static, icons, images): cache first, network fallback
+  if (
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/images/') ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/favicon.ico'
+  ) {
+    e.respondWith(
+      caches.match(e.request).then(function(cached) {
+        if (cached) return cached;
+        return fetch(e.request).then(function(response) {
+          if (response.status === 200) {
+            var clone = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put(e.request, clone);
+            });
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Everything else: network only (don't cache dynamic content)
+});
 
 self.addEventListener('push', function(e) {
   if (!e.data) return;
