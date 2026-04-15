@@ -2649,17 +2649,29 @@ export default function App() {
     </div>
   );
 
-  if (dbError) return (
-    <div style={s.app}>
-      <div style={s.topBar}><span style={{ color: "#fff", fontWeight: 700 }}>Keeply</span></div>
-      <div style={{ maxWidth: 500, margin: "60px auto", padding: 32, background: "var(--bg-card)", borderRadius: 16, border: "1px solid #fca5a5" }}>
-        <div style={{ fontSize: 24, marginBottom: 12 }}>⚠️</div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: "var(--danger-text)", marginBottom: 8 }}>Database Error</div>
-        <div style={{ fontSize: 13, color: "var(--text-secondary)", fontFamily: "monospace", background: "var(--danger-bg)", padding: 12, borderRadius: 8 }}>{dbError}</div>
-        <button onClick={function(){ setDbError(null); window.location.reload(); }} style={{ marginTop: 16, background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", cursor: "pointer", fontWeight: 700 }}>Retry</button>
+  if (dbError) {
+    const isOffline = !navigator.onLine || dbError.toLowerCase().includes("failed to fetch") || dbError.toLowerCase().includes("network");
+    return (
+      <div style={s.app}>
+        <div style={s.topBar}><span style={{ color: "#fff", fontWeight: 700 }}>Keeply</span></div>
+        <div style={{ maxWidth: 500, margin: "60px auto", padding: 32, background: "var(--bg-card)", borderRadius: 16, border: isOffline ? "1px solid #93c5fd" : "1px solid #fca5a5" }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>{isOffline ? "⚓" : "⚠️"}</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: isOffline ? "#1d4ed8" : "var(--danger-text)", marginBottom: 8 }}>
+            {isOffline ? "You're offline" : "Database Error"}
+          </div>
+          <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 16 }}>
+            {isOffline
+              ? "Keeply needs a connection to load your vessel data. Head somewhere with signal and tap Retry."
+              : dbError}
+          </div>
+          {!isOffline && (
+            <div style={{ fontSize: 12, color: "var(--text-secondary)", fontFamily: "monospace", background: "var(--danger-bg)", padding: 10, borderRadius: 8, marginBottom: 16 }}>{dbError}</div>
+          )}
+          <button onClick={function(){ setDbError(null); window.location.reload(); }} style={{ background: "var(--brand)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", cursor: "pointer", fontWeight: 700 }}>Retry</button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div style={s.app} onClick={function(){ setShowVesselDropdown(false); }}>
