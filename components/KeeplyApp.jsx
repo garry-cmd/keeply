@@ -3355,19 +3355,20 @@ export default function App() {
                     const active = activeTab === t;
                     return {
                       display: "flex", alignItems: "center", gap: 5,
-                      padding: "5px 11px",
+                      padding: "7px 14px",
+                      minHeight: 34,
                       background: active ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
                       border: "0.5px solid " + (active ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)"),
                       borderRadius: 20, cursor: "pointer",
                     };
                   };
                   const pillText = function(t) {
-                    return { fontSize: 11, fontWeight: 600, color: activeTab === t ? "#fff" : "rgba(255,255,255,0.6)" };
+                    return { fontSize: 12, fontWeight: 600, color: activeTab === t ? "#fff" : "rgba(255,255,255,0.6)" };
                   };
                   return (
-                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.22)", borderRadius: "0 0 12px 12px", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.22)", borderRadius: "0 0 12px 12px", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                       onClick={function(e){ e.stopPropagation(); }}>
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 8 }}>
                         {[["info","ID"],["docs","Docs"],["admin","Admin"],["ref","Ref"]].map(function(pair){
                           return (
                             <button key={pair[0]} onClick={function(){ tapTab(pair[0]); }} style={pillStyle(pair[0])}>
