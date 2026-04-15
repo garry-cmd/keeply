@@ -1,4 +1,60 @@
 "use client";
+
+// ── Markdown renderer for First Mate responses ───────────────────────────────
+function renderMarkdown(text, textColor, mutedColor, brandColor) {
+  var lines = text.split("\n");
+  var elements = [];
+  var i = 0;
+  while (i < lines.length) {
+    var line = lines[i];
+    if (line.trim() === "") { elements.push(React.createElement("div", { key: i, style: { height: 6 } })); i++; continue; }
+    if (line.startsWith("### ")) {
+      elements.push(React.createElement("div", { key: i, style: { fontSize: 12, fontWeight: 700, color: mutedColor, letterSpacing: "0.5px", textTransform: "uppercase", marginTop: 10, marginBottom: 4 } }, line.slice(4).replace(/\*\*/g, "")));
+      i++; continue;
+    }
+    if (line.startsWith("## ")) {
+      elements.push(React.createElement("div", { key: i, style: { fontSize: 14, fontWeight: 700, color: textColor, marginTop: 8, marginBottom: 4 } }, line.slice(3).replace(/\*\*/g, "")));
+      i++; continue;
+    }
+    if (line.startsWith("# ")) {
+      elements.push(React.createElement("div", { key: i, style: { fontSize: 15, fontWeight: 800, color: textColor, marginTop: 8, marginBottom: 6 } }, line.slice(2).replace(/\*\*/g, "")));
+      i++; continue;
+    }
+    if (line.trim() === "---") {
+      elements.push(React.createElement("div", { key: i, style: { height: "0.5px", background: "rgba(255,255,255,0.1)", margin: "8px 0" } }));
+      i++; continue;
+    }
+    if (line.match(/^[-•]\s/) || line.match(/^\d+\.\s/)) {
+      var listItems = [];
+      while (i < lines.length && (lines[i].match(/^[-•]\s/) || lines[i].match(/^\d+\.\s/) || lines[i].startsWith("  -") || lines[i].startsWith("  •"))) {
+        var itemText = lines[i].replace(/^[-•]\s/, "").replace(/^\d+\.\s/, "").replace(/^  [-•]\s/, "  ");
+        listItems.push(React.createElement("div", { key: i, style: { display: "flex", gap: 6, marginBottom: 3, paddingLeft: lines[i].startsWith("  ") ? 12 : 0 } },
+          React.createElement("span", { style: { color: brandColor, flexShrink: 0, marginTop: 1 } }, lines[i].startsWith("  ") ? "·" : "•"),
+          React.createElement("span", null, inlineFormat(itemText, textColor))
+        ));
+        i++;
+      }
+      elements.push(React.createElement("div", { key: "list-"+i, style: { marginBottom: 4 } }, listItems));
+      continue;
+    }
+    elements.push(React.createElement("div", { key: i, style: { marginBottom: 2, lineHeight: 1.65 } }, inlineFormat(line, textColor)));
+    i++;
+  }
+  return elements;
+}
+
+function inlineFormat(text, textColor) {
+  var parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return text;
+  return parts.map(function(part, i) {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return React.createElement("strong", { key: i, style: { fontWeight: 700 } }, part.slice(2, -2));
+    }
+    return part;
+  });
+}
+
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase-client";
 
@@ -340,9 +396,9 @@ export default function FirstMateScreen({ vesselId, vesselName, vesselType, task
                     color: D.text,
                     border: "1px solid " + (isUser ? "rgba(77,166,255,0.35)" : D.border) }}>
                     {msg.loading ? <TypingDots /> : (
-                      msg.content.split("\n").map(function(line, li) {
-                        return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>;
-                      })
+                      (msg.role === "user"
+                        ? msg.content.split("\n").map(function(line, li) { return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>; })
+                        : renderMarkdown(msg.content, "var(--text-primary)", "var(--text-muted)", "#4da6ff"))
                     )}
                   </div>
                 </div>
