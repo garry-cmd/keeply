@@ -42,63 +42,25 @@ function HelmIcon({ size = 14 }) {
 
 
 // ── Markdown renderer for First Mate responses ───────────────────────────────
-function inlineFormat(text) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  if (parts.length === 1) return text;
-  return parts.map(function(part, i) {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
-    }
-    return part;
+function renderMarkdown(text) {
+  return text.split("\n").map(function(line, li) {
+    // Strip heading markers
+    if (line.startsWith("### ")) line = line.slice(4);
+    if (line.startsWith("## "))  line = line.slice(3);
+    if (line.startsWith("# "))   line = line.slice(2);
+    if (line.trim() === "---")   return <hr key={li} style={{ border: "none", borderTop: "0.5px solid rgba(255,255,255,0.1)", margin: "6px 0" }} />;
+    // Convert bullet lines
+    const isBullet = /^[-•]\s/.test(line);
+    if (isBullet) line = "• " + line.replace(/^[-•]\s/, "");
+    // Strip remaining ** markers but preserve text
+    line = line.replace(/\*\*(.*?)\*\*/g, "$1");
+    if (line.trim() === "") return <div key={li} style={{ height: 6 }} />;
+    return (
+      <div key={li} style={{ marginBottom: isBullet ? 3 : 2, lineHeight: 1.65, paddingLeft: isBullet ? 0 : 0 }}>
+        {line}
+      </div>
+    );
   });
-}
-
-function renderMarkdown(text, textColor, mutedColor, brandColor) {
-  const lines = text.split("\n");
-  const elements = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.trim() === "") {
-      elements.push(<div key={i} style={{ height: 6 }} />);
-      i++; continue;
-    }
-    if (line.startsWith("### ")) {
-      elements.push(<div key={i} style={{ fontSize: 11, fontWeight: 700, color: mutedColor, letterSpacing: "0.5px", textTransform: "uppercase", marginTop: 10, marginBottom: 4 }}>{line.slice(4).replace(/\*\*/g, "")}</div>);
-      i++; continue;
-    }
-    if (line.startsWith("## ")) {
-      elements.push(<div key={i} style={{ fontSize: 14, fontWeight: 700, color: textColor, marginTop: 8, marginBottom: 4 }}>{line.slice(3).replace(/\*\*/g, "")}</div>);
-      i++; continue;
-    }
-    if (line.startsWith("# ")) {
-      elements.push(<div key={i} style={{ fontSize: 15, fontWeight: 800, color: textColor, marginTop: 8, marginBottom: 6 }}>{line.slice(2).replace(/\*\*/g, "")}</div>);
-      i++; continue;
-    }
-    if (line.trim() === "---") {
-      elements.push(<div key={i} style={{ height: "0.5px", background: "rgba(255,255,255,0.1)", margin: "8px 0" }} />);
-      i++; continue;
-    }
-    if (/^[-•]\s/.test(line) || /^\d+\.\s/.test(line)) {
-      const listItems = [];
-      while (i < lines.length && (/^[-•]\s/.test(lines[i]) || /^\d+\.\s/.test(lines[i]) || lines[i].startsWith("  -") || lines[i].startsWith("  •"))) {
-        const isIndent = lines[i].startsWith("  ");
-        const itemText = lines[i].replace(/^[-•]\s/, "").replace(/^\d+\.\s/, "").replace(/^  [-•]\s/, "");
-        listItems.push(
-          <div key={i} style={{ display: "flex", gap: 6, marginBottom: 3, paddingLeft: isIndent ? 12 : 0 }}>
-            <span style={{ color: brandColor, flexShrink: 0, marginTop: 1 }}>{isIndent ? "·" : "•"}</span>
-            <span>{inlineFormat(itemText)}</span>
-          </div>
-        );
-        i++;
-      }
-      elements.push(<div key={"list-"+i} style={{ marginBottom: 4 }}>{listItems}</div>);
-      continue;
-    }
-    elements.push(<div key={i} style={{ marginBottom: 2, lineHeight: 1.65 }}>{inlineFormat(line)}</div>);
-    i++;
-  }
-  return elements;
 }
 
 
@@ -360,7 +322,7 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
                     {msg.loading ? <TypingDots /> : (
                       isUser
                         ? msg.content.split("\n").map(function(line, li) { return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>; })
-                        : renderMarkdown(msg.content, D.textPrimary, D.textMuted, D.brand || "#4da6ff")
+                        : renderMarkdown(msg.content)
                     )}
                   </div>
                 </div>

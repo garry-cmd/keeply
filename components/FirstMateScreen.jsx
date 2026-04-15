@@ -1,134 +1,29 @@
 "use client";
-
+import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "./supabase-client";
 
 // ── Markdown renderer for First Mate responses ───────────────────────────────
-function inlineFormat(text) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  if (parts.length === 1) return text;
-  return parts.map(function(part, i) {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
-    }
-    return part;
+function renderMarkdown(text) {
+  return text.split("\n").map(function(line, li) {
+    // Strip heading markers
+    if (line.startsWith("### ")) line = line.slice(4);
+    if (line.startsWith("## "))  line = line.slice(3);
+    if (line.startsWith("# "))   line = line.slice(2);
+    if (line.trim() === "---")   return <hr key={li} style={{ border: "none", borderTop: "0.5px solid rgba(255,255,255,0.1)", margin: "6px 0" }} />;
+    // Convert bullet lines
+    const isBullet = /^[-•]\s/.test(line);
+    if (isBullet) line = "• " + line.replace(/^[-•]\s/, "");
+    // Strip remaining ** markers but preserve text
+    line = line.replace(/\*\*(.*?)\*\*/g, "$1");
+    if (line.trim() === "") return <div key={li} style={{ height: 6 }} />;
+    return (
+      <div key={li} style={{ marginBottom: isBullet ? 3 : 2, lineHeight: 1.65, paddingLeft: isBullet ? 0 : 0 }}>
+        {line}
+      </div>
+    );
   });
 }
 
-function renderMarkdown(text, textColor, mutedColor, brandColor) {
-  const lines = text.split("\n");
-  const elements = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.trim() === "") {
-      elements.push(<div key={i} style={{ height: 6 }} />);
-      i++; continue;
-    }
-    if (line.startsWith("### ")) {
-      elements.push(<div key={i} style={{ fontSize: 11, fontWeight: 700, color: mutedColor, letterSpacing: "0.5px", textTransform: "uppercase", marginTop: 10, marginBottom: 4 }}>{line.slice(4).replace(/\*\*/g, "")}</div>);
-      i++; continue;
-    }
-    if (line.startsWith("## ")) {
-      elements.push(<div key={i} style={{ fontSize: 14, fontWeight: 700, color: textColor, marginTop: 8, marginBottom: 4 }}>{line.slice(3).replace(/\*\*/g, "")}</div>);
-      i++; continue;
-    }
-    if (line.startsWith("# ")) {
-      elements.push(<div key={i} style={{ fontSize: 15, fontWeight: 800, color: textColor, marginTop: 8, marginBottom: 6 }}>{line.slice(2).replace(/\*\*/g, "")}</div>);
-      i++; continue;
-    }
-    if (line.trim() === "---") {
-      elements.push(<div key={i} style={{ height: "0.5px", background: "rgba(255,255,255,0.1)", margin: "8px 0" }} />);
-      i++; continue;
-    }
-    if (/^[-•]\s/.test(line) || /^\d+\.\s/.test(line)) {
-      const listItems = [];
-      while (i < lines.length && (/^[-•]\s/.test(lines[i]) || /^\d+\.\s/.test(lines[i]) || lines[i].startsWith("  -") || lines[i].startsWith("  •"))) {
-        const isIndent = lines[i].startsWith("  ");
-        const itemText = lines[i].replace(/^[-•]\s/, "").replace(/^\d+\.\s/, "").replace(/^  [-•]\s/, "");
-        listItems.push(
-          <div key={i} style={{ display: "flex", gap: 6, marginBottom: 3, paddingLeft: isIndent ? 12 : 0 }}>
-            <span style={{ color: brandColor, flexShrink: 0, marginTop: 1 }}>{isIndent ? "·" : "•"}</span>
-            <span>{inlineFormat(itemText)}</span>
-          </div>
-        );
-        i++;
-      }
-      elements.push(<div key={"list-"+i} style={{ marginBottom: 4 }}>{listItems}</div>);
-      continue;
-    }
-    elements.push(<div key={i} style={{ marginBottom: 2, lineHeight: 1.65 }}>{inlineFormat(line)}</div>);
-    i++;
-  }
-  return elements;
-}
-
-
-function getTaskUrgency(t) {
-  if (!t.due_date) return "ok";
-  const days = Math.round((new Date(t.due_date) - new Date()) / 86400000);
-  if (days < -10) return "critical";
-  if (days < 0)   return "overdue";
-  if (days <= Math.min((t.interval_days || 30) / 2, 10)) return "due-soon";
-  return "ok";
-}
-
-async function fetchVesselContext(vesselId) {
-  const sess  = await supabase.auth.getSession();
-  const token = sess?.data?.session?.access_token || SUPA_KEY;
-  const h     = { "apikey": SUPA_KEY, "Authorization": "Bearer " + token };
-  const [vR, tR, rR, lR, eR] = await Promise.all([
-    fetch(`${SUPA_URL}/rest/v1/vessels?id=eq.${vesselId}&select=*`, { headers: h }),
-    fetch(`${SUPA_URL}/rest/v1/maintenance_tasks?vessel_id=eq.${vesselId}&select=*`, { headers: h }),
-    fetch(`${SUPA_URL}/rest/v1/repairs?vessel_id=eq.${vesselId}&order=date.desc&select=*`, { headers: h }),
-    fetch(`${SUPA_URL}/rest/v1/logbook?vessel_id=eq.${vesselId}&order=entry_date.desc&limit=20&select=*`, { headers: h }),
-    fetch(`${SUPA_URL}/rest/v1/equipment?vessel_id=eq.${vesselId}&select=id,name,category,status,notes,logs`, { headers: h }),
-  ]);
-  const [vessels, tasks, repairs, logbook, equipment] = await Promise.all([
-    vR.json(), tR.json(), rR.json(), lR.json(), eR.json(),
-  ]);
-  const v      = vessels[0] || {};
-  const prefix = v.vessel_type === "motor" ? "M/V" : "S/V";
-  return {
-    vessel: {
-      name: v.vessel_name || "the vessel", prefix, type: v.vessel_type,
-      year: v.year, make: v.make, model: v.model, engineHours: v.engine_hours,
-      engineHoursDate: v.engine_hours_date, fuelBurnRate: v.fuel_burn_rate, homePort: v.home_port,
-    },
-    tasks: (tasks || []).map(function(t) {
-      const recentLogs = (t.service_logs || []).slice(-5).reverse()
-        .filter(function(l){ return l.comment; }).map(function(l){ return l.date + ": " + l.comment; });
-      return { task: t.task, section: t.section, interval: t.interval_days ? t.interval_days + " days" : null,
-        interval_days: t.interval_days, lastService: t.last_service, dueDate: t.due_date,
-        urgency: getTaskUrgency(t), recentNotes: recentLogs.length > 0 ? recentLogs : undefined };
-    }),
-    repairs: repairs || [],
-    logbook: logbook || [],
-    equipment: (equipment || []).map(function(e) {
-      var rawLogs    = Array.isArray(e.logs) ? e.logs : (typeof e.logs === "string" ? JSON.parse(e.logs || "[]") : []);
-      var recentLogs = rawLogs.slice(-10).reverse()
-        .map(function(l){ return (l.date || "") + ": " + (l.text || l.note || l.entry || JSON.stringify(l)); })
-        .filter(function(s){ return s.trim().length > 2; });
-      return { name: e.name, category: e.category, status: e.status,
-        notes: e.notes || null, recentLogs: recentLogs.length > 0 ? recentLogs : undefined };
-    }),
-  };
-}
-
-function HelmIcon({ size = 14 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="2.8" fill="rgba(255,255,255,0.92)"/>
-      <circle cx="12" cy="12" r="7" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8"/>
-      <line x1="12" y1="5" x2="12" y2="2" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="12" y1="19" x2="12" y2="22" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="5" y1="12" x2="2" y2="12" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="19" y1="12" x2="22" y2="12" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="6.93" y1="6.93" x2="4.93" y2="4.93" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="17.07" y1="17.07" x2="19.07" y2="19.07" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="6.93" y1="17.07" x2="4.93" y2="19.07" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="17.07" y1="6.93" x2="19.07" y2="4.93" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
-    </svg>
-  );
-}
 
 function Avatar({ size = 28 }) {
   return (
@@ -398,7 +293,7 @@ export default function FirstMateScreen({ vesselId, vesselName, vesselType, task
                     {msg.loading ? <TypingDots /> : (
                       (msg.role === "user"
                         ? msg.content.split("\n").map(function(line, li) { return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>; })
-                        : renderMarkdown(msg.content, "var(--text-primary)", "var(--text-muted)", "#4da6ff"))
+                        : renderMarkdown(msg.content))
                     )}
                   </div>
                 </div>
@@ -445,15 +340,12 @@ export default function FirstMateScreen({ vesselId, vesselName, vesselType, task
             </button>
             <button onClick={function(){ send(); }}
               disabled={!input.trim() || loading || !context}
-              style={{ width: 42, height: 42, borderRadius: 12, border: "none", flexShrink: 0,
+              style={{ width: 34, height: 34, borderRadius: 10, border: "none", flexShrink: 0,
                 background: input.trim() && !loading && context ? "linear-gradient(135deg,#0f4c8a,#4da6ff)" : "rgba(255,255,255,0.08)",
                 color: input.trim() && !loading && context ? "#fff" : "rgba(255,255,255,0.25)",
                 cursor: input.trim() && !loading && context ? "pointer" : "default",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "background 0.15s" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700 }}>
+              ↑
             </button>
           </div>
         )}
