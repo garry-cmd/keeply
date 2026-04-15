@@ -2744,9 +2744,6 @@ export default function App() {
             <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
           </svg>
           <div style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.3)", userSelect: "none" }}>Ask First Mate…</div>
-          <div style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-          </div>
         </div>
       </div>}
 
