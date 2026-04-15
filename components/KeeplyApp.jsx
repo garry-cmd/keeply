@@ -4151,18 +4151,18 @@ export default function App() {
                     setExpandedRepair(next);
                   }}>
                     {editingRepair === r.id ? (
-                      <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%", overflow: "hidden" }}>
                         <textarea value={editRepairForm.description}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, description: e.target.value }; }); }}
                           style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 6, padding: "5px 8px", fontSize: 12, resize: "none", height: 56, boxSizing: "border-box" }} />
                         <select value={editRepairForm.section}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, section: e.target.value }; }); }}
-                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12, boxSizing: "border-box" }}>
                           {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                         </select>
                         <select value={editRepairForm._equipmentId || ""}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
-                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12, boxSizing: "border-box" }}>
                           <option value="">— No equipment linked —</option>
                           {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
@@ -5885,18 +5885,18 @@ export default function App() {
                     setExpandedRepair(next);
                   }}>
                     {editingRepair === r.id ? (
-                      <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div onClick={function(e){ e.stopPropagation(); }} style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%", overflow: "hidden" }}>
                         <textarea value={editRepairForm.description}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, description: e.target.value }; }); }}
                           style={{ width: "100%", border: "1px solid #0f4c8a", borderRadius: 6, padding: "5px 8px", fontSize: 12, resize: "none", height: 56, boxSizing: "border-box" }} />
                         <select value={editRepairForm.section}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, section: e.target.value }; }); }}
-                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12, boxSizing: "border-box" }}>
                           {MAINT_SECTIONS.map(function(sec){ return <option key={sec} value={sec}>{sec}</option>; })}
                         </select>
                         <select value={editRepairForm._equipmentId || ""}
                           onChange={function(e){ setEditRepairForm(function(f){ return { ...f, _equipmentId: e.target.value || null }; }); }}
-                          style={{ border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12 }}>
+                          style={{ width: "100%", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", fontSize: 12, boxSizing: "border-box" }}>
                           <option value="">— No equipment linked —</option>
                           {equipment.filter(function(e){ return e._vesselId === activeVesselId; }).map(function(e){ return <option key={e.id} value={e.id}>{e.name}</option>; })}
                         </select>
