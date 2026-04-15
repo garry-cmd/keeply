@@ -297,7 +297,7 @@ export default function OKRPage() {
 
       {/* Footer */}
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid #e2e8f0", fontSize: 12, color: "#94a3b8" }}>
-        This page is updated by Claude at the end of each working session. Source of truth: <code>ROADMAP.md</code> in the repo.
+        Updated by Claude · April 14, 2026 · Source of truth: <code>ROADMAP.md</code> in the repo.
       </div>
     </div>
   );
