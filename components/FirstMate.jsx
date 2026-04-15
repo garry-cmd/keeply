@@ -39,31 +39,6 @@ function HelmIcon({ size = 14 }) {
 }
 
 // ── avatar bubble ─────────────────────────────────────────────────────────────
-
-
-// ── Markdown renderer for First Mate responses ───────────────────────────────
-function renderMarkdown(text) {
-  return text.split("\n").map(function(line, li) {
-    // Strip heading markers
-    if (line.startsWith("### ")) line = line.slice(4);
-    if (line.startsWith("## "))  line = line.slice(3);
-    if (line.startsWith("# "))   line = line.slice(2);
-    if (line.trim() === "---")   return <hr key={li} style={{ border: "none", borderTop: "0.5px solid rgba(255,255,255,0.1)", margin: "6px 0" }} />;
-    // Convert bullet lines
-    const isBullet = /^[-•]\s/.test(line);
-    if (isBullet) line = "• " + line.replace(/^[-•]\s/, "");
-    // Strip remaining ** markers but preserve text
-    line = line.replace(/\*\*(.*?)\*\*/g, "$1");
-    if (line.trim() === "") return <div key={li} style={{ height: 6 }} />;
-    return (
-      <div key={li} style={{ marginBottom: isBullet ? 3 : 2, lineHeight: 1.65, paddingLeft: isBullet ? 0 : 0 }}>
-        {line}
-      </div>
-    );
-  });
-}
-
-
 function Avatar({ size = 32 }) {
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: D.avatarGrad,
@@ -320,9 +295,9 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
                     border: "1px solid " + (isUser ? D.borderUser : D.border),
                   }}>
                     {msg.loading ? <TypingDots /> : (
-                      isUser
-                        ? msg.content.split("\n").map(function(line, li) { return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>; })
-                        : renderMarkdown(msg.content)
+                      msg.content.split("\n").map(function(line, li) {
+                        return <span key={li}>{line}{li < msg.content.split("\n").length - 1 && <br />}</span>;
+                      })
                     )}
                   </div>
                 </div>
