@@ -389,12 +389,15 @@ export default function FirstMateScreen({ vesselId, vesselName, vesselType, task
             </button>
             <button onClick={function(){ send(); }}
               disabled={!input.trim() || loading || !context}
-              style={{ width: 34, height: 34, borderRadius: 10, border: "none", flexShrink: 0,
+              style={{ width: 42, height: 42, borderRadius: 12, border: "none", flexShrink: 0,
                 background: input.trim() && !loading && context ? "linear-gradient(135deg,#0f4c8a,#4da6ff)" : "rgba(255,255,255,0.08)",
                 color: input.trim() && !loading && context ? "#fff" : "rgba(255,255,255,0.25)",
                 cursor: input.trim() && !loading && context ? "pointer" : "default",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700 }}>
-              ↑
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "background 0.15s" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
             </button>
           </div>
         )}
