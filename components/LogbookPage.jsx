@@ -673,10 +673,7 @@ export default function LogbookPage({
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={onBack} style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", fontSize: 18, color: "var(--text-muted)", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>Logbook</div>
-        </div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>Logbook</div>
         {/* History link — always accessible */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {showHistory && isPro && (
