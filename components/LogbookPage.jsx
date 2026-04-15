@@ -674,11 +674,8 @@ export default function LogbookPage({
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text-muted)", padding: "0 4px 0 0" }}>←</button>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>Logbook</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>{vesselName}</div>
-          </div>
+          <button onClick={onBack} style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", fontSize: 18, color: "var(--text-muted)", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>←</button>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>Logbook</div>
         </div>
         {/* History link — always accessible */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -698,7 +695,7 @@ export default function LogbookPage({
               const a = document.createElement("a"); a.href = url;
               a.download = "keeply-passages.csv"; a.click();
               URL.revokeObjectURL(url);
-            }} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer", color: "var(--text-muted)", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+            }} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 8, padding: "8px 14px", minHeight: 40, fontSize: 12, cursor: "pointer", color: "var(--text-muted)", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
               Export CSV
             </button>
@@ -707,7 +704,7 @@ export default function LogbookPage({
             <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "inherit" }}>Export — Pro</span>
           )}
           <button onClick={function(){ setShowHistory(function(h){return !h;}); }}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--brand)", fontFamily: "inherit", padding: "4px 0" }}>
+            style={{ background: "var(--bg-subtle)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--brand)", fontFamily: "inherit", padding: "8px 14px", minHeight: 40 }}>
             {showHistory
               ? "← Back"
               : (passages.length > 0 ? passages.length + " passages · " + Math.round(totalNm) + " nm →" : "History →")}
