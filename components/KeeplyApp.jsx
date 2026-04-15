@@ -7104,10 +7104,10 @@ export default function App() {
                       {userPlan === "pro" ? "Pro · 2 vessels" : userPlan === "standard" ? "Standard · 1 vessel" : "Free"}
                     </div>
                   </div>
-                  {(userPlan === "free" || !userPlan || userPlan === "pro") ? (
+                  {(userPlan === "free" || !userPlan) ? (
                     <span onClick={function(){ setShowProfilePanel(false); setUpgradeReason(""); setShowUpgradeModal(true); }}
                       style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      {userPlan === "pro" ? "Upgrade to Pro ↗" : userPlan === "standard" ? "Upgrade ↗" : "View plans ↗"}
+                      {userPlan === "standard" ? "Upgrade to Pro ↗" : "View plans ↗"}
                     </span>
                   ) : (
                     <span onClick={async function(){
