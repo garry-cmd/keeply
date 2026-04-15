@@ -7061,7 +7061,7 @@ export default function App() {
 
             {/* ── Profile / Settings Panel ─────────────────────────── */}
       {showProfilePanel && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 500, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={function(){ setShowProfilePanel(false); }}>
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 500, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={function(){ setShowProfilePanel(false); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, maxHeight: "88vh", display: "flex", flexDirection: "column" }} onClick={function(e){ e.stopPropagation(); }}>
 
             {/* Drag handle + Header */}
@@ -7106,7 +7106,7 @@ export default function App() {
                   </div>
                   {(userPlan === "free" || !userPlan || userPlan === "pro") ? (
                     <span onClick={function(){ setShowProfilePanel(false); setUpgradeReason(""); setShowUpgradeModal(true); }}
-                      style={{ background: "var(--brand-deep)", color: "#185FA5", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: "var(--brand-deep)", color: "var(--brand)", borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       {userPlan === "pro" ? "Upgrade to Pro ↗" : userPlan === "standard" ? "Upgrade ↗" : "View plans ↗"}
                     </span>
                   ) : (
@@ -7170,7 +7170,7 @@ export default function App() {
                   { key: "alertOverdue", label: "Overdue", sub: "Past due date", dot: "var(--danger-text)" },
                   { key: "alertDayOf",   label: "Day of",  sub: "Due today",     dot: "var(--text-muted)" },
                   { key: "alert3day",    label: "3 days out", sub: "Due in 3 days", dot: "var(--warn-text)" },
-                  { key: "alert7day",    label: "7 days out", sub: "Due in 7 days", dot: "#ca8a04" },
+                  { key: "alert7day",    label: "7 days out", sub: "Due in 7 days", dot: "var(--duesoon-text)" },
                 ].map(function(item, i, arr){ return (
                   <div key={item.key} style={{ padding: "11px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: i < arr.length-1 ? "0.5px solid var(--border)" : "none" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.dot, flexShrink: 0 }} />
@@ -7894,7 +7894,7 @@ export default function App() {
 
       {/* ── FEEDBACK PANEL ── */}
       {showFeedback && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 500, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        <div style={{ position: "fixed", inset: 0, background: "var(--bg-overlay)", zIndex: 500, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={function(){ setShowFeedback(false); }}>
           <div style={{ background: "var(--bg-card)", borderRadius: "16px 16px 0 0", width: "100%", maxWidth: 480, padding: 24, boxShadow: "0 -8px 32px rgba(0,0,0,0.15)", maxHeight: "85vh", overflowY: "auto" }}
             onClick={function(e){ e.stopPropagation(); }}>
