@@ -3,14 +3,23 @@ _Last updated: April 14, 2026_
 
 ---
 
+## 6-Month Objective (April–October 2026)
+**Stand up a viable product.**
+
+A viable product means: stable app, live on both app stores, offline capable, with a community-driven acquisition engine that brings users in without paid ads at scale.
+
+Revenue ($2K → $5K MRR) is the outcome that proves viability — not the objective itself.
+
+---
+
 ## Current State
 
 - Web app live at keeply.boats (Next.js / Supabase / Vercel)
 - Stripe billing active — Standard ($15/mo) and Pro ($25/mo) tiers
 - 5-person closed beta underway (BETA2026 coupon, 100% off)
 - TWA (Bubblewrap) built and signed, awaiting Play Store submission
-- Google Ads live, Search Console verified
-- Admin dashboard live at /admin (garry@svirene.com only)
+- Google Ads live ($450/mo), Search Console verified
+- Admin dashboard live at /admin (garry@keeply.boats only)
 - First Mate AI assistant live as bottom-sheet component
 - Known bugs batched for post-beta deploy (see Bugs section)
 
@@ -24,15 +33,33 @@ _Last updated: April 14, 2026_
 - [ ] Fix: pasted spec sheet text stored verbatim in model/make fields (no truncation)
 - [ ] Collect structured feedback from all 5 beta testers
 - [ ] Validate all 3 personas (Active Cruiser, Liveaboard, Upgrader)
-- [ ] Mobile UX audit — identify any broken layouts before Capacitor wrap
+- [ ] Mobile UX audit — identify layout issues before Capacitor wrap
 
-**Do not start Capacitor or offline work until this sprint is complete.**
+**Do not start Capacitor or social buildout until beta is closed.**
 
 ---
 
-## Phase 1 — PWA Foundation (May 2026)
+## Phase 1 — Community & Social Foundation (May 2026)
 
-_Prerequisite for Capacitor. Low risk, high value regardless of native app path._
+_This runs in parallel with PWA/Capacitor work. Organic community is the primary
+acquisition channel — paid ads only make sense once conversion is validated._
+
+**Content & Community:**
+- [ ] Add keeply.boats to all YouTube video descriptions (58 videos — quick win)
+- [ ] Produce "built by a sailor, for sailors" founder story video
+- [ ] Join and be present in top 5 Facebook Groups (Cruisers Forum, Pacific Puddle Jump, Women Who Sail, Sailing Anarchy, Bluewater Cruising)
+- [ ] Post 3x/week in groups — maintenance tips, not product pitches — for 4 weeks before any product post
+- [ ] Identify 15 micro-influencer targets (5K–50K followers, sailing/cruising niche)
+- [ ] Send 10 personalised outreach DMs — free Pro access in exchange for honest post
+- [ ] Register @keeplyapp on Instagram, TikTok, YouTube, Facebook, X
+
+**The math:** Community + YouTube + 5 micro-influencers gets to ~2,000–5,000 visitors/month organically. At 4% signup and 7% conversion, that's 5–14 new paid users/month at near-zero CAC. That's the real path to $2K MRR — not $49K/month in ads.
+
+---
+
+## Phase 2 — PWA Foundation (May 2026)
+
+_Prerequisite for Capacitor. Low risk, high value regardless._
 
 - [ ] Add next-pwa service worker — app shell loads offline
 - [ ] Audit all flows that require live internet — document them
@@ -41,7 +68,7 @@ _Prerequisite for Capacitor. Low risk, high value regardless of native app path.
 
 ---
 
-## Phase 2 — Capacitor Integration (May–June 2026)
+## Phase 3 — Capacitor Integration (May–June 2026)
 
 _Single integration targeting both Android and iOS. Replaces TWA._
 
@@ -55,7 +82,7 @@ _Single integration targeting both Android and iOS. Replaces TWA._
 
 ---
 
-## Phase 3 — Android Launch (June–July 2026)
+## Phase 4 — Android Launch (June–July 2026)
 
 - [ ] Deploy /.well-known/assetlinks.json to keeply.boats
 - [ ] Create Google Play developer account ($25 one-time)
@@ -65,7 +92,7 @@ _Single integration targeting both Android and iOS. Replaces TWA._
 
 ---
 
-## Phase 4 — iOS Launch (July 2026)
+## Phase 5 — iOS Launch (July 2026)
 
 _Blocked on DUNS → Apple Developer Program ($99/yr)_
 
@@ -76,14 +103,16 @@ _Blocked on DUNS → Apple Developer Program ($99/yr)_
 
 ---
 
-## Phase 5 — Revenue Push (July–October 2026)
+## Phase 6 — Growth (August–October 2026)
 
+_Viable product is live. Now scale what's working._
+
+- [ ] Analyse actual free→paid conversion from first 60 days
+- [ ] If CAC < LTV/3: increase ad budget
+- [ ] Hire/contract social media creator (boating enthusiast, $500–1K/mo + rev share)
+- [ ] Activate top-tier influencer outreach once social proof exists
 - [ ] $2K MRR milestone
-- [ ] 500+ signups in first 30 days post-launch
-- [ ] Free-to-paid conversion ≥ 7%
-- [ ] Day-7 retention ≥ 35%
-- [ ] 5+ micro-influencer partnerships
-- [ ] $5K MRR — quit day job
+- [ ] $5K MRR milestone — quit day job
 
 ---
 
@@ -106,12 +135,10 @@ _Blocked on DUNS → Apple Developer Program ($99/yr)_
 
 ## Infrastructure — Pre-Scale Upgrades Needed
 
-These are required before public launch to avoid free-tier failures:
-
-| Service | Current | Upgrade | Cost | Trigger |
-|---|---|---|---|---|
-| Supabase | Free | Pro | $25/mo | Before public launch |
-| Resend | Starter (100/day) | Starter paid | $20/mo | Before public launch |
+| Service | Upgrade | Cost | Trigger |
+|---|---|---|---|
+| Supabase | Pro | $25/mo | Before public launch |
+| Resend | Starter paid | $20/mo | Before public launch |
 
 ---
 
@@ -124,10 +151,9 @@ These are required before public launch to avoid free-tier failures:
 
 ## Post-Launch Tech Debt
 
-- Split KeeplyApp.jsx (~7,900 lines) into sub-components:
-  RepairsTab, EquipmentTab, MaintenanceTab, SettingsPanel, UpgradeModal
+- Split KeeplyApp.jsx (~7,900 lines) into sub-components
 - Stripe webhook coverage: trial_will_end, invoice.payment_failed, subscription.updated
-- 14-day trial Stripe flow cleanup (trial grants Pro; redirect should not fire during beta)
+- 14-day trial Stripe flow cleanup
 
 ---
 
@@ -138,3 +164,5 @@ These are required before public launch to avoid free-tier failures:
 - Share Vessel stays ungated (viral growth mechanic — deliberate)
 - No Capacitor or offline work before beta sprint is closed
 - Fleet tier deferred until $2K MRR is reached
+- Paid ads are a validation tool only until CAC/LTV math is proven
+- Primary acquisition = community, YouTube, micro-influencers — not paid search
