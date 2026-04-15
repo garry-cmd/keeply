@@ -2700,19 +2700,7 @@ export default function App() {
                 {settings.photoUrl && <img src={settings.photoUrl} alt={boatName} style={{ width: 24, height: 24, borderRadius: 5, objectFit: "cover", border: "1px solid rgba(255,255,255,0.3)" }} />}
                 {boatName} <span style={{ opacity: 0.7 }}>▾</span>
               </button>
-              {(function(){
-                const lastP = logEntries.filter(function(e){ return e.vessel_id === activeVesselId && e.entry_type === "passage"; })
-                  .sort(function(a,b){ return new Date(b.entry_date) - new Date(a.entry_date); })[0];
-                if (!lastP) return null;
-                const daysAgo = Math.round((new Date() - new Date(lastP.entry_date)) / 86400000);
-                const route = lastP.from_location && lastP.to_location ? lastP.from_location + " → " + lastP.to_location : null;
-                const label = daysAgo === 0 ? "Sailed today" : daysAgo === 1 ? "Sailed yesterday" : "Last sailed " + daysAgo + "d ago";
-                return (
-                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", paddingLeft: 2 }}>
-                    {label}{route ? " · " + route : ""}{lastP.distance_nm ? " · " + lastP.distance_nm + " nm" : ""}
-                  </div>
-                );
-              })()}
+
             </div>
             {showVesselDropdown && (
               <div style={{ position: "absolute", top: 38, left: 0, background: "var(--bg-elevated)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.25)", minWidth: 220, zIndex: 100, overflow: "hidden", border: "1px solid var(--border-strong)" }}>
