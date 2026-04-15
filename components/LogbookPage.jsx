@@ -455,11 +455,11 @@ export default function LogbookPage({
         )}
 
         {/* Date + times */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
-          <div>
-            <span style={lbl}>Date</span>
-            <input type="date" value={form.entry_date} onChange={function(e){setF("entry_date",e.target.value);}} style={inp} />
-          </div>
+        <div style={{ marginBottom: 12 }}>
+          <span style={lbl}>Date</span>
+          <input type="date" value={form.entry_date} onChange={function(e){setF("entry_date",e.target.value);}} style={inp} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div>
             <span style={lbl}>Departed</span>
             <input type="time" value={form.departure_time} onChange={function(e){setF("departure_time",e.target.value);}} style={inp} />
@@ -522,7 +522,7 @@ export default function LogbookPage({
             const active = form.sea_state === ss;
             return (
               <button key={ss} onClick={function(){setF("sea_state", active ? "" : ss);}}
-                style={{ padding: "5px 12px", border: "0.5px solid " + (active ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 12, cursor: "pointer", background: active ? "var(--brand-deep)" : "var(--bg-subtle)", color: active ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>
+                style={{ padding: "9px 16px", minHeight: 38, border: "0.5px solid " + (active ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 13, cursor: "pointer", background: active ? "var(--brand-deep)" : "var(--bg-subtle)", color: active ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>
                 {ss}
               </button>
             );
@@ -536,7 +536,7 @@ export default function LogbookPage({
             const active = form.conditions === c;
             return (
               <button key={c} onClick={function(){setF("conditions", active ? "" : c);}}
-                style={{ padding: "5px 12px", border: "0.5px solid " + (active ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 12, cursor: "pointer", background: active ? "var(--brand-deep)" : "var(--bg-subtle)", color: active ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>
+                style={{ padding: "9px 16px", minHeight: 38, border: "0.5px solid " + (active ? "var(--brand)" : "var(--border)"), borderRadius: 20, fontSize: 13, cursor: "pointer", background: active ? "var(--brand-deep)" : "var(--bg-subtle)", color: active ? "var(--brand)" : "var(--text-muted)", fontWeight: 600 }}>
                 {c}
               </button>
             );
@@ -724,7 +724,7 @@ export default function LogbookPage({
               const active = logbookTab === tab.id;
               return (
                 <button key={tab.id} onClick={function(){ setLogbookTab(tab.id); }}
-                  style={{ flex: 1, padding: "9px 4px", border: "none", borderBottom: active ? "2px solid var(--brand)" : "2px solid transparent", background: "none", cursor: "pointer", fontSize: 12, fontWeight: active ? 700 : 500, color: active ? "var(--brand)" : "var(--text-muted)", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                  style={{ flex: 1, padding: "12px 4px", minHeight: 44, border: "none", borderBottom: active ? "2px solid var(--brand)" : "2px solid transparent", background: "none", cursor: "pointer", fontSize: 13, fontWeight: active ? 700 : 500, color: active ? "var(--brand)" : "var(--text-muted)", fontFamily: "inherit", whiteSpace: "nowrap" }}>
                   {tab.label}
                 </button>
               );
