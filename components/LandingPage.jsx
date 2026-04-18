@@ -538,18 +538,57 @@ const DISPLAY_PLANS = [
 
 
 function PartsVisual() {
+  var containerRef = useRef(null);
   var BLUE = "#4da6ff";
-  var NAVY = "#071e3d";
   var NAVY2 = "#0a1f3e";
+  var [phase, setPhase] = useState(0);
+  var [partsIdx, setPartsIdx] = useState(0);
+  var [showTap, setShowTap] = useState(false);
+  var [tapTarget, setTapTarget] = useState('card');
+
   var parts = [
     { name: "Spectra Watermakers 5 Micron Filter Element FT-FTC-5", vendor: "Fisheries Supply", price: "$22.95" },
-    { name: "Spectra FT-FTC-5 5 Micron Filter", vendor: "Defender Marine", price: null },
-    { name: "Spectra FT-FTC-5 5 Micron Filter", vendor: "Seatech Marine Products", price: null },
-    { name: "Spectra 5 Micron Pre-Filters FT-FTC-5 — Case of 24", vendor: "Fisheries Supply", price: "$408.00" },
-    { name: "Spectra 5 Micron Filter Element", vendor: "Nautical Supplies", price: "$13.00" },
+    { name: "Spectra FT-FTC-5 5 Micron Filter",                      vendor: "Defender Marine",   price: null },
+    { name: "Spectra FT-FTC-5 5 Micron Filter",                      vendor: "Seatech Marine",    price: null },
+    { name: "Spectra 5 Micron Pre-Filters FT-FTC-5 — Case of 24",    vendor: "Fisheries Supply",  price: "$408.00" },
+    { name: "Spectra 5 Micron Filter Element",                        vendor: "Nautical Supplies", price: "$13.00" },
   ];
+
+  useWhenVisible(containerRef, function() {
+    var timers = [];
+    function runCycle() {
+      setPhase(0); setPartsIdx(0); setShowTap(false);
+
+      // Phase 0: show collapsed card, then tap it
+      timers.push(setTimeout(function(){ setTapTarget('card'); setShowTap(true); }, 1800));
+      timers.push(setTimeout(function(){ setShowTap(false); setPhase(1); }, 2400)); // card expands
+
+      // Phase 1: card expanded — show "Find parts" button, tap it
+      timers.push(setTimeout(function(){ setTapTarget('btn'); setShowTap(true); }, 3800));
+      timers.push(setTimeout(function(){ setShowTap(false); setPhase(2); }, 4400)); // loading starts
+
+      // Phase 2: loader — transition to results
+      timers.push(setTimeout(function(){ setPhase(3); setPartsIdx(0); }, 7000));
+
+      // Phase 3: results appear one by one
+      parts.forEach(function(_, i) {
+        timers.push(setTimeout(function(){ setPartsIdx(function(n){ return Math.max(n, i+1); }); }, 7200 + i * 500));
+      });
+
+      timers.push(setTimeout(runCycle, 7200 + parts.length * 500 + 3000));
+    }
+    runCycle();
+    return function(){ timers.forEach(clearTimeout); };
+  });
+
+  var arrowSvg = (
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H7M13 3V9" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  );
+
   return (
-    <div style={{ background: NAVY2, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, overflow: "hidden", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+    <div ref={containerRef} style={{ position: "relative", background: NAVY2, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, overflow: "hidden", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+
+      {/* Task header — always visible */}
       <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Replace pre-filter cartridges and check system pressure</div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -558,34 +597,95 @@ function PartsVisual() {
           <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,0.1)", borderRadius: 4, padding: "2px 7px" }}>OVERDUE</span>
         </div>
       </div>
-      <div style={{ padding: "10px 14px 4px" }}>
-        <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-          <span>SUGGESTED PARTS · 5</span>
-          <span style={{ color: BLUE }}>↺ refresh</span>
+
+      {/* Phase 0: collapsed — just chevron hint */}
+      {phase === 0 && (
+        <div style={{ padding: "10px 14px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>Tap to expand</span>
+          <span style={{ fontSize: 16, color: "rgba(255,255,255,0.25)" }}>▸</span>
         </div>
-        <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, overflow: "hidden" }}>
-          {parts.map(function(p, i) {
-            return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 13px", borderBottom: i < parts.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 6 }}>{p.name}</div>
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{p.vendor}</div>
+      )}
+
+      {/* Phase 1: expanded detail + Find Parts button */}
+      {phase === 1 && (
+        <div style={{ padding: "12px 14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 18px", marginBottom: 14 }}>
+            {[["INTERVAL","90 days"],["LAST SERVICED","04/18/26"],["DUE DATE","01/18/26"],["PRIORITY","Medium"]].map(function(f) {
+              return (
+                <div key={f[0]}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px", marginBottom: 3 }}>{f[0]}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: f[0]==="DUE DATE" ? "#ef4444" : "#fff" }}>{f[1]}</div>
                 </div>
-                {p.price
-                  ? <span style={{ fontSize: 13, fontWeight: 700, color: "#22c55e", flexShrink: 0 }}>{p.price}</span>
-                  : <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>See site</span>
-                }
-                <div style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H7M13 3V9" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <button style={{ width: "100%", background: BLUE, border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Find parts
+          </button>
         </div>
-      </div>
-      <div style={{ padding: "7px 14px 11px", textAlign: "center" }}>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>Powered by First Mate · Verify part number before ordering</span>
-      </div>
+      )}
+
+      {/* Phase 2: loading */}
+      {phase === 2 && (
+        <div style={{ padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
+            {[0,1,2,3,4].map(function(i){ return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: BLUE, animation: "keeply-wave 1.3s ease-in-out infinite", animationDelay: (i*0.12)+"s" }} />; })}
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Searching marine retailers…</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>Fisheries Supply · West Marine · Defender</div>
+        </div>
+      )}
+
+      {/* Phase 3: results */}
+      {phase === 3 && (
+        <div style={{ padding: "10px 14px 4px" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+            <span>SUGGESTED PARTS · {partsIdx}</span>
+            <span style={{ color: BLUE }}>↺ refresh</span>
+          </div>
+          <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, overflow: "hidden" }}>
+            {parts.slice(0, partsIdx).map(function(p, i) {
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 13px", borderBottom: i < partsIdx-1 ? "1px solid rgba(255,255,255,0.07)" : "none", animation: "onboard-fadein 0.35s ease forwards" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 6 }}>{p.name}</div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{p.vendor}</div>
+                  </div>
+                  {p.price
+                    ? <span style={{ fontSize: 13, fontWeight: 700, color: "#22c55e", flexShrink: 0 }}>{p.price}</span>
+                    : <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>See site</span>
+                  }
+                  <div style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {arrowSvg}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ padding: "7px 0 10px", textAlign: "center" }}>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>Powered by First Mate · Verify part number before ordering</span>
+          </div>
+        </div>
+      )}
+
+      {/* Tap ripple */}
+      {showTap && (
+        <div style={{
+          position: "absolute",
+          ...(tapTarget === 'card' ? { right: 18, top: 40 } : { left: "50%", bottom: 54, transform: "translateX(-50%)" }),
+          width: 28, height: 28, borderRadius: "50%",
+          background: "rgba(77,166,255,0.5)",
+          animation: "tap-ripple 0.6s ease forwards",
+          pointerEvents: "none", zIndex: 20
+        }} />
+      )}
+
+      <style dangerouslySetInnerHTML={{ __html:
+        "@keyframes keeply-wave{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-5px);opacity:1}}" +
+        "@keyframes onboard-fadein{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}" +
+        "@keyframes tap-ripple{0%{transform:scale(0.5) translateX(0);opacity:0.8}100%{transform:scale(2.5) translateX(0);opacity:0}}"
+      }} />
     </div>
   );
 }
