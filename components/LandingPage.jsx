@@ -709,8 +709,7 @@ function OnboardingVisual() {
             <div>
               <div style={{ display: "flex", gap: 18, marginBottom: 14 }}>
                 {[[String(taskCount > 6 ? 14 : taskCount * 2), "Tasks", BLUE, "rgba(77,166,255,0.08)", "rgba(77,166,255,0.2)"],
-                  [taskCount >= 5 ? "5" : taskCount >= 3 ? "3" : "—", "Equipment", "#4ade80", "rgba(34,197,94,0.08)", "rgba(34,197,94,0.2)"],
-                  [taskCount === 7 ? "mins" : "…", "Setup", "#f5a623", "rgba(245,166,35,0.08)", "rgba(245,166,35,0.2)"]].map(function(s,i){
+                  [taskCount >= 5 ? "5" : taskCount >= 3 ? "3" : "—", "Equipment", "#4ade80", "rgba(34,197,94,0.08)", "rgba(34,197,94,0.2)"]].map(function(s,i){
                   return (
                     <div key={i} style={{ flex: 1, background: s[3], border: "1px solid " + s[4], borderRadius: 10, padding: "9px 6px", textAlign: "center", transition: "all 0.3s" }}>
                       <div style={{ fontSize: 25, fontWeight: 800, color: s[2], lineHeight: 1 }}>{s[0]}</div>
