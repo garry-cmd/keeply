@@ -1,6 +1,43 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabase-client";
+
+var VESSEL_MSGS = [
+  { msg: "Looking up your vessel specs…",       sub: null },
+  { msg: "Generating your equipment list…",     sub: "Scanning known configurations…" },
+  { msg: "Building your maintenance schedule…", sub: "Engine hours · manufacturer intervals" },
+  { msg: "Almost ready…",                       sub: "Finishing up your setup" },
+];
+function VesselSetupLoader() {
+  var [idx, setIdx] = useState(0);
+  var [visible, setVisible] = useState(true);
+  useEffect(function() {
+    var t = setInterval(function() {
+      setVisible(false);
+      setTimeout(function() { setIdx(function(i) { return i < VESSEL_MSGS.length - 1 ? i + 1 : i; }); setVisible(true); }, 300);
+    }, 3500);
+    return function() { clearInterval(t); };
+  }, []);
+  var current = VESSEL_MSGS[idx];
+  return (
+    <div style={{ textAlign: "center", padding: "20px 0" }}>
+      <style>{`
+        @keyframes keeplyWave{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-6px);opacity:1}}
+        @keyframes keeplyShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+      `}</style>
+      <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: 12 }}>
+        {[0,1,2,3,4].map(function(i){ return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: "#0f4c8a", animation: "keeplyWave 1.3s ease-in-out infinite", animationDelay: (i * 0.12) + "s" }} />; })}
+      </div>
+      <div style={{ height: 3, background: "rgba(15,76,138,0.1)", borderRadius: 2, overflow: "hidden", marginBottom: 14, position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: "50%", background: "rgba(15,76,138,0.35)", borderRadius: 2, animation: "keeplyShimmer 1.8s ease-in-out infinite" }} />
+      </div>
+      <div style={{ opacity: visible ? 1 : 0, transition: "opacity 0.3s ease" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#0f4c8a" }}>{current.msg}</div>
+        {current.sub && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>{current.sub}</div>}
+      </div>
+    </div>
+  );
+}
 
 export default function VesselSetup({ userId, userPlan, onComplete }) {
   const isPaid = true; // AI onboarding is now available to all users
@@ -302,11 +339,7 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: "center", padding: "20px 0" }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>⚙️</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f4c8a" }}>Building your boat…</div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>Generating equipment list and maintenance tasks</div>
-            </div>
+            <VesselSetupLoader />
           ) : (
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={function(){ setStep(1); }}

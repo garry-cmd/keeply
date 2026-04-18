@@ -354,13 +354,81 @@ function TrashIcon() {
   );
 }
 
-// ─── LOADING SPINNER ─────────────────────────────────────────────────────────
+// ─── WAVE LOADER ─────────────────────────────────────────────────────────────
+// Consistent AI-working animation. inline=true renders dots+text side by side.
+var WAVE_STYLE = "@keyframes keeplyWave{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-6px);opacity:1}}";
+function WaveLoader({ message, sub, size, inline }) {
+  var count = (size === "sm") ? 3 : 5;
+  var dotPx = (size === "sm") ? 5 : 7;
+  var dots = Array.from({ length: count }, function(_, i) {
+    return <div key={i} style={{ width: dotPx, height: dotPx, borderRadius: "50%", background: "var(--brand)", animation: "keeplyWave 1.3s ease-in-out infinite", animationDelay: (i * 0.12) + "s", flexShrink: 0 }} />;
+  });
+  if (inline) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
+        <style>{WAVE_STYLE}</style>
+        <div style={{ display: "flex", gap: 3, alignItems: "center" }}>{dots}</div>
+        {message && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{message}</span>}
+      </div>
+    );
+  }
+  return (
+    <div style={{ textAlign: "center", padding: "16px 0" }}>
+      <style>{WAVE_STYLE}</style>
+      <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: message ? 10 : 0 }}>{dots}</div>
+      {message && <div style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)" }}>{message}</div>}
+      {sub && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ─── VESSEL SETUP LOADER ─────────────────────────────────────────────────────
+// Progressive status messages for AI vessel setup (15-30s wait).
+var VESSEL_MSGS = [
+  { msg: "Looking up your vessel specs…",       sub: null },
+  { msg: "Generating your equipment list…",     sub: "Scanning known configurations…" },
+  { msg: "Building your maintenance schedule…", sub: "Engine hours · manufacturer intervals" },
+  { msg: "Almost ready…",                       sub: "Finishing up your setup" },
+];
+function VesselSetupLoader({ light }) {
+  var [idx, setIdx] = useState(0);
+  var [visible, setVisible] = useState(true);
+  useEffect(function() {
+    var t = setInterval(function() {
+      setVisible(false);
+      setTimeout(function() { setIdx(function(i) { return i < VESSEL_MSGS.length - 1 ? i + 1 : i; }); setVisible(true); }, 300);
+    }, 3500);
+    return function() { clearInterval(t); };
+  }, []);
+  var current = VESSEL_MSGS[idx];
+  var brand = light ? "#0f4c8a" : "var(--brand)";
+  var muted = light ? "#9ca3af" : "var(--text-muted)";
+  return (
+    <div style={{ textAlign: "center", padding: "20px 0" }}>
+      <style>{`
+        @keyframes keeplyWave{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-6px);opacity:1}}
+        @keyframes keeplyShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+        @keyframes keeplyFade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+      `}</style>
+      <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: 12 }}>
+        {[0,1,2,3,4].map(function(i){ return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: brand, animation: "keeplyWave 1.3s ease-in-out infinite", animationDelay: (i * 0.12) + "s" }} />; })}
+      </div>
+      <div style={{ height: 3, background: light ? "rgba(15,76,138,0.1)" : "rgba(77,166,255,0.1)", borderRadius: 2, overflow: "hidden", marginBottom: 14, position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: "50%", background: light ? "rgba(15,76,138,0.35)" : "rgba(77,166,255,0.55)", borderRadius: 2, animation: "keeplyShimmer 1.8s ease-in-out infinite" }} />
+      </div>
+      <div key={idx} style={{ opacity: visible ? 1 : 0, transition: "opacity 0.3s ease", transform: visible ? "translateY(0)" : "translateY(3px)" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: brand }}>{current.msg}</div>
+        {current.sub && <div style={{ fontSize: 11, color: muted, marginTop: 3 }}>{current.sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── LOADING SCREEN ───────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: 16 }}>
-      <div style={{ width: 40, height: 40, border: "3px solid #e2e8f0", borderTop: "3px solid #0f4c8a", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Loading your vessel data…</div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+      <WaveLoader message="Loading your vessel data…" />
     </div>
   );
 }
@@ -3054,8 +3122,7 @@ export default function App() {
                               {(function(){
                                 const sugg = aiSuggestions[t.id];
                                 if (!sugg) return <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "1.5px dashed #e9d5ff", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>Find parts</button>;
-                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
-                                if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Error. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer" }}>Retry</button></div>;
+                                if (sugg === "loading") return <WaveLoader inline size="sm" message="Finding parts…" />;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No parts found.</div>;
                                 return sugg.slice(0, 3).map(function(part){
                                   const linkedEq = t.equipment_id ? equipment.find(function(e){ return e.id === t.equipment_id; }) : null;
@@ -3112,8 +3179,7 @@ export default function App() {
                           <div style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", margin: "0 20px 8px", borderRadius: 8 }} onClick={function(e){ e.stopPropagation(); }}>
                             <div style={{ padding: "12px 14px" }}>
                               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>Suggested parts</div>
-                              {!inlinePartResults[r.id] && <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>Find parts</button>}
-                              {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
+                              {sugg === "loading" && <WaveLoader inline size="sm" message="Finding parts…" />}
                               {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
                                 return (
                                   <div key={part.name} style={{ padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
@@ -4994,7 +5060,7 @@ export default function App() {
                                                   Find parts for this task
                                                 </button>
                                               );
-                                              if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
+                                              if (sugg === "loading") return <WaveLoader inline size="sm" message="Finding parts…" />;
                                               if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                               if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
                                               return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
@@ -5136,7 +5202,7 @@ export default function App() {
                                         {(repairTab[r.id] || "parts") === "parts" && (
                                           <div style={{ padding: "12px 12px 8px" }}>
                                             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 8 }}>AI suggested parts</div>
-                                            {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
+                                            {sugg === "loading" && <WaveLoader inline size="sm" message="Finding parts…" />}
                                             {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
                                             {sugg && sugg !== "loading" && sugg !== "error" && sugg.filter(function(p){ return !rejectedParts["repair-" + r.id + "-" + p.id]; }).map(function(part){
                                               return (
@@ -5938,9 +6004,7 @@ export default function App() {
                           ✨ AI suggested parts for this repair
                         </div>
 
-                        {sugg === "loading" && (
-                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Finding parts for this repair…</div>
-                        )}
+                        {sugg === "loading" && <WaveLoader inline size="sm" message="Finding parts for this repair…" />}
                         {sugg === "error" && (
                           <div style={{ fontSize: 12, color: "var(--warn-text)", marginBottom: 10 }}>
                             Couldn't load suggestions.
@@ -6194,7 +6258,7 @@ export default function App() {
                                     Find parts for this task
                                   </button>
                                 );
-                                if (sugg === "loading") return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>;
+                                if (sugg === "loading") return <WaveLoader inline size="sm" message="Finding parts…" />;
                                 if (sugg === "error") return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ getSuggestionsForRepair({ id: t.id, description: t.task, section: t.section, equipment_id: t.equipment_id }); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                 if (sugg.length === 0) return <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>;
                                 return sugg.filter(function(part){ return !rejectedParts["repair-" + t.id + "-" + part.id]; }).map(function(part){
@@ -6291,9 +6355,7 @@ export default function App() {
                             </div>
                             {(repairTab[r.id] || "parts") === "parts" && (
                               <div style={{ padding: "12px 14px" }}>
-                                {sugg === "loading" && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Finding parts…</div>}
-                                {sugg === "error" && <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); getSuggestionsForRepair(r); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>}
-                                {sugg && sugg !== "loading" && sugg !== "error" && sugg.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found.</div>}
+                                {sugg === "loading" && <WaveLoader inline size="sm" message="Finding parts…" />}
                                 {sugg && sugg !== "loading" && sugg !== "error" && sugg.length > 0 && sugg.filter(function(part){ return !rejectedParts["repair-" + r.id + "-" + part.id]; }).map(function(part){
                                   return (
                                     <div key={part.name} style={{ padding: "8px 0", borderBottom: "1px solid #f9fafb" }}>
@@ -6689,13 +6751,7 @@ export default function App() {
                     </div>
                   );
                 })()}
-                {(avLoading || saving) && (
-                  <div style={{ textAlign: "center", padding: "16px 0" }}>
-                    
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--brand)" }}>{saving ? "Building your boat…" : "Researching your vessel…"}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Generating equipment list and maintenance tasks</div>
-                  </div>
-                )}
+                {(avLoading || saving) && <VesselSetupLoader />}
               </>)}
               {avStep === 3 && (() => {
                 var engineTasks3 = tasks.filter(function(t){ return t.interval_hours && t._vesselId === vessels[vessels.length - 1]?.id; });
@@ -7331,10 +7387,8 @@ export default function App() {
                 </div>
 
                 {findPartLoading && (
-                  <div style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: "20px 16px", textAlign: "center" }}>
-                    
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Searching across marine retailers…</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>Fisheries Supply, Defender, West Marine & more</div>
+                  <div style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: "20px 16px" }}>
+                    <WaveLoader message="Searching marine retailers…" sub="Fisheries Supply · Defender · West Marine" />
                   </div>
                 )}
 

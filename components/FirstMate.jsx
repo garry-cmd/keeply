@@ -52,9 +52,12 @@ function Avatar({ size = 32 }) {
 function TypingDots() {
   return (
     <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "2px 0" }}>
-      {[1, 0.55, 0.25].map(function(op, i) {
-        return <span key={i} style={{ width: 6, height: 6, borderRadius: "50%",
-          background: D.accent, opacity: op, display: "inline-block" }} />;
+      <style>{`@keyframes keeplyWave{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-5px);opacity:1}}`}</style>
+      {[0, 1, 2, 3, 4].map(function(i) {
+        return <span key={i} style={{ width: 5, height: 5, borderRadius: "50%",
+          background: D.accent, display: "inline-block",
+          animation: "keeplyWave 1.3s ease-in-out infinite",
+          animationDelay: (i * 0.12) + "s" }} />;
       })}
     </div>
   );
