@@ -5174,6 +5174,8 @@ export default function App() {
                                               if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                               return renderPartResults(pr, function(e){ e && e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); });
                                             })()}
+                                          </div>
+                                        )}
                                         {(repairTab[r.id] || "parts") === "notes" && (
                                           <div style={{ padding: "10px 12px", fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
                                             {r.description || "No additional notes."}
