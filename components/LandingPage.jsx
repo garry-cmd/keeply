@@ -1090,7 +1090,7 @@ export default function LandingPage() {
                     ["Vessels",               "1",         "1",           "2"],
                     ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
                     ["Equipment cards",        PRICING_CONFIG.free.equipment + " cards", "Unlimited",   "Unlimited"],
-                    ["Repairs",               "3",         "Unlimited",   "Unlimited"],
+                    ["Repairs",               "Unlimited", "Unlimited",   "Unlimited"],
                     ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
                     ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
                     ["Document storage",      "250 MB",    "1 GB",        "Unlimited"],
