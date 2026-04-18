@@ -518,10 +518,10 @@ function MyBoatVisual() {
 
 
 const FEATURES = [
-  { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
-  { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
-  { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
+  { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
+  { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
+  { tag: "AI Parts Search", title: "The right part for your exact boat. Instantly.", body: "Open any maintenance task or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. No wrong orders.", Visual: PartsVisual },
   { tag: "Logbook", title: "Log every watch. Own every passage.", body: "Start a live passage and tap your way through the crossing. Every watch change — time, position, course, speed, wind — logged in seconds. Hit arrived, and it's in your history.", Visual: LogbookVisual },
 ];
 
@@ -534,6 +534,61 @@ const DISPLAY_PLANS = [
 ];
 
 
+
+
+
+function PartsVisual() {
+  var BLUE = "#4da6ff";
+  var NAVY = "#071e3d";
+  var NAVY2 = "#0a1f3e";
+  var parts = [
+    { name: "Spectra Watermakers 5 Micron Filter Element FT-FTC-5", vendor: "Fisheries Supply", price: "$22.95" },
+    { name: "Spectra FT-FTC-5 5 Micron Filter", vendor: "Defender Marine", price: null },
+    { name: "Spectra FT-FTC-5 5 Micron Filter", vendor: "Seatech Marine Products", price: null },
+    { name: "Spectra 5 Micron Pre-Filters FT-FTC-5 — Case of 24", vendor: "Fisheries Supply", price: "$408.00" },
+    { name: "Spectra 5 Micron Filter Element", vendor: "Nautical Supplies", price: "$13.00" },
+  ];
+  return (
+    <div style={{ background: NAVY2, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, overflow: "hidden", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Replace pre-filter cartridges and check system pressure</div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <span style={{ fontSize: 10, background: "rgba(77,166,255,0.12)", color: BLUE, borderRadius: 4, padding: "1px 7px", fontWeight: 600 }}>Watermaker</span>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>Spectra Ventura 150D</span>
+          <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,0.1)", borderRadius: 4, padding: "2px 7px" }}>OVERDUE</span>
+        </div>
+      </div>
+      <div style={{ padding: "10px 14px 4px" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+          <span>SUGGESTED PARTS · 5</span>
+          <span style={{ color: BLUE }}>↺ refresh</span>
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, overflow: "hidden" }}>
+          {parts.map(function(p, i) {
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 13px", borderBottom: i < parts.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 6 }}>{p.name}</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{p.vendor}</div>
+                </div>
+                {p.price
+                  ? <span style={{ fontSize: 13, fontWeight: 700, color: "#22c55e", flexShrink: 0 }}>{p.price}</span>
+                  : <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>See site</span>
+                }
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(77,166,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H7M13 3V9" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ padding: "7px 14px 11px", textAlign: "center" }}>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>Powered by First Mate · Verify part number before ordering</span>
+      </div>
+    </div>
+  );
+}
 
 
 
