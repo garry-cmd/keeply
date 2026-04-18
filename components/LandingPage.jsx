@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase-client";
+import { PLANS as PRICING_CONFIG } from "../lib/pricing.js";
 
 const BRAND    = "#0f4c8a";
 const NAVY     = "#071e3d";
@@ -576,10 +577,10 @@ const FEATURES = [
 
 
 
-const PLANS = [
-  { name: "Free",     price: "$0",    period: "/mo", sub: "",                            subheader: "What's included",             cta: "Get started free", features: ["Automated boat setup", "1 vessel", "1 equipment card visible", "Unlimited maintenance tasks", "3 First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
-  { name: "Standard", price: "$15",   period: "/mo", sub: "or $144/yr · save $36",        subheader: "Everything in Free, plus",    cta: "Buy now →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI — 10 queries/mo", "Repair log & full logbook"] },
-  { name: "Pro",      price: "$25",   period: "/mo", sub: "or $240/yr · save $60",        subheader: "Everything in Standard, plus", cta: "Buy now →", features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — 50 queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
+const DISPLAY_PLANS = [
+  { name: "Free",     price: "$0",                                               period: "/mo", sub: "",                                                                                                         subheader: "What's included",             cta: "Get started free", features: ["Automated boat setup", "1 vessel", PRICING_CONFIG.free.equipment + " equipment cards", "Unlimited maintenance tasks", PRICING_CONFIG.free.firstMate + " First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
+  { name: "Standard", price: "$" + PRICING_CONFIG.standard.price,               period: "/mo", sub: "or $" + PRICING_CONFIG.standard.annualPrice + "/yr · save $" + (PRICING_CONFIG.standard.price * 12 - PRICING_CONFIG.standard.annualPrice), subheader: "Everything in Free, plus",    cta: "Buy now →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + " queries/mo", "Repair log & full logbook"] },
+  { name: "Pro",      price: "$" + PRICING_CONFIG.pro.price,                    period: "/mo", sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                   subheader: "Everything in Standard, plus", cta: "Buy now →", features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
 
 
@@ -824,12 +825,15 @@ export default function LandingPage() {
           setError("An account with this email already exists. Try logging in instead.");
         } else {
           // Fire Stripe immediately for paid plans — don't wait for email confirmation
-          var PLAN_PRICE = { standard: "price_1TKJ3GA726uGRX5eqmN6Rwr4", pro: "price_1TKJ3TA726uGRX5epzWsSkbN" };
-          var priceId = effectivePlan && PLAN_PRICE[effectivePlan];
+          // Use stored price ID (supports annual) or fall back to monthly priceId from PRICING_CONFIG
+          var pendingPriceId = (function(){ try { return localStorage.getItem("keeply_pending_price_id"); } catch(e){ return null; } }());
+          var planConfig = effectivePlan && PRICING_CONFIG[effectivePlan];
+          var priceId = pendingPriceId || (planConfig && planConfig.priceId) || null;
           var userId = result.data.user && result.data.user.id;
           if (priceId && userId) {
             try {
               try { localStorage.removeItem("keeply_pending_plan"); } catch(e) {}
+              try { localStorage.removeItem("keeply_pending_price_id"); } catch(e) {}
               var checkoutRes = await fetch("/api/stripe/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1000,7 +1004,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
-            {PLANS.map(function (plan, pi) {
+            {DISPLAY_PLANS.map(function (plan, pi) {
               var hl = plan.highlight;
               var price = plan.price === "Free" ? "Free" : (annual ? (annualPrices[plan.price] || plan.price) : plan.price);
               return (
@@ -1063,13 +1067,13 @@ export default function LandingPage() {
                     ["Customizable checklists", "\u2014",    "\u2713",      "\u2713"],
                     ["Repair log & logbook",  "\u2014",    "\u2713",      "\u2713"],
                     ["Haul-out planner",      "\u2014",    "\u2014",      "\u2713"],
-                    ["First Mate AI",         "3 / mo",  "10 / mo",     "50 / mo"],
+                    ["First Mate AI",         PRICING_CONFIG.free.firstMate + " / mo",  PRICING_CONFIG.standard.firstMate + " / mo", PRICING_CONFIG.pro.firstMate + " / mo"],
                     ["AI vessel setup",       "\u2014",    "\u2713",      "\u2713"],
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
                     ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
                     ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
                     ["Discount code",         "\u2014",   "BETA2026",  "BETA2026"],
-                    ["Price",                 "Free",      "$15 / mo",    "$25 / mo"],
+                    ["Price",                 "Free",      "$" + PRICING_CONFIG.standard.price + " / mo",    "$" + PRICING_CONFIG.pro.price + " / mo"],
                   ].map(function (row, ri) {
                     var isLast = ri === 18;
                     return (
@@ -1207,12 +1211,12 @@ export default function LandingPage() {
                               textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Standard</div>
                 <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
                   <span style={{ fontSize:20, fontWeight:700, color:"#fff", alignSelf:"flex-start", marginTop:6 }}>$</span>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>15</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>{PRICING_CONFIG.standard.price}</span>
                   <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>/mo</span>
                 </div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
-                  {["Unlimited equipment", "Unlimited repairs", "First Mate AI — 10/mo", "Repair log & logbook"].map(function(f){
+                  {["Unlimited equipment", "Unlimited repairs", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + "/mo", "Repair log & logbook"].map(function(f){
                     return (
                       <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
                                            marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.75)" }}>
@@ -1245,12 +1249,12 @@ export default function LandingPage() {
                               textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Pro</div>
                 <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
                   <span style={{ fontSize:20, fontWeight:700, color:"#fff", alignSelf:"flex-start", marginTop:6 }}>$</span>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>25</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>{PRICING_CONFIG.pro.price}</span>
                   <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>/mo</span>
                 </div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
-                  {["2 vessels", "First Mate AI — 50/mo", "AI-enriched logbook", "Unlimited storage"].map(function(f){
+                  {["2 vessels", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + "/mo", "AI-enriched logbook", "Unlimited storage"].map(function(f){
                     return (
                       <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
                                            marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.55)" }}>
