@@ -519,9 +519,9 @@ function MyBoatVisual() {
 
 const FEATURES = [
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
-  { tag: "AI Setup", title: "Your whole boat, set up in minutes.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
+  { tag: "AI Setup", title: "Your whole boat, set up in minutes.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing. And everything is fully editable — adjust any interval, add your own tasks, or remove what doesn't apply. Keeply sets the baseline. You make it yours.", Visual: OnboardingVisual },
   { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
-  { tag: "AI Parts Search", title: "The right part for your exact boat. Instantly.", body: "Open any maintenance task or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. No wrong orders.", Visual: PartsVisual },
+  { tag: "AI Parts Search", title: "The right part for your exact boat. Instantly.", body: "Open any maintenance task or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. AI suggests the part. You verify and order.", Visual: PartsVisual },
   { tag: "Logbook", title: "Log every watch. Own every passage.", body: "Start a live passage and tap your way through the crossing. Every watch change — time, position, course, speed, wind — logged in seconds. Hit arrived, and it's in your history.", Visual: LogbookVisual },
 ];
 
@@ -664,7 +664,7 @@ function PartsVisual() {
             })}
           </div>
           <div style={{ padding: "7px 0 10px", textAlign: "center" }}>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>Powered by First Mate · Verify part number before ordering</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>First Mate suggests · You verify and order</span>
           </div>
         </div>
       )}
@@ -1142,7 +1142,7 @@ export default function LandingPage() {
               </button>
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", letterSpacing: "0.2px" }}>
-              Use code BETA2026 at checkout · No credit card needed
+              Free to start · No credit card · Cancel any time
             </div>
           </div>
 
@@ -1150,8 +1150,35 @@ export default function LandingPage() {
 
       </section>
 
-
-
+      {/* ── Social proof strip ── */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", padding: isMobile ? "20px 16px" : "20px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", gap: isMobile ? 12 : 0, justifyContent: "space-between" }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 600, letterSpacing: "0.4px", flexShrink: 0 }}>IN EARLY ACCESS</div>
+          <div style={{ display: "flex", gap: isMobile ? 16 : 32, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { name: "Irene",     type: "1980 Ta Shing Baba 35",      kind: "sail" },
+              { name: "Rounder",   type: "1984 Passport 40",            kind: "sail" },
+              { name: "Amanzi",    type: "2023 Lagoon 42 Catamaran",    kind: "sail" },
+              { name: "Sue Anne",  type: "1997 Ranger Tug R-27",        kind: "motor" },
+              { name: "Jaws",      type: "2017 Grady-White Freedom 307",kind: "motor" },
+            ].map(function(b) {
+              return (
+                <div key={b.name} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(77,166,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    {b.kind === "sail"
+                      ? <><path d="M12 2L2 20h20z"/><line x1="12" y1="2" x2="12" y2="20"/></>
+                      : <><path d="M3 17l4-8 4 4 3-6 4 4"/><path d="M2 20h20"/></>
+                    }
+                  </svg>
+                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>{b.name}</span>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{b.type}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 600, letterSpacing: "0.4px", flexShrink: 0 }}>500+ TASKS TRACKED</div>
+        </div>
+      </div>
 
       <section id="features" style={{ padding: isMobile ? "48px 16px" : "80px 24px" }}>
         {FEATURES.map(function (f, i) {
@@ -1294,6 +1321,23 @@ export default function LandingPage() {
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
             Use discount code BETA2026 at checkout for 100% off. Cancel any time.
           </p>
+
+          {/* Trust signals */}
+          <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 16 : 32, flexWrap: "wrap", margin: "28px 0", padding: "20px 0", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            {[
+              ["Cancel any time", "No long-term contract. Ever."],
+              ["Your data is yours", "Export or delete any time."],
+              ["Built by a boater", "Not a tech company that googled 'boats'."],
+              ["No surprises", "Pricing is simple and transparent."],
+            ].map(function(t) {
+              return (
+                <div key={t[0]} style={{ textAlign: "center", minWidth: isMobile ? "45%" : 160 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.75)", marginBottom: 3 }}>{t[0]}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{t[1]}</div>
+                </div>
+              );
+            })}
+          </div>
           <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
             Commercial or fleet manager?{" "}
             <a href="mailto:sales@keeply.boats?subject=Keeply Fleet inquiry" style={{ color: ACCENT, textDecoration: "none", fontWeight: 600 }}>Talk to us about Fleet {"\u2192"}</a>
@@ -1306,7 +1350,10 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Logo size={22} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: WHITE }}>Keeply</span>
+            <div>
+              <span style={{ fontSize: 15, fontWeight: 700, color: WHITE }}>Keeply</span>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>Made by a boater, for boaters.</div>
+            </div>
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
             <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Support</a>
