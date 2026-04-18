@@ -1145,7 +1145,7 @@ export default function LandingPage() {
                 Choose your plan
               </div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)" }}>
-                No credit card required with discount code
+                No credit card required
               </div>
             </div>
 
