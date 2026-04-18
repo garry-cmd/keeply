@@ -221,146 +221,96 @@ function FirstMateVisual() {
 
 function LogbookVisual() {
   var BLUE = "#4da6ff";
+  var GREEN = "#22c55e";
   var containerRef = useRef(null);
-  var narrative = "Light SW, 8-12 kts. Glassy through Admiralty Inlet. Passed the shipping lanes at 0820 with 2nm clearance. Anchored Friday Harbor 1235. Engine hours 847\u2192854.";
-  var [phase, setPhase] = useState(0);
-  var [shownChars, setShownChars] = useState(0);
-  var [fieldsVisible, setFieldsVisible] = useState(0);
-  var [statsVisible, setStatsVisible] = useState(false);
-  var [dots, setDots] = useState('');
+  var ENTRIES = [
+    { time: "07:15", pos: "Port Ludlow",        cog: "340°", sog: "0 kt",   wind: "SW 6kt",  note: "Departed. Clear skies." },
+    { time: "08:00", pos: "47°52′N 122°41′W",   cog: "340°", sog: "8.5 kt", wind: "SW 8kt",  note: "Passed Indian Island." },
+    { time: "09:00", pos: "48°06′N 122°45′W",   cog: "345°", sog: "9.2 kt", wind: "W 12kt",  note: "Admiralty Inlet. Ferry traffic." },
+    { time: "10:15", pos: "48°22′N 122°51′W",   cog: "355°", sog: "10.1 kt", wind: "W 15kt", note: "San Juan Channel. Seas 2-3ft." },
+  ];
+  var [visibleCount, setVisibleCount] = useState(0);
+  var [showComplete, setShowComplete] = useState(false);
+  var [completed, setCompleted] = useState(false);
 
   useWhenVisible(containerRef, function() {
-    setPhase(0); setFieldsVisible(0); setShownChars(0); setStatsVisible(false);
+    setVisibleCount(0); setShowComplete(false); setCompleted(false);
     var timers = [];
     function runCycle() {
-      setPhase(0); setFieldsVisible(0); setShownChars(0); setStatsVisible(false);
-      // Fields stagger in
-      [0,1,2,3].forEach(function(i){
-        timers.push(setTimeout(function(){ setFieldsVisible(function(n){ return Math.max(n, i+1); }); }, 400 + i * 400));
+      setVisibleCount(0); setShowComplete(false); setCompleted(false);
+      ENTRIES.forEach(function(_, i) {
+        timers.push(setTimeout(function() { setVisibleCount(i + 1); }, 800 + i * 1400));
       });
-      // Stats appear
-      timers.push(setTimeout(function(){ setStatsVisible(true); }, 2200));
-      // Phase 1: enriching
-      timers.push(setTimeout(function(){ setPhase(1); }, 3000));
-      // Phase 2: narrative types in
-      timers.push(setTimeout(function(){
-        setPhase(2); setShownChars(0);
-        var charTimer = setInterval(function(){
-          setShownChars(function(n){
-            if (n >= narrative.length) { clearInterval(charTimer); return n; }
-            return n + 3;
-          });
-        }, 30);
-        timers.push(charTimer);
-      }, 5000));
-      // Loop
-      timers.push(setTimeout(runCycle, 13000));
+      timers.push(setTimeout(function() { setShowComplete(true); }, 800 + ENTRIES.length * 1400 + 600));
+      timers.push(setTimeout(function() { setCompleted(true); }, 800 + ENTRIES.length * 1400 + 1800));
+      timers.push(setTimeout(runCycle, 800 + ENTRIES.length * 1400 + 4000));
     }
     runCycle();
-    return function(){ timers.forEach(function(t){ try{ clearTimeout(t); clearInterval(t); } catch(e){} }); };
+    return function() { timers.forEach(function(t){ try{ clearTimeout(t); clearInterval(t); } catch(e){} }); };
   });
-
-  useEffect(function() {
-    if (phase !== 1) { setDots(''); return; }
-    var i = 0;
-    var t = setInterval(function(){ i=(i+1)%4; setDots('.'.repeat(i)); }, 380);
-    return function(){ clearInterval(t); };
-  }, [phase]);
-
-  var fields = [
-    ["Departure", "Port Ludlow · 06:15"],
-    ["Arrival",   "Friday Harbor · 12:35"],
-    ["Conditions","SW 8-12 kts · partly cloudy"],
-    ["Engine hrs","847 start · 854 end"],
-  ];
 
   return (
     <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
       <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
-        {/* Header */}
-        <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {/* Status bar */}
+        <div style={{ background: "#071e3d", padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
-          <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>New logbook entry</span>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
-            {[phase===0?BLUE:"rgba(255,255,255,0.2)", phase===1?"#f5a623":"rgba(255,255,255,0.2)", phase===2?"#4ade80":"rgba(255,255,255,0.2)"].map(function(c,i){
-              return <div key={i} style={{ width:6,height:6,borderRadius:"50%",background:c,transition:"background 0.4s" }} />;
-            })}
+          <span style={{ fontSize: 17, fontWeight: 700, color: "#fff" }}>Logbook</span>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: completed ? GREEN : "#ef4444", transition: "background 0.5s", animation: completed ? "none" : "keeplyWave 1.5s ease-in-out infinite" }} />
+            <span style={{ fontSize: 10, fontWeight: 600, color: completed ? GREEN : "#ef4444", transition: "color 0.5s" }}>{completed ? "COMPLETED" : "ACTIVE"}</span>
           </div>
         </div>
 
-        <div style={{ padding: "18px 18px", minHeight: 360 }}>
+        <div style={{ padding: "16px 16px 12px" }}>
+          {/* Passage header */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 3 }}>
+              Port Ludlow → {completed ? <span style={{ color: GREEN }}>Friday Harbor</span> : <span style={{ color: "rgba(255,255,255,0.4)" }}>en route</span>}
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>Departed 07:15 · Crew: Garry, Melissa</div>
+          </div>
 
-          {/* Phase 0 — form filling in */}
-          {phase === 0 && (
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
-                Port Ludlow {"\u2192"} Friday Harbor
-              </div>
-              {fields.map(function(f, i){
+          {/* Watch entries table */}
+          <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 10, overflow: "hidden", marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "42px 1fr 36px 48px 54px", gap: 0, padding: "6px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              {["Time","Position","COG","SOG","Wind"].map(function(h){ return <div key={h} style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px" }}>{h}</div>; })}
+            </div>
+            {ENTRIES.map(function(e, i) {
+              var vis = i < visibleCount;
+              return (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "42px 1fr 36px 48px 54px", gap: 0, padding: "7px 10px", borderBottom: i < ENTRIES.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(4px)", transition: "opacity 0.4s ease, transform 0.4s ease" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: BLUE, fontFamily: "DM Mono, monospace" }}>{e.time}</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 4 }}>{e.pos}</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "DM Mono, monospace" }}>{e.cog}</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "DM Mono, monospace" }}>{e.sog}</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>{e.wind}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* CTA buttons */}
+          {!completed && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1, padding: "9px", border: "1px solid rgba(77,166,255,0.35)", borderRadius: 10, textAlign: "center", fontSize: 12, fontWeight: 700, color: BLUE }}>+ Watch entry</div>
+              <div style={{ flex: 1, padding: "9px", borderRadius: 10, textAlign: "center", fontSize: 12, fontWeight: 700, color: "#fff", background: showComplete ? GREEN : "rgba(34,197,94,0.25)", transition: "background 0.5s" }}>Arrived →</div>
+            </div>
+          )}
+          {completed && (
+            <div style={{ display: "flex", gap: 8 }}>
+              {[["42 nm","Distance"],["6h 20m","Duration"],["10.1 kt","Max speed"]].map(function(s,i){
                 return (
-                  <div key={i} style={{ marginBottom: 9, opacity: i < fieldsVisible ? 1 : 0, transform: i < fieldsVisible ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.35s, transform 0.35s" }}>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.6px" }}>{f[0]}</div>
-                    <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 8, padding: "14px 18px", fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>{f[1]}</div>
+                  <div key={i} style={{ flex:1, background:"rgba(77,166,255,0.07)", border:"1px solid rgba(77,166,255,0.15)", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:BLUE }}>{s[0]}</div>
+                    <div style={{ fontSize:8, color:"rgba(255,255,255,0.35)", marginTop:2 }}>{s[1]}</div>
                   </div>
                 );
               })}
-              {statsVisible && (
-                <div style={{ display: "flex", gap: 11, marginTop: 10, opacity: statsVisible ? 1 : 0, transition: "opacity 0.5s" }}>
-                  {[["42 nm","Distance"],["6h 20m","Duration"],["8.1 kts","Avg speed"]].map(function(s,i){
-                    return (
-                      <div key={i} style={{ flex:1, background:"rgba(77,166,255,0.07)", border:"1px solid rgba(77,166,255,0.15)", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
-                        <div style={{ fontSize:13, fontWeight:700, color:BLUE }}>{s[0]}</div>
-                        <div style={{ fontSize:8, color:"rgba(255,255,255,0.35)", marginTop:2 }}>{s[1]}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           )}
-
-          {/* Phase 1 — AI enriching */}
-          {phase === 1 && (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:260, gap:14 }}>
-              <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(77,166,255,0.1)", border:"2px solid rgba(77,166,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                </svg>
-              </div>
-              <div style={{ textAlign:"center" }}>
-                <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:5 }}>First Mate is writing your entry{dots}</div>
-                <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>Turning your data into a passage narrative</div>
-              </div>
-            </div>
-          )}
-
-          {/* Phase 2 — narrative typed out */}
-          {phase === 2 && (
-            <div>
-              <div style={{ fontSize:14, fontWeight:700, color:"#fff", marginBottom:6 }}>Port Ludlow {"\u2192"} Friday Harbor</div>
-              <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginBottom:14 }}>Apr 8, 2026 · AI-enriched</div>
-              <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-                {[["42 nm","Distance"],["6h 20m","Duration"],["8.1 kts","Speed"]].map(function(s,i){
-                  return (
-                    <div key={i} style={{ flex:1, background:"rgba(77,166,255,0.07)", border:"1px solid rgba(77,166,255,0.15)", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:BLUE }}>{s[0]}</div>
-                      <div style={{ fontSize:8, color:"rgba(255,255,255,0.35)", marginTop:2 }}>{s[1]}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ borderLeft:"2px solid rgba(77,166,255,0.3)", paddingLeft:12 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:BLUE, letterSpacing:"0.5px", textTransform:"uppercase", marginBottom:6 }}>First Mate</div>
-                <div style={{ fontSize:11, color:"rgba(255,255,255,0.72)", lineHeight:1.7, fontStyle:"italic" }}>
-                  {narrative.slice(0, shownChars)}
-                  <span style={{ opacity: shownChars < narrative.length ? 1 : 0, borderLeft:"2px solid "+BLUE, marginLeft:1 }}>&nbsp;</span>
-                </div>
-              </div>
-            </div>
-          )}
-
         </div>
       </div>
     </div>
@@ -572,7 +522,7 @@ const FEATURES = [
   { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
   { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
-  { tag: "Logbook", title: "Log passages the smart way.", body: "Record departures, arrivals, conditions, and crew with a few taps. Track distance, engine hours, sea state, and crew across every passage — your complete voyage history in one place.", Visual: LogbookVisual },
+  { tag: "Logbook", title: "Log every watch. Own every passage.", body: "Start a live passage and tap your way through the crossing. Every watch change — time, position, course, speed, wind — logged in seconds. Hit arrived, and it's in your history.", Visual: LogbookVisual },
 ];
 
 
@@ -580,7 +530,7 @@ const FEATURES = [
 const DISPLAY_PLANS = [
   { name: "Free",     planId: "free",     price: "$0",                              period: "/mo", priceId: null,                               annualPriceId: null,                                effectiveMonthly: null,                          sub: "",                                                                                                                                                            subheader: "What's included",              cta: "Get started free", features: ["Automated boat setup", "1 vessel", PRICING_CONFIG.free.equipment + " equipment cards", "Unlimited repairs & maintenance", PRICING_CONFIG.free.firstMate + " First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
   { name: "Standard", planId: "standard", price: "$" + PRICING_CONFIG.standard.price, period: "/mo", priceId: PRICING_CONFIG.standard.priceId,  annualPriceId: PRICING_CONFIG.standard.annualPriceId, effectiveMonthly: PRICING_CONFIG.standard.effectiveMonthly, sub: "or $" + PRICING_CONFIG.standard.annualPrice + "/yr · save $" + (PRICING_CONFIG.standard.price * 12 - PRICING_CONFIG.standard.annualPrice), subheader: "Everything in Free, plus",     cta: "Get started →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Customizable checklists", "1GB document storage", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + " queries/mo", "Repair log & full logbook"] },
-  { name: "Pro",      planId: "pro",      price: "$" + PRICING_CONFIG.pro.price,      period: "/mo", priceId: PRICING_CONFIG.pro.priceId,        annualPriceId: PRICING_CONFIG.pro.annualPriceId,      effectiveMonthly: PRICING_CONFIG.pro.effectiveMonthly,      sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                           subheader: "Everything in Standard, plus", cta: "Get started →", features: ["2 vessels", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "Passage export (CSV)", "Haul-out planner"] },
+  { name: "Pro",      planId: "pro",      price: "$" + PRICING_CONFIG.pro.price,      period: "/mo", priceId: PRICING_CONFIG.pro.priceId,        annualPriceId: PRICING_CONFIG.pro.annualPriceId,      effectiveMonthly: PRICING_CONFIG.pro.effectiveMonthly,      sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                           subheader: "Everything in Standard, plus", cta: "Get started →", features: ["2 vessels", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "Watch entries logbook", "Passage export (CSV)", "Haul-out planner"] },
 ];
 
 
@@ -1104,10 +1054,11 @@ export default function LandingPage() {
                     ["First Mate AI",         PRICING_CONFIG.free.firstMate + " / mo",  PRICING_CONFIG.standard.firstMate + " / mo", PRICING_CONFIG.pro.firstMate + " / mo"],
                     ["AI vessel setup",       "\u2713",    "\u2713",      "\u2713"],
                     ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
+                    ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
                     ["Discount code",         "\u2014",   "BETA2026",  "BETA2026"],
                     ["Price",                 "Free",      "$" + PRICING_CONFIG.standard.price + " / mo",    "$" + PRICING_CONFIG.pro.price + " / mo"],
                   ].map(function (row, ri) {
-                    var isLast = ri === 16;
+                    var isLast = ri === 17;
                     return (
                       <tr key={ri} style={{ background: ri % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)" }}>
                         <td style={{ padding: "12px 16px", color: "rgba(255,255,255,0.7)", fontWeight: isLast ? 700 : 400 }}>{row[0]}</td>
@@ -1303,7 +1254,7 @@ export default function LandingPage() {
                 <div style={{ fontSize:10, color:"#4ade80", fontWeight:500, marginBottom:14 }}>{annual ? "$" + PRICING_CONFIG.pro.annualPrice + "/yr billed annually" : "\u00a0"}</div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
-                  {["2 vessels", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + "/mo", "Passage export (CSV)", "Unlimited storage"].map(function(f){
+                  {["2 vessels", "Watch entries logbook", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + "/mo", "Unlimited storage"].map(function(f){
                     return (
                       <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
                                            marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.55)" }}>
