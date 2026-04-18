@@ -5519,7 +5519,7 @@ export default function App() {
           {(function(){
             if ((userPlan !== "free" && userPlan) || trialActive) return null;
             const totalEquip = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
-            const lockedCount = totalEquip - 1;
+            const lockedCount = totalEquip - 10;
             if (lockedCount <= 0) return null;
             return (
               <div onClick={function(){ setShowUpgradeModal(true); }}
@@ -5601,7 +5601,7 @@ export default function App() {
                 { label: "Add Equipment", stroke: "#94a3b8", bg: "rgba(148,163,184,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a1.5 1.5 0 0 0-1.5 1.5v1.1a7 7 0 0 0-2.12.88L7.34 4.44a1.5 1.5 0 0 0-2.12 2.12l1.04 1.04A7 7 0 0 0 5.38 10H4.5a1.5 1.5 0 0 0 0 3h.88a7 7 0 0 0 .88 2.4l-1.04 1.04a1.5 1.5 0 0 0 2.12 2.12l1.04-1.04A7 7 0 0 0 10.5 20.5v.88a1.5 1.5 0 0 0 3 0v-.88a7 7 0 0 0 2.4-.88l1.04 1.04a1.5 1.5 0 0 0 2.12-2.12l-1.04-1.04a7 7 0 0 0 .88-2.4h.88a1.5 1.5 0 0 0 0-3h-.88a7 7 0 0 0-.88-2.4l1.04-1.04a1.5 1.5 0 0 0-2.12-2.12l-1.04 1.04A7 7 0 0 0 13.5 4.6V3.5A1.5 1.5 0 0 0 12 2z"/><circle cx="12" cy="11.5" r="2.8"/></svg>, action: function(){
                   var fabEqCount = equipment.filter(function(e){ return e._vesselId === activeVesselId && e.category !== "Vessel"; }).length;
                   var fabIsFree = !userPlan || userPlan === "free";
-                  if (fabIsFree && !trialActive && fabEqCount >= 1) { setShowFab(false); setShowUpgradeModal(true); return; }
+                  if (fabIsFree && !trialActive && fabEqCount >= 10) { setShowFab(false); setShowUpgradeModal(true); return; }
                   setTab("equipment-standalone"); setEquipAiMode(true); setEquipAiDesc(""); setEquipAiResult(null); setEquipAiError(null); setEquipAiLoading(false); setShowAddEquip(true); setShowFab(false);
                 } },
                 { label: "Add Task", stroke: "#34d399", bg: "rgba(52,211,153,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>, action: function(){ setShowAddTask(true); setShowFab(false); } },
