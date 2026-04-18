@@ -1378,43 +1378,60 @@ export default function App() {
 
   // Handle post-checkout redirect
   useEffect(function(){
-    if (typeof window !== "undefined" && window.location.search.includes("upgraded=1")) {
-      // Clean URL
-      window.history.replaceState({}, "", window.location.pathname);
-      // Reload plan after brief delay (webhook may not have fired yet)
-      setTimeout(async function(){
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          supabase.from("user_profiles").select("plan,created_at").eq("id", session.user.id).single()
-            .then(function(r){
-              if (r.data) {
-                var plan = r.data.plan || "free";
-                setUserPlan(plan);
-                setTrialActive(false);
-                // Fire GA4 purchase event for Google Ads conversion tracking
-                if (plan !== "free") {
-                  var planValue = plan === "pro" ? 25.00 : 15.00;
-                  try {
-                    if (typeof window.gtag === "function") {
-                      window.gtag("event", "purchase", {
-                        transaction_id: session.user.id + "_" + Date.now(),
-                        value: planValue,
-                        currency: "USD",
-                        items: [{ item_id: plan, item_name: "Keeply " + plan.charAt(0).toUpperCase() + plan.slice(1), price: planValue, quantity: 1 }]
-                      });
-                      window.gtag("event", "manual_event_PURCHASE", {
-                        transaction_id: session.user.id + "_" + Date.now(),
-                        value: planValue,
-                        currency: "USD"
-                      });
-                    }
-                  } catch(e) { /* non-blocking */ }
-                }
-              }
+    if (typeof window === "undefined" || !window.location.search.includes("upgraded=1")) return;
+    // Clean URL immediately so a refresh doesn't re-trigger
+    window.history.replaceState({}, "", window.location.pathname);
+
+    // Price ID → actual charge amount (supports annual plans correctly)
+    var PRICE_VALUES = {
+      "price_1TKJ3GA726uGRX5eqmN6Rwr4": 15.00,   // Standard Monthly
+      "price_1TKJ3GA726uGRX5eroj4WEUp": 144.00,  // Standard Annual
+      "price_1TKJ3TA726uGRX5epzWsSkbN": 25.00,   // Pro Monthly
+      "price_1TKJ3kA726uGRX5eRna7Gr4P": 240.00,  // Pro Annual
+    };
+
+    var fired = false; // prevent duplicate conversion if both polls succeed
+
+    async function checkAndFireConversion() {
+      try {
+        var sessData = await supabase.auth.getSession();
+        var uid = sessData?.data?.session?.user?.id;
+        if (!uid) return false;
+        var r = await supabase.from("user_profiles")
+          .select("plan,stripe_subscription_id,stripe_price_id")
+          .eq("id", uid).single();
+        if (!r.data || r.data.plan === "free") return false; // webhook not fired yet
+        setUserPlan(r.data.plan);
+        setTrialActive(false);
+        if (!fired) {
+          fired = true;
+          // Use subscription ID as transaction_id — stable, deduplicates on page reload
+          var txId = r.data.stripe_subscription_id || (uid + "_" + r.data.plan);
+          // Use actual price charged — handles $144/yr and $240/yr annual plans
+          var planValue = PRICE_VALUES[r.data.stripe_price_id] || (r.data.plan === "pro" ? 25.00 : 15.00);
+          if (typeof window.gtag === "function") {
+            window.gtag("event", "purchase", {
+              transaction_id: txId,
+              value: planValue,
+              currency: "USD",
+              items: [{ item_id: r.data.plan, item_name: "Keeply " + r.data.plan.charAt(0).toUpperCase() + r.data.plan.slice(1), price: planValue, quantity: 1 }]
             });
+            window.gtag("event", "manual_event_PURCHASE", {
+              transaction_id: txId,
+              value: planValue,
+              currency: "USD"
+            });
+          }
         }
-      }, 2000);
+        return true;
+      } catch(e) { return false; }
     }
+
+    // Poll at 2s. If webhook hasn't fired yet, retry once at 6s.
+    setTimeout(async function(){
+      var ok = await checkAndFireConversion();
+      if (!ok) setTimeout(checkAndFireConversion, 4000);
+    }, 2000);
   }, []);
 
   // Pending plan is now handled in VesselSetup onComplete — no timer needed here
