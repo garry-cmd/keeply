@@ -162,6 +162,8 @@ export default function LogbookPage({
   const [viewingEntry, setViewingEntry] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm,     setEditForm]     = useState({});
+  const [viewingWatchEntries, setViewingWatchEntries] = useState([]);
+  const [viewingWeLoading,    setViewingWeLoading]    = useState(false);
 
   // Checklists
   const [pdChecked,    setPdChecked]    = useState([]);
@@ -209,6 +211,16 @@ export default function LogbookPage({
       if (onAddFormOpened) onAddFormOpened();
     }
   }, [openAddForm]);
+
+  // ── Load watch entries for the passage being viewed ────────────────────
+  useEffect(function() {
+    if (!viewingEntry) { setViewingWatchEntries([]); return; }
+    setViewingWeLoading(true);
+    supabase.from("watch_entries").select("*")
+      .eq("passage_id", viewingEntry.id)
+      .order("entry_time", { ascending: true })
+      .then(function(r) { setViewingWatchEntries(r.data || []); setViewingWeLoading(false); });
+  }, [viewingEntry]);
 
   // ── Load active (in_progress) passage on mount ─────────────────────────
   useEffect(function() {
@@ -916,17 +928,37 @@ export default function LogbookPage({
         {/* History link — always accessible */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {showHistory && isPro && (
-            <button onClick={function(){
+            <button onClick={async function(){
+              const passages = entries.filter(function(e){ return e.entry_type === "passage"; });
+              // Fetch all watch entries for these passages in one query
+              var watchByPassage = {};
+              if (passages.length > 0) {
+                var ids = passages.map(function(p){ return p.id; });
+                var { data: we } = await supabase.from("watch_entries").select("*")
+                  .in("passage_id", ids).order("passage_id").order("entry_time", { ascending: true });
+                (we || []).forEach(function(w){ if (!watchByPassage[w.passage_id]) watchByPassage[w.passage_id] = []; watchByPassage[w.passage_id].push(w); });
+              }
+              // Section 1 — passage summaries
               const rows = ["Date,From,To,Distance (nm),Departed,Arrived,Sea State,Conditions,Crew,Notes"];
-              entries.filter(function(e){ return e.entry_type === "passage"; }).forEach(function(e){
-                rows.push([
-                  e.entry_date, e.from_location||"", e.to_location||"",
-                  e.distance_nm||"", e.departure_time||"", e.arrival_time||"",
-                  e.sea_state||"", e.conditions||"", e.crew||"",
-                  (e.notes||"").replace(/,/g,"；")
-                ].join(","));
+              passages.forEach(function(e){
+                rows.push([e.entry_date, e.from_location||"", e.to_location||"", e.distance_nm||"", e.departure_time||"", e.arrival_time||"", e.sea_state||"", e.conditions||"", e.crew||"", (e.notes||"").replace(/,/g,"；")].join(","));
               });
-              const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+              // Section 2 — watch log entries
+              var hasAny = passages.some(function(p){ return watchByPassage[p.id] && watchByPassage[p.id].length > 0; });
+              if (hasAny) {
+                rows.push("");
+                rows.push("Watch Log");
+                rows.push("Passage,Date,Time,Position,COG,SOG,Wind Dir,Wind Kt,Baro,Notes");
+                passages.forEach(function(e){
+                  var wes = watchByPassage[e.id] || [];
+                  wes.forEach(function(w){
+                    var passageLabel = (e.from_location && e.to_location ? e.from_location + " → " + e.to_location : e.entry_date);
+                    rows.push([passageLabel.replace(/,/g,"；"), e.entry_date, w.entry_time, (w.position||"").replace(/,/g,"；"), w.course_deg||"", w.speed_kts||"", w.wind_dir||"", w.wind_speed_kts||"", w.baro_mb||"", (w.notes||"").replace(/,/g,"；")].join(","));
+                  });
+                });
+              }
+              const blob = new Blob([rows.join("
+")], { type: "text/csv" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a"); a.href = url;
               a.download = "keeply-passages.csv"; a.click();
@@ -1043,6 +1075,34 @@ export default function LogbookPage({
                     return (<div key={pair[0]} style={{ marginBottom:14 }}><div style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", letterSpacing:"0.5px", textTransform:"uppercase", marginBottom:3 }}>{pair[0]}</div><div style={{ fontSize:14, color:pair[1]?"var(--text-primary)":"var(--text-muted)", fontWeight:pair[1]?500:400 }}>{pair[1]||"—"}</div></div>);
                   })}
                 </div>
+                {(viewingWeLoading || viewingWatchEntries.length > 0) && (
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 10, borderTop: "0.5px solid var(--border)", paddingTop: 14 }}>Watch log</div>
+                    {viewingWeLoading ? (
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading…</div>
+                    ) : (
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                          <thead><tr>{["Time","Position","COG","SOG","Wind","Notes"].map(function(h){ return <th key={h} style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", textAlign: "left", padding: "0 8px 7px 0", whiteSpace: "nowrap" }}>{h}</th>; })}</tr></thead>
+                          <tbody>
+                            {viewingWatchEntries.map(function(we) {
+                              return (
+                                <tr key={we.id} style={{ borderTop: "0.5px solid var(--border)" }}>
+                                  <td style={{ padding: "7px 8px 7px 0", fontFamily: "DM Mono, monospace", fontWeight: 700, color: "var(--brand)", whiteSpace: "nowrap" }}>{we.entry_time}</td>
+                                  <td style={{ padding: "7px 8px 7px 0", color: "var(--text-secondary)", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{we.position || "—"}</td>
+                                  <td style={{ padding: "7px 8px 7px 0", fontFamily: "DM Mono, monospace", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{we.course_deg != null ? we.course_deg + "°" : "—"}</td>
+                                  <td style={{ padding: "7px 8px 7px 0", fontFamily: "DM Mono, monospace", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{we.speed_kts != null ? we.speed_kts + " kt" : "—"}</td>
+                                  <td style={{ padding: "7px 8px 7px 0", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{we.wind_dir && we.wind_speed_kts ? we.wind_dir + " " + we.wind_speed_kts + "kt" : (we.wind_dir || "—")}</td>
+                                  <td style={{ padding: "7px 0 7px 0", color: "var(--text-muted)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{we.notes || ""}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div style={{ padding:"12px 20px", borderTop:"0.5px solid var(--border)", display:"flex", gap:10, flexShrink:0 }}>
                 <button onClick={function(){ if(window.confirm("Delete this entry?")){ del(e.id); setViewingEntry(null); } }} style={{ padding:"10px 14px", border:"0.5px solid var(--danger-border)", borderRadius:10, background:"none", cursor:"pointer", fontWeight:600, fontSize:14, color:"var(--danger-text)" }}>Delete</button>
