@@ -578,9 +578,9 @@ const FEATURES = [
 
 
 const DISPLAY_PLANS = [
-  { name: "Free",     price: "$0",                                               period: "/mo", sub: "",                                                                                                         subheader: "What's included",             cta: "Get started free", features: ["Automated boat setup", "1 vessel", PRICING_CONFIG.free.equipment + " equipment cards", "Unlimited maintenance tasks", PRICING_CONFIG.free.firstMate + " First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
-  { name: "Standard", price: "$" + PRICING_CONFIG.standard.price,               period: "/mo", sub: "or $" + PRICING_CONFIG.standard.annualPrice + "/yr · save $" + (PRICING_CONFIG.standard.price * 12 - PRICING_CONFIG.standard.annualPrice), subheader: "Everything in Free, plus",    cta: "Buy now →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + " queries/mo", "Repair log & full logbook"] },
-  { name: "Pro",      price: "$" + PRICING_CONFIG.pro.price,                    period: "/mo", sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                   subheader: "Everything in Standard, plus", cta: "Buy now →", features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
+  { name: "Free",     planId: "free",     price: "$0",                              period: "/mo", priceId: null,                               annualPriceId: null,                                effectiveMonthly: null,                          sub: "",                                                                                                                                                            subheader: "What's included",              cta: "Get started free", features: ["Automated boat setup", "1 vessel", PRICING_CONFIG.free.equipment + " equipment cards", "Unlimited maintenance tasks", PRICING_CONFIG.free.firstMate + " First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
+  { name: "Standard", planId: "standard", price: "$" + PRICING_CONFIG.standard.price, period: "/mo", priceId: PRICING_CONFIG.standard.priceId,  annualPriceId: PRICING_CONFIG.standard.annualPriceId, effectiveMonthly: PRICING_CONFIG.standard.effectiveMonthly, sub: "or $" + PRICING_CONFIG.standard.annualPrice + "/yr · save $" + (PRICING_CONFIG.standard.price * 12 - PRICING_CONFIG.standard.annualPrice), subheader: "Everything in Free, plus",     cta: "Get started →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Unlimited repairs", "Customizable checklists", "1GB document storage", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + " queries/mo", "Repair log & full logbook"] },
+  { name: "Pro",      planId: "pro",      price: "$" + PRICING_CONFIG.pro.price,      period: "/mo", priceId: PRICING_CONFIG.pro.priceId,        annualPriceId: PRICING_CONFIG.pro.annualPriceId,      effectiveMonthly: PRICING_CONFIG.pro.effectiveMonthly,      sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                           subheader: "Everything in Standard, plus", cta: "Get started →", features: ["2 vessels", "Unlimited equipment cards", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
 
 
@@ -885,8 +885,6 @@ export default function LandingPage() {
   function openAuth(m) { setMode(m || "signup"); setShowAuth(true); }
   function scrollToPricing() { var el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }
 
-  var annualPrices = { "$15": "$12", "$25": "$20" };
-
   return (
     <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", color: WHITE, background: NAVY, overflowX: "hidden" }}>
 
@@ -916,7 +914,7 @@ export default function LandingPage() {
           {!isMobile && <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>}
           {!isMobile && <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>}
           <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", padding: "7px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Log in</button>
-          <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Buy now {"\u2192"}</button>
+          <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Get started {"\u2192"}</button>
         </div>
       </nav>
 
@@ -946,7 +944,7 @@ export default function LandingPage() {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
               <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: GOLD, border: "none", color: "#1a1200", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-                Buy now {"→"}
+                Get started {"→"}
               </button>
               <button onClick={function () { openAuth("login"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: WHITE, padding: "14px 28px", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
                 Log in
@@ -974,7 +972,7 @@ export default function LandingPage() {
                 <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
                 <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
                 <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
-                <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Buy now {"\u2192"}</button>
+                <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Get started {"\u2192"}</button>
               </div>
               <div style={{ order: isMobile ? 1 : (isEven ? 1 : 0) }}><V /></div>
             </div>
@@ -1006,7 +1004,7 @@ export default function LandingPage() {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
             {DISPLAY_PLANS.map(function (plan, pi) {
               var hl = plan.highlight;
-              var price = plan.price === "Free" ? "Free" : (annual ? (annualPrices[plan.price] || plan.price) : plan.price);
+              var price = annual && plan.effectiveMonthly ? "$" + plan.effectiveMonthly : plan.price;
               return (
                 <div key={pi} style={{ background: hl ? "rgba(77,166,255,0.08)" : "rgba(255,255,255,0.04)", border: hl ? "2px solid rgba(77,166,255,0.5)" : "1px solid rgba(255,255,255,0.1)", borderRadius: 18, padding: "28px 22px", position: "relative", display: "flex", flexDirection: "column" }}>
                   {plan.badge && (
@@ -1031,7 +1029,13 @@ export default function LandingPage() {
                       );
                     })}
                   </div>
-                  <button onClick={function () { openAuth("signup"); }} style={{ width: "100%", padding: "13px 0", borderRadius: 10, border: hl ? "none" : "1px solid rgba(255,255,255,0.2)", fontSize: 14, fontWeight: 700, cursor: "pointer", background: hl ? GOLD : "transparent", color: hl ? "#1a1200" : WHITE }}>
+                  <button onClick={function () {
+                    var pid = annual && plan.annualPriceId ? plan.annualPriceId : plan.priceId;
+                    try { localStorage.setItem("keeply_pending_plan", plan.planId); } catch(e) {}
+                    if (pid) { try { localStorage.setItem("keeply_pending_price_id", pid); } catch(e) {} }
+                    setPendingPlan(plan.planId);
+                    openAuth("signup");
+                  }} style={{ width: "100%", padding: "13px 0", borderRadius: 10, border: hl ? "none" : "1px solid rgba(255,255,255,0.2)", fontSize: 14, fontWeight: 700, cursor: "pointer", background: hl ? GOLD : "transparent", color: hl ? "#1a1200" : WHITE }}>
                     {plan.cta}
                   </button>
                 </div>
@@ -1136,7 +1140,7 @@ export default function LandingPage() {
                         width:"100%", maxWidth:480, boxShadow:"0 32px 80px rgba(0,0,0,0.6)",
                         border:"1px solid rgba(255,255,255,0.1)" }}>
             {/* Header */}
-            <div style={{ textAlign:"center", marginBottom:28 }}>
+            <div style={{ textAlign:"center", marginBottom:20 }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#f5a623",
                             letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
                 Choose a plan
@@ -1144,8 +1148,18 @@ export default function LandingPage() {
               <div style={{ fontSize:22, fontWeight:800, color:"#fff", marginBottom:6 }}>
                 Choose your plan
               </div>
-              <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)" }}>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:16 }}>
                 No credit card required
+              </div>
+              {/* Monthly / Annual toggle */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                <span style={{ fontSize:13, color: annual ? "rgba(255,255,255,0.4)" : "#fff", fontWeight: annual ? 400 : 600 }}>Monthly</span>
+                <div onClick={function(){ setAnnual(function(a){ return !a; }); }}
+                  style={{ width:40, height:22, background: annual ? ACCENT : "rgba(255,255,255,0.2)", borderRadius:11, position:"relative", cursor:"pointer", transition:"background 0.2s" }}>
+                  <div style={{ position:"absolute", width:16, height:16, background:"#fff", borderRadius:"50%", top:3, left: annual ? 21 : 3, transition:"left 0.2s" }} />
+                </div>
+                <span style={{ fontSize:13, color: annual ? "#fff" : "rgba(255,255,255,0.4)", fontWeight: annual ? 600 : 400 }}>Annual</span>
+                {annual && <span style={{ fontSize:11, fontWeight:700, color:"#4ade80", background:"rgba(74,222,128,0.12)", padding:"2px 8px", borderRadius:20 }}>Save 20%</span>}
               </div>
             </div>
 
@@ -1155,7 +1169,7 @@ export default function LandingPage() {
               {/* Free */}
               <div
                 onClick={function(){
-                  localStorage.setItem("keeply_pending_plan", "free");
+                  try { localStorage.setItem("keeply_pending_plan", "free"); } catch(e) {}
                   setPendingPlan("free");
                   setShowPlanPicker(false);
                   openAuth("signup");
@@ -1167,9 +1181,10 @@ export default function LandingPage() {
                 onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; }}>
                 <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)",
                               textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Free</div>
-                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
+                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:4 }}>
                   <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>$0</span>
                 </div>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginBottom:14 }}>&nbsp;</div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
                   {["1 vessel", "Basic maintenance", "3 repairs", "Parts catalog"].map(function(f){
@@ -1191,7 +1206,9 @@ export default function LandingPage() {
               {/* Standard */}
               <div
                 onClick={function(){
-                  localStorage.setItem("keeply_pending_plan", "standard");
+                  var pid = annual ? PRICING_CONFIG.standard.annualPriceId : PRICING_CONFIG.standard.priceId;
+                  try { localStorage.setItem("keeply_pending_plan", "standard"); } catch(e) {}
+                  try { localStorage.setItem("keeply_pending_price_id", pid); } catch(e) {}
                   setPendingPlan("standard");
                   setShowPlanPicker(false);
                   openAuth("signup");
@@ -1209,11 +1226,12 @@ export default function LandingPage() {
                 </div>
                 <div style={{ fontSize:11, fontWeight:700, color:"#4da6ff",
                               textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Standard</div>
-                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
+                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:4 }}>
                   <span style={{ fontSize:20, fontWeight:700, color:"#fff", alignSelf:"flex-start", marginTop:6 }}>$</span>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>{PRICING_CONFIG.standard.price}</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>{annual ? PRICING_CONFIG.standard.effectiveMonthly : PRICING_CONFIG.standard.price}</span>
                   <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>/mo</span>
                 </div>
+                <div style={{ fontSize:10, color:"#4ade80", fontWeight:500, marginBottom:14 }}>{annual ? "$" + PRICING_CONFIG.standard.annualPrice + "/yr billed annually" : "\u00a0"}</div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
                   {["Unlimited equipment", "Unlimited repairs", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + "/mo", "Repair log & logbook"].map(function(f){
@@ -1228,14 +1246,16 @@ export default function LandingPage() {
                 <div style={{ padding:"8px 0", background:"#f5a623",
                               borderRadius:8, textAlign:"center", fontSize:12,
                               fontWeight:700, color:"#1a1200" }}>
-                  Buy now →
+                  Get started →
                 </div>
               </div>
 
               {/* Pro */}
               <div
                 onClick={function(){
-                  localStorage.setItem("keeply_pending_plan", "pro");
+                  var pid = annual ? PRICING_CONFIG.pro.annualPriceId : PRICING_CONFIG.pro.priceId;
+                  try { localStorage.setItem("keeply_pending_plan", "pro"); } catch(e) {}
+                  try { localStorage.setItem("keeply_pending_price_id", pid); } catch(e) {}
                   setPendingPlan("pro");
                   setShowPlanPicker(false);
                   openAuth("signup");
@@ -1247,11 +1267,12 @@ export default function LandingPage() {
                 onMouseLeave={function(e){ e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; }}>
                 <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)",
                               textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Pro</div>
-                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:14 }}>
+                <div style={{ display:"flex", alignItems:"baseline", gap:2, marginBottom:4 }}>
                   <span style={{ fontSize:20, fontWeight:700, color:"#fff", alignSelf:"flex-start", marginTop:6 }}>$</span>
-                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>{PRICING_CONFIG.pro.price}</span>
+                  <span style={{ fontSize:28, fontWeight:800, color:"#fff", lineHeight:1 }}>{annual ? PRICING_CONFIG.pro.effectiveMonthly : PRICING_CONFIG.pro.price}</span>
                   <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>/mo</span>
                 </div>
+                <div style={{ fontSize:10, color:"#4ade80", fontWeight:500, marginBottom:14 }}>{annual ? "$" + PRICING_CONFIG.pro.annualPrice + "/yr billed annually" : "\u00a0"}</div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
                   {["2 vessels", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + "/mo", "AI-enriched logbook", "Unlimited storage"].map(function(f){
@@ -1266,7 +1287,7 @@ export default function LandingPage() {
                 <div style={{ padding:"8px 0", border:"1px solid rgba(255,255,255,0.15)",
                               borderRadius:8, textAlign:"center", fontSize:12,
                               fontWeight:700, color:"rgba(255,255,255,0.6)" }}>
-                  Buy now →
+                  Get started →
                 </div>
               </div>
 
