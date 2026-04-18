@@ -1097,16 +1097,26 @@ export default function App() {
       if (!session) return;
       try {
         setLoading(true);
-        // Load vessels — filter by membership
-        const vs = await supa("vessels", { query: "order=created_at" });
-        if (!vs || vs.length === 0) {
+        const userId = session.user.id;
+        // Load vessels AND membership data to filter correctly
+        const [vs, members] = await Promise.all([
+          supa("vessels", { query: "order=created_at" }),
+          supa("vessel_members", { query: "select=vessel_id,user_id,role&user_id=eq." + userId })
+        ]);
+        // Filter vessels by user membership (owner or crew)
+        const userVessels = (vs || []).filter(function(v){ 
+          return (members || []).some(function(m){ 
+            return m.vessel_id === v.id && m.user_id === userId; 
+          }); 
+        });
+        if (userVessels.length === 0) {
           setNeedsSetup(true);
           setLoading(false);
           return;
         }
 
         // Normalize vessel fields
-        const normalizedVessels = vs.map(function(v){
+        const normalizedVessels = userVessels.map(function(v){
           return {
             id: v.id,
             vesselType: v.vessel_type || "sail",
@@ -1123,6 +1133,7 @@ export default function App() {
           };
         });
         setVessels(normalizedVessels);
+        setVesselMembers(members || []); // Store members data we already loaded
         // Restore last active vessel, fall back to first
         const savedId = localStorage.getItem("keeply_active_vessel");
         const firstId = (savedId && normalizedVessels.find(function(v){ return v.id === savedId; }))
@@ -1194,14 +1205,7 @@ export default function App() {
           }
         } catch(e) { console.error("Admin tasks initial load error:", e); }
 
-        // Load vessel members for all user vessels
-        try {
-          const allVesselIds = normalizedVessels.map(function(v){ return v.id; });
-          if (allVesselIds.length > 0) {
-            const mb = await supa("vessel_members", { query: "vessel_id=in.(" + allVesselIds.join(",") + ")&order=created_at" });
-            setVesselMembers(mb || []);
-          }
-        } catch(e) { setVesselMembers([]); }
+        // Vessel members already loaded earlier - no need to reload
 
       } catch(err) {
         setDbError(err.message);

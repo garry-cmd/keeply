@@ -1,0 +1,126 @@
+[33mba57735[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Force deployment after rollback
+[33m53c2752[m feat: health score v2, engine hours on Engine cards, 403 fix, OKR backlog updated
+[33m4c3a8ea[m feat: show engine hours on Engine category equipment cards; health score v2; fix 403 invite claim
+[33mc603d5a[m feat: vessel health score v2 — severity-weighted repairs, due-soon tasks, watch equipment; fix 403 invite claim noise
+[33m44450bb[m fix: remove spurious 403 on vessel_members — move invite claim to SIGNED_IN event only
+[33m4a1973b[m feat: Level 2 offline caching — read-only data cached to localStorage, amber banner when offline; fix OKR prerender bug; mark PWA KRs done
+[33meb9fb68[m feat: add feature backlog section to OKR page
+[33m4ee0c6a[m docs: update ROADMAP.md — mobile audit complete, markdown renderer deferred
+[33mfd8ee91[m fix: Pro users see Manage button not Upgrade to Pro
+[33m6ca3ecd[m fix: profile panel color consistency — remove hardcoded hex, use CSS vars throughout
+[33m9e00560[m fix: profile panel — bottom sheet instead of right drawer, Done + Save buttons
+[33ma9b678e[m revert: restore FirstMate files to pre-markdown-renderer state
+[33m256be92[m fix: simplify First Mate markdown renderer — strips symbols, no JSX functions
+[33m3bd6698[m fix: rewrite markdown renderer with JSX — React.createElement was crashing
+[33m124bfe8[m feat: markdown rendering in First Mate — headers, bold, bullet lists
+[33m60b257e[m fix: remove back arrow from logbook header
+[33ma203970[m fix: logbook mobile — back button 44px, remove vessel name, history/export buttons boat-proof
+[33m63c779b[m fix: logbook mobile — date field full width, bigger tab targets, boat-proof sea state pills
+[33mb84c36f[m fix: replace ↑ arrow with proper send icon, 42px tap target on First Mate input
+[33m2562ff6[m fix: remove redundant up arrow from First Mate bar
+[33m5ba529c[m fix: larger + button across all tab headers, 48x48 boat-proof tap target
+[33m67ecd49[m fix: boat-proof tap targets on ID/Docs/Admin/Ref — full width, 42px min height
+[33m55ce268[m fix: larger tap targets on ID/Docs/Admin/Ref pills, increased gap
+[33m1ce67b5[m fix: repair edit form selects overflowing on mobile
+[33m2cc62fa[m fix: remove last passage display from vessel selector top bar
+[33m672e1af[m fix: friendly offline message when fetch fails, improved service worker caching
+[33mf536c51[m feat: add offline app shell caching to service worker
+[33mafb38f5[m update: roadmap + OKR page — community acquisition, viable product objective
+[33m6551ba1[m feat: admin OKR roadmap page + ROADMAP.md
+[33m59a7f88[m feat: add ROADMAP.md and /admin/okr roadmap page
+[33m7888bae[m feat: add ROADMAP.md and /admin/okr roadmap page
+[33mea7622e[m feat: fire GA4 sign_up event on vessel creation for Google Ads conversion tracking
+[33m8fe272d[m feat: email user on payment failure with Stripe billing portal link
+[33m8e5baf7[m fix: plan picker modal — 3-col grid matching pricing section, Free card left of Standard
+[33m2c2f965[m feat: add free plan card to website plan picker modal
+[33mbfc812c[m fix: remove last sailed subtitle from vessel selector header
+[33m6681173[m fix: exclude Vessel card from all equipment dropdowns in task/repair modals
+[33m34ed51b[m fix: Add Maintenance Task title, require equipment on task create, pre-select on FAB
+[33m938d2b4[m fix: clamp vessel make/model/year length, AI extracts clean fields
+[33m6beae90[m feat: fire Stripe immediately after signup — no timer, no post-setup trigger
+[33m21ab21d[m feat: replace free trial with Buy now — remove 14-day trial, add BETA2026 messaging
+[33mfb261f7[m fix: remove old 800ms Stripe timer — Stripe now triggers only after vessel setup
+[33mea4891c[m fix: trigger Stripe after vessel setup completes, not on 800ms timer
+[33m0f55467[m fix: read localStorage as fallback for pendingPlan in submit — survives mobile state reset
+[33m04c7ee7[m fix: switch to PKCE flow — prevents email scanner from consuming one-time confirmation token
+[33m55c37e5[m fix: payment_method_collection if_required — no card needed with 100% off coupon
+[33m5c19015[m fix: store pending_plan in user metadata at signup — survives cross-browser confirmation
+[33m4a05532[m feat: never activated metric on admin dashboard
+[33m60f1f6a[m fix: move supabase client init inside handler to avoid build-time crash
+[33mee762ca[m feat: remove 14-day trial from free plan — gates active immediately
+[33m6b7c745[m feat: free plan card — \ price, automated boat setup first, basic checklists, clean CTA
+[33m975327f[m fix: remove fake testimonials — in beta, no social proof yet
+[33ma3f6919[m fix: hero video 720p — was 480p, grainy on desktop
+[33mf483f18[m feat: signup notification email via Resend
+[33m82f436d[m fix: auto-reply sends from support@keeply.boats
+[33m301e7cd[m feat: contact form auto-reply to sender via Resend
+[33m1637f27[m refactor: contact page — cards as type selector, single unified form
+[33m47df59a[m fix: move Resend init inside handler to avoid build-time crash
+[33m53201f8[m feat: contact form with Resend — replaces mailto-only buttons
+[33m3c2c5c6[m feat: contact form with Resend — replaces mailto-only buttons
+[33m4def0dd[m feat: GA4 purchase event on Stripe upgrade for conversion tracking
+[33m8092003[m seo: Google Search Console verification file
+[33m4d7ff3f[m seo: sitemap, robots.txt, canonical, JSON-LD structured data
+[33mcafa2e3[m feat: beta banner on landing page
+[33m2dcd4da[m fix: pass plan in email verification redirect URL — survives cross-browser email open
+[33m3000dad[m feat: plan picker modal on Start Free Trial CTA
+[33m2895e15[m feat: admin dashboard — restore Revenue section below Engagement
+[33m1601ac9[m feat: admin dashboard — goal cards, plan breakdown, geography, app store ratings, time-to-activation
+[33mc1b172e[m feat: admin dashboard — engagement first, collapsible signups, WoW trends
+[33m26a3aef[m feat: admin dashboard — activation rate, day-7 retention, conversion, First Mate metrics
+[33m7ace05d[m feat: admin dashboard — activation rate, day-7 retention, conversion, First Mate metrics
+[33m6b97ed8[m feat: admin dashboard — activation rate, day-7 retention, conversion, First Mate metrics
+[33m11a8b32[m fix: fragment wrapper on KPI+status cards return, fixes JSX siblings error
+[33m7aa5cb1[m feat: add engine hrs + NM KPI strip to My Boat, remove light mode toggle
+[33m623022e[m feat: lighter dark mode, appearance toggle in settings, fix localStorage init
+[33mbf5b2ae[m feat: 14-day free trial — full Pro access on signup, gates lift automatically
+[33md66e2bd[m feat: universal 14-day Pro trial, simplified pricing messaging
+[33m1f18925[m fix: locked equipment banner in correct JSX scope
+[33m49afe77[m feat: AI onboarding for all, free plan 3 FM queries, equipment visibility gate, pricing updated
+[33m4a99e92[m fix: LandingPage adds dark-mode class to body — standalone render was inheriting light bg
+[33m1505221[m perf: gate demo animations on viewport visibility — fixes scroll freeze
+[33m39d295a[m perf: lazy-load app bundle, 14MB→2MB video — landing page now ~400KB instead of 1.2MB
+[33me49def8[m remove: 2x2 KPI instrument strip from My Boat tab
+[33m3ded9ce[m feat: My Boat overhaul — health score, last sailed, 4-KPI strip, status previews, repair urgency
+[33med598aa[m fix: sort equipment by category instead of alpha
+[33mb43d763[m feat: replace anchor emoji with ship helm SVG icon in First Mate
+[33ma85e25b[m feat: First Mate nav tab, full-screen chat with insights + departure briefing
+[33m96be720[m feat: Ref tab on vessel card with links, marine reference in First Mate
+[33m9d1a624[m revert: remove theme toggle, back to fixed dark mode
+[33maae38df[m feat: three-state day/auto/night theme toggle in profile settings
+[33m8980e12[m feat: updated pre-departure checklist, flat layout, sailboat-specific items
+[33mbc84a38[m feat: seed Engine card with 8 basic maintenance tasks for free users
+[33mb37e1b5[m feat: auto-create Engine card on free user vessel setup
+[33mc4f124e[m fix: gate equipment cards at 1 for free users, update landing page
+[33me373f2a[m feat: free users get simple manual onboarding, paid users get AI build
+[33mf1f0413[m feat: OG tags + social preview image
+[33m51e4c3b[m feat: trial banner, hero CTAs, nav updated for 14-day trial
+[33me612c04[m fix: wire 14-day trial to Standard price IDs in checkout route
+[33mc79fc7c[m feat: 14-day trial messaging on Standard card, hero, and pricing footer
+[33m3598a2a[m feat: free tier 1 equipment card, pro 14-day trial
+[33m29e21da[m feat: posthog analytics
+[33m8264168[m fix: exclude cancelled subscriptions from MRR count
+[33m6145b64[m debug: add stripe price ID logging to admin stats
+[33md34df71[m fix: admin page supabase import
+[33md926b0e[m feat: admin dashboard at /admin
+[33m6f5d4a7[m fix: remove duplicate editingId state declaration
+[33m68d947b[m feat: edit passages + calculated stats in detail sheet
+[33ma01a67e[m fix: engine hours manual update wins on same-day as log entry
+[33mc2c161f[m fix: engine hours KPI shows most recent of log vs manual update
+[33mb46732b[m feat: replace emojis with SVG icons on contact page
+[33m4c3b132[m fix: white inputs on auth modal in LandingPage
+[33m7f5d847[m fix: force light mode CSS variables on AuthScreen login form
+[33m691d0de[m feat: update pricing tiers with logbook and checklist features
+[33mbbe10b6[m feat: passage export Pro only, userPlan wired to LogbookPage
+[33m41c88e1[m Fix AI Identify modal info banner to use light card styling
+[33m166b49c[m fix: show AuthScreen instead of LandingPage in TWA/standalone mode
+[33m7c8894f[m feat: animate MaintenanceVisual — Ken Burns, card slide-up, counter, pulse
+[33m894e9cd[m security: add HTTP headers, fix webhook constant-time comparison
+[33mf6329c9[m feat: add assetlinks.json for TWA Play Store
+[33me06fbe9[m fix: replace garry@ with role emails across site
+[33m56d9a10[m feat: compass icon for Logbook nav tab
+[33m66fbebd[m feat: passage tab as inline form with localStorage draft
+[33m4a3edfb[m feat: reorder logbook tabs departure > passages > arrival
+[33m5f45c38[m feat: move reference library to vessel card Ref tab
+[33m1cc9a97[m fix: checklist upsert on_conflict pattern
+[33m3bbe170[m feat: add checklists and reference library to Logbook
