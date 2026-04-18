@@ -1129,7 +1129,7 @@ export default function LandingPage() {
           </h1>
 
           <p style={{ fontSize: "clamp(16px,2vw,20px)", color: "rgba(255,255,255,0.6)", margin: "0 0 40px", lineHeight: 1.6, maxWidth: 540 }}>
-            AI-powered vessel management — maintenance, logbook, and First Mate always ready when you are.
+            AI-powered vessel management — maintenance, logbook, and an AI crew member that knows your boat inside out.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
@@ -1260,7 +1260,7 @@ export default function LandingPage() {
                     ["Crew / shared access",  "\u2713",    "\u2713",      "\u2713"],
                     ["Departure & arrival checklists", "\u2713", "\u2713",  "\u2713"],
                     ["Customizable checklists", "\u2014",    "\u2713",      "\u2713"],
-                    ["Repair log & logbook",  "\u2014",    "\u2713",      "\u2713"],
+                    ["Repair log & full logbook",  "\u2014",    "\u2713",      "\u2713"],
                     ["Haul-out planner",      "\u2014",    "\u2014",      "\u2713"],
                     ["First Mate AI",         PRICING_CONFIG.free.firstMate + " / mo",  PRICING_CONFIG.standard.firstMate + " / mo", PRICING_CONFIG.pro.firstMate + " / mo"],
                     ["AI vessel setup",       "\u2713",    "\u2713",      "\u2713"],
@@ -1269,7 +1269,7 @@ export default function LandingPage() {
                     ["Discount code",         "\u2014",   "BETA2026",  "BETA2026"],
                     ["Price",                 "Free",      "$" + PRICING_CONFIG.standard.price + " / mo",    "$" + PRICING_CONFIG.pro.price + " / mo"],
                   ].map(function (row, ri) {
-                    var isLast = ri === 17;
+                    var isLast = ri === 18;
                     return (
                       <tr key={ri} style={{ background: ri % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)" }}>
                         <td style={{ padding: "12px 16px", color: "rgba(255,255,255,0.7)", fontWeight: isLast ? 700 : 400 }}>{row[0]}</td>
@@ -1296,7 +1296,7 @@ export default function LandingPage() {
           </p>
           <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
             Commercial or fleet manager?{" "}
-            <a href="mailto:sales@keeply.boats?subject=Keeply Fleet enquiry" style={{ color: ACCENT, textDecoration: "none", fontWeight: 600 }}>Talk to us about Fleet {"\u2192"}</a>
+            <a href="mailto:sales@keeply.boats?subject=Keeply Fleet inquiry" style={{ color: ACCENT, textDecoration: "none", fontWeight: 600 }}>Talk to us about Fleet {"\u2192"}</a>
           </p>
         </div>
       </section>
