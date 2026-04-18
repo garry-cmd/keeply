@@ -446,7 +446,7 @@ function MyBoatVisual() {
 
         {/* Footer */}
         <div style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", padding: "7px 0 9px" }}>
-          {[["My Boat","#0f4c8a"],["Logbook","rgba(7,30,61,0.3)"],["Equipment","rgba(7,30,61,0.3)"],["Profile","rgba(7,30,61,0.3)"]].map(function(item){
+          {[["Logbook","rgba(7,30,61,0.3)"],["Equipment","rgba(7,30,61,0.3)"],["My Boat","#0f4c8a"],["First Mate","rgba(7,30,61,0.3)"],["Profile","rgba(7,30,61,0.3)"]].map(function(item){
             return <div key={item[0]} style={{ flex:1, textAlign:"center", fontSize:7, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.3px", color:item[1] }}>{item[0]}</div>;
           })}
         </div>
@@ -786,7 +786,7 @@ function OnboardingVisual() {
 
         {phase === 2 && (
           <div style={{ background: "#fff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", padding: "6px 0 8px" }}>
-            {["My Boat","Equipment","Logbook","Profile"].map(function(t){
+            {["Logbook","Equipment","My Boat","First Mate","Profile"].map(function(t){
               return <div key={t} style={{ flex:1, textAlign:"center", fontSize:7, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.3px", color: t==="My Boat"?"#0f4c8a":"rgba(7,30,61,0.3)" }}>{t}</div>;
             })}
           </div>
