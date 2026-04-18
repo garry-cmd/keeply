@@ -572,7 +572,7 @@ const FEATURES = [
   { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
   { tag: "Maintenance", title: "Never miss a service again.", body: "Pre-loaded task templates for every system. Keeply tracks what's due, overdue, and coming up. Engine hours and date-based triggers fire together so you're always ahead of the curve.", Visual: MaintenanceVisual },
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
-  { tag: "Logbook", title: "Log passages the smart way.", body: "Record departures, arrivals, conditions, and crew with a few taps. Pro users get AI-enriched entries — Keeply drafts the narrative from your data so your logbook writes itself.", Visual: LogbookVisual },
+  { tag: "Logbook", title: "Log passages the smart way.", body: "Record departures, arrivals, conditions, and crew with a few taps. Track distance, engine hours, sea state, and crew across every passage — your complete voyage history in one place.", Visual: LogbookVisual },
 ];
 
 
@@ -580,7 +580,7 @@ const FEATURES = [
 const DISPLAY_PLANS = [
   { name: "Free",     planId: "free",     price: "$0",                              period: "/mo", priceId: null,                               annualPriceId: null,                                effectiveMonthly: null,                          sub: "",                                                                                                                                                            subheader: "What's included",              cta: "Get started free", features: ["Automated boat setup", "1 vessel", PRICING_CONFIG.free.equipment + " equipment cards", "Unlimited repairs & maintenance", PRICING_CONFIG.free.firstMate + " First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
   { name: "Standard", planId: "standard", price: "$" + PRICING_CONFIG.standard.price, period: "/mo", priceId: PRICING_CONFIG.standard.priceId,  annualPriceId: PRICING_CONFIG.standard.annualPriceId, effectiveMonthly: PRICING_CONFIG.standard.effectiveMonthly, sub: "or $" + PRICING_CONFIG.standard.annualPrice + "/yr · save $" + (PRICING_CONFIG.standard.price * 12 - PRICING_CONFIG.standard.annualPrice), subheader: "Everything in Free, plus",     cta: "Get started →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Customizable checklists", "1GB document storage", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + " queries/mo", "Repair log & full logbook"] },
-  { name: "Pro",      planId: "pro",      price: "$" + PRICING_CONFIG.pro.price,      period: "/mo", priceId: PRICING_CONFIG.pro.priceId,        annualPriceId: PRICING_CONFIG.pro.annualPriceId,      effectiveMonthly: PRICING_CONFIG.pro.effectiveMonthly,      sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                           subheader: "Everything in Standard, plus", cta: "Get started →", features: ["2 vessels", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
+  { name: "Pro",      planId: "pro",      price: "$" + PRICING_CONFIG.pro.price,      period: "/mo", priceId: PRICING_CONFIG.pro.priceId,        annualPriceId: PRICING_CONFIG.pro.annualPriceId,      effectiveMonthly: PRICING_CONFIG.pro.effectiveMonthly,      sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                           subheader: "Everything in Standard, plus", cta: "Get started →", features: ["2 vessels", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "Passage export (CSV)", "Haul-out planner"] },
 ];
 
 
@@ -1103,13 +1103,11 @@ export default function LandingPage() {
                     ["Haul-out planner",      "\u2014",    "\u2014",      "\u2713"],
                     ["First Mate AI",         PRICING_CONFIG.free.firstMate + " / mo",  PRICING_CONFIG.standard.firstMate + " / mo", PRICING_CONFIG.pro.firstMate + " / mo"],
                     ["AI vessel setup",       "\u2713",    "\u2713",      "\u2713"],
-                    ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
                     ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
-                    ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
                     ["Discount code",         "\u2014",   "BETA2026",  "BETA2026"],
                     ["Price",                 "Free",      "$" + PRICING_CONFIG.standard.price + " / mo",    "$" + PRICING_CONFIG.pro.price + " / mo"],
                   ].map(function (row, ri) {
-                    var isLast = ri === 18;
+                    var isLast = ri === 16;
                     return (
                       <tr key={ri} style={{ background: ri % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)" }}>
                         <td style={{ padding: "12px 16px", color: "rgba(255,255,255,0.7)", fontWeight: isLast ? 700 : 400 }}>{row[0]}</td>
@@ -1305,7 +1303,7 @@ export default function LandingPage() {
                 <div style={{ fontSize:10, color:"#4ade80", fontWeight:500, marginBottom:14 }}>{annual ? "$" + PRICING_CONFIG.pro.annualPrice + "/yr billed annually" : "\u00a0"}</div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
-                  {["2 vessels", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + "/mo", "AI-enriched logbook", "Unlimited storage"].map(function(f){
+                  {["2 vessels", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + "/mo", "Passage export (CSV)", "Unlimited storage"].map(function(f){
                     return (
                       <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
                                            marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.55)" }}>
