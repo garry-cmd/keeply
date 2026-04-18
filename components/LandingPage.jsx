@@ -790,7 +790,7 @@ export default function LandingPage() {
   }, []);
 
   useEffect(function () {
-    var { data: { subscription } } = supabase.auth.onAuthStateChange(function (event) {
+    var { data: { subscription } } = supabase.auth.onAuthStateChange(function (event, session) {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
         setShowAuth(true);
@@ -798,6 +798,36 @@ export default function LandingPage() {
         setConfirmPassword("");
         setError(null);
         setMessage(null);
+      }
+      // Google OAuth: user authenticated — check for a pending paid plan and fire Stripe
+      if (event === "SIGNED_IN" && session && session.user) {
+        (async function () {
+          var pendingPlan    = null;
+          var pendingPriceId = null;
+          try { pendingPlan    = localStorage.getItem("keeply_pending_plan"); }    catch(e) {}
+          try { pendingPriceId = localStorage.getItem("keeply_pending_price_id"); } catch(e) {}
+
+          // Only act if a paid plan was chosen before OAuth — free plans go straight to the app
+          if (pendingPlan && pendingPlan !== "free" && pendingPriceId) {
+            // Clear immediately so a repeat SIGNED_IN event (e.g. on ?upgraded=1 return) doesn't re-fire
+            try { localStorage.removeItem("keeply_pending_plan"); }    catch(e) {}
+            try { localStorage.removeItem("keeply_pending_price_id"); } catch(e) {}
+            try {
+              var res  = await fetch("/api/stripe/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  priceId:   pendingPriceId,
+                  userId:    session.user.id,
+                  userEmail: session.user.email,
+                  returnUrl: window.location.origin + "/?upgraded=1",
+                }),
+              });
+              var data = await res.json();
+              if (data.url) { window.location.href = data.url; }
+            } catch(e) { console.error("Stripe checkout error after OAuth:", e); }
+          }
+        })();
       }
     });
     return function () { subscription.unsubscribe(); };
