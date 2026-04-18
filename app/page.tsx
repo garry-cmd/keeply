@@ -11,15 +11,59 @@ const KeeplyApp = dynamic(
   { ssr: false, loading: () => null }
 );
 
+// After Google OAuth the browser lands here on a fresh page load.
+// LandingPage may never mount, so the Stripe dispatch must live here.
+// Returns true if a Stripe redirect was initiated (caller should not set authed).
+async function firePendingStripe(userId: string, userEmail: string): Promise<boolean> {
+  let pendingPlan: string | null = null;
+  let pendingPriceId: string | null = null;
+  try { pendingPlan    = localStorage.getItem('keeply_pending_plan'); }    catch(e) {}
+  try { pendingPriceId = localStorage.getItem('keeply_pending_price_id'); } catch(e) {}
+
+  if (!pendingPlan || pendingPlan === 'free' || !pendingPriceId) return false;
+
+  // Clear immediately — prevents re-firing if SIGNED_IN fires again
+  try { localStorage.removeItem('keeply_pending_plan'); }    catch(e) {}
+  try { localStorage.removeItem('keeply_pending_price_id'); } catch(e) {}
+
+  try {
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        priceId:   pendingPriceId,
+        userId,
+        userEmail,
+        returnUrl: window.location.origin + '/?upgraded=1',
+      }),
+    });
+    const data = await res.json();
+    if (data.url) { window.location.href = data.url; return true; }
+  } catch(e) {
+    console.error('Stripe checkout error after OAuth:', e);
+  }
+  return false;
+}
+
 export default function Home() {
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(function() {
-    supabase.auth.getSession().then(function({ data }) {
-      setAuthed(!!data.session);
+    supabase.auth.getSession().then(async function({ data }) {
+      if (data.session?.user) {
+        const redirecting = await firePendingStripe(data.session.user.id, data.session.user.email ?? '');
+        if (!redirecting) setAuthed(true);
+      } else {
+        setAuthed(false);
+      }
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(function(_, session) {
-      setAuthed(!!session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async function(event, session) {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const redirecting = await firePendingStripe(session.user.id, session.user.email ?? '');
+        if (!redirecting) setAuthed(!!session);
+      } else {
+        setAuthed(!!session);
+      }
     });
     return function() { subscription.unsubscribe(); };
   }, []);
