@@ -128,6 +128,13 @@ function blankForm() {
   };
 }
 
+function blankWatchForm() {
+  return {
+    entry_time: nowTime(), position: "", course_deg: "",
+    speed_kts: "", wind_dir: "", wind_speed_kts: "", baro_mb: "", notes: "",
+  };
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function LogbookPage({
@@ -162,6 +169,16 @@ export default function LogbookPage({
   const [arChecked,    setArChecked]    = useState([]);
   const [arReset,      setArReset]      = useState(null);
 
+  // ── Live passage / watch entries ───────────────────────────────────────
+  const [activePassage,    setActivePassage]    = useState(null);
+  const [watchEntries,     setWatchEntries]     = useState([]);
+  const [showWatchForm,    setShowWatchForm]    = useState(false);
+  const [watchForm,        setWatchForm]        = useState(blankWatchForm());
+  const [savingWatch,      setSavingWatch]      = useState(false);
+  const [showCompleteForm, setShowCompleteForm] = useState(false);
+  const [completeForm,     setCompleteForm]     = useState({ to_location: "", arrival_time: nowTime(), distance_nm: "", notes: "" });
+  const [completingSaving, setCompletingSaving] = useState(false);
+
   // ── Draft restore on mount ─────────────────────────────────────────────
 
   useEffect(function() {
@@ -192,6 +209,25 @@ export default function LogbookPage({
       if (onAddFormOpened) onAddFormOpened();
     }
   }, [openAddForm]);
+
+  // ── Load active (in_progress) passage on mount ─────────────────────────
+  useEffect(function() {
+    if (!vesselId) return;
+    (async function() {
+      try {
+        const { data } = await supabase.from("logbook")
+          .select("*").eq("vessel_id", vesselId).eq("status", "in_progress")
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (data) {
+          setActivePassage(data);
+          const { data: we } = await supabase.from("watch_entries")
+            .select("*").eq("passage_id", data.id)
+            .order("entry_time", { ascending: true });
+          setWatchEntries(we || []);
+        }
+      } catch(e) { /* silent */ }
+    })();
+  }, [vesselId]);
 
   // ── Load checklists ────────────────────────────────────────────────────
 
@@ -249,6 +285,77 @@ export default function LogbookPage({
     setShowHistory(false);
     setLogbookTab("passages");
     setViewingEntry(null);
+  };
+
+  // ── Start a live passage (saves as in_progress) ─────────────────────────
+  const startPassage = async function() {
+    if (!form.entry_date || !form.from_location) return;
+    setSaving(true);
+    try {
+      const body = {
+        vessel_id: vesselId, entry_type: "passage", status: "in_progress",
+        entry_date: form.entry_date,
+        from_location: form.from_location || null,
+        departure_time: form.departure_time || null,
+        crew: form.crew || null,
+        conditions: form.conditions || null,
+        notes: form.notes || null,
+      };
+      const { data, error: e } = await supabase.from("logbook").insert(body).select().single();
+      if (e) throw e;
+      setActivePassage(data);
+      setWatchEntries([]);
+      clearDraft(vesselId);
+      resetForm();
+    } catch(err) { console.error("Start passage error:", err); }
+    finally { setSaving(false); }
+  };
+
+  // ── Save a watch entry ────────────────────────────────────────────────
+  const saveWatchEntry = async function() {
+    if (!activePassage || !watchForm.entry_time) return;
+    setSavingWatch(true);
+    try {
+      const { data, error: e } = await supabase.from("watch_entries").insert({
+        passage_id: activePassage.id, vessel_id: vesselId,
+        entry_time: watchForm.entry_time,
+        position:       watchForm.position || null,
+        course_deg:     watchForm.course_deg     ? parseInt(watchForm.course_deg)     : null,
+        speed_kts:      watchForm.speed_kts      ? parseFloat(watchForm.speed_kts)    : null,
+        wind_dir:       watchForm.wind_dir       || null,
+        wind_speed_kts: watchForm.wind_speed_kts ? parseInt(watchForm.wind_speed_kts) : null,
+        baro_mb:        watchForm.baro_mb        ? parseFloat(watchForm.baro_mb)      : null,
+        notes:          watchForm.notes          || null,
+      }).select().single();
+      if (e) throw e;
+      setWatchEntries(function(prev) { return [...prev, data].sort(function(a,b){return a.entry_time.localeCompare(b.entry_time);}); });
+      setWatchForm(blankWatchForm());
+      setShowWatchForm(false);
+    } catch(err) { console.error("Watch entry error:", err); }
+    finally { setSavingWatch(false); }
+  };
+
+  // ── Complete an active passage ────────────────────────────────────────
+  const completePassage = async function() {
+    if (!activePassage) return;
+    setCompletingSaving(true);
+    try {
+      const updates = {
+        status: "completed",
+        to_location:  completeForm.to_location  || null,
+        arrival_time: completeForm.arrival_time || null,
+        distance_nm:  completeForm.distance_nm  ? parseFloat(completeForm.distance_nm) : null,
+      };
+      if (completeForm.notes) updates.notes = completeForm.notes;
+      const { data, error: e } = await supabase.from("logbook").update(updates).eq("id", activePassage.id).select().single();
+      if (e) throw e;
+      setEntries(function(prev) { return [data, ...prev]; });
+      setActivePassage(null); setWatchEntries([]);
+      setShowCompleteForm(false);
+      setCompleteForm({ to_location: "", arrival_time: nowTime(), distance_nm: "", notes: "" });
+      setSavedBanner(true); setTimeout(function(){ setSavedBanner(false); }, 3000);
+    } catch(err) { console.error("Complete passage error:", err); }
+    finally { setCompletingSaving(false); }
   };
 
   // ── Derived calculations ───────────────────────────────────────────────
@@ -571,6 +678,138 @@ export default function LogbookPage({
             {saving ? "Saving…" : editingId ? "Update passage" : "Save passage"}
           </button>
         </div>
+        {!editingId && isPro && !activePassage && (
+          <button onClick={startPassage} disabled={saving || !form.from_location}
+            style={{ width: "100%", marginTop: 10, padding: "10px", border: "1.5px dashed var(--brand)", borderRadius: 10, background: "transparent", color: "var(--brand)", cursor: (!form.from_location || saving) ? "default" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit", opacity: !form.from_location ? 0.45 : 1 }}>
+            🔴 Start live passage →
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // ── Active passage card ────────────────────────────────────────────────
+  function renderActivePassageCard() {
+    if (!activePassage || !isPro) return null;
+    const wInp = { border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 10px", fontSize: 13, background: "rgba(255,255,255,0.07)", color: "#fff", fontFamily: "inherit", width: "100%", boxSizing: "border-box", outline: "none" };
+    return (
+      <div style={{ background: "linear-gradient(135deg, #0f2744 0%, #0f4c8a 100%)", borderRadius: 14, padding: "16px", marginBottom: 16, border: "1px solid rgba(77,166,255,0.3)" }}>
+        {/* Header row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", animation: "keeplyWave 1.5s ease-in-out infinite" }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: "0.8px", textTransform: "uppercase" }}>Active Passage</span>
+          </div>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{activePassage.departure_time || ""} · {activePassage.entry_date}</span>
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 14 }}>
+          {activePassage.from_location || "Departure"} → <span style={{ color: "rgba(255,255,255,0.45)" }}>en route</span>
+        </div>
+
+        {/* Watch entries table */}
+        {watchEntries.length > 0 && (
+          <div style={{ marginBottom: 12, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+              <thead>
+                <tr>
+                  {["Time","Position","COG","SOG","Wind","Notes"].map(function(h){ return <th key={h} style={{ color: "rgba(255,255,255,0.35)", fontWeight: 600, textAlign: "left", padding: "4px 8px 8px 0", whiteSpace: "nowrap" }}>{h}</th>; })}
+                </tr>
+              </thead>
+              <tbody>
+                {watchEntries.map(function(we) {
+                  return (
+                    <tr key={we.id} style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                      <td style={{ color: "#fff", padding: "7px 8px 7px 0", fontFamily: "DM Mono, monospace", whiteSpace: "nowrap" }}>{we.entry_time}</td>
+                      <td style={{ color: "rgba(255,255,255,0.7)", padding: "7px 8px 7px 0", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{we.position || "—"}</td>
+                      <td style={{ color: "rgba(255,255,255,0.7)", padding: "7px 8px 7px 0", fontFamily: "DM Mono, monospace" }}>{we.course_deg != null ? we.course_deg + "°" : "—"}</td>
+                      <td style={{ color: "rgba(255,255,255,0.7)", padding: "7px 8px 7px 0", fontFamily: "DM Mono, monospace" }}>{we.speed_kts != null ? we.speed_kts + " kt" : "—"}</td>
+                      <td style={{ color: "rgba(255,255,255,0.7)", padding: "7px 8px 7px 0", whiteSpace: "nowrap" }}>{we.wind_dir && we.wind_speed_kts ? we.wind_dir + " " + we.wind_speed_kts + "kt" : (we.wind_dir || "—")}</td>
+                      <td style={{ color: "rgba(255,255,255,0.5)", padding: "7px 0 7px 0", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{we.notes || ""}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Watch entry form */}
+        {showWatchForm && (
+          <div style={{ background: "rgba(0,0,0,0.25)", borderRadius: 10, padding: "14px", marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px", marginBottom: 12 }}>NEW WATCH ENTRY</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8, marginBottom: 8 }}>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>TIME</div>
+                <input value={watchForm.entry_time} onChange={function(e){setWatchForm(function(f){return {...f,entry_time:e.target.value};});}} style={wInp} /></div>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>POSITION</div>
+                <input placeholder="37°42′N 122°25′W" value={watchForm.position} onChange={function(e){setWatchForm(function(f){return {...f,position:e.target.value};});}} style={wInp} /></div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>COG °</div>
+                <input type="number" placeholder="270" value={watchForm.course_deg} onChange={function(e){setWatchForm(function(f){return {...f,course_deg:e.target.value};});}} style={wInp} /></div>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>SOG kt</div>
+                <input type="number" placeholder="6.2" value={watchForm.speed_kts} onChange={function(e){setWatchForm(function(f){return {...f,speed_kts:e.target.value};});}} style={wInp} /></div>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>WIND</div>
+                <input placeholder="SW" value={watchForm.wind_dir} onChange={function(e){setWatchForm(function(f){return {...f,wind_dir:e.target.value};});}} style={wInp} /></div>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>KTS</div>
+                <input type="number" placeholder="15" value={watchForm.wind_speed_kts} onChange={function(e){setWatchForm(function(f){return {...f,wind_speed_kts:e.target.value};});}} style={wInp} /></div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8, marginBottom: 12 }}>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>BARO mb</div>
+                <input type="number" placeholder="1013" value={watchForm.baro_mb} onChange={function(e){setWatchForm(function(f){return {...f,baro_mb:e.target.value};});}} style={wInp} /></div>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>NOTES</div>
+                <input placeholder="Sail change, traffic, anything notable…" value={watchForm.notes} onChange={function(e){setWatchForm(function(f){return {...f,notes:e.target.value};});}} style={wInp} /></div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function(){setShowWatchForm(false); setWatchForm(blankWatchForm());}}
+                style={{ padding: "9px 16px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, background: "transparent", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>Cancel</button>
+              <button onClick={saveWatchEntry} disabled={savingWatch || !watchForm.entry_time}
+                style={{ flex: 1, padding: "9px", border: "none", borderRadius: 8, background: "#4da6ff", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+                {savingWatch ? "Saving…" : "Log entry ⚓"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Complete passage form */}
+        {showCompleteForm && (
+          <div style={{ background: "rgba(0,0,0,0.25)", borderRadius: 10, padding: "14px", marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px", marginBottom: 12 }}>COMPLETE PASSAGE</div>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>ARRIVED AT</div>
+                <input placeholder="Friday Harbor" value={completeForm.to_location} onChange={function(e){setCompleteForm(function(f){return {...f,to_location:e.target.value};});}} style={wInp} /></div>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>ARRIVAL TIME</div>
+                <input value={completeForm.arrival_time} onChange={function(e){setCompleteForm(function(f){return {...f,arrival_time:e.target.value};});}} style={wInp} /></div>
+              <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>DISTANCE nm</div>
+                <input type="number" placeholder="42" value={completeForm.distance_nm} onChange={function(e){setCompleteForm(function(f){return {...f,distance_nm:e.target.value};});}} style={wInp} /></div>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3 }}>NOTES (optional)</div>
+              <input placeholder="How was the passage?" value={completeForm.notes} onChange={function(e){setCompleteForm(function(f){return {...f,notes:e.target.value};});}} style={wInp} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function(){setShowCompleteForm(false);}}
+                style={{ padding: "9px 16px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, background: "transparent", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>Cancel</button>
+              <button onClick={completePassage} disabled={completingSaving}
+                style={{ flex: 1, padding: "9px", border: "none", borderRadius: 8, background: "#22c55e", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+                {completingSaving ? "Saving…" : "Complete passage ✓"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        {!showWatchForm && !showCompleteForm && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={function(){ setWatchForm(blankWatchForm()); setShowWatchForm(true); setShowCompleteForm(false); }}
+              style={{ flex: 1, padding: "10px", border: "1px solid rgba(77,166,255,0.4)", borderRadius: 10, background: "rgba(77,166,255,0.12)", color: "#4da6ff", cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+              + Watch entry
+            </button>
+            <button onClick={function(){ setShowCompleteForm(true); setShowWatchForm(false); }}
+              style={{ flex: 1, padding: "10px", border: "none", borderRadius: 10, background: "#22c55e", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+              Arrived →
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -712,6 +951,8 @@ export default function LogbookPage({
       {/* History view */}
       {showHistory ? renderHistory() : (
         <>
+          {/* Active passage card — shown when a live passage is in progress */}
+          {renderActivePassageCard()}
           {/* Tab strip */}
           <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
             {TABS.map(function(tab) {
