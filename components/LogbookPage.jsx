@@ -957,8 +957,7 @@ export default function LogbookPage({
                   });
                 });
               }
-              const blob = new Blob([rows.join("
-")], { type: "text/csv" });
+              const blob = new Blob([rows.join("\n")], { type: "text/csv" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a"); a.href = url;
               a.download = "keeply-passages.csv"; a.click();
