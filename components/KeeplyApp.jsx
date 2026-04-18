@@ -2167,6 +2167,76 @@ export default function App() {
     }
   };
 
+  // ── Retailer grid renderer — shared by repair + maintenance part results ──
+  const renderPartResults = function(pr, refreshFn) {
+    const RETAILERS = [
+      { key: "westmarine",  label: "West Marine" },
+      { key: "fisheries",   label: "Fisheries Supply" },
+      { key: "defender",    label: "Defender" },
+      { key: "other",       label: "Other" },
+    ];
+    return (
+      <>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
+          <span>SUGGESTED PARTS{pr.results.length > 0 ? " · " + pr.results.length : ""}</span>
+          <button onClick={refreshFn} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>↺ refresh</button>
+        </div>
+        {pr.results.length === 0 && (
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found for this task.</div>
+        )}
+        {pr.results.map(function(part, pi) {
+          return (
+            <div key={pi} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 2 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", flex: 1, minWidth: 0, paddingRight: 8 }}>{part.partName}</div>
+                <div style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: part.overallConfidence === "high" ? "var(--ok-text)" : part.overallConfidence === "medium" ? "#d97706" : "var(--text-muted)", display: "inline-block" }} />
+                  {part.overallConfidence === "high" ? "High confidence" : part.overallConfidence === "medium" ? "Likely match" : "Low confidence"}
+                </div>
+              </div>
+              {part.partNumber && (
+                <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 6 }}>Part #{part.partNumber}</div>
+              )}
+              {part.notes && (
+                <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 8, lineHeight: 1.4 }}>{part.notes}</div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 4 }}>
+                {RETAILERS.map(function(r) {
+                  const info = part[r.key];
+                  const hasUrl = info && info.url;
+                  const isDirect = info && info.confidence === "direct";
+                  const displayLabel = r.key === "other" && info && info.name ? info.name : r.label;
+                  const price = info && info.price && info.price !== "null" && !isNaN(parseFloat(info.price)) ? "$" + parseFloat(info.price).toFixed(2) : null;
+                  return (
+                    <div key={r.key} style={{ background: "var(--bg-subtle)", border: "0.5px solid " + (hasUrl ? "var(--border)" : "var(--border-faint)"), borderRadius: 8, padding: "8px 10px", opacity: hasUrl ? 1 : 0.5 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>{displayLabel}</div>
+                      {hasUrl ? (
+                        <>
+                          {price && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{price}</div>}
+                          <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: isDirect ? "var(--ok-text)" : "#d97706", display: "inline-block" }} />
+                            {isDirect ? "Direct link" : "Search result"}
+                          </div>
+                          <a href={info.url} target="_blank" rel="noreferrer"
+                            style={{ display: "block", textAlign: "center", padding: "5px", background: "var(--brand)", color: "#fff", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none" }}>
+                            {isDirect ? "Buy ↗" : "Search ↗"}
+                          </a>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", padding: "6px 0" }}>Not found</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>Powered by First Mate · Verify part number before ordering</div>
+      </>
+    );
+  };
+
   const getAISuggestions = function(){};
 
   const getSuggestionsForEquipment = async function(eq){
@@ -4317,63 +4387,7 @@ export default function App() {
                               Search failed. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button>
                             </div>
                           );
-                          return (<>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-                              <span>PARTS FOUND {pr.results.length > 0 ? "· " + pr.results.length : ""}</span>
-                              <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>↺ refresh</button>
-                            </div>
-                            {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>No specific parts found.</div>}
-                            {pr.results.map(function(part, pi){ return (
-                              <div key={pi} style={{ padding: "10px 0", borderBottom: "0.5px solid var(--border)", background: part.type === "replacement" ? "rgba(217,119,6,0.06)" : "transparent", borderRadius: part.type === "replacement" ? 8 : 0, padding: "10px", marginLeft: part.type === "replacement" ? -10 : 0, marginRight: part.type === "replacement" ? -10 : 0 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-                                      {part.type === "replacement"
-                                        ? <span style={{ fontSize: 9, fontWeight: 700, background: "#d97706", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Complete Unit</span>
-                                        : <span style={{ fontSize: 9, fontWeight: 700, background: "var(--text-muted)", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Service Part</span>
-                                      }
-                                    </div>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                    {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>{part.reason}</div>}
-                                  </div>
-                                  {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
-                                </div>
-                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                  <a href={googleSearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
-                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    Google ↗
-                                  </a>
-                                  <a href={ebaySearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
-                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    eBay ↗
-                                  </a>
-                                  {repairEq && (function(){
-                                    const sk = repairEq.id + "-" + part.name;
-                                    const st = savedParts[sk];
-                                    return (
-                                      <button onClick={function(e){ e.stopPropagation(); saveAiPartToMyParts(repairEq, part); }}
-                                        disabled={st === "saving" || st === "saved"}
-                                        style={{ padding: "4px 10px", borderRadius: 6, background: st === "saved" ? "var(--ok-bg)" : st === "error" ? "var(--danger-bg)" : "var(--bg-subtle)", border: "0.5px solid " + (st === "saved" ? "var(--ok-border)" : st === "error" ? "var(--danger-border)" : "var(--border)"), color: st === "saved" ? "var(--ok-text)" : st === "error" ? "var(--danger-text)" : "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: st ? "default" : "pointer" }}>
-                                        {st === "saving" ? "Saving…" : st === "saved" ? "✓ Saved" : st === "error" ? "✗ Failed" : "+ Save to parts"}
-                                      </button>
-                                    );
-                                  })()}
-                                </div>
-                              </div>
-                            ); })}
-                            {pr.results.length === 0 && (
-                              <div style={{ display: "flex", gap: 5 }}>
-                                <a href={googleSearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
-                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  Google ↗
-                                </a>
-                                <a href={ebaySearchUrl(partSearchQuery(r.description, repairEq, settings))} target="_blank" rel="noreferrer"
-                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  eBay ↗
-                                </a>
-                              </div>
-                            )}
-                          </>);
+                          return renderPartResults(pr, function(e){ e && e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); });
                         })()}
                       </div>
                     )}
@@ -4575,61 +4589,7 @@ export default function App() {
                           );
                           return (
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-                                <span>PARTS FOUND {pr.results.length > 0 ? "· " + pr.results.length : ""}</span>
-                                <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", fontSize: 10, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>↺ refresh</button>
-                              </div>
-                              {pr.results.length === 0 && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found — try searching retailers directly.</div>}
-                              {pr.results.map(function(part, pi){ return (
-                                <div key={pi} style={{ padding: "10px", borderBottom: "0.5px solid var(--border)", background: part.type === "replacement" ? "rgba(217,119,6,0.06)" : "transparent", borderRadius: part.type === "replacement" ? 8 : 0, marginLeft: part.type === "replacement" ? -10 : 0, marginRight: part.type === "replacement" ? -10 : 0 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-                                        {part.type === "replacement"
-                                          ? <span style={{ fontSize: 9, fontWeight: 700, background: "#d97706", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Complete Unit</span>
-                                          : <span style={{ fontSize: 9, fontWeight: 700, background: "var(--text-muted)", color: "#fff", borderRadius: 4, padding: "1px 6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Service Part</span>
-                                        }
-                                      </div>
-                                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{part.name}</div>
-                                      {part.reason && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.3 }}>{part.reason}</div>}
-                                    </div>
-                                    {part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) && <div style={{ fontSize: 13, fontWeight: 800, color: part.type === "replacement" ? "#d97706" : "var(--ok-text)", flexShrink: 0 }}>${parseFloat(part.price).toFixed(2)}</div>}
-                                  </div>
-                                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                                    <a href={googleSearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
-                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    Google ↗
-                                  </a>
-                                  <a href={ebaySearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
-                                    style={{ padding: "4px 10px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                                    eBay ↗
-                                  </a>
-                                    {eq && (function(){
-                                      const sk = eq.id + "-" + part.name;
-                                      const st = savedParts[sk];
-                                      return (
-                                        <button onClick={function(){ saveAiPartToMyParts(eq, part); }}
-                                          disabled={st === "saving" || st === "saved"}
-                                          style={{ padding: "4px 10px", borderRadius: 6, background: st === "saved" ? "var(--ok-bg)" : st === "error" ? "var(--danger-bg)" : "var(--bg-subtle)", border: "0.5px solid " + (st === "saved" ? "var(--ok-border)" : st === "error" ? "var(--danger-border)" : "var(--border)"), color: st === "saved" ? "var(--ok-text)" : st === "error" ? "var(--danger-text)" : "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: st ? "default" : "pointer" }}>
-                                          {st === "saving" ? "Saving…" : st === "saved" ? "✓ Saved" : st === "error" ? "✗ Failed" : "+ Save to parts"}
-                                        </button>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-                              ); })}
-                              {pr.results.length === 0 && (
-                                <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
-                                  <a href={googleSearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
-                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#1a7f4b", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  Google ↗
-                                </a>
-                                <a href={ebaySearchUrl(partSearchQuery(t.task, eq, settings))} target="_blank" rel="noreferrer"
-                                  style={{ flex: 1, padding: "6px", borderRadius: 6, background: "#0064d2", color: "#fff", fontSize: 11, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
-                                  eBay ↗
-                                </a>
-                                </div>
-                              )}
+                              {renderPartResults(pr, function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); })}
                             </div>
                           );
                         })()}

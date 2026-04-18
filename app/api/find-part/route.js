@@ -10,38 +10,46 @@ export async function POST(request) {
       return Response.json({ error: "API key not configured" }, { status: 500 });
     }
 
-    // Build context
     const context = repairContext
       ? repairContext
       : equipmentName
       ? equipmentName
       : partName;
 
-    const systemPrompt = `You are a marine parts purchasing assistant. Use web search to find real products currently for sale online.
+    const systemPrompt = `You are a marine parts purchasing assistant. Use web search to find real products currently for sale.
 
 The task/repair is: "${partName}"
-Equipment context: "${context}"
+Equipment and vessel context: "${context}"
 
-Search for TWO categories of products:
+Your job is to identify the 1-3 most important parts or items needed for this task, then find each one specifically at West Marine (westmarine.com), Fisheries Supply (fisheriessupply.com), and Defender (defender.com).
 
-1. COMPLETE REPLACEMENT UNIT — the full equipment itself if it needs replacing (e.g. if the task is about a raw water pump, find the complete replacement pump as a unit). Label these as type "replacement".
+For each part:
+1. Search each retailer site specifically for this exact part
+2. Return the direct product page URL if found, or a targeted search URL as fallback
+3. Use the vessel/equipment context to be as specific as possible (e.g. correct impeller for the specific engine model)
 
-2. SERVICE PARTS — individual components, kits, or consumables needed for repair or maintenance (impeller, seal kit, filter element, zincs, etc.). Label these as type "part".
+Return ONLY a JSON array with this structure, no markdown:
+[
+  {
+    "partName": "Exact part name (be specific, e.g. 'Jabsco 836-0001 Raw Water Impeller')",
+    "partNumber": "Manufacturer part number if known, otherwise null",
+    "type": "part or replacement",
+    "westmarine": { "url": "direct URL or search URL", "price": "price string or null", "confidence": "direct or search" },
+    "fisheries": { "url": "direct URL or search URL", "price": "price string or null", "confidence": "direct or search" },
+    "defender": { "url": "direct URL or search URL", "price": "price string or null", "confidence": "direct or search" },
+    "other": { "name": "retailer name or null", "url": "URL or null", "price": "price string or null", "confidence": "direct or search" },
+    "overallConfidence": "high, medium, or low",
+    "notes": "One sentence on fit/compatibility or null"
+  }
+]
 
-Find 2-3 results per category (4-6 total). For each return:
-- name: exact product name as listed on retailer site
-- type: "replacement" or "part"
-- reason: one short sentence on why this matches (e.g. "Complete drop-in replacement pump" or "OEM impeller kit for this pump")
-- vendor: retailer name
-- price: current price as string like "29.99" or null
-- url: direct product page URL
-
-Return ONLY a JSON array, no markdown:
-[{"name":"...","type":"replacement|part","reason":"...","vendor":"...","price":"XX.XX or null","url":"https://..."}]
-
-Prioritize: marine specialty retailers (Fisheries Supply, Defender, West Marine, Jamestown Distributors, iBoats), manufacturer direct, then Amazon. Only include results where the product clearly matches.
-
-If the task is routine maintenance (e.g. oil change, inspect zincs) with no clear replacement unit, skip the replacement category and return only service parts.`;
+Rules:
+- For search URLs use: westmarine.com/search?query=PART, fisheriessupply.com/search?q=PART, defender.com/search?q=PART
+- Set confidence "direct" only if you found an actual product page, "search" if it's a search URL
+- If a retailer clearly doesn't stock this type of part, set url to null
+- Return 1-3 parts max (most important for this task)
+- Be specific to the vessel/engine — wrong impeller for wrong engine is worse than no result
+- If task is inspection-only with no parts needed, return an empty array []`;
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -49,9 +57,10 @@ If the task is routine maintenance (e.g. oil change, inspect zincs) with no clea
         "Content-Type": "application/json",
         "x-api-key": process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "interleaved-thinking-2025-05-14",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1500,
         tools: [{ type: "web_search_20250305", name: "web_search" }],
         messages: [{ role: "user", content: systemPrompt }],
@@ -76,23 +85,20 @@ If the task is routine maintenance (e.g. oil change, inspect zincs) with no clea
     let results = [];
     try { results = JSON.parse(match ? match[0] : "[]"); } catch(e) { results = []; }
 
-    // Sort: replacements first, then parts
     results = results
-      .filter(function(r){ return r && r.name && r.url; })
-      .sort(function(a, b){
-        if (a.type === "replacement" && b.type !== "replacement") return -1;
-        if (a.type !== "replacement" && b.type === "replacement") return 1;
-        return 0;
-      })
-      .slice(0, 6)
+      .filter(function(r){ return r && r.partName; })
+      .slice(0, 3)
       .map(function(r){
         return {
-          name: r.name,
+          partName: r.partName || "",
+          partNumber: r.partNumber || null,
           type: r.type || "part",
-          reason: r.reason || "",
-          vendor: r.vendor || "",
-          price: r.price || null,
-          url: r.url
+          westmarine: r.westmarine || null,
+          fisheries: r.fisheries || null,
+          defender: r.defender || null,
+          other: r.other || null,
+          overallConfidence: r.overallConfidence || "medium",
+          notes: r.notes || null,
         };
       });
 
