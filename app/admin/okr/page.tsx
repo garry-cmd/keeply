@@ -10,7 +10,7 @@ const supabase = createClient(
 const ADMIN_EMAIL = "garry@keeply.boats";
 
 // ─── DATA — updated each session by Claude ───────────────────────────────────
-// Last updated: April 14, 2026
+// Last updated: April 18, 2026
 
 const MONTHS = ["Apr","May","Jun","Jul","Aug","Sep","Oct"];
 
@@ -138,6 +138,29 @@ const OKRS = [
       { text: "App Store rating ≥ 4.4 with 50+ reviews", cur: 0, target: 50, unit: "reviews", status: "not-started" },
     ],
   },
+];
+
+
+const BACKLOG_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  "icebox":      { label: "Icebox",      color: "#94a3b8", bg: "#f8fafc" },
+  "planned":     { label: "Planned",     color: "#7c3aed", bg: "#f5f3ff" },
+  "in-progress": { label: "In progress", color: "#2563eb", bg: "#eff6ff" },
+  "in-beta":     { label: "In beta",     color: "#d97706", bg: "#fffbeb" },
+  "done":        { label: "Done",        color: "#16a34a", bg: "#f0fdf4" },
+};
+
+const BACKLOG = [
+  { name: "Logbook",             status: "planned",     effort: "M", notes: "Offshore-first, offline capable. Build before Text First Mate." },
+  { name: "Text First Mate",     status: "planned",     effort: "S", notes: "Chat with full vessel context. Core First Mate interaction layer." },
+  { name: "Consumables tracker", status: "planned",     effort: "S", notes: "Fluids, filters, spare parts — shown on equipment cards." },
+  { name: "Weather (NOAA/Windy)",status: "planned",     effort: "M", notes: "Pro tier feature. Windy co-marketing opportunity in Phase 2." },
+  { name: "Away Mode",           status: "planned",     effort: "S", notes: "Pauses alerts + health score during seasonal layup." },
+  { name: "Context-aware FAB",   status: "planned",     effort: "S", notes: "FAB action changes by active tab. Awaiting beta feedback first." },
+  { name: "Departure Check",     status: "planned",     effort: "L", notes: "North star feature. Requires Logbook + Weather + Consumables first." },
+  { name: "Provisioning",        status: "icebox",      effort: "M", notes: "Par system for provisions. Phase 2 / liveaboard persona." },
+  { name: "Voice input",         status: "icebox",      effort: "M", notes: "Depends on native mobile app existing." },
+  { name: "Windy partnership",   status: "icebox",      effort: "S", notes: "Co-marketing. Approach after scale. Requires mobile app." },
+  { name: "AI Coins / Credits",  status: "icebox",      effort: "L", notes: "Replace per-month query limits with rollover coin balance. Solves seasonal boater churn. Revisit at 500+ users with real usage data." },
 ];
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -301,8 +324,31 @@ export default function OKRPage() {
         })}
       </div>
 
+      {/* Feature Backlog */}
+      <div style={{ marginTop:32 }}>
+        <div style={{ fontSize:12, fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:12 }}>Feature Backlog</div>
+        <div style={{ border:"1px solid #e2e8f0", borderRadius:10, overflow:"hidden" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 100px 60px 220px", background:"#f8fafc", padding:"8px 14px", borderBottom:"1px solid #e2e8f0" }}>
+            {["Feature","Status","Effort","Notes"].map(h => (
+              <div key={h} style={{ fontSize:11, fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.04em" }}>{h}</div>
+            ))}
+          </div>
+          {BACKLOG.map((item, i) => {
+            const sc = BACKLOG_STATUS[item.status] ?? BACKLOG_STATUS["icebox"];
+            return (
+              <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 100px 60px 220px", padding:"9px 14px", borderBottom: i < BACKLOG.length-1 ? "1px solid #f1f5f9" : "none", alignItems:"start" }}>
+                <div style={{ fontSize:13, fontWeight:500, color:"#1e293b" }}>{item.name}</div>
+                <div><span style={{ fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:5, background:sc.bg, color:sc.color }}>{sc.label}</span></div>
+                <div style={{ fontSize:12, color:"#64748b", fontWeight:600 }}>{item.effort}</div>
+                <div style={{ fontSize:12, color:"#64748b" }}>{item.notes}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div style={{ marginTop:32, paddingTop:14, borderTop:"1px solid #e2e8f0", fontSize:11, color:"#94a3b8" }}>
-        Updated by Claude · April 14, 2026 · Source of truth: <code>ROADMAP.md</code> in the repo.
+        Updated by Claude · April 18, 2026 · Source of truth: <code>ROADMAP.md</code> in the repo.
       </div>
     </div>
   );
