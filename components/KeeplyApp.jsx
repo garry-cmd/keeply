@@ -3208,7 +3208,7 @@ export default function App() {
                               {(function(){
                                 const pr = inlinePartResults[t.id];
                                 if (!pr) return <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>Find parts</button>;
-                                if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "6px 0" }}>Searching…</div>;
+                                if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                                 if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Failed. <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button></div>;
                                 return renderPartResults(pr, function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); });
                               })()}
@@ -3246,7 +3246,7 @@ export default function App() {
                               {(function(){
                                 const pr = inlinePartResults[r.id];
                                 if (!pr) return <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ width: "100%", background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "7px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>Find parts for this repair</button>;
-                                if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "6px 0" }}>Searching…</div>;
+                                if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                                 if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Failed. <button onClick={function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button></div>;
                                 return renderPartResults(pr, function(){ findPartsInline(r.id, r.description, r.equipment_id, r.section); });
                               })()}
@@ -4352,7 +4352,7 @@ export default function App() {
                               Find parts for this repair
                             </button>
                           );
-                          if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>Searching for parts…</div>;
+                          if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                           if (pr.error) return (
                             <div style={{ fontSize: 12, color: "var(--warn-text)" }}>
                               Search failed. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button>
@@ -4551,7 +4551,9 @@ export default function App() {
                             </div>
                           );
                           if (pr.loading) return (
-                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "14px 0" }}>Searching for parts…</div>
+                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                              <WaveLoader inline size="sm" message="Searching for parts…" />
+                            </div>
                           );
                           if (pr.error) return (
                             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, fontSize: 12, color: "var(--warn-text)" }}>
@@ -5007,7 +5009,7 @@ export default function App() {
                                                   Find parts for this task
                                                 </button>
                                               );
-                                              if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>Searching for parts…</div>;
+                                              if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                                               if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Search failed. <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button></div>;
                                               return renderPartResults(pr, function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); });
                                             })()}
@@ -5141,7 +5143,7 @@ export default function App() {
                                                   Find parts for this repair
                                                 </button>
                                               );
-                                              if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>Searching for parts…</div>;
+                                              if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                                               if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                               return renderPartResults(pr, function(e){ e && e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); });
                                             })()}
@@ -5913,7 +5915,7 @@ export default function App() {
                               Find parts for this repair
                             </button>
                           );
-                          if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>Searching for parts…</div>;
+                          if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                           if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Search failed. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button></div>;
                           return renderPartResults(pr, function(e){ e && e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); });
                         })()}
@@ -6127,7 +6129,7 @@ export default function App() {
                                     Find parts for this task
                                   </button>
                                 );
-                                if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>Searching for parts…</div>;
+                                if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                                 if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                 return renderPartResults(pr, function(){ findPartsInline(t.id, t.task, t.equipment_id, t.section); });
                               })()}
@@ -6212,7 +6214,7 @@ export default function App() {
                                 {(function(){
                                   const pr = inlinePartResults[r.id];
                                   if (!pr) return <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "1.5px dashed var(--brand)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--brand)", cursor: "pointer", fontWeight: 600, width: "100%" }}>Find parts</button>;
-                                  if (pr.loading) return <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>Searching for parts…</div>;
+                                  if (pr.loading) return <WaveLoader inline size="sm" message="Searching for parts…" />;
                                   if (pr.error) return <div style={{ fontSize: 12, color: "var(--warn-text)" }}>Couldn't load. <button onClick={function(e){ e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Try again</button></div>;
                                   return renderPartResults(pr, function(e){ e && e.stopPropagation(); findPartsInline(r.id, r.description, r.equipment_id, r.section); });
                                 })()}
