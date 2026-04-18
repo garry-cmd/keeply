@@ -579,7 +579,7 @@ const FEATURES = [
 
 const DISPLAY_PLANS = [
   { name: "Free",     planId: "free",     price: "$0",                              period: "/mo", priceId: null,                               annualPriceId: null,                                effectiveMonthly: null,                          sub: "",                                                                                                                                                            subheader: "What's included",              cta: "Get started free", features: ["Automated boat setup", "1 vessel", PRICING_CONFIG.free.equipment + " equipment cards", "Unlimited repairs & maintenance", PRICING_CONFIG.free.firstMate + " First Mate AI queries/mo", "Parts catalog", "Engine hours tracking", "Basic checklists", "Passage logbook"] },
-  { name: "Standard", planId: "standard", price: "$" + PRICING_CONFIG.standard.price, period: "/mo", priceId: PRICING_CONFIG.standard.priceId,  annualPriceId: PRICING_CONFIG.standard.annualPriceId, effectiveMonthly: PRICING_CONFIG.standard.effectiveMonthly, sub: "or $" + PRICING_CONFIG.standard.annualPrice + "/yr · save $" + (PRICING_CONFIG.standard.price * 12 - PRICING_CONFIG.standard.annualPrice), subheader: "Everything in Free, plus",     cta: "Get started →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Customizable checklists", "1GB document storage", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + " queries/mo", "Repair log & full logbook", "AI vessel setup"] },
+  { name: "Standard", planId: "standard", price: "$" + PRICING_CONFIG.standard.price, period: "/mo", priceId: PRICING_CONFIG.standard.priceId,  annualPriceId: PRICING_CONFIG.standard.annualPriceId, effectiveMonthly: PRICING_CONFIG.standard.effectiveMonthly, sub: "or $" + PRICING_CONFIG.standard.annualPrice + "/yr · save $" + (PRICING_CONFIG.standard.price * 12 - PRICING_CONFIG.standard.annualPrice), subheader: "Everything in Free, plus",     cta: "Get started →", highlight: true, badge: "Most popular", features: ["Unlimited equipment cards", "Customizable checklists", "1GB document storage", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + " queries/mo", "Repair log & full logbook"] },
   { name: "Pro",      planId: "pro",      price: "$" + PRICING_CONFIG.pro.price,      period: "/mo", priceId: PRICING_CONFIG.pro.priceId,        annualPriceId: PRICING_CONFIG.pro.annualPriceId,      effectiveMonthly: PRICING_CONFIG.pro.effectiveMonthly,      sub: "or $" + PRICING_CONFIG.pro.annualPrice + "/yr · save $" + (PRICING_CONFIG.pro.price * 12 - PRICING_CONFIG.pro.annualPrice),                           subheader: "Everything in Standard, plus", cta: "Get started →", features: ["2 vessels", "Unlimited document storage", "First Mate AI — " + PRICING_CONFIG.pro.firstMate + " queries/mo", "AI-enriched logbook", "Passage export (CSV)", "Watch entries logbook"] },
 ];
 
@@ -1089,7 +1089,7 @@ export default function LandingPage() {
                   {[
                     ["Vessels",               "1",         "1",           "2"],
                     ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
-                    ["Equipment cards",        "1 visible", "Unlimited",   "Unlimited"],
+                    ["Equipment cards",        PRICING_CONFIG.free.equipment + " cards", "Unlimited",   "Unlimited"],
                     ["Repairs",               "3",         "Unlimited",   "Unlimited"],
                     ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
                     ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
@@ -1102,7 +1102,7 @@ export default function LandingPage() {
                     ["Repair log & logbook",  "\u2014",    "\u2713",      "\u2713"],
                     ["Haul-out planner",      "\u2014",    "\u2014",      "\u2713"],
                     ["First Mate AI",         PRICING_CONFIG.free.firstMate + " / mo",  PRICING_CONFIG.standard.firstMate + " / mo", PRICING_CONFIG.pro.firstMate + " / mo"],
-                    ["AI vessel setup",       "\u2014",    "\u2713",      "\u2713"],
+                    ["AI vessel setup",       "\u2713",    "\u2713",      "\u2713"],
                     ["AI-enriched logbook",   "\u2014",    "\u2014",      "\u2713"],
                     ["Passage export (CSV)",   "\u2014",    "\u2014",      "\u2713"],
                     ["Watch entries logbook",  "\u2014",    "\u2014",      "\u2713"],
@@ -1217,7 +1217,7 @@ export default function LandingPage() {
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginBottom:14 }}>&nbsp;</div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
-                  {["1 vessel", "Basic maintenance", "3 repairs", "Parts catalog"].map(function(f){
+                  {["1 vessel", "10 equipment cards", "Unlimited repairs", "Parts catalog"].map(function(f){
                     return (
                       <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
                                            marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.55)" }}>
@@ -1264,7 +1264,7 @@ export default function LandingPage() {
                 <div style={{ fontSize:10, color:"#4ade80", fontWeight:500, marginBottom:14 }}>{annual ? "$" + PRICING_CONFIG.standard.annualPrice + "/yr billed annually" : "\u00a0"}</div>
                 <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", marginBottom:14 }} />
                 <div style={{ flex:1, marginBottom:16 }}>
-                  {["Unlimited equipment", "Unlimited repairs", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + "/mo", "Repair log & logbook"].map(function(f){
+                  {["Unlimited equipment", "First Mate AI — " + PRICING_CONFIG.standard.firstMate + "/mo", "Repair log & logbook", "Customizable checklists"].map(function(f){
                     return (
                       <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:7,
                                            marginBottom:8, fontSize:11, color:"rgba(255,255,255,0.75)" }}>
