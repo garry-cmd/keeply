@@ -2181,20 +2181,27 @@ export default function App() {
         {pr.results.length > 0 && (
           <div style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
             {pr.results.map(function(part, pi) {
+              const displayName = part.name || part.partName || "";
+              const displayVendor = part.vendor || part.retailer || "";
               const price = part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) ? "$" + parseFloat(part.price).toFixed(2) : null;
+              const url = part.url || (part.westmarine && part.westmarine.url) || (part.fisheries && part.fisheries.url) || (part.defender && part.defender.url) || null;
               const isLast = pi === pr.results.length - 1;
+              if (!displayName || !url) return null;
               return (
                 <div key={pi} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderBottom: isLast ? "none" : "0.5px solid var(--border)" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{part.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{part.vendor || ""}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 8 }}>{displayName}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, background: part.type === "replacement" ? "rgba(217,119,6,0.2)" : "rgba(255,255,255,0.08)", color: part.type === "replacement" ? "#d97706" : "var(--text-muted)", borderRadius: 3, padding: "1px 5px", marginRight: 5, textTransform: "uppercase", letterSpacing: "0.3px" }}>{part.type === "replacement" ? "Unit" : "Part"}</span>
+                      {displayVendor}
+                    </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                     {price
                       ? <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ok-text)" }}>{price}</span>
                       : <span style={{ fontSize: 11, color: "var(--text-muted)" }}>See site</span>
                     }
-                    <a href={part.url} target="_blank" rel="noreferrer"
+                    <a href={url} target="_blank" rel="noreferrer"
                       style={{ width: 32, height: 32, borderRadius: 8, background: "var(--brand-deep)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
                       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H7M13 3V9" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </a>

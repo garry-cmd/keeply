@@ -10,46 +10,29 @@ export async function POST(request) {
       return Response.json({ error: "API key not configured" }, { status: 500 });
     }
 
-    const context = repairContext
-      ? repairContext
-      : equipmentName
-      ? equipmentName
-      : partName;
+    const context = repairContext || equipmentName || partName;
 
-    const systemPrompt = `You are a marine parts purchasing assistant. Use web search to find real products currently for sale.
+    const systemPrompt = `You are a marine parts purchasing assistant. Use web search to find real products currently for sale online.
 
-The task/repair is: "${partName}"
+Task/repair: "${partName}"
 Equipment and vessel context: "${context}"
 
-Your job is to identify the 1-3 most important parts or items needed for this task, then find each one specifically at West Marine (westmarine.com), Fisheries Supply (fisheriessupply.com), and Defender (defender.com).
+Search for the specific parts needed for this task on these marine retailers: West Marine (westmarine.com), Fisheries Supply (fisheriessupply.com), Defender (defender.com), and other marine suppliers.
 
-For each part:
-1. Search each retailer site specifically for this exact part
-2. Return the direct product page URL if found, or a targeted search URL as fallback
-3. Use the vessel/equipment context to be as specific as possible (e.g. correct impeller for the specific engine model)
+Use the vessel/equipment context to find the most precise match — for example, the correct impeller for the specific engine model, or the correct filter for the specific watermaker brand and model.
 
-Return ONLY a JSON array with this structure, no markdown:
-[
-  {
-    "partName": "Exact part name (be specific, e.g. 'Jabsco 836-0001 Raw Water Impeller')",
-    "partNumber": "Manufacturer part number if known, otherwise null",
-    "type": "part or replacement",
-    "westmarine": { "url": "direct URL or search URL", "price": "price string or null", "confidence": "direct or search" },
-    "fisheries": { "url": "direct URL or search URL", "price": "price string or null", "confidence": "direct or search" },
-    "defender": { "url": "direct URL or search URL", "price": "price string or null", "confidence": "direct or search" },
-    "other": { "name": "retailer name or null", "url": "URL or null", "price": "price string or null", "confidence": "direct or search" },
-    "overallConfidence": "high, medium, or low",
-    "notes": "One sentence on fit/compatibility or null"
-  }
-]
+Find 2-4 results. For each return:
+- name: exact product name
+- type: "replacement" (complete unit) or "part" (service part/consumable)
+- reason: one short sentence on why this matches
+- vendor: retailer name
+- price: current price as string like "29.99" or null
+- url: direct product page URL (preferred) or targeted search URL
 
-Rules:
-- For search URLs use: westmarine.com/search?query=PART, fisheriessupply.com/search?q=PART, defender.com/search?q=PART
-- Set confidence "direct" only if you found an actual product page, "search" if it's a search URL
-- If a retailer clearly doesn't stock this type of part, set url to null
-- Return 1-3 parts max (most important for this task)
-- Be specific to the vessel/engine — wrong impeller for wrong engine is worse than no result
-- If task is inspection-only with no parts needed, return an empty array []`;
+Return ONLY a JSON array, no markdown:
+[{"name":"...","type":"replacement|part","reason":"...","vendor":"...","price":"XX.XX or null","url":"https://..."}]
+
+Prioritize: Fisheries Supply, West Marine, Defender, then other marine specialty retailers. Only include results where the product clearly matches the specific equipment/vessel context.`;
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -57,10 +40,9 @@ Rules:
         "Content-Type": "application/json",
         "x-api-key": process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "interleaved-thinking-2025-05-14",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 1500,
         tools: [{ type: "web_search_20250305", name: "web_search" }],
         messages: [{ role: "user", content: systemPrompt }],
@@ -70,7 +52,6 @@ Rules:
     if (res.status === 429) {
       return Response.json({ error: "rate_limited", results: [] }, { status: 429 });
     }
-
     if (!res.ok) {
       return Response.json({ error: "Search failed — please try again", results: [] }, { status: res.status });
     }
@@ -85,24 +66,62 @@ Rules:
     let results = [];
     try { results = JSON.parse(match ? match[0] : "[]"); } catch(e) { results = []; }
 
-    results = results
-      .filter(function(r){ return r && r.partName; })
-      .slice(0, 3)
+    // Build per-retailer structure from flat results
+    const retailerMap = { westmarine: null, fisheries: null, defender: null, other: null };
+    const vendorKey = (vendor) => {
+      const v = (vendor || "").toLowerCase();
+      if (v.includes("west marine") || v.includes("westmarine")) return "westmarine";
+      if (v.includes("fisheries") || v.includes("fishery")) return "fisheries";
+      if (v.includes("defender")) return "defender";
+      return "other";
+    };
+
+    results
+      .filter(function(r){ return r && r.name && r.url; })
+      .slice(0, 6)
+      .forEach(function(r) {
+        const key = vendorKey(r.vendor);
+        if (!retailerMap[key]) {
+          retailerMap[key] = {
+            partName: r.name,
+            partNumber: null,
+            type: r.type || "part",
+            notes: r.reason || null,
+            overallConfidence: "high",
+            [key]: {
+              url: r.url,
+              price: r.price || null,
+              confidence: r.url && !r.url.includes("/search") ? "direct" : "search",
+              name: key === "other" ? r.vendor : null,
+            },
+            westmarine: key === "westmarine" ? { url: r.url, price: r.price || null, confidence: r.url && !r.url.includes("/search") ? "direct" : "search" } : null,
+            fisheries: key === "fisheries" ? { url: r.url, price: r.price || null, confidence: r.url && !r.url.includes("/search") ? "direct" : "search" } : null,
+            defender: key === "defender" ? { url: r.url, price: r.price || null, confidence: r.url && !r.url.includes("/search") ? "direct" : "search" } : null,
+            other: key === "other" ? { url: r.url, price: r.price || null, confidence: r.url && !r.url.includes("/search") ? "direct" : "search", name: r.vendor } : null,
+          };
+        }
+      });
+
+    // If we have flat results but couldn't map to retailers well, 
+    // return them as individual parts (fallback to old flat rendering)
+    const mappedParts = Object.values(retailerMap).filter(Boolean);
+    
+    // Also build a clean flat results array for the renderer
+    const flatResults = results
+      .filter(function(r){ return r && r.name && r.url; })
+      .slice(0, 6)
       .map(function(r){
         return {
-          partName: r.partName || "",
-          partNumber: r.partNumber || null,
+          name: r.name,
           type: r.type || "part",
-          westmarine: r.westmarine || null,
-          fisheries: r.fisheries || null,
-          defender: r.defender || null,
-          other: r.other || null,
-          overallConfidence: r.overallConfidence || "medium",
-          notes: r.notes || null,
+          reason: r.reason || "",
+          vendor: r.vendor || "",
+          price: r.price || null,
+          url: r.url
         };
       });
 
-    return Response.json({ results });
+    return Response.json({ results: flatResults });
   } catch (err) {
     console.error("find-part error:", err);
     return Response.json({ error: err.message, results: [] }, { status: 500 });
