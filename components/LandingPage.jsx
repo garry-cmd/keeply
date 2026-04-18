@@ -595,156 +595,213 @@ function PartsVisual() {
 function OnboardingVisual() {
   var containerRef = useRef(null);
   var [phase, setPhase] = useState(0);
-  var [taskCount, setTaskCount] = useState(0);
-  var [dots, setDots] = useState('');
+  var [typedDesc, setTypedDesc] = useState('');
+  var [typedName, setTypedName] = useState('');
+  var [msgIdx, setMsgIdx] = useState(0);
+  var [msgVisible, setMsgVisible] = useState(true);
+  var [equipIdx, setEquipIdx] = useState(0);
   var BLUE = "#4da6ff";
-  var tasks = [
-    "Engine oil & filter change",
-    "Raw water impeller",
-    "Zincs — hull & shaft",
-    "Fuel filter (primary)",
-    "Coolant flush",
-    "Transmission service",
-    "Impeller — raw water pump",
+  var BRAND = "#0f4c8a";
+  var NAVY = "#071e3d";
+
+  var fullName = "Amanzi";
+  var fullDesc = "2023 Lagoon 42 catamaran";
+  var msgs = [
+    { msg: "Looking up your vessel specs…",       sub: "2023 Lagoon 42 Catamaran" },
+    { msg: "Building your maintenance schedule…", sub: "Engine hours · manufacturer intervals" },
   ];
-  var fields = [
-    ["Vessel name", "S/V Irene"],
-    ["Type", "Sailboat"],
-    ["Year · Make", "1980 · Ta Shing"],
-    ["Model", "Baba 35"],
+  var equipment = [
+    { name: "Stbd Yanmar 3JH40 Engine", cat: "Engine",      label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
+    { name: "Port Yanmar 3JH40 Engine", cat: "Engine",      label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
+    { name: "Windlass",                 cat: "Anchor",      label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
+    { name: "Helm Station Electronics", cat: "Electronics", label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
   ];
 
   useWhenVisible(containerRef, function() {
     var timers = [];
-    setPhase(0); setTaskCount(0);
     function runCycle() {
-      setPhase(0); setTaskCount(0);
-      // Phase 0 → 1: show form for 2.5s
-      timers.push(setTimeout(function() { setPhase(1); setTaskCount(0); }, 2500));
-      // Phase 1 → 2: building for 2s
-      timers.push(setTimeout(function() { setPhase(2); }, 4500));
-      // Phase 2: tasks count up 1 by 1
-      tasks.forEach(function(_, i) {
-        timers.push(setTimeout(function() { setTaskCount(function(n){ return n + 1; }); }, 4500 + (i * 320)));
+      setPhase(0); setTypedName(''); setTypedDesc(''); setMsgIdx(0); setMsgVisible(true); setEquipIdx(0);
+
+      var nameDelay = 600;
+      fullName.split('').forEach(function(ch, i) {
+        timers.push(setTimeout(function(){ setTypedName(fullName.slice(0, i+1)); }, nameDelay + i * 130));
       });
-      // Loop after pause
-      timers.push(setTimeout(runCycle, 12000));
+
+      var descDelay = nameDelay + fullName.length * 130 + 800;
+      fullDesc.split('').forEach(function(ch, i) {
+        timers.push(setTimeout(function(){ setTypedDesc(fullDesc.slice(0, i+1)); }, descDelay + i * 100));
+      });
+
+      var loadStart = descDelay + fullDesc.length * 100 + 1200;
+      timers.push(setTimeout(function(){ setPhase(1); setMsgIdx(0); setMsgVisible(true); }, loadStart));
+
+      [0,1].forEach(function(i){
+        if (i > 0) {
+          timers.push(setTimeout(function(){
+            setMsgVisible(false);
+            setTimeout(function(){ setMsgIdx(i); setMsgVisible(true); }, 320);
+          }, loadStart + i * 2400));
+        }
+      });
+
+      var resultStart = loadStart + msgs.length * 2400;
+      timers.push(setTimeout(function(){ setPhase(2); setEquipIdx(0); }, resultStart));
+
+      equipment.forEach(function(_, i) {
+        timers.push(setTimeout(function(){ setEquipIdx(function(n){ return Math.max(n, i+1); }); }, resultStart + 500 + i * 600));
+      });
+
+      timers.push(setTimeout(runCycle, resultStart + equipment.length * 600 + 2500));
     }
     runCycle();
-    return function() { timers.forEach(clearTimeout); };
+    return function(){ timers.forEach(clearTimeout); };
   });
 
-  // Animated dots for building phase
-  useEffect(function() {
-    if (phase !== 1) { setDots(''); return; }
-    var i = 0;
-    var t = setInterval(function() {
-      i = (i + 1) % 4;
-      setDots('.'.repeat(i));
-    }, 400);
-    return function() { clearInterval(t); };
-  }, [phase]);
+  function inpField(label, val, placeholder, showCursor, active, hint, optional) {
+    var border = active ? "1px solid rgba(77,166,255,0.5)" : "1px solid rgba(255,255,255,0.1)";
+    return (
+      <div style={{ marginBottom: 9 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.5px", marginBottom: 4 }}>
+          {label}{optional && <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.2)", marginLeft: 4 }}>optional</span>}
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.06)", border: border, borderRadius: 8, padding: "10px 13px", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 38, transition: "border 0.2s" }}>
+          {val || <span style={{ color: "rgba(255,255,255,0.2)", fontWeight: 400, fontSize: 13 }}>{placeholder}</span>}
+          {showCursor && <div style={{ width: 2, height: 13, background: BLUE, animation: "keeply-blink 1s step-end infinite", flexShrink: 0, marginLeft: 2 }} />}
+        </div>
+        {hint && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginTop: 3 }}>{hint}</div>}
+      </div>
+    );
+  }
+
+  var nameDone = typedName.length === fullName.length;
+  var descActive = nameDone && typedDesc.length < fullDesc.length;
+  var descDone = typedDesc.length === fullDesc.length;
 
   return (
     <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: "#071e3d", borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+      <div style={{ width: 390, maxWidth: "calc(100vw - 48px)", background: NAVY, borderRadius: 44, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)", fontFamily: "\'Satoshi\',\'DM Sans\',sans-serif", minHeight: 440 }}>
 
         {/* Top bar */}
-        <div style={{ background: "#071e3d", padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ background: NAVY, padding: "11px 14px 9px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
           <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
             <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="#0f4c8a"/>
             <circle cx="18" cy="18" r="7.2" stroke="white" strokeWidth="2" fill="none"/>
             <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span style={{ fontSize: 20, fontWeight: 800, color: "#fff" }}>Keeply</span>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
-            {[phase === 0 ? BLUE : "rgba(255,255,255,0.2)", phase === 1 ? "#f5a623" : "rgba(255,255,255,0.2)", phase === 2 ? "#4ade80" : "rgba(255,255,255,0.2)"].map(function(c, i){
-              return <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: c, transition: "background 0.4s" }} />;
-            })}
-          </div>
-        </div>
-
-        <div style={{ padding: "14px 14px 16px", minHeight: 360 }}>
-
-          {/* ── Phase 0: Enter vessel ── */}
-          <div style={{ opacity: phase === 0 ? 1 : 0, transition: "opacity 0.5s", position: phase === 0 ? "relative" : "absolute", pointerEvents: "none" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 12 }}>Add your vessel</div>
-            {fields.map(function(f, i) {
-              return (
-                <div key={i} style={{ marginBottom: 10, opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.4s " + (i * 0.15) + "s, transform 0.4s " + (i * 0.15) + "s" }}>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 3 }}>{f[0]}</div>
-                  <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "14px 18px", fontSize: 17, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    {f[1]}
-                    {i === fields.length - 1 && (
-                      <div style={{ width: 2, height: 14, background: BLUE, animation: "keeply-blink 1s step-end infinite" }} />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            <div style={{ marginTop: 16, background: BLUE, borderRadius: 9, padding: "9px 0", textAlign: "center", fontSize: 17, fontWeight: 700, color: "#fff", opacity: phase === 0 ? 1 : 0, transition: "opacity 0.4s 0.6s" }}>
-              Build my vessel →
-            </div>
-          </div>
-
-          {/* ── Phase 1: Building ── */}
-          {phase === 1 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 360, gap: 16 }}>
-              <div style={{ width: 68, height: 68, borderRadius: "50%", background: "rgba(77,166,255,0.1)", border: "2px solid rgba(77,166,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                </svg>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 6 }}>First Mate is building your vessel{dots}</div>
-                <div style={{ fontSize: 15, color: "rgba(255,255,255,0.4)" }}>Generating maintenance schedule</div>
-                <div style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Loading equipment baseline</div>
-                <div style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Setting service intervals</div>
-              </div>
+          <span style={{ fontSize: 19, fontWeight: 800, color: "#fff" }}>Keeply</span>
+          {phase === 2 && (
+            <div style={{ marginLeft: "auto", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "3px 10px" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>Amanzi</span>
             </div>
           )}
+        </div>
 
-          {/* ── Phase 2: Results ── */}
-          {phase === 2 && (
-            <div>
-              <div style={{ display: "flex", gap: 18, marginBottom: 14 }}>
-                {[[String(taskCount > 6 ? 14 : taskCount * 2), "Tasks", BLUE, "rgba(77,166,255,0.08)", "rgba(77,166,255,0.2)"],
-                  [taskCount >= 5 ? "5" : taskCount >= 3 ? "3" : "—", "Equipment", "#4ade80", "rgba(34,197,94,0.08)", "rgba(34,197,94,0.2)"]].map(function(s,i){
+        {/* ── Phase 0: Form ── */}
+        {phase === 0 && (
+          <div style={{ padding: "16px 15px 18px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 13 }}>Add your vessel</div>
+
+            {inpField("VESSEL NAME", typedName, "e.g. Amanzi", typedName.length > 0 && !nameDone, !nameDone && typedName.length > 0)}
+
+            <div style={{ marginBottom: 9 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.5px", marginBottom: 4 }}>VESSEL TYPE</div>
+              <div style={{ display: "flex", gap: 7 }}>
+                <div style={{ flex: 1, border: "1px solid rgba(77,166,255,0.4)", borderRadius: 7, padding: "7px 0", textAlign: "center", fontSize: 13, fontWeight: 700, color: BLUE, background: "rgba(77,166,255,0.08)" }}>Sail</div>
+                <div style={{ flex: 1, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 7, padding: "7px 0", textAlign: "center", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.25)" }}>Motor</div>
+              </div>
+            </div>
+
+            {inpField("DESCRIBE YOUR BOAT", typedDesc, "e.g. 2023 Lagoon 42 catamaran", descActive, descActive, "First Mate auto-builds your equipment list and maintenance schedule")}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.5px", marginBottom: 4 }}>ENGINE HOURS</div>
+                <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 13px", fontSize: 14, fontWeight: 600, color: descDone ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>{descDone ? "1,406" : "—"}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL BURN <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.2)" }}>gph</span></div>
+                <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 13px", fontSize: 14, fontWeight: 600, color: descDone ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>{descDone ? "0.97" : "—"}</div>
+              </div>
+            </div>
+
+            <div style={{ background: BLUE, borderRadius: 9, padding: "12px 0", textAlign: "center", fontSize: 15, fontWeight: 700, color: "#fff", opacity: descDone ? 1 : 0.35, transition: "opacity 0.4s" }}>
+              Build my boat →
+            </div>
+          </div>
+        )}
+
+        {/* ── Phase 1: Loading ── */}
+        {phase === 1 && (
+          <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 360 }}>
+            <div style={{ width: 58, height: 58, borderRadius: "50%", background: "rgba(77,166,255,0.1)", border: "2px solid rgba(77,166,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              </svg>
+            </div>
+            <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: 12 }}>
+              {[0,1,2,3,4].map(function(i){ return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: BLUE, animation: "keeply-wave 1.3s ease-in-out infinite", animationDelay: (i * 0.12) + "s" }} />; })}
+            </div>
+            <div style={{ height: 2, width: 160, background: "rgba(77,166,255,0.1)", borderRadius: 2, overflow: "hidden", marginBottom: 14, position: "relative" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: "50%", background: "rgba(77,166,255,0.4)", borderRadius: 2, animation: "keeply-shimmer 1.8s ease-in-out infinite" }} />
+            </div>
+            <div style={{ textAlign: "center", opacity: msgVisible ? 1 : 0, transition: "opacity 0.3s" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{msgs[msgIdx].msg}</div>
+              {msgs[msgIdx].sub && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{msgs[msgIdx].sub}</div>}
+            </div>
+            <div style={{ marginTop: 16, fontSize: 11, color: "rgba(255,255,255,0.2)" }}>Building Amanzi · 2023 Lagoon 42 Catamaran</div>
+          </div>
+        )}
+
+        {/* ── Phase 2: Result ── */}
+        {phase === 2 && (
+          <div style={{ padding: "10px 12px 14px" }}>
+            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 16px", marginBottom: 10 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 2 }}>Amanzi</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>2023 Lagoon 42 · Catamaran · Fort Lauderdale</div>
+              <div style={{ display: "flex", gap: 16, marginTop: 10 }}>
+                {[["18", "Tasks", BLUE], ["8", "Equipment", "#22c55e"], ["94%", "Health", "#4ade80"]].map(function(k) {
                   return (
-                    <div key={i} style={{ flex: 1, background: s[3], border: "1px solid " + s[4], borderRadius: 10, padding: "9px 6px", textAlign: "center", transition: "all 0.3s" }}>
-                      <div style={{ fontSize: 25, fontWeight: 800, color: s[2], lineHeight: 1 }}>{s[0]}</div>
-                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.4px" }}>{s[1]}</div>
+                    <div key={k[1]}>
+                      <div style={{ fontSize: 17, fontWeight: 800, color: k[2] }}>{k[0]}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.4px" }}>{k[1]}</div>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>Maintenance schedule</div>
-              {tasks.slice(0, taskCount).map(function(t, i) {
-                return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 11, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", opacity: 1, transform: "translateX(0)", transition: "opacity 0.3s, transform 0.3s" }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: i < 2 ? "#f59e0b" : "#22c55e", flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, color: "rgba(255,255,255,0.75)" }}>{t}</span>
-                  </div>
-                );
-              })}
-              {taskCount < tasks.length && (
-                <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "5px 0" }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.25)" }}>Loading…</span>
-                </div>
-              )}
             </div>
-          )}
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 7 }}>Equipment — AI generated</div>
+            {equipment.slice(0, equipIdx).map(function(eq, i) {
+              return (
+                <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid " + eq.border, borderRadius: 10, padding: "9px 12px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10, animation: "onboard-fadein 0.4s ease forwards" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{eq.name}</div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>{eq.cat}</div>
+                  </div>
+                  <div style={{ background: eq.bg, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, color: eq.color }}>{eq.label}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-        </div>
+        {phase === 2 && (
+          <div style={{ background: "#fff", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", padding: "6px 0 8px" }}>
+            {["My Boat","Equipment","Logbook","Profile"].map(function(t){
+              return <div key={t} style={{ flex:1, textAlign:"center", fontSize:7, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.3px", color: t==="My Boat"?"#0f4c8a":"rgba(7,30,61,0.3)" }}>{t}</div>;
+            })}
+          </div>
+        )}
+
       </div>
-      <style dangerouslySetInnerHTML={{ __html: "@keyframes keeply-blink { 0%,100% { opacity:1 } 50% { opacity:0 } }" }} />
+      <style dangerouslySetInnerHTML={{ __html: [
+        "@keyframes keeply-blink{0%,100%{opacity:1}50%{opacity:0}}",
+        "@keyframes keeply-wave{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-6px);opacity:1}}",
+        "@keyframes keeply-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}",
+        "@keyframes onboard-fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}"
+      ].join('') }} />
     </div>
   );
 }
-
-
-
 
 
 
