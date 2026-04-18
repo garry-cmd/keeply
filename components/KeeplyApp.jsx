@@ -2169,12 +2169,6 @@ export default function App() {
 
   // ── Retailer grid renderer — shared by repair + maintenance part results ──
   const renderPartResults = function(pr, refreshFn) {
-    const RETAILERS = [
-      { key: "westmarine",  label: "West Marine" },
-      { key: "fisheries",   label: "Fisheries Supply" },
-      { key: "defender",    label: "Defender" },
-      { key: "other",       label: "Other" },
-    ];
     return (
       <>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
@@ -2184,55 +2178,33 @@ export default function App() {
         {pr.results.length === 0 && (
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>No specific parts found for this task.</div>
         )}
-        {pr.results.map(function(part, pi) {
-          return (
-            <div key={pi} style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 2 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", flex: 1, minWidth: 0, paddingRight: 8 }}>{part.partName}</div>
-                <div style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: part.overallConfidence === "high" ? "var(--ok-text)" : part.overallConfidence === "medium" ? "#d97706" : "var(--text-muted)", display: "inline-block" }} />
-                  {part.overallConfidence === "high" ? "High confidence" : part.overallConfidence === "medium" ? "Likely match" : "Low confidence"}
+        {pr.results.length > 0 && (
+          <div style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+            {pr.results.map(function(part, pi) {
+              const price = part.price && part.price !== "null" && !isNaN(parseFloat(part.price)) ? "$" + parseFloat(part.price).toFixed(2) : null;
+              const isLast = pi === pr.results.length - 1;
+              return (
+                <div key={pi} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderBottom: isLast ? "none" : "0.5px solid var(--border)" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{part.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{part.vendor || ""}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    {price
+                      ? <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ok-text)" }}>{price}</span>
+                      : <span style={{ fontSize: 11, color: "var(--text-muted)" }}>See site</span>
+                    }
+                    <a href={part.url} target="_blank" rel="noreferrer"
+                      style={{ width: 32, height: 32, borderRadius: 8, background: "var(--brand-deep)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H7M13 3V9" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </a>
+                  </div>
                 </div>
-              </div>
-              {part.partNumber && (
-                <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 6 }}>Part #{part.partNumber}</div>
-              )}
-              {part.notes && (
-                <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 8, lineHeight: 1.4 }}>{part.notes}</div>
-              )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 4 }}>
-                {RETAILERS.map(function(r) {
-                  const info = part[r.key];
-                  const hasUrl = info && info.url;
-                  const isDirect = info && info.confidence === "direct";
-                  const displayLabel = r.key === "other" && info && info.name ? info.name : r.label;
-                  const price = info && info.price && info.price !== "null" && !isNaN(parseFloat(info.price)) ? "$" + parseFloat(info.price).toFixed(2) : null;
-                  return (
-                    <div key={r.key} style={{ background: "var(--bg-subtle)", border: "0.5px solid " + (hasUrl ? "var(--border)" : "var(--border-faint)"), borderRadius: 8, padding: "8px 10px", opacity: hasUrl ? 1 : 0.5 }}>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>{displayLabel}</div>
-                      {hasUrl ? (
-                        <>
-                          {price && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{price}</div>}
-                          <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>
-                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: isDirect ? "var(--ok-text)" : "#d97706", display: "inline-block" }} />
-                            {isDirect ? "Direct link" : "Search result"}
-                          </div>
-                          <a href={info.url} target="_blank" rel="noreferrer"
-                            style={{ display: "block", textAlign: "center", padding: "5px", background: "var(--brand)", color: "#fff", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none" }}>
-                            {isDirect ? "Buy ↗" : "Search ↗"}
-                          </a>
-                        </>
-                      ) : (
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", padding: "6px 0" }}>Not found</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-        <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>Powered by First Mate · Verify part number before ordering</div>
+              );
+            })}
+          </div>
+        )}
+        <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", marginTop: 8 }}>Powered by First Mate · Verify part number before ordering</div>
       </>
     );
   };
@@ -3229,14 +3201,14 @@ export default function App() {
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                             {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
-                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}>
+                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{r.description}</div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               <SectionBadge section={r.section} />
                             </div>
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
-                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}>
+                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                             {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
@@ -4490,7 +4462,7 @@ export default function App() {
                         style={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--brand)"), background: isCompleting ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                         {isCompleting && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
                       </button>
-                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !inlinePartResults[t.id]) findPartsInline(t.id, t.task, t.equipment_id, t.section); }}>
+                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{t.task}</div>
                         <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
                           <SectionBadge section={t.section} />
@@ -4500,7 +4472,7 @@ export default function App() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }}
-                          onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); if (next && !inlinePartResults[t.id]) findPartsInline(t.id, t.task, t.equipment_id, t.section); }}>
+                          onClick={function(){ const next = isExpanded ? null : t.id; setExpandedTask(next); }}>
                           {isExpanded ? "▾" : "▸"}
                         </span>
                       </div>
@@ -5113,12 +5085,12 @@ export default function App() {
                                         style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid " + (isCompleting ? "var(--ok-text)" : "var(--border)"), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, background: isCompleting ? "var(--ok-bg)" : "transparent", transition: "all 0.3s" }}>
                                         {isCompleting && <span style={{ color: "var(--ok-text)", fontSize: 12, fontWeight: 700 }}>✓</span>}
                                       </div>
-                                      <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}>
+                                      <div style={{ flex: 1, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                                         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{r.description}</div>
                                         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{r.section} · {fmt(r.date)}</div>
                                       </div>
                                       <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}>{isExpanded ? "▾" : "▸"}</span>
+                                        <span style={{ color: "var(--text-muted)", fontSize: 16, cursor: "pointer" }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
                                         <button onClick={function(e){ e.stopPropagation(); showConfirm("Delete this repair?", function(){ deleteRepair(r.id); }); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}><TrashIcon /></button>
                                       </div>
                                     </div>
@@ -5877,7 +5849,7 @@ export default function App() {
                       </div>
                     </>)}
                   </div>
-                  <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }} onClick={function(e){ e.stopPropagation(); const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}>{isExpanded ? "▾" : "▸"}</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }} onClick={function(e){ e.stopPropagation(); const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>{isExpanded ? "▾" : "▸"}</span>
                 </div>
 
                 {/* Tabbed expanded panel */}
@@ -6186,7 +6158,7 @@ export default function App() {
                             style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid " + (completingRepair === r.id ? "var(--ok-text)" : "var(--border)"), background: completingRepair === r.id ? "var(--ok-text)" : "var(--bg-subtle)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                             {completingRepair === r.id && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>✓</span>}
                           </button>
-                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}>
+                          <div style={{ flex: 1, cursor: "pointer", minWidth: 0 }} onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3 }}>{r.description}</div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                               <SectionBadge section={r.section} />
@@ -6195,7 +6167,7 @@ export default function App() {
                             </div>
                           </div>
                           <span style={{ color: "var(--text-muted)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
-                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); if (next && !inlinePartResults[r.id]) findPartsInline(r.id, r.description, r.equipment_id, r.section); }}>
+                            onClick={function(){ const next = isExpanded ? null : r.id; setExpandedRepair(next); }}>
                             {isExpanded ? "▾" : "▸"}
                           </span>
                         </div>
