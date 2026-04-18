@@ -704,17 +704,17 @@ function OnboardingVisual() {
   var BRAND = "#0f4c8a";
   var NAVY = "#071e3d";
 
-  var fullName = "Amanzi";
-  var fullDesc = "2023 Lagoon 42 catamaran";
+  var fullName = "Rounder";
+  var fullDesc = "1984 Passport 40 sailboat";
   var msgs = [
-    { msg: "Looking up your vessel specs…",       sub: "2023 Lagoon 42 Catamaran" },
+    { msg: "Looking up your vessel specs…",       sub: "1984 Passport 40 Sailboat" },
     { msg: "Building your maintenance schedule…", sub: "Engine hours · manufacturer intervals" },
   ];
   var equipment = [
-    { name: "Stbd Yanmar 3JH40 Engine", cat: "Engine",      label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
-    { name: "Port Yanmar 3JH40 Engine", cat: "Engine",      label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
-    { name: "Windlass",                 cat: "Anchor",      label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
-    { name: "Helm Station Electronics", cat: "Electronics", label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
+    { name: "Yanmar 4JH4E Marine Diesel",      cat: "Engine",      label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
+    { name: "Lighthouse 1501 Electric Windlass", cat: "Anchor",     label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
+    { name: "Victron MultiPlus 3000VA",          cat: "Electrical", label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
+    { name: "Autohelm 1000 Autopilot",           cat: "Electronics",label: "Good", color: "#22c55e", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)" },
   ];
 
   useWhenVisible(containerRef, function() {
@@ -791,7 +791,7 @@ function OnboardingVisual() {
           <span style={{ fontSize: 19, fontWeight: 800, color: "#fff" }}>Keeply</span>
           {phase === 2 && (
             <div style={{ marginLeft: "auto", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "3px 10px" }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>Amanzi</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>Rounder</span>
             </div>
           )}
         </div>
@@ -801,7 +801,7 @@ function OnboardingVisual() {
           <div style={{ padding: "16px 15px 18px" }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 13 }}>Add your vessel</div>
 
-            {inpField("VESSEL NAME", typedName, "e.g. Amanzi", typedName.length > 0 && !nameDone, !nameDone && typedName.length > 0)}
+            {inpField("VESSEL NAME", typedName, "e.g. Rounder", typedName.length > 0 && !nameDone, !nameDone && typedName.length > 0)}
 
             <div style={{ marginBottom: 9 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.5px", marginBottom: 4 }}>VESSEL TYPE</div>
@@ -811,16 +811,16 @@ function OnboardingVisual() {
               </div>
             </div>
 
-            {inpField("DESCRIBE YOUR BOAT", typedDesc, "e.g. 2023 Lagoon 42 catamaran", descActive, descActive, "First Mate auto-builds your equipment list and maintenance schedule")}
+            {inpField("DESCRIBE YOUR BOAT", typedDesc, "e.g. 1984 Passport 40 sailboat", descActive, descActive, "First Mate auto-builds your equipment list and maintenance schedule")}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
               <div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.5px", marginBottom: 4 }}>ENGINE HOURS</div>
-                <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 13px", fontSize: 14, fontWeight: 600, color: descDone ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>{descDone ? "1,406" : "—"}</div>
+                <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 13px", fontSize: 14, fontWeight: 600, color: descDone ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>{descDone ? "1,534" : "—"}</div>
               </div>
               <div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.5px", marginBottom: 4 }}>FUEL BURN <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.2)" }}>gph</span></div>
-                <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 13px", fontSize: 14, fontWeight: 600, color: descDone ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>{descDone ? "0.97" : "—"}</div>
+                <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 13px", fontSize: 14, fontWeight: 600, color: descDone ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>{descDone ? "1.20" : "—"}</div>
               </div>
             </div>
 
@@ -848,7 +848,7 @@ function OnboardingVisual() {
               <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{msgs[msgIdx].msg}</div>
               {msgs[msgIdx].sub && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{msgs[msgIdx].sub}</div>}
             </div>
-            <div style={{ marginTop: 16, fontSize: 11, color: "rgba(255,255,255,0.2)" }}>Building Amanzi · 2023 Lagoon 42 Catamaran</div>
+            <div style={{ marginTop: 16, fontSize: 11, color: "rgba(255,255,255,0.2)" }}>Building Rounder · 1984 Passport 40</div>
           </div>
         )}
 
@@ -856,10 +856,10 @@ function OnboardingVisual() {
         {phase === 2 && (
           <div style={{ padding: "10px 12px 14px" }}>
             <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 16px", marginBottom: 10 }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 2 }}>Amanzi</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>2023 Lagoon 42 · Catamaran · Fort Lauderdale</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 2 }}>Rounder</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>1984 Passport 40 · Sail · Seattle</div>
               <div style={{ display: "flex", gap: 16, marginTop: 10 }}>
-                {[["18", "Tasks", BLUE], ["8", "Equipment", "#22c55e"], ["94%", "Health", "#4ade80"]].map(function(k) {
+                {[["28", "Tasks", BLUE], ["21", "Equipment", "#22c55e"], ["92%", "Health", "#4ade80"]].map(function(k) {
                   return (
                     <div key={k[1]}>
                       <div style={{ fontSize: 17, fontWeight: 800, color: k[2] }}>{k[0]}</div>
