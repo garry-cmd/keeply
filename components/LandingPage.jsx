@@ -519,7 +519,7 @@ function MyBoatVisual() {
 
 const FEATURES = [
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
-  { tag: "AI Setup", title: "Your whole boat, set up in 60 seconds.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
+  { tag: "AI Setup", title: "Your whole boat, set up in minutes.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing.", Visual: OnboardingVisual },
   { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
   { tag: "AI Parts Search", title: "The right part for your exact boat. Instantly.", body: "Open any maintenance task or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. No wrong orders.", Visual: PartsVisual },
   { tag: "Logbook", title: "Log every watch. Own every passage.", body: "Start a live passage and tap your way through the crossing. Every watch change — time, position, course, speed, wind — logged in seconds. Hit arrived, and it's in your history.", Visual: LogbookVisual },
@@ -710,7 +710,7 @@ function OnboardingVisual() {
               <div style={{ display: "flex", gap: 18, marginBottom: 14 }}>
                 {[[String(taskCount > 6 ? 14 : taskCount * 2), "Tasks", BLUE, "rgba(77,166,255,0.08)", "rgba(77,166,255,0.2)"],
                   [taskCount >= 5 ? "5" : taskCount >= 3 ? "3" : "—", "Equipment", "#4ade80", "rgba(34,197,94,0.08)", "rgba(34,197,94,0.2)"],
-                  [taskCount === 7 ? "60s" : "…", "Setup", "#f5a623", "rgba(245,166,35,0.08)", "rgba(245,166,35,0.2)"]].map(function(s,i){
+                  [taskCount === 7 ? "mins" : "…", "Setup", "#f5a623", "rgba(245,166,35,0.08)", "rgba(245,166,35,0.2)"]].map(function(s,i){
                   return (
                     <div key={i} style={{ flex: 1, background: s[3], border: "1px solid " + s[4], borderRadius: 10, padding: "9px 6px", textAlign: "center", transition: "all 0.3s" }}>
                       <div style={{ fontSize: 25, fontWeight: 800, color: s[2], lineHeight: 1 }}>{s[0]}</div>
