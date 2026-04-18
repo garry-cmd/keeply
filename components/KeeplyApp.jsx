@@ -5876,6 +5876,7 @@ export default function App() {
             onBack={function(){ setTab("boat"); }}
             openAddForm={showAddLog}
             onAddFormOpened={function(){ setShowAddLog(false); }}
+            userPlan={livePlan || userPlan || "free"}
           />
         )}
 
