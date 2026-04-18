@@ -4756,8 +4756,8 @@ export default function App() {
             // 4. Within category + status: name
             return a.name.localeCompare(b.name);
           }).filter(function(eq){ return eq.category !== "Vessel"; }).filter(function(eq, idx){
-            // Free users: only show first card; rest are locked behind upgrade banner
-            if ((userPlan === "free" || !userPlan) && !trialActive) return idx === 0;
+            // Free users: show up to 10 equipment cards; rest locked behind upgrade banner
+            if ((userPlan === "free" || !userPlan) && !trialActive) return idx < 10;
             return true;
           }).map(function(eq){
             const isExpanded = expandedEquip === eq.id;
