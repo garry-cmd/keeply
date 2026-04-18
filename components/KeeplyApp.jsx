@@ -2136,17 +2136,16 @@ export default function App() {
     const eq = equipment.find(function(e){ return e.id === equipmentId; });
     const vessel = vessels.find(function(v){ return v.id === activeVesselId; });
     const vesselContext = vessel ? [vessel.year, vessel.make, vessel.model].filter(Boolean).join(" ") : "";
-    // Build equipment name — always lead with vessel make/model so AI knows the exact engine
     const eqName = eq ? eq.name : section;
     const eqNotes = eq && eq.notes && !eq.notes.startsWith("{") ? eq.notes.substring(0, 80) : "";
-    const equipContext = [vesselContext, eqName, eqNotes].filter(Boolean).join(" ");
-    // Explicit repair context: "Beta 35 diesel engine — Replace impellor"
-    const isEngineSection = section === "Engine" || section === "Generator";
+    // Lead with specific equipment make/model so AI searches for exact part
+    // e.g. "Spectra Ventura 150D Watermaker" not just "Watermaker"
     const repairContext = [
+      eqName,
       vesselContext,
-      isEngineSection ? "marine diesel engine" : section,
       "—",
-      taskDescription
+      taskDescription,
+      eqNotes
     ].filter(Boolean).join(" ");
     setInlinePartResults(function(prev){ const n = Object.assign({}, prev); n[id] = { loading: true, results: [], error: null }; return n; });
     try {
@@ -2155,7 +2154,8 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           partName: taskDescription,
-          equipmentName: equipContext,
+          equipmentName: eqName,
+          vesselContext: vesselContext,
           repairContext: repairContext
         }),
       });
