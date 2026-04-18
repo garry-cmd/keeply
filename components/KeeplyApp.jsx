@@ -5090,12 +5090,7 @@ export default function App() {
                           <div style={{ textAlign: "center", padding: "12px 0", color: "var(--text-muted)", fontSize: 12 }}>
                             No repairs logged.
                             <button onClick={function(){
-                              const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                              if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
-                                setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
-                                setShowUpgradeModal(true);
-                                return;
-                              }
+
                               setNewRepair(function(nr){ return Object.assign({}, nr, { section: eq.category, _equipmentId: eq.id }); });
                               setShowAddRepair(true);
                             }} style={{ display: "block", margin: "8px auto 0", background: "none", border: "1.5px dashed var(--border)", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>+ Log Repair</button>
@@ -5198,12 +5193,7 @@ export default function App() {
                                 );
                               })}
                           <button onClick={function(){
-                            const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                            if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
-                              setUpgradeReason("Entry accounts are limited to 5 repairs. Upgrade to Pro for unlimited repairs.");
-                              setShowUpgradeModal(true);
-                              return;
-                            }
+
                             setNewRepair(function(nr){ return Object.assign({}, nr, { section: eq.category, _equipmentId: eq.id }); });
                             setShowAddRepair(true);
                           }} style={{ marginTop: 8, background: "none", border: "1.5px dashed var(--border)", borderRadius: 8, padding: "6px 16px", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", width: "100%" }}>+ Log Repair</button>
@@ -5616,13 +5606,7 @@ export default function App() {
                 } },
                 { label: "Add Task", stroke: "#34d399", bg: "rgba(52,211,153,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>, action: function(){ setShowAddTask(true); setShowFab(false); } },
                 { label: "Add Repair", stroke: "#f87171", bg: "rgba(248,113,113,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>, action: function(){
-                    const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-                    if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
-                      setUpgradeReason("Free accounts are limited to 3 repairs. Upgrade to Standard or Pro for unlimited repairs.");
-                      setShowUpgradeModal(true);
-                      setShowFab(false);
-                      return;
-                    }
+
                     setShowAddRepair(true); setShowFab(false);
                   } },
                 { label: "Equipment Note", stroke: "#a78bfa", bg: "rgba(167,139,250,0.15)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>, action: function(){
@@ -5837,12 +5821,7 @@ export default function App() {
         {/* ── REPAIRS TAB ── */}
         {view === "customer" && tab === "repairs-standalone" && (<>
           {tabHeader("Repairs", boatName + " · " + repairs.filter(function(r){ return r.status !== "closed"; }).length + " open", true, function(){
-            const vesselRepairs = repairs.filter(function(r){ return r._vesselId === activeVesselId; });
-            if ((userPlan === "free" || !userPlan) && !trialActive && vesselRepairs.length >= 3) {
-              setUpgradeReason("Free accounts are limited to 3 repairs. Upgrade to Standard or Pro for unlimited repairs.");
-              setShowUpgradeModal(true);
-              return;
-            }
+
             setShowAddRepair(true);
           })}
 
