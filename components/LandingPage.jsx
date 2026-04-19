@@ -1225,6 +1225,7 @@ export default function LandingPage() {
             } catch(stripeErr) { console.error("Stripe checkout error:", stripeErr); }
           }
           posthog.capture("signup_completed", { plan: effectivePlan || "free", email_confirmed_immediately: false });
+          window.gtag?.("event", "signup_completed", { plan: effectivePlan || "free" });
           setSignupEmail(email);
         }
       } else {
