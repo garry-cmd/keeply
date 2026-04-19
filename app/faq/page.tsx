@@ -129,7 +129,7 @@ const SECTIONS = [
       },
       {
         q: "How do I log a repair?",
-        a: "Go to the Repairs tab and tap + Log Repair. Or open an equipment card and tap the Repairs tab. Enter a description, date, photos, and notes. Repairs are tracked separately from scheduled maintenance.",
+        a: "Tap the + button (the floating button at the bottom right of the screen) and select Log Repair. Enter a description, date, photos, and notes. You can also log a repair directly from an equipment card. Repairs are tracked separately from scheduled maintenance.",
       },
       {
         q: "What do the status colours mean?",
