@@ -53,15 +53,15 @@ const SECTIONS = [
     faqs: [
       {
         q: "How do I add my boat?",
-        a: "After signing in, tap Add Vessel on the My Boat screen. Describe your boat in plain English — make, model, year. First Mate AI looks it up and builds your full equipment list and maintenance schedule automatically. The whole process takes a few minutes.",
+        a: "After signing in, go to the My Boat screen and tap Add Vessel. Give your boat a name, select the vessel type, then describe it in plain English — for example \"1984 Passport 40 sailboat\" or \"2017 Grady-White Freedom 307\". First Mate AI looks up your vessel, builds your equipment list, and seeds a full maintenance schedule with manufacturer-recommended intervals automatically. Once it's done, everything is fully editable — adjust any interval, add your own equipment, or remove anything that doesn't apply. Most boaters are set up in under five minutes.",
       },
       {
         q: "Can I use Keeply on my phone?",
-        a: "Yes. Keeply is designed mobile-first. Open keeply.boats in Safari (iOS) or Chrome (Android) and add it to your home screen for a full app experience. Works on any modern browser.",
+        a: "Yes. Keeply is designed mobile-first. Open keeply.boats in Safari (iOS) or Chrome (Android) and add it to your home screen for a full app experience — it works like a native app without needing the App Store. Full native apps for iOS (App Store) and Android (Google Play) are coming soon.",
       },
       {
         q: "How do I add equipment?",
-        a: "Go to the Equipment tab and tap the + button. Type the equipment name — Keeply will recognise the make and model and pre-fill manufacturer-recommended service intervals. You can also tap the camera icon and let First Mate AI identify the equipment from a photo.",
+        a: "Go to the Equipment tab and tap the + button (the floating button at the bottom right of the screen). Type the equipment name and make — for example \"Spectra Ventura 150D Watermaker\" or \"Yanmar 4JH4E\". First Mate AI recognises the model and pre-fills manufacturer-recommended service intervals automatically. Add as many pieces of equipment as you like — engines, watermakers, windlasses, electronics, safety gear, and more.",
       },
       {
         q: "Can I import existing maintenance records?",
