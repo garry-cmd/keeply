@@ -1291,7 +1291,7 @@ export default function LandingPage() {
           <span style={{ fontSize: 18, fontWeight: 700, color: WHITE, letterSpacing: "-0.3px" }}>Keeply</span>
         </a>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {!isMobile && <a href="#features" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Features</a>}
+          
           {!isMobile && <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>}
           {!isMobile && <a href="/faq" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>FAQ</a>}
           {!isMobile && <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>}
@@ -1377,57 +1377,52 @@ export default function LandingPage() {
           var isEven = i % 2 === 0;
           var V = f.Visual;
           return (
-            <div key={i} style={{ maxWidth: 1300, margin: "0 auto 80px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 64, alignItems: "start" }}>
-              <div style={{ order: isMobile ? 0 : (isEven ? 0 : 1) }}>
-                <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
-                <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
-                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
-                <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Get started {"\u2192"}</button>
+            <React.Fragment key={i}>
+              <div style={{ maxWidth: 1300, margin: "0 auto 80px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 64, alignItems: "start" }}>
+                <div style={{ order: isMobile ? 0 : (isEven ? 0 : 1) }}>
+                  <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>{f.tag}</div>
+                  <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, lineHeight: 1.2, letterSpacing: "-0.3px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>{f.title}</h2>
+                  <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 32px" }}>{f.body}</p>
+                  <button onClick={function(){ setShowPlanPicker(true); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: WHITE, padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Get started {"\u2192"}</button>
+                </div>
+                <div style={{ order: isMobile ? 1 : (isEven ? 1 : 0) }}><V /></div>
               </div>
-              <div style={{ order: isMobile ? 1 : (isEven ? 1 : 0) }}><V /></div>
-            </div>
+              {i === 1 && (
+                <div style={{ maxWidth: 1100, margin: "0 auto 80px", padding: isMobile ? "48px 0" : "64px 0", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 48 : 80, alignItems: "center" }}>
+                  <div>
+                    <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.2)", borderRadius: 20, padding: "4px 14px" }}>Intelligence</div>
+                    <h2 style={{ fontSize: "clamp(26px,3.2vw,42px)", fontWeight: 700, color: WHITE, lineHeight: 1.15, letterSpacing: "-0.5px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+                      First Mate knows your boat.<br />And keeps learning.
+                    </h2>
+                    <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 28px", maxWidth: 460 }}>
+                      Every service you log, every repair you close, every passage you record gives First Mate more context. Ask anything about your vessel — the more history you build, the sharper the answers get.
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {[
+                        { color: "#4ade80", label: "Logbook entries",     desc: "Passages, watch notes, conditions" },
+                        { color: "#4da6ff", label: "Repair history",      desc: "Every fix, when and what was done" },
+                        { color: "#f5a623", label: "Maintenance records", desc: "Service dates, notes, intervals" },
+                        { color: "#9ca3af", label: "Engine hours",        desc: "Hour-based service triggers" },
+                      ].map(function(item) {
+                        return (
+                          <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{item.label}</span>
+                            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{item.desc}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ order: isMobile ? -1 : 0 }}>
+                    <FirstMateLearnVisual />
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
       </section>
-
-
-      {/* ── First Mate learns section ── */}
-      <section style={{ padding: isMobile ? "56px 16px" : "80px 24px", background: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 48 : 80, alignItems: "center" }}>
-
-          <div>
-            <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 20, padding: "4px 14px" }}>Intelligence</div>
-            <h2 style={{ fontSize: "clamp(26px,3.2vw,42px)", fontWeight: 700, color: WHITE, lineHeight: 1.15, letterSpacing: "-0.5px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
-              First Mate knows your boat.<br />And keeps learning.
-            </h2>
-            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 28px", maxWidth: 460 }}>
-              Every service you log, every repair you close, every passage you record gives First Mate more context. Ask anything about your vessel — the more history you build, the sharper the answers get.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                { color: "#4ade80",  bg: "rgba(74,222,128,0.1)",   label: "Logbook entries",    desc: "Passages, watch notes, conditions" },
-                { color: "#4da6ff",  bg: "rgba(77,166,255,0.1)",   label: "Repair history",     desc: "Every fix, when and what was done" },
-                { color: "#f5a623",  bg: "rgba(245,166,35,0.1)",   label: "Maintenance records", desc: "Service dates, notes, intervals" },
-                { color: "#9ca3af",  bg: "rgba(156,163,175,0.1)",  label: "Engine hours",       desc: "Hour-based service triggers" },
-              ].map(function(item) {
-                return (
-                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{item.label}</span>
-                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{item.desc}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div style={{ order: isMobile ? -1 : 0 }}>
-            <FirstMateLearnVisual />
-          </div>
-
-        </div>
-      </section>
-
 
       {/* Pricing */}
       <section id="pricing" style={{ padding: isMobile ? "56px 16px" : "100px 24px" }}>
@@ -1435,10 +1430,10 @@ export default function LandingPage() {
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Use code BETA2026 for 100% off · No credit card needed</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Early access · Use code BETA2026 for 100% off</span>
             </div>
-            <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Start free. Choose your plan after.</h2>
-            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Use discount code BETA2026 at checkout for 100% off during beta.</p>
+            <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Join the beta. Help build the best boat maintenance app afloat.</h2>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Keeply is in early access. Your feedback shapes what we build next. Start free — no credit card needed.</p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
               <span style={{ fontSize: 13, color: annual ? "rgba(255,255,255,0.4)" : WHITE, fontWeight: annual ? 400 : 600 }}>Monthly</span>
               <div onClick={function () { setAnnual(function (a) { return !a; }); }} style={{ width: 44, height: 24, background: annual ? ACCENT : "rgba(255,255,255,0.2)", borderRadius: 12, position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
@@ -1581,7 +1576,7 @@ export default function LandingPage() {
             <Logo size={22} />
             <div>
               <span style={{ fontSize: 15, fontWeight: 700, color: WHITE }}>Keeply</span>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>Made by a boater, for boaters.</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>Made by boaters, for boaters.</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
