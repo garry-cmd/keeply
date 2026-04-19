@@ -42,6 +42,10 @@ const SECTIONS = [
         a: "All major credit and debit cards via Stripe. Payments are processed securely — Keeply never sees your card details.",
       },
       {
+        q: "Do you store my payment details?",
+        a: "No. Keeply never stores your card details. All payment processing is handled by Stripe, one of the world's most trusted payment platforms. Your card information goes directly to Stripe and never touches our servers.",
+      },
+      {
         q: "Is there an annual discount?",
         a: "Yes — pay annually and save 20%. Standard is $144/yr (vs $180 monthly), Pro is $240/yr (vs $300 monthly). Toggle to Annual on the pricing page to see the discounted rates.",
       },
