@@ -14,6 +14,10 @@ export function initPostHog() {
     autocapture:          false,  // we'll fire explicit events only
     person_profiles:      'identified_only',
   })
+
+  // Expose instance globally so window.posthog?.capture() calls work
+  // (npm module does not set window.posthog automatically)
+  ;(window as any).posthog = posthog
 }
 
 // ── Typed event helpers ───────────────────────────────────────────────────────
