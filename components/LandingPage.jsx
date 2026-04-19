@@ -738,11 +738,9 @@ function PartsVisual() {
   var [tapTarget, setTapTarget] = useState('card');
 
   var parts = [
-    { name: "Spectra Watermakers 5 Micron Filter Element FT-FTC-5", vendor: "Fisheries Supply", price: "$22.95" },
-    { name: "Spectra FT-FTC-5 5 Micron Filter",                      vendor: "Defender Marine",   price: null },
-    { name: "Spectra FT-FTC-5 5 Micron Filter",                      vendor: "Seatech Marine",    price: null },
-    { name: "Spectra 5 Micron Pre-Filters FT-FTC-5 — Case of 24",    vendor: "Fisheries Supply",  price: "$408.00" },
-    { name: "Spectra 5 Micron Filter Element",                        vendor: "Nautical Supplies", price: "$13.00" },
+    { name: "Spectra 5 Micron Filter Element FT-FTC-5", vendor: "Fisheries Supply", price: "$22.95" },
+    { name: "Spectra FT-FTC-5 5 Micron Filter",         vendor: "Defender Marine",  price: null },
+    { name: "Spectra 5 Micron Filter Element",           vendor: "Nautical Supplies", price: "$13.00" },
   ];
 
   useWhenVisible(containerRef, function() {
@@ -766,7 +764,7 @@ function PartsVisual() {
         timers.push(setTimeout(function(){ setPartsIdx(function(n){ return Math.max(n, i+1); }); }, 7200 + i * 500));
       });
 
-      timers.push(setTimeout(runCycle, 7200 + parts.length * 500 + 3000));
+      timers.push(setTimeout(runCycle, 7200 + parts.length * 500 + 4000));
     }
     runCycle();
     return function(){ timers.forEach(clearTimeout); };
@@ -777,7 +775,7 @@ function PartsVisual() {
   );
 
   return (
-    <div ref={containerRef} style={{ position: "relative", background: NAVY2, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, overflow: "hidden", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+    <div ref={containerRef} style={{ position: "relative", background: NAVY2, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, overflow: "visible", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
 
       {/* Task header — always visible */}
       <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
