@@ -6855,6 +6855,7 @@ export default function App() {
                           body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eqmN6Rwr4", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                         const data = await res.json();
                         if (data.url) window.location.href = data.url;
+                        else alert("Couldn't start checkout: " + (data.error || ("HTTP " + res.status)));
                       } catch(e) { alert("Error starting checkout: " + e.message); }
                       finally { setCheckoutLoading(false); }
                     }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "var(--brand-deep)" : "var(--brand)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
@@ -6867,6 +6868,7 @@ export default function App() {
                           body: JSON.stringify({ priceId: "price_1TKJ3GA726uGRX5eroj4WEUp", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                         const data = await res.json();
                         if (data.url) window.location.href = data.url;
+                        else alert("Couldn't start checkout: " + (data.error || ("HTTP " + res.status)));
                       } catch(e) { alert("Error starting checkout: " + e.message); }
                       finally { setCheckoutLoading(false); }
                     }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "1px solid var(--brand)", borderRadius: 8, background: "none", color: "var(--brand)", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
@@ -6898,6 +6900,7 @@ export default function App() {
                         body: JSON.stringify({ priceId: "price_1TKJ3TA726uGRX5epzWsSkbN", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                       const data = await res.json();
                       if (data.url) window.location.href = data.url;
+                      else alert("Couldn't start checkout: " + (data.error || ("HTTP " + res.status)));
                     } catch(e) { alert("Error starting checkout: " + e.message); }
                     finally { setCheckoutLoading(false); }
                   }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 8, background: checkoutLoading ? "#86efac" : "var(--ok-text)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>
@@ -6910,6 +6913,7 @@ export default function App() {
                         body: JSON.stringify({ priceId: "price_1TKJ3kA726uGRX5eRna7Gr4P", userId: session?.user?.id, userEmail: session?.user?.email, returnUrl: window.location.href }) });
                       const data = await res.json();
                       if (data.url) window.location.href = data.url;
+                      else alert("Couldn't start checkout: " + (data.error || ("HTTP " + res.status)));
                     } catch(e) { alert("Error starting checkout: " + e.message); }
                     finally { setCheckoutLoading(false); }
                   }} disabled={checkoutLoading} style={{ flex: 1, padding: "10px 0", border: "1px solid var(--ok-text)", borderRadius: 8, background: "none", color: "var(--ok-text)", fontSize: 13, fontWeight: 700, cursor: checkoutLoading ? "default" : "pointer" }}>

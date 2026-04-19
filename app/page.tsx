@@ -39,8 +39,16 @@ async function firePendingStripe(userId: string, userEmail: string): Promise<boo
     });
     const data = await res.json();
     if (data.url) { window.location.href = data.url; return true; }
+    // Checkout failed but request completed. Surface a hint so user isn't stranded.
+    console.error('Stripe checkout returned no URL:', data);
+    if (typeof window !== 'undefined') {
+      alert("Couldn't start checkout: " + (data.error || ("HTTP " + res.status)) + ". Please try again from Upgrade in the app.");
+    }
   } catch(e) {
     console.error('Stripe checkout error after OAuth:', e);
+    if (typeof window !== 'undefined') {
+      alert("Couldn't start checkout. Please try again from Upgrade in the app.");
+    }
   }
   return false;
 }

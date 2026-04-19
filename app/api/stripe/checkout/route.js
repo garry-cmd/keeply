@@ -37,7 +37,25 @@ export async function POST(request) {
       { headers: { "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, "Authorization": "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY } }
     );
     const profiles = await supaRes.json();
-    const existingCustomerId = profiles?.[0]?.stripe_customer_id || null;
+    let existingCustomerId = profiles?.[0]?.stripe_customer_id || null;
+
+    // Verify the customer still exists in Stripe (it may have been deleted during
+    // test-account cleanup). Deleted customers cannot be reused — Stripe returns
+    // "No such customer" and the whole checkout session create 500s. If the
+    // customer is gone, fall through to customer_email so a fresh one is created.
+    if (existingCustomerId) {
+      try {
+        const verifyRes = await fetch(STRIPE_API + "/customers/" + existingCustomerId, { headers: stripeHeaders() });
+        if (!verifyRes.ok) {
+          existingCustomerId = null;
+        } else {
+          const verifyBody = await verifyRes.json();
+          if (verifyBody && verifyBody.deleted === true) { existingCustomerId = null; }
+        }
+      } catch (e) {
+        existingCustomerId = null;
+      }
+    }
 
     const baseUrl = returnUrl || "https://keeply.boats";
     const successUrl = baseUrl + (baseUrl.includes("?") ? "&" : "?") + "upgraded=1";
