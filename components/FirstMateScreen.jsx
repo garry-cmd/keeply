@@ -104,7 +104,7 @@ const SUGGESTED = [
   "What should I do before haul-out?",
 ];
 
-export default function FirstMateScreen({ vesselId, vesselName, vesselType, tasks, repairs, equipment, userPlan, trialActive }) {
+export default function FirstMateScreen({ vesselId, vesselName, vesselType, tasks, repairs, equipment, userPlan, trialActive, onUpgradeClick }) {
   const [messages,    setMessages]    = useState([]);
   const [input,       setInput]       = useState("");
   const [loading,     setLoading]     = useState(false);
@@ -358,7 +358,11 @@ export default function FirstMateScreen({ vesselId, vesselName, vesselType, task
         {isAtLimit ? (
           <div style={{ textAlign: "center", padding: "12px", background: "rgba(239,68,68,0.1)", borderRadius: 12, border: "0.5px solid rgba(239,68,68,0.25)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#f87171", marginBottom: 4 }}>Monthly limit reached</div>
-            <a href="/#pricing" style={{ fontSize: 11, color: D.accent, textDecoration: "none", fontWeight: 600 }}>Upgrade for more →</a>
+            <button type="button"
+              onClick={function(){ if (typeof onUpgradeClick === "function") onUpgradeClick(); }}
+              style={{ background: "none", border: "none", padding: 0, fontSize: 11, color: D.accent, textDecoration: "none", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              Upgrade for more →
+            </button>
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8, background: "rgba(255,255,255,0.06)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.11)", padding: "8px 8px 8px 14px" }}>

@@ -5737,6 +5737,7 @@ export default function App() {
               equipment={equipment.filter(function(e){ return e._vesselId === activeVesselId; })}
               userPlan={userPlan}
               trialActive={trialActive}
+              onUpgradeClick={function(){ setShowUpgradeModal(true); }}
             />
           </div>
         )}
@@ -5766,6 +5767,7 @@ export default function App() {
             onClose={function(){ setShowFirstMatePanel(false); }}
             userPlan={userPlan}
             trialActive={trialActive}
+            onUpgradeClick={function(){ setShowFirstMatePanel(false); setShowUpgradeModal(true); }}
           />
         )}
 

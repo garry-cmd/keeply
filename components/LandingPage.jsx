@@ -1139,6 +1139,10 @@ export default function LandingPage() {
     if (p.get("signup") === "1") { setMode("signup"); setShowAuth(true); }
     if (p.get("login")  === "1") { setMode("login");  setShowAuth(true); }
     if (p.get("upgraded") === "1") { setStripeSuccess(true); setShowAuth(true); setSignupEmail("your account"); }
+    // Clean consumed params so refresh/bookmark/browser-restored tab doesn't re-fire modals
+    if (p.get("signup") === "1" || p.get("login") === "1" || p.get("upgraded") === "1") {
+      try { window.history.replaceState({}, "", window.location.pathname); } catch (e) {}
+    }
   }, []);
 
   useEffect(function () {
@@ -1811,14 +1815,14 @@ export default function LandingPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1000,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       padding: 16, backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
-          onClick={function (e) { if (e.target === e.currentTarget) setShowAuth(false); }}>
+          onClick={function (e) { if (e.target === e.currentTarget) { setShowAuth(false); setStripeSuccess(false); setSignupEmail(""); } }}>
           <div style={{ background: NAVY, borderRadius: 16, padding: "28px 28px",
                         width: "100%", maxWidth: 420, position: "relative",
                         boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
                         border: "1px solid rgba(255,255,255,0.1)",
                         colorScheme: "dark" }}>
             {/* Close X */}
-            <button onClick={function(){ setShowAuth(false); }} aria-label="Close"
+            <button onClick={function(){ setShowAuth(false); setStripeSuccess(false); setSignupEmail(""); }} aria-label="Close"
               style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
                        color: "rgba(255,255,255,0.4)", fontSize: 22, cursor: "pointer",
                        width: 30, height: 30, lineHeight: 1,

@@ -114,7 +114,7 @@ async function fetchVesselContext(vesselId) {
   };
 }
 
-export default function FirstMate({ vesselId, vesselName, openPanel, pendingMessage, onMessageSent, onClose, userPlan, trialActive }) {
+export default function FirstMate({ vesselId, vesselName, openPanel, pendingMessage, onMessageSent, onClose, userPlan, trialActive, onUpgradeClick }) {
   const [messages,   setMessages]   = useState([]);
   const [input,      setInput]      = useState("");
   const [loading,    setLoading]    = useState(false);
@@ -320,9 +320,11 @@ export default function FirstMate({ vesselId, vesselName, openPanel, pendingMess
                       <div style={{ fontSize: 11, color: D.textMuted, marginBottom: 5 }}>
                         {msg.nudgeCount}/{limit} used · Resets 1st · Upgrade to {nextPlan}
                       </div>
-                      <a href="/#pricing" style={{ fontSize: 11, fontWeight: 700, color: D.accent, textDecoration: "none" }}>
+                      <button type="button"
+                        onClick={function(){ if (typeof onUpgradeClick === "function") onUpgradeClick(); }}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: 11, fontWeight: 700, color: D.accent, textDecoration: "none", cursor: "pointer", fontFamily: "inherit" }}>
                         Upgrade →
-                      </a>
+                      </button>
                     </div>
                   );
                 })()}
