@@ -1278,7 +1278,7 @@ export default function LandingPage() {
       <div style={{ background: "rgba(77,166,255,0.1)", borderBottom: "1px solid rgba(77,166,255,0.18)", padding: "7px 16px", textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.7)", position: "relative", zIndex: 300, lineHeight: 1.5 }}>
         Keeply is in <strong style={{ color: ACCENT, fontWeight: 700 }}>early access</strong>
         <span style={{ margin: "0 8px", opacity: 0.35 }}>·</span>
-        Use code <strong style={{ color: GOLD }}>BETA2026</strong> for 2 months free
+        Use code <strong style={{ color: GOLD }}>BETA2026</strong>{" "}for 2 months free
         <span style={{ margin: "0 8px", opacity: 0.35 }}>·</span>
         No credit card needed
         <span style={{ margin: "0 8px", opacity: 0.35 }}>·</span>
@@ -1633,7 +1633,7 @@ export default function LandingPage() {
                                 letterSpacing:"1px", textTransform:"uppercase",
                                 marginBottom:3 }}>Early access</div>
                   <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", lineHeight:1.4 }}>
-                    Use code <strong style={{ color:"#fff", fontWeight:700 }}>BETA2026</strong> at checkout for 2 months free on Standard &amp; Pro.
+                    Use code <strong style={{ color:"#fff", fontWeight:700 }}>BETA2026</strong>{" "}at checkout for 2 months free on Standard &amp; Pro.
                   </div>
                 </div>
               </div>
