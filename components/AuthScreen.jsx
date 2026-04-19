@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "./supabase-client";
+import posthog from "posthog-js";
 
 export default function AuthScreen() {
   const [mode, setMode]         = useState("login");
@@ -36,16 +37,25 @@ export default function AuthScreen() {
             setError(err.message);
           }
         }
-        // If no error, onAuthStateChange in the parent will update session automatically
+        // If no error, identify user and track login
+        if (!err) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            posthog.identify(user.id, { email: user.email });
+            posthog.capture('login_completed');
+          }
+        }
       } else {
         const { data, error: err } = await supabase.auth.signUp({ email, password });
         if (err) {
           setError(err.message);
         } else if (data.session) {
-          // Email confirmation disabled — user is signed in immediately, nothing to do
-          // onAuthStateChange will fire and update parent
+          // Email confirmation disabled — user is signed in immediately
+          posthog.identify(data.session.user.id, { email: data.session.user.email });
+          posthog.capture('signup_completed', { email_confirmed_immediately: true });
         } else {
           // Email confirmation required
+          posthog.capture('signup_completed', { email_confirmed_immediately: false });
           setMessage("Account created! Check your email for a confirmation link, then sign in.");
           setMode("login");
           setPassword("");

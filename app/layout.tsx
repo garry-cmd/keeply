@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PostHogProvider } from "@/components/PostHogProvider";
 
 export const metadata: Metadata = {
   title: "Keeply — Boat Maintenance App & Vessel Tracker",
@@ -120,7 +121,9 @@ gtag('config', 'G-FZWNP48NHN');`,
         <meta name="apple-mobile-web-app-title" content="Keeply" />
       </head>
       <body>
+        <PostHogProvider>
         {children}
+        </PostHogProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if ('serviceWorker' in navigator) {
