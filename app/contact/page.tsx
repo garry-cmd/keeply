@@ -49,7 +49,7 @@ export default function ContactPage() {
           </div>
           <h1 style={{ fontSize: 'clamp(32px,5vw,56px)', fontWeight: 800, color: '#fff', letterSpacing: '-2px', margin: '0 0 16px', lineHeight: 1.1 }}>Get in touch</h1>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)', maxWidth: 400, margin: '0 auto', lineHeight: 1.7 }}>
-            We're sailors too. We read every message and reply within one business day.
+            We're boaters too. We read every message and reply within one business day.
           </p>
         </div>
 
