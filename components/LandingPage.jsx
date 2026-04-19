@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase-client";
 import { PLANS as PRICING_CONFIG } from "../lib/pricing.js";
+import posthog from "posthog-js";
 
 const BRAND    = "#0f4c8a";
 const NAVY     = "#071e3d";
@@ -1223,11 +1224,14 @@ export default function LandingPage() {
               if (checkoutData.url) { window.location.href = checkoutData.url; return; }
             } catch(stripeErr) { console.error("Stripe checkout error:", stripeErr); }
           }
+          posthog.capture("signup_completed", { plan: effectivePlan || "free", email_confirmed_immediately: false });
           setSignupEmail(email);
         }
       } else {
         var loginResult = await supabase.auth.signInWithPassword({ email: email, password: password });
         if (loginResult.error) throw loginResult.error;
+        posthog.identify(loginResult.data.user.id, { email: email });
+        posthog.capture("login_completed");
       }
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -1262,7 +1266,7 @@ export default function LandingPage() {
     finally { setLoading(false); }
   };
 
-  function openAuth(m) { setMode(m || "signup"); setShowAuth(true); }
+  function openAuth(m) { var resolvedMode = m || "signup"; setMode(resolvedMode); setShowAuth(true); if (resolvedMode === "signup") posthog.capture("signup_started"); }
   function scrollToPricing() { var el = document.getElementById("pricing"); if (el) el.scrollIntoView({ behavior: "smooth" }); }
 
   return (
