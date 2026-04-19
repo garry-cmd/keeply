@@ -519,9 +519,9 @@ function MyBoatVisual() {
 
 const FEATURES = [
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
-  { tag: "AI Setup", title: "Your whole boat, set up in minutes.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing. And everything is fully editable — adjust any interval, add your own tasks, or remove what doesn't apply. Keeply sets the baseline. You make it yours.", Visual: OnboardingVisual },
-  { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming task. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
-  { tag: "AI Parts Search", title: "The right part for your exact boat. Instantly.", body: "Open any maintenance task or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. AI suggests the part. You verify and order.", Visual: PartsVisual },
+  { tag: "AI Setup", title: "Your whole boat, set up in minutes.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing. And everything is fully editable — adjust any interval, add your own maintenance items, or remove what doesn't apply. Keeply sets the baseline. You make it yours.", Visual: OnboardingVisual },
+  { tag: "My Boat", title: "Your vessel's intelligence hub.", body: "Everything about your boat at a glance — vessel ID, engine hours, open repairs, and every overdue or upcoming maintenance item. One screen that tells you exactly what needs attention before you cast off.", Visual: MyBoatVisual },
+  { tag: "AI Parts Search", title: "The right part for your exact boat. Instantly.", body: "Open any maintenance item or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. AI suggests the part. You verify and order.", Visual: PartsVisual },
   { tag: "Logbook", title: "Log every watch. Own every passage.", body: "Start a live passage and tap your way through the crossing. Every watch change — time, position, course, speed, wind — logged in seconds. Hit arrived, and it's in your history.", Visual: LogbookVisual },
 ];
 
@@ -1277,14 +1277,14 @@ export default function LandingPage() {
                 <tbody>
                   {[
                     ["Vessels",               "1",         "1",           "2"],
-                    ["Maintenance tasks",      "Unlimited", "Unlimited",   "Unlimited"],
+                    ["Maintenance",            "Unlimited", "Unlimited",   "Unlimited"],
                     ["Equipment cards",        PRICING_CONFIG.free.equipment + " cards", "Unlimited",   "Unlimited"],
                     ["Repairs",               "Unlimited", "Unlimited",   "Unlimited"],
                     ["Parts catalog",         "\u2713",    "\u2713",      "\u2713"],
                     ["Engine hours tracking", "\u2713",    "\u2713",      "\u2713"],
                     ["Document storage",      "250 MB",    "1 GB",        "Unlimited"],
                     ["Push notifications",    "\u2713",    "\u2713",      "\u2713"],
-                    ["Admin task tracking",   "\u2713",    "\u2713",      "\u2713"],
+                    ["Admin tracking",        "\u2713",    "\u2713",      "\u2713"],
                     ["Crew / shared access",  "\u2713",    "\u2713",      "\u2713"],
                     ["Departure & arrival checklists", "\u2713", "\u2713",  "\u2713"],
                     ["Customizable checklists", "\u2014",    "\u2713",      "\u2713"],

@@ -15,7 +15,7 @@ const SECTIONS = [
     faqs: [
       {
         q: "Is there a free plan?",
-        a: "Yes — Keeply is free to start with no credit card required. The free plan includes 1 vessel, 10 equipment cards, unlimited maintenance tasks and repairs, and 5 First Mate AI queries per month.",
+        a: "Yes — Keeply is free to start with no credit card required. The free plan includes 1 vessel, 10 equipment cards, unlimited maintenance and repairs, and 5 First Mate AI queries per month.",
       },
       {
         q: "What's the difference between Standard and Pro?",
@@ -35,7 +35,7 @@ const SECTIONS = [
       },
       {
         q: "Can I try it before paying?",
-        a: "Yes. The free plan has no time limit and no credit card required. For many boaters — especially those with a single, straightforward vessel — the free plan is all you need. It covers 1 vessel, 10 equipment cards, unlimited maintenance tasks and repairs, and 5 First Mate AI queries per month. If you have a more complex boat, lots of equipment, or want the full logbook and repair history, Standard or Pro will serve you better.",
+        a: "Yes. The free plan has no time limit and no credit card required. For many boaters — especially those with a single, straightforward vessel — the free plan is all you need. It covers 1 vessel, 10 equipment cards, unlimited maintenance and repairs, and 5 First Mate AI queries per month. If you have a more complex boat, lots of equipment, or want the full logbook and repair history, Standard or Pro will serve you better.",
       },
       {
         q: "What payment methods do you accept?",
@@ -65,7 +65,7 @@ const SECTIONS = [
       },
       {
         q: "Can I import existing maintenance records?",
-        a: "Not yet — manual entry is required for historical records. Once you add equipment, you can set the last service date for each task so your future due dates are accurate from day one.",
+        a: "Not yet — manual entry is required for historical records. Once you add equipment, you can set the last service date for each maintenance item so your future due dates are accurate from day one.",
       },
       {
         q: "Can I share my vessel with crew?",
@@ -83,7 +83,7 @@ const SECTIONS = [
       },
       {
         q: "What is the health score?",
-        a: "The health score is a percentage reflecting the overall maintenance state of your vessel. It's calculated from the number and severity of overdue and upcoming tasks across all your equipment. 100% means you're fully caught up. It updates automatically as you log services.",
+        a: "The health score is a percentage reflecting the overall maintenance state of your vessel. It's calculated from the number and severity of overdue and upcoming maintenance items across all your equipment. 100% means you're fully caught up. It updates automatically as you log services.",
       },
       {
         q: "What does the ID tab store?",
@@ -94,7 +94,7 @@ const SECTIONS = [
         a: "The Docs tab is for vessel documents — insurance certificates, USCG registration, survey reports, owner's manuals, and anything else you want accessible from your phone on the water. Storage limits depend on your plan: 250 MB on the free plan, 1 GB on Standard, unlimited on Pro.",
       },
       {
-        q: "What are admin tasks?",
+        q: "What are admin items?",
         a: "The Admin tab tracks recurring vessel administration — registration renewals, insurance renewals, EPIRB registration, life raft recertification, fire extinguisher inspection, and USCG documentation. These don't belong on an equipment card but still need tracking. Keeply pre-seeds common ones when you set up your vessel.",
       },
       {
@@ -103,7 +103,7 @@ const SECTIONS = [
       },
       {
         q: "How does engine hours tracking work?",
-        a: "Engine hours are logged manually — you update them after a service or passage. Maintenance tasks with hour-based intervals (like impeller replacement every 300 hours) automatically update their due status once your hours are logged.",
+        a: "Engine hours are logged manually — you update them after a service or passage. Maintenance with hour-based intervals (like impeller replacement every 300 hours) automatically update their due status once your hours are logged.",
       },
       {
         q: "Can I track multiple vessels?",
@@ -117,14 +117,14 @@ const SECTIONS = [
     faqs: [
       {
         q: "How does maintenance scheduling work?",
-        a: "Each equipment card has maintenance tasks with intervals — either days/months or engine hours. Keeply calculates when each task is due and shows them in priority order: Overdue, Critical, Due Soon, and Upcoming.",
+        a: "Each equipment card has maintenance items with intervals — either days/months or engine hours. Keeply calculates when each item is due and shows them in priority order: Overdue, Critical, Due Soon, and Upcoming.",
       },
       {
         q: "Can I customise the service intervals?",
-        a: "Always. Every task and interval is fully editable. Change anything, remove what doesn't apply to your boat, or add your own tasks. The AI gives you a solid baseline — you make it match how you actually maintain your vessel. Nothing is locked in.",
+        a: "Always. Every maintenance item and interval is fully editable. Change anything, remove what doesn't apply to your boat, or add your own. The AI gives you a solid baseline — you make it match how you actually maintain your vessel. Nothing is locked in.",
       },
       {
-        q: "What happens when I complete a task?",
+        q: "What happens when I complete a maintenance item?",
         a: "Keeply logs the completion with a timestamp, resets the due date based on the interval, and adds an entry to the equipment's service log. You can add notes or photos when marking complete. Over time you build a complete service history automatically.",
       },
       {
@@ -136,8 +136,8 @@ const SECTIONS = [
         a: "Green = OK (not due soon). Amber = Due Soon (within 30 days or approaching engine hour trigger). Red = Overdue or Critical (past due date or within 7 days). The My Boat screen summarises counts at the top.",
       },
       {
-        q: "How do I find parts for a maintenance task?",
-        a: "Tap any maintenance task to expand it, then tap Find parts. First Mate searches Fisheries Supply, West Marine, Defender, and other marine retailers for the exact part for your specific equipment. AI suggests the part — you verify and order.",
+        q: "How do I find parts for a maintenance item?",
+        a: "Tap any maintenance item to expand it, then tap Find parts. First Mate searches Fisheries Supply, West Marine, Defender, and other marine retailers for the exact part for your specific equipment. AI suggests the part — you verify and order.",
       },
     ],
   },
@@ -151,7 +151,7 @@ const SECTIONS = [
       },
       {
         q: "Can I edit what the AI suggests?",
-        a: "Always. Every task, every interval, every detail is fully editable. Nothing is locked in. The AI gives you an accurate starting point — you make it match how you actually maintain your boat.",
+        a: "Always. Every maintenance item and interval is fully editable. Nothing is locked in. The AI gives you an accurate starting point — you make it match how you actually maintain your boat.",
       },
       {
         q: "What if the AI gets something wrong?",
@@ -159,7 +159,7 @@ const SECTIONS = [
       },
       {
         q: "What can I ask First Mate?",
-        a: "First Mate knows everything in your Keeply account — your vessel, all equipment, maintenance history, open repairs, engine hours, and logbook entries. Ask it things like 'when did I last change the impeller?', 'what tasks are overdue?', or 'what do I need to do before my passage on Friday?' in plain English.",
+        a: "First Mate knows everything in your Keeply account — your vessel, all equipment, maintenance history, open repairs, engine hours, and logbook entries. Ask it things like 'when did I last change the impeller?', 'what maintenance is overdue?', or 'what do I need to do before my passage on Friday?' in plain English.",
       },
       {
         q: "How many First Mate queries do I get?",
