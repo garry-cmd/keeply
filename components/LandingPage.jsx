@@ -517,6 +517,197 @@ function MyBoatVisual() {
 }
 
 
+function FirstMateLearnVisual() {
+  var containerRef = useRef(null);
+  var BLUE = "#4da6ff";
+  var NAVY = "#071e3d";
+  var [phase, setPhase] = useState(0);
+  var [typed, setTyped] = useState("");
+  var [chips, setChips] = useState([]);
+  var [lines, setLines] = useState([]);
+
+  var Q = "Is my boat ready for the weekend?";
+  var CHIPS = ["Logbook", "Repairs", "Maintenance", "Engine hrs"];
+  var LINES = [
+    { t: "normal", v: "Looking at S/V Irene's current status, a couple of items need attention before heading out:" },
+    { t: "gap" },
+    { t: "bold", v: "OVERDUE:" },
+    { t: "dash", v: "Clean bottom (Dinghy) — due Apr 18, last done Apr 11" },
+    { t: "gap" },
+    { t: "bold", v: "DUE TODAY:" },
+    { t: "dash", v: "Check oil (Engine) — last done Apr 12" },
+    { t: "gap" },
+    { t: "normal", v: "Both are quick items. Your oil notes say \"looked fine\" on 4/12 so that's likely routine. The dinghy bottom is overdue by a day but not critical for vessel safety." },
+    { t: "gap" },
+    { t: "bold", v: "From your recent logs:" },
+    { t: "dash", v: "Impeller replaced Apr 9 — noted missing 2 blades, may want to shorten interval" },
+    { t: "dash", v: "Transmission noise on Apr 4 — Owen checked, said everything was fine" },
+    { t: "gap" },
+    { t: "status", v: "Overall status: Ready with minor maintenance ✅" },
+  ];
+
+  useWhenVisible(containerRef, function() {
+    var timers = [];
+    var cancelled = false;
+
+    function delay(ms) {
+      return new Promise(function(resolve) {
+        var t = setTimeout(resolve, ms);
+        timers.push(t);
+      });
+    }
+
+    async function runCycle() {
+      if (cancelled) return;
+      setPhase(0); setTyped(""); setChips([]); setLines([]);
+
+      await delay(800);
+      if (cancelled) return;
+      setPhase(1);
+
+      for (var i = 0; i <= Q.length; i++) {
+        if (cancelled) return;
+        setTyped(Q.slice(0, i));
+        await delay(42);
+      }
+
+      await delay(400);
+      if (cancelled) return;
+      setPhase(2);
+
+      for (var j = 0; j < CHIPS.length; j++) {
+        if (cancelled) return;
+        await delay(360);
+        var chip = CHIPS[j];
+        setChips(function(prev) { return prev.concat([chip]); });
+      }
+
+      await delay(900);
+      if (cancelled) return;
+      setPhase(3);
+      setLines([]);
+
+      for (var k = 0; k < LINES.length; k++) {
+        if (cancelled) return;
+        var line = LINES[k];
+        setLines(function(prev) { return prev.concat([line]); });
+        await delay(line.t === "gap" ? 60 : line.t === "normal" ? 550 : 280);
+      }
+
+      await delay(5000);
+      if (!cancelled) runCycle();
+    }
+
+    runCycle();
+    return function() { cancelled = true; timers.forEach(clearTimeout); };
+  });
+
+  var CHIP_STYLES = {
+    "Logbook":     { bg: "rgba(29,158,117,0.18)",  color: "#4ade80" },
+    "Repairs":     { bg: "rgba(77,166,255,0.18)",   color: "#4da6ff" },
+    "Maintenance": { bg: "rgba(245,166,35,0.18)",   color: "#f5a623" },
+    "Engine hrs":  { bg: "rgba(156,163,175,0.18)",  color: "#9ca3af" },
+  };
+
+  return (
+    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ width: 320, maxWidth: "calc(100vw - 48px)", background: NAVY, borderRadius: 38, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "0 24px 64px rgba(0,0,0,0.55)", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+
+        {/* Header */}
+        <div style={{ background: NAVY, padding: "12px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#0f4c8a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 36 36" fill="none">
+              <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="#0f4c8a"/>
+              <path d="M13.5 18l3.2 3.2L23 13.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1 }}>First Mate</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>S/V Irene · all systems checked</div>
+          </div>
+          <div style={{ marginLeft: "auto", background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "2px 9px" }}>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>1/50 this month</span>
+          </div>
+        </div>
+
+        {/* Chat area */}
+        <div style={{ padding: "12px 12px 8px", minHeight: 420, display: "flex", flexDirection: "column", gap: 0 }}>
+
+          {/* Departure briefing card */}
+          <div style={{ background: "#f5a623", borderRadius: 12, padding: "10px 12px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1200" }}>Is S/V Irene ready to go?</div>
+              <div style={{ fontSize: 10, color: "rgba(26,18,0,0.6)", marginTop: 1 }}>AI departure readiness briefing</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="#1a1200" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+
+          {/* User message */}
+          {phase >= 1 && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10, animation: "onboard-fadein 0.3s ease" }}>
+              <div style={{ background: "rgba(77,166,255,0.22)", borderRadius: "14px 14px 2px 14px", padding: "8px 11px", maxWidth: "82%" }}>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.9)" }}>
+                  {typed}{phase === 1 && typed.length < Q.length && <span style={{ opacity: 1, animation: "keeply-blink 0.8s step-end infinite" }}>|</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Thinking + chips */}
+          {phase === 2 && (
+            <div style={{ animation: "onboard-fadein 0.3s ease", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, paddingLeft: 2, marginBottom: 6 }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#0f4c8a", flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Checking your vessel</span>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {[0,1,2].map(function(i){ return <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: BLUE, animation: "keeply-wave 1.2s ease-in-out infinite", animationDelay: (i*0.15)+"s" }} />; })}
+                </div>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 30 }}>
+                {chips.map(function(c) {
+                  var s = CHIP_STYLES[c] || {};
+                  return <span key={c} style={{ display: "inline-block", fontSize: 10, fontWeight: 700, background: s.bg, color: s.color, borderRadius: 20, padding: "2px 8px", animation: "onboard-fadein 0.25s ease" }}>{c}</span>;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Response */}
+          {phase === 3 && (
+            <div style={{ display: "flex", gap: 7, alignItems: "flex-start", animation: "onboard-fadein 0.4s ease" }}>
+              <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#0f4c8a", flexShrink: 0, marginTop: 2 }} />
+              <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: "4px 14px 14px 14px", padding: "10px 12px", flex: 1 }}>
+                {lines.map(function(line, i) {
+                  if (line.t === "gap") return <div key={i} style={{ height: 6 }} />;
+                  if (line.t === "bold") return <div key={i} style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.95)", marginBottom: 2 }}>{line.v}</div>;
+                  if (line.t === "dash") return <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", paddingLeft: 6 }}>{"- " + line.v}</div>;
+                  if (line.t === "status") return <div key={i} style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.95)", marginTop: 4 }}>{line.v}</div>;
+                  return <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", lineHeight: 1.6 }}>{line.v}</div>;
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "7px 12px" }}>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Ask anything about your vessel…</span>
+          </div>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/><path d="M19 10a7 7 0 0 1-14 0M12 19v3M8 22h8" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </div>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0f4c8a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
 const FEATURES = [
   { tag: "First Mate AI", title: "Ask your AI crew member anything.", body: "First Mate knows your boat — every piece of equipment, every repair, every passage. Ask in plain English and get an answer in seconds, not hours of digging through logs.", Visual: FirstMateVisual },
   { tag: "AI Setup", title: "Your whole boat, set up in minutes.", body: "Tell Keeply your vessel's make, model, and year. First Mate AI instantly builds your complete maintenance schedule, loads your equipment baseline, and sets every service interval — automatically. No spreadsheets. No manuals. No guessing. And everything is fully editable — adjust any interval, add your own maintenance items, or remove what doesn't apply. Keeply sets the baseline. You make it yours.", Visual: OnboardingVisual },
@@ -1199,6 +1390,43 @@ export default function LandingPage() {
         })}
       </section>
 
+
+      {/* ── First Mate learns section ── */}
+      <section style={{ padding: isMobile ? "56px 16px" : "80px 24px", background: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 48 : 80, alignItems: "center" }}>
+
+          <div>
+            <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: "#4ade80", letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 16, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 20, padding: "4px 14px" }}>Intelligence</div>
+            <h2 style={{ fontSize: "clamp(26px,3.2vw,42px)", fontWeight: 700, color: WHITE, lineHeight: 1.15, letterSpacing: "-0.5px", margin: "0 0 20px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>
+              First Mate knows your boat.<br />And keeps learning.
+            </h2>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, margin: "0 0 28px", maxWidth: 460 }}>
+              Every service you log, every repair you close, every passage you record gives First Mate more context. Ask anything about your vessel — the more history you build, the sharper the answers get.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { color: "#4ade80",  bg: "rgba(74,222,128,0.1)",   label: "Logbook entries",    desc: "Passages, watch notes, conditions" },
+                { color: "#4da6ff",  bg: "rgba(77,166,255,0.1)",   label: "Repair history",     desc: "Every fix, when and what was done" },
+                { color: "#f5a623",  bg: "rgba(245,166,35,0.1)",   label: "Maintenance records", desc: "Service dates, notes, intervals" },
+                { color: "#9ca3af",  bg: "rgba(156,163,175,0.1)",  label: "Engine hours",       desc: "Hour-based service triggers" },
+              ].map(function(item) {
+                return (
+                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{item.label}</span>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{item.desc}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ order: isMobile ? -1 : 0 }}>
+            <FirstMateLearnVisual />
+          </div>
+
+        </div>
+      </section>
 
 
       {/* Pricing */}
