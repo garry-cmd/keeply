@@ -1293,6 +1293,7 @@ export default function LandingPage() {
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           
           {!isMobile && <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>}
+          {!isMobile && <a href="/about" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>About</a>}
           {!isMobile && <a href="/faq" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>FAQ</a>}
           {!isMobile && <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>}
           {!isMobile && <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>}
@@ -1580,6 +1581,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+            <a href="/about" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>About</a>
             <a href="/faq" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>FAQ</a>
             <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Support</a>
             <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Contact</a>
