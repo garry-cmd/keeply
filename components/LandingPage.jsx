@@ -1615,6 +1615,29 @@ export default function LandingPage() {
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:16 }}>
                 No credit card required
               </div>
+              {/* ── BETA2026 early-access promo (remove when code ends) ── */}
+              <div style={{ background:"rgba(245,166,35,0.08)",
+                            border:"1px solid rgba(245,166,35,0.35)",
+                            borderRadius:10, padding:"10px 14px",
+                            marginBottom:16, textAlign:"left",
+                            display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:28, height:28, flexShrink:0,
+                              borderRadius:8, background:"rgba(245,166,35,0.15)",
+                              display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                       stroke="#f5a623" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"#f5a623",
+                                letterSpacing:"1px", textTransform:"uppercase",
+                                marginBottom:3 }}>Early access</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", lineHeight:1.4 }}>
+                    Use code <strong style={{ color:"#fff", fontWeight:700 }}>BETA2026</strong> at checkout — Standard &amp; Pro are free right now.
+                  </div>
+                </div>
+              </div>
               {/* Monthly / Annual toggle */}
               <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
                 <span style={{ fontSize:13, color: annual ? "rgba(255,255,255,0.4)" : "#fff", fontWeight: annual ? 400 : 600 }}>Monthly</span>
