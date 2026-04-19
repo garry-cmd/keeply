@@ -107,7 +107,7 @@ const SECTIONS = [
       },
       {
         q: "Can I track multiple vessels?",
-        a: "Yes. The free and Standard plans support 1 vessel. Pro supports 2 vessels. Fleet plans for commercial operators or multiple-boat owners — email sales@keeply.boats.",
+        a: "Yes. The free and Standard plans support 1 vessel. Pro supports 2 vessels. Fleet plans for commercial operators or multiple-boat owners — email sales@keeply.boats. There is no limit to how many crew members you can share a vessel with on any plan.",
       },
     ],
   },
