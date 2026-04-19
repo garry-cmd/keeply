@@ -53,7 +53,7 @@ const SECTIONS = [
     faqs: [
       {
         q: "How do I add my boat?",
-        a: "After signing in, go to the My Boat screen and tap Add Vessel. Give your boat a name, select the vessel type, then describe it in plain English — for example \"1984 Passport 40 sailboat\" or \"2017 Grady-White Freedom 307\". First Mate AI looks up your vessel, builds your equipment list, and seeds a full maintenance schedule with manufacturer-recommended intervals automatically. Once it's done, everything is fully editable — adjust any interval, add your own equipment, or remove anything that doesn't apply. Most boaters are set up in under five minutes.",
+        a: "As soon as you create your Keeply account, vessel onboarding starts automatically. You'll be guided through giving your boat a name, selecting the vessel type, and describing it in plain English — for example \"1984 Passport 40 sailboat\" or \"2017 Grady-White Freedom 307\". First Mate AI looks up your vessel, builds your equipment list, and seeds a full maintenance schedule with manufacturer-recommended intervals — all without any manual setup. Once it's done, everything is fully editable. Adjust any interval, add your own equipment, or remove anything that doesn't apply. Most boaters are fully set up in under five minutes.",
       },
       {
         q: "Can I use Keeply on my phone?",
