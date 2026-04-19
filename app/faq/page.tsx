@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const NAVY   = "#071e3d";
 const BRAND  = "#0f4c8a";
@@ -265,7 +265,15 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 export default function FAQPage() {
   const [activeId, setActiveId] = useState("presignup");
+  const [isMobile, setIsMobile] = useState(false);
   const active = SECTIONS.find((s) => s.id === activeId)!;
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   return (
     <div style={{ fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif", minHeight: "100vh", color: "#fff", position: "relative" }}>
@@ -279,7 +287,7 @@ export default function FAQPage() {
       <div style={{ position: "relative", zIndex: 1 }}>
 
         {/* Nav */}
-        <nav style={{ position: "sticky", top: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", height: 60, borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", background: "rgba(7,30,61,0.3)" }}>
+        <nav style={{ position: "sticky", top: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", height: 60, borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", background: "rgba(7,30,61,0.3)" }}>
           <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
             <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
               <path d="M18 2L4 7.5V18c0 7.5 6 13.5 14 16 8-2.5 14-8.5 14-16V7.5L18 2Z" fill="#0f4c8a"/>
@@ -288,74 +296,120 @@ export default function FAQPage() {
             </svg>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Keeply</span>
           </a>
-          <div style={{ display: "flex", gap: 20 }}>
-            <a href="/" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Home</a>
-            <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Support</a>
-            <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Contact</a>
-          </div>
+          {!isMobile && (
+            <div style={{ display: "flex", gap: 20 }}>
+              <a href="/" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Home</a>
+              <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Support</a>
+              <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>Contact</a>
+            </div>
+          )}
         </nav>
 
         {/* Hero */}
-        <div style={{ padding: "64px 24px 48px", textAlign: "center" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "5px 14px", marginBottom: 20 }}>
+        <div style={{ padding: isMobile ? "36px 20px 24px" : "64px 24px 48px", textAlign: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(77,166,255,0.1)", border: "1px solid rgba(77,166,255,0.25)", borderRadius: 24, padding: "5px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#4da6ff", letterSpacing: "0.8px", textTransform: "uppercase" }}>FAQ</span>
           </div>
-          <h1 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 800, color: "#fff", letterSpacing: "-1.5px", margin: "0 0 14px", lineHeight: 1.1 }}>Frequently asked questions</h1>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7 }}>
+          <h1 style={{ fontSize: isMobile ? "28px" : "clamp(28px,4vw,48px)", fontWeight: 800, color: "#fff", letterSpacing: "-1px", margin: "0 0 10px", lineHeight: 1.15 }}>Frequently asked questions</h1>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", maxWidth: 480, margin: "0 auto", lineHeight: 1.6 }}>
             Everything you need to know before signing up — and after.
           </p>
         </div>
 
-        {/* Main content */}
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 24px 80px", display: "grid", gridTemplateColumns: "220px 1fr", gap: 48, alignItems: "start" }}>
+        {isMobile ? (
+          /* ── Mobile layout: horizontal pill selector + full-width content ── */
+          <div style={{ padding: "0 0 64px" }}>
 
-          {/* Sidebar */}
-          <div style={{ background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "20px 16px", position: "sticky", top: 80 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16, paddingLeft: 4 }}>Topics</div>
-            {SECTIONS.map((s) => {
-              const isActive = s.id === activeId;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveId(s.id)}
-                  style={{
-                    width: "100%", textAlign: "left",
-                    background: isActive ? "rgba(77,166,255,0.12)" : "none",
-                    border: isActive ? "1px solid rgba(77,166,255,0.25)" : "1px solid transparent",
-                    borderRadius: 10, padding: "9px 13px", cursor: "pointer",
-                    marginBottom: 4, fontSize: 13,
-                    fontWeight: isActive ? 700 : 400,
-                    color: isActive ? "#4da6ff" : "rgba(255,255,255,0.6)",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {s.label}
-                </button>
-              );
-            })}
+            {/* Scrolling pill selector */}
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 2 }}>
+              <div style={{ display: "flex", gap: 8, padding: "0 16px 12px", width: "max-content" }}>
+                {SECTIONS.map((s) => {
+                  const isActive = s.id === activeId;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setActiveId(s.id)}
+                      style={{
+                        background: isActive ? "rgba(77,166,255,0.18)" : "rgba(255,255,255,0.06)",
+                        border: isActive ? "1px solid rgba(77,166,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: 20, padding: "7px 14px", cursor: "pointer",
+                        fontSize: 13, fontWeight: isActive ? 700 : 400,
+                        color: isActive ? "#4da6ff" : "rgba(255,255,255,0.6)",
+                        whiteSpace: "nowrap", flexShrink: 0,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* FAQ content */}
+            <div style={{ padding: "0 16px" }}>
+              <div style={{ background: "rgba(7,30,61,0.7)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "20px 18px" }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>{active.label}</h2>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>{active.faqs.length} questions</div>
+                {active.faqs.map((faq, i) => (
+                  <FAQItem key={i} q={faq.q} a={faq.a} />
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* FAQ content */}
-          <div style={{ background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "28px 32px" }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: "#fff", margin: "0 0 6px", letterSpacing: "-0.2px" }}>{active.label}</h2>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 24 }}>{active.faqs.length} questions</div>
-            {active.faqs.map((faq, i) => (
-              <FAQItem key={i} q={faq.q} a={faq.a} />
-            ))}
-          </div>
+        ) : (
+          /* ── Desktop layout: sidebar + content ── */
+          <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 24px 80px", display: "grid", gridTemplateColumns: "220px 1fr", gap: 48, alignItems: "start" }}>
 
-        </div>
+            {/* Sidebar */}
+            <div style={{ background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "20px 16px", position: "sticky", top: 80 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16, paddingLeft: 4 }}>Topics</div>
+              {SECTIONS.map((s) => {
+                const isActive = s.id === activeId;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveId(s.id)}
+                    style={{
+                      width: "100%", textAlign: "left",
+                      background: isActive ? "rgba(77,166,255,0.12)" : "none",
+                      border: isActive ? "1px solid rgba(77,166,255,0.25)" : "1px solid transparent",
+                      borderRadius: 10, padding: "9px 13px", cursor: "pointer",
+                      marginBottom: 4, fontSize: 13,
+                      fontWeight: isActive ? 700 : 400,
+                      color: isActive ? "#4da6ff" : "rgba(255,255,255,0.6)",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* FAQ content */}
+            <div style={{ background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "28px 32px" }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#fff", margin: "0 0 6px", letterSpacing: "-0.2px" }}>{active.label}</h2>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 24 }}>{active.faqs.length} questions</div>
+              {active.faqs.map((faq, i) => (
+                <FAQItem key={i} q={faq.q} a={faq.a} />
+              ))}
+            </div>
+
+          </div>
+        )}
 
         {/* Still need help */}
-        <div style={{ textAlign: "center", padding: "0 24px 72px" }}>
-          <div style={{ display: "inline-block", background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "40px 48px" }}>
-            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>Still have questions?</h3>
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 24px" }}>Our team responds within one business day.</p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              <a href="mailto:support@keeply.boats" style={{ display: "inline-block", background: GOLD, color: "#1a1200", padding: "11px 28px", borderRadius: 9, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+        <div style={{ textAlign: "center", padding: isMobile ? "0 16px 56px" : "0 24px 72px" }}>
+          <div style={{ display: "inline-block", background: "rgba(7,30,61,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: isMobile ? "28px 24px" : "40px 48px", width: isMobile ? "100%" : "auto", boxSizing: "border-box" }}>
+            <h3 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>Still have questions?</h3>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 20px" }}>Our team responds within one business day.</p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              <a href="mailto:support@keeply.boats" style={{ display: "inline-block", background: GOLD, color: "#1a1200", padding: "10px 22px", borderRadius: 9, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
                 Email support →
               </a>
-              <a href="/support" style={{ display: "inline-block", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "11px 28px", borderRadius: 9, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+              <a href="/support" style={{ display: "inline-block", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "10px 22px", borderRadius: 9, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
                 Browse help docs →
               </a>
             </div>
@@ -363,8 +417,8 @@ export default function FAQPage() {
         </div>
 
         {/* Footer */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "24px", textAlign: "center", background: "rgba(7,30,61,0.5)" }}>
-          <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "20px", textAlign: "center", background: "rgba(7,30,61,0.5)" }}>
+          <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
             <a href="/" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Home</a>
             <a href="/support" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Support</a>
             <a href="/contact" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none" }}>Contact</a>
