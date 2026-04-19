@@ -15,15 +15,15 @@ const SECTIONS = [
     faqs: [
       {
         q: "Is there a free plan?",
-        a: "Yes — Keeply is free to start with no credit card required. The free plan includes 1 vessel, 10 equipment cards, unlimited maintenance tasks and repairs, and 5 First Mate AI queries per month. Use code BETA2026 for 100% off any paid plan during our beta.",
+        a: "Yes — Keeply is free to start with no credit card required. The free plan includes 1 vessel, 10 equipment cards, unlimited maintenance tasks and repairs, and 5 First Mate AI queries per month.",
       },
       {
         q: "What's the difference between Standard and Pro?",
-        a: "Standard ($15/mo) unlocks unlimited equipment cards, the full repair log and logbook, and 30 First Mate AI queries per month. Pro ($25/mo) adds a second vessel, 50 First Mate queries, the haul-out planner, and unlimited document storage. Both include a 14-day free trial.",
+        a: "Standard ($15/mo) unlocks unlimited equipment cards, the full repair log and logbook, and 30 First Mate AI queries per month. Pro ($25/mo) adds a second vessel, 50 First Mate queries, the haul-out planner, and unlimited document storage.",
       },
       {
         q: "Can I cancel any time?",
-        a: "Yes, always. No contracts, no cancellation fees. Cancel from your account settings in under a minute. Your data stays accessible until the end of your billing period, then your account drops to the free plan — nothing is deleted.",
+        a: "Yes, always. No contracts, no cancellation fees. Cancel from your account settings in under a minute. Your data stays accessible until the end of your billing period, then your account drops to the free plan. If you want to leave entirely, you can delete your account and all associated data from your profile settings — permanently and immediately.",
       },
       {
         q: "What boats does Keeply work on?",
@@ -31,11 +31,11 @@ const SECTIONS = [
       },
       {
         q: "Is this an app or a website?",
-        a: "Both. Keeply is a web app that runs in your browser on any device — phone, tablet, or desktop. On iOS, open keeply.boats in Safari, tap Share, and select Add to Home Screen for a native app experience. On Android, tap Install App in Chrome. A dedicated native mobile app is on the roadmap.",
+        a: "Both. Keeply is a web app that runs in your browser on any device — phone, tablet, or desktop. On iOS, open keeply.boats in Safari, tap Share, and select Add to Home Screen for a native-feeling app experience. On Android, tap Install App in Chrome. Full native apps for the App Store and Google Play are coming soon.",
       },
       {
         q: "Can I try it before paying?",
-        a: "Yes. The free plan has no time limit and is genuinely useful. Paid plans include a 14-day free trial — no credit card needed during beta with code BETA2026.",
+        a: "Yes. The free plan has no time limit and no credit card required. For many boaters — especially those with a single, straightforward vessel — the free plan is all you need. It covers 1 vessel, 10 equipment cards, unlimited maintenance tasks and repairs, and 5 First Mate AI queries per month. If you have a more complex boat, lots of equipment, or want the full logbook and repair history, Standard or Pro will serve you better.",
       },
       {
         q: "What payment methods do you accept?",
