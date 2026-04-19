@@ -1278,7 +1278,7 @@ export default function LandingPage() {
       <div style={{ background: "rgba(77,166,255,0.1)", borderBottom: "1px solid rgba(77,166,255,0.18)", padding: "7px 16px", textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.7)", position: "relative", zIndex: 300, lineHeight: 1.5 }}>
         Keeply is in <strong style={{ color: ACCENT, fontWeight: 700 }}>early access</strong>
         <span style={{ margin: "0 8px", opacity: 0.35 }}>·</span>
-        Use code <strong style={{ color: GOLD }}>BETA2026</strong> for 100% off
+        Use code <strong style={{ color: GOLD }}>BETA2026</strong> for 2 months free
         <span style={{ margin: "0 8px", opacity: 0.35 }}>·</span>
         No credit card needed
         <span style={{ margin: "0 8px", opacity: 0.35 }}>·</span>
@@ -1294,7 +1294,6 @@ export default function LandingPage() {
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           
           {!isMobile && <a href="#pricing" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Pricing</a>}
-          {!isMobile && <a href="/about" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>About</a>}
           {!isMobile && <a href="/faq" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>FAQ</a>}
           {!isMobile && <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Support</a>}
           {!isMobile && <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textDecoration: "none", padding: "6px 14px" }}>Contact</a>}
@@ -1432,7 +1431,7 @@ export default function LandingPage() {
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Early access · Use code BETA2026 for 100% off</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>Early access · Use code BETA2026 for 2 months free</span>
             </div>
             <h2 style={{ fontSize: "clamp(22px,2.8vw,34px)", fontWeight: 600, color: WHITE, letterSpacing: "-0.5px", margin: "0 0 12px", fontFamily: "'Satoshi','DM Sans',sans-serif" }}>Join the beta. Help build the best boat maintenance app afloat.</h2>
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>Keeply is in early access. Your feedback shapes what we build next. Start free — no credit card needed.</p>
@@ -1545,7 +1544,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
-            Use discount code BETA2026 at checkout for 100% off. Cancel any time.
+            Use discount code BETA2026 at checkout for 2 months free. Cancel any time.
           </p>
 
           {/* Trust signals */}
@@ -1582,7 +1581,6 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-            <a href="/about" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>About</a>
             <a href="/faq" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>FAQ</a>
             <a href="/support" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Support</a>
             <a href="/contact" style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Contact</a>
@@ -1635,7 +1633,7 @@ export default function LandingPage() {
                                 letterSpacing:"1px", textTransform:"uppercase",
                                 marginBottom:3 }}>Early access</div>
                   <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)", lineHeight:1.4 }}>
-                    Use code <strong style={{ color:"#fff", fontWeight:700 }}>BETA2026</strong> at checkout — Standard &amp; Pro are free right now.
+                    Use code <strong style={{ color:"#fff", fontWeight:700 }}>BETA2026</strong> at checkout for 2 months free on Standard &amp; Pro.
                   </div>
                 </div>
               </div>
@@ -1935,7 +1933,7 @@ export default function LandingPage() {
                         ${annual ? PRICING_CONFIG[pendingPlan].effectiveMonthly : PRICING_CONFIG[pendingPlan].price}/mo
                       </div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: "0.2px" }}>
-                        Free with BETA2026
+                        2 months free with BETA2026
                       </div>
                     </div>
                   </div>

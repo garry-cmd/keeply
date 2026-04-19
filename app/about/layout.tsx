@@ -4,6 +4,10 @@ export const metadata: Metadata = {
   title: "About Keeply — Built by a boater, for boaters",
   description:
     "Keeply is the vessel intelligence platform for serious boat owners. Meet Garry and Marty — the two boaters behind the app.",
+  // TEMPORARY: hiding About from nav/footer/sitemap while Garry reworks copy.
+  // To restore: delete the `robots` block below, re-add the /about entry in app/sitemap.ts,
+  // re-add the nav + footer links in components/LandingPage.jsx.
+  robots: { index: false, follow: false },
   alternates: { canonical: "https://keeply.boats/about" },
   openGraph: {
     title: "About Keeply — Built by a boater, for boaters",
