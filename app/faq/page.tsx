@@ -159,7 +159,7 @@ const SECTIONS = [
       },
       {
         q: "What can I ask First Mate?",
-        a: "First Mate knows everything in your Keeply account — your vessel, all equipment, maintenance history, open repairs, engine hours, and logbook entries. Ask it things like 'when did I last change the impeller?', 'what maintenance is overdue?', or 'what do I need to do before my passage on Friday?' in plain English.",
+        a: "First Mate knows everything in your Keeply account — your vessel, all equipment, maintenance history, open repairs, engine hours, and logbook entries. Ask it things like 'when did I last change the impeller?', 'what maintenance is overdue?', or 'what do I need to do before my passage on Friday?' in plain English. And it gets sharper the more you use Keeply. Every service you log, every repair you close, every passage you record gives First Mate more context — the answers get more specific and useful over time.",
       },
       {
         q: "How many First Mate queries do I get?",
@@ -177,7 +177,7 @@ const SECTIONS = [
     faqs: [
       {
         q: "How does the logbook work?",
-        a: "Go to the Logbook tab and tap + New Passage. Add departure details, then log watch entries as you go — time, position, course, speed, wind, conditions, crew notes. Tap Arrived to close the passage. Every entry is saved to your passage history.",
+        a: "All plans include basic logbook access — you can record passages with departure and arrival details, distance, and notes. Standard and Pro plans unlock the full logbook: watch entries with time, position, course, speed, wind, and crew notes logged as you go. Go to the Logbook tab and tap + New Passage to get started. Tap Arrived to close the passage and save it to your history.",
       },
       {
         q: "Do I have to log in real time?",
@@ -202,10 +202,6 @@ const SECTIONS = [
         a: "Yes, upgrade or downgrade any time from Profile → Manage Subscription. Upgrades take effect immediately. Downgrades take effect at the next billing cycle.",
       },
       {
-        q: "What happens when my trial ends?",
-        a: "After the 14-day trial, you'll be prompted to enter payment details to continue on a paid plan. If you don't subscribe, your account drops to the free plan — no charge, and your data is preserved.",
-      },
-      {
         q: "What happens to my data when I cancel?",
         a: "You keep full access until the end of your billing period, then drop to the free plan. Your vessel, equipment, maintenance history, and logbook are never deleted — everything is waiting if you come back.",
       },
@@ -225,7 +221,7 @@ const SECTIONS = [
       },
       {
         q: "Can I export or delete my data?",
-        a: "Yes. Export your logbook as CSV at any time (Pro plan). For a full data export or deletion request, email support@keeply.boats and we'll action it within 48 hours.",
+        a: "Yes. Export your logbook as CSV at any time on the Pro plan. To delete your account and all associated data, go to Profile → Delete Account — it's permanent and immediate, no need to contact us.",
       },
       {
         q: "Do you use my data to train AI?",
@@ -233,7 +229,7 @@ const SECTIONS = [
       },
       {
         q: "Who can see my vessel data?",
-        a: "Only you and crew you explicitly invite. Keeply staff can access anonymised aggregate statistics for product improvement but never view individual vessel data without your permission.",
+        a: "Only you and the crew members you explicitly invite. Nobody else.",
       },
     ],
   },
