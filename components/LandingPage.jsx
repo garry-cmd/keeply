@@ -1546,7 +1546,7 @@ export default function LandingPage() {
             {[
               ["Cancel any time", "No long-term contract. Ever."],
               ["Your data is yours", "Export or delete any time."],
-              ["Built by a boater", "Not a tech company that googled 'boats'."],
+              ["Built by boaters", "Not a tech company that googled 'boats'."],
               ["No surprises", "Pricing is simple and transparent."],
             ].map(function(t) {
               return (
