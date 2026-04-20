@@ -1481,7 +1481,7 @@ export default function LandingPage() {
                     if (pid) { try { localStorage.setItem("keeply_pending_price_id", pid); } catch(e) {} }
                     setPendingPlan(plan.planId);
                     openAuth("signup");
-                  }} style={{ width: "100%", padding: "13px 0", borderRadius: 10, border: hl ? "none" : "1px solid rgba(255,255,255,0.2)", fontSize: 14, fontWeight: 700, cursor: "pointer", background: hl ? GOLD : "transparent", color: hl ? "#1a1200" : WHITE }}>
+                  }} style={{ width: "100%", padding: "13px 0", borderRadius: 10, border: "none", fontSize: 14, fontWeight: 700, cursor: "pointer", background: GOLD, color: "#1a1200" }}>
                     {plan.cta}
                   </button>
                 </div>
@@ -1685,9 +1685,9 @@ export default function LandingPage() {
                     );
                   })}
                 </div>
-                <div style={{ padding:"8px 0", border:"1px solid rgba(255,255,255,0.15)",
+                <div style={{ padding:"8px 0", background:"#f5a623",
                               borderRadius:8, textAlign:"center", fontSize:12,
-                              fontWeight:700, color:"rgba(255,255,255,0.6)" }}>
+                              fontWeight:700, color:"#1a1200" }}>
                   Start free →
                 </div>
               </div>
@@ -1773,9 +1773,9 @@ export default function LandingPage() {
                     );
                   })}
                 </div>
-                <div style={{ padding:"8px 0", border:"1px solid rgba(255,255,255,0.15)",
+                <div style={{ padding:"8px 0", background:"#f5a623",
                               borderRadius:8, textAlign:"center", fontSize:12,
-                              fontWeight:700, color:"rgba(255,255,255,0.6)" }}>
+                              fontWeight:700, color:"#1a1200" }}>
                   Get started →
                 </div>
               </div>
