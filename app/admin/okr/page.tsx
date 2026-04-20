@@ -10,7 +10,7 @@ const supabase = createClient(
 const ADMIN_EMAIL = "garry@keeply.boats";
 
 // ─── DATA — updated each session by Claude ───────────────────────────────────
-// Last updated: April 18, 2026
+// Last updated: April 19, 2026
 
 const MONTHS = ["Apr","May","Jun","Jul","Aug","Sep","Oct"];
 
@@ -161,6 +161,7 @@ const BACKLOG = [
   { name: "Voice input",         status: "icebox",      effort: "M", notes: "Depends on native mobile app existing." },
   { name: "Windy partnership",   status: "icebox",      effort: "S", notes: "Co-marketing. Approach after scale. Requires mobile app." },
   { name: "AI Coins / Credits",  status: "icebox",      effort: "L", notes: "Replace per-month query limits with rollover coin balance. Solves seasonal boater churn. Revisit at 500+ users with real usage data." },
+  { name: "Theme audit — restore light mode toggle", status: "icebox", effort: "L", notes: "Current state is dark-only (toggle removed 3x in git history). Full restoration requires auditing ~40% of KeeplyApp.jsx still using hardcoded dark colors (rgba(255,255,255,...) text, #071e3d bg) and converting them to CSS variables, plus same for LandingPage/FirstMate/VesselSetup/FindPartsSheet. Only do this if light mode is a real product requirement." },
 ];
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {

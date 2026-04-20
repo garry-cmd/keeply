@@ -1113,11 +1113,10 @@ export default function LandingPage() {
   var [showPlanPicker, setShowPlanPicker] = useState(false);
   var [pendingPlan, setPendingPlan] = useState(null);
 
-  // LandingPage is always dark — ensure body reflects this regardless of
-  // whether KeeplyApp loaded (it no longer does for logged-out visitors)
+  // Body is already dark-mode from the root layout. Ensure it stays that way
+  // in case some other mount (old AuthScreen, etc.) ever stripped it.
   useEffect(function() {
     document.body.classList.add("dark-mode");
-    return function() { document.body.classList.remove("dark-mode"); };
   }, []);
 
   useEffect(function () {

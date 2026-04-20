@@ -902,21 +902,17 @@ export default function App() {
 
   const [view, setView] = useState(typeof window !== "undefined" && window.location.search.includes("admin") ? "admin" : "customer");
   const [tab, setTab]   = useState("boat");
-  const [darkMode, setDarkMode] = useState(function(){
-    if (typeof localStorage !== "undefined") {
-      var saved = localStorage.getItem("keeply-dark");
-      if (saved !== null) return saved === "1";
-    }
-    return true; // default: dark mode
-  });
-
+  // Dark mode is the committed design decision (the user-facing toggle was
+  // removed in 7aa5cb1). Any user with a stale `keeply-dark=0` from the old
+  // toggle would otherwise be stranded in a broken half-themed state, so we
+  // always force dark and clear the key. If we ever bring back a toggle
+  // (see OKR backlog), re-introduce proper state here.
   useEffect(function(){
     if (typeof document !== "undefined") {
-      if (darkMode) { document.body.classList.add("dark-mode"); }
-      else { document.body.classList.remove("dark-mode"); }
-      localStorage.setItem("keeply-dark", darkMode ? "1" : "0");
+      document.body.classList.add("dark-mode");
+      try { localStorage.removeItem("keeply-dark"); } catch(e) {}
     }
-  }, [darkMode]);
+  }, []);
   const [fleetData, setFleetData] = useState(null);
   const [fleetLoading, setFleetLoading] = useState(false);
   const [fleetPanel, setFleetPanel]     = useState(null); // { vesselId, type, vesselName }

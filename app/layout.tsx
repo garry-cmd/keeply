@@ -119,8 +119,11 @@ gtag('config', 'G-FZWNP48NHN');`,
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Keeply" />
+        {/* Dark mode is committed — declare color-scheme so iOS Safari picks
+            dark form-element chrome (scrollbars, date pickers, autofill). */}
+        <meta name="color-scheme" content="dark" />
       </head>
-      <body>
+      <body className="dark-mode">
         <PostHogProvider>
         {children}
         </PostHogProvider>
