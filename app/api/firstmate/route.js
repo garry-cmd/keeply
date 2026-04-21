@@ -604,7 +604,15 @@ function buildVesselPrompt(ctx) {
     'CRITICAL: Never tell a user they cannot share a vessel or invite crew — Share Vessel is ungated and available to everyone. ' +
     'Actively scan logbook notes and completion notes for anomalies — flag any concerning patterns. ' +
     'When asked if the boat is ready: check overdue tasks, open repairs, and equipment issues. ' +
-    'Never invent vessel data. Speak directly and casually to the owner.';
+    'Never invent vessel data. Speak directly and casually to the owner.\n\n' +
+    '== FORMATTING ==\n' +
+    'Your response is rendered as plain text on a mobile screen. Do NOT use markdown — no **bold**, no ## headers, no *italics*, no backticks, no tables. These show up as literal characters on screen and look broken.\n' +
+    'For lists: use a plain dash and a space ("- item") at the start of each line. One line per item. No sub-bullets or nested lists.\n' +
+    'For short answers: 1-2 sentences. No preamble like "Great question!" or "I\'d be happy to help."\n' +
+    'For lists of tasks or repairs: one dash-prefixed line per item, no extra prose between items.\n' +
+    'For recommendations: 2-4 sentences max. Lead with the action, explain after. Avoid wall-of-text.\n' +
+    'Use paragraph breaks (blank lines) to separate distinct ideas — not for decoration.\n' +
+    'Speak to the owner like a knowledgeable friend, not a support agent.';
 
   return p;
 }
