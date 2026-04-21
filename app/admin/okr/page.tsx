@@ -194,6 +194,7 @@ const BACKLOG = [
   { name: "Provisioning",        status: "icebox",      effort: "M", notes: "Par system for provisions. Phase 2 / liveaboard persona." },
   { name: "Voice input",         status: "icebox",      effort: "M", notes: "Depends on native mobile app existing." },
   { name: "Windy partnership",   status: "icebox",      effort: "S", notes: "Co-marketing. Approach after scale. Requires mobile app." },
+  { name: "Camera equipment ID",status: "icebox",      effort: "M", notes: "Take a photo of an engine plate/equipment label → AI identifies make/model. Net-new feature (not a prompt tweak — requires new API route or extension of scan-document). Genuinely differentiated; no competitor does this. Post-launch." },
   { name: "AI Coins / Credits",  status: "icebox",      effort: "L", notes: "Replace per-month query limits with rollover coin balance. Revisit at 500+ users with real usage data." },
   { name: "Theme audit — restore light mode toggle", status: "icebox", effort: "L", notes: "Current state is dark-only. Full restoration requires auditing ~40% of KeeplyApp.jsx still using hardcoded colors and converting to CSS variables. Only do this if light mode is a real product requirement." },
 ];
