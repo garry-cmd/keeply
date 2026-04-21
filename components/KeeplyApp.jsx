@@ -25984,7 +25984,7 @@ export default function App() {
                   Thanks!
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-                  Garry reads everything and will be in touch if needed.
+                  We'll respond when we get back to the dock.
                 </div>
                 <button
                   onClick={function () {
