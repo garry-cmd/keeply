@@ -13,11 +13,29 @@ export function initPostHog() {
     capture_pageleave:    true,
     autocapture:          false,  // we'll fire explicit events only
     person_profiles:      'identified_only',
+    capture_exceptions:   true,   // auto-catch uncaught JS errors globally
   })
 
   // Expose instance globally so window.posthog?.capture() calls work
   // (npm module does not set window.posthog automatically)
   ;(window as any).posthog = posthog
+}
+
+// ── Error capture ─────────────────────────────────────────────────────────────
+
+/**
+ * Explicitly report a caught error to PostHog. Use this from React error
+ * boundaries where the error has already been caught and would not otherwise
+ * reach the global handler.
+ *
+ * @param error   The Error object
+ * @param context Optional metadata — e.g. { source: 'error-boundary', digest }
+ */
+export function trackException(error: unknown, context?: Record<string, unknown>) {
+  if (typeof window === 'undefined') return
+  if (!posthog.__loaded) return
+  const err = error instanceof Error ? error : new Error(String(error))
+  posthog.captureException(err, context)
 }
 
 // ── Typed event helpers ───────────────────────────────────────────────────────

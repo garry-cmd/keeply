@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { trackException } from "@/lib/posthog";
 
 /**
  * Route-level error boundary.
@@ -8,8 +9,9 @@ import { useEffect } from "react";
  * Catches errors thrown during rendering, in lifecycle methods, and in constructors
  * of components below the root layout.
  *
- * When Sentry is installed (next step), it will auto-capture these errors
- * — no code change required here.
+ * Errors caught here are reported to PostHog via trackException — they would not
+ * otherwise reach PostHog's global capture_exceptions handler because React has
+ * already caught them.
  */
 export default function Error({
   error,
@@ -19,8 +21,12 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to console for local dev; Sentry will auto-capture in production.
     console.error("Route error boundary caught:", error);
+    trackException(error, {
+      source: "error-boundary",
+      scope: "route",
+      digest: error.digest,
+    });
   }, [error]);
 
   return (

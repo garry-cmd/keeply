@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { trackException } from "@/lib/posthog";
 
 /**
  * Global error boundary — last line of defense.
@@ -10,7 +11,9 @@ import { useEffect } from "react";
  *
  * Colors here must match body.dark-mode values from globals.css.
  *
- * When Sentry is installed, it will auto-capture these errors.
+ * PostHog may not be initialized here (init happens in root layout which has
+ * itself crashed), so trackException silently no-ops if posthog isn't loaded.
+ * Worst case: error is logged to console only — still better than blank screen.
  */
 export default function GlobalError({
   error,
@@ -21,6 +24,11 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("Global error boundary caught:", error);
+    trackException(error, {
+      source: "error-boundary",
+      scope: "global",
+      digest: error.digest,
+    });
   }, [error]);
 
   return (
