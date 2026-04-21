@@ -1,0 +1,32 @@
+# Build & dependencies
+.next/
+out/
+build/
+dist/
+node_modules/
+coverage/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Next.js generated
+next-env.d.ts
+.vercel/
+
+# Public assets that shouldn't be touched
+public/
+inject-posthog.js
+
+# Env & secrets
+.env*
+
+# Markdown — let us control formatting manually
+# (remove this line if you want Prettier to format markdown too)
+*.md
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
