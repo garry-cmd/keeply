@@ -36,6 +36,13 @@ const PHASES = [
     description: "Stabilise, close beta, mobile audit",
   },
   {
+    id: "hygiene",
+    label: "Code hygiene",
+    color: "#94a3b8", // slate — foundational/infrastructure
+    months: [0, 1],
+    description: "Error boundary, Sentry, Prettier, pre-commit, smoke tests",
+  },
+  {
     id: "social",
     label: "Community & social",
     color: "#22d3ee", // cyan
@@ -89,6 +96,17 @@ const OKRS = [
       { text: "All 3 personas validated (Active Cruiser, Liveaboard, Upgrader)", cur: 1, target: 3, unit: "personas", status: "on-track" },
       { text: "Zero critical bugs outstanding", cur: 0, target: 1, unit: "complete", status: "at-risk" },
       { text: "Feedback received from all testers", cur: 0, target: 5, unit: "responses", status: "not-started" },
+    ],
+  },
+  {
+    phase: "hygiene",
+    objective: "Establish code hygiene baseline",
+    krs: [
+      { text: "Error boundary at app root — no white-screen crashes", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Sentry capturing production errors", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Prettier + format-on-save configured", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Pre-commit hook (Husky + lint-staged) blocking bad commits", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Playwright smoke tests for 5 critical user paths", cur: 0, target: 5, unit: "tests", status: "not-started" },
     ],
   },
   {
