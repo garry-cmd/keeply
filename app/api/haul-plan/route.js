@@ -5,23 +5,31 @@ export async function POST(request) {
     const { vesselContext, userEmail, userName } = await request.json();
 
     if (!vesselContext || !vesselContext.vessel) {
-      return Response.json({ error: "No vessel context" }, { status: 400 });
+      return Response.json({ error: 'No vessel context' }, { status: 400 });
     }
     if (!process.env.ANTHROPIC_API_KEY) {
-      return Response.json({ error: "API key not configured" }, { status: 500 });
+      return Response.json({ error: 'API key not configured' }, { status: 500 });
     }
     if (!process.env.RESEND_API_KEY) {
-      return Response.json({ error: "Email not configured" }, { status: 500 });
+      return Response.json({ error: 'Email not configured' }, { status: 500 });
     }
 
     const { vessel, tasks, repairs, equipment, adminTasks } = vesselContext;
-    const prefix = vessel.type === "motor" ? "M/V" : "S/V";
-    const vesselName = prefix + " " + vessel.name;
+    const prefix = vessel.type === 'motor' ? 'M/V' : 'S/V';
+    const vesselName = prefix + ' ' + vessel.name;
 
-    const overdueTasks = (tasks || []).filter(function(t){ return t.urgency === "critical" || t.urgency === "overdue"; });
-    const dueSoonTasks = (tasks || []).filter(function(t){ return t.urgency === "due-soon"; });
-    const openRepairs  = (repairs || []).filter(function(r){ return r.status !== "closed"; });
-    const haulTask     = (adminTasks || []).find(function(t){ return t.name && t.name.toLowerCase().includes("haul"); });
+    const overdueTasks = (tasks || []).filter(function (t) {
+      return t.urgency === 'critical' || t.urgency === 'overdue';
+    });
+    const dueSoonTasks = (tasks || []).filter(function (t) {
+      return t.urgency === 'due-soon';
+    });
+    const openRepairs = (repairs || []).filter(function (r) {
+      return r.status !== 'closed';
+    });
+    const haulTask = (adminTasks || []).find(function (t) {
+      return t.name && t.name.toLowerCase().includes('haul');
+    });
 
     const systemPrompt = `You are a marine yard manager. Generate a concise vessel-specific haul-out plan in HTML.
 Use <h2> for 4 sections: Pre-Haul (parts to order), On The Hard, Launch Prep, Post-Launch.
@@ -29,52 +37,91 @@ Use <ul><li> for tasks. Each item: task name + one-line note specific to this ve
 
     const userPrompt = `Generate a haul-out project plan for ${vesselName}.
 
-VESSEL: ${vessel.year || ""} ${vessel.make || ""} ${vessel.model || ""}, ${vessel.type === "motor" ? "motor vessel" : "sailboat"}
-Engine hours: ${vessel.engineHours ? vessel.engineHours + " hrs" : "not recorded"}
-Home port: ${vessel.homePort || "not set"}
-Last haul: ${haulTask && haulTask.last_completed ? haulTask.last_completed : "not recorded"}
-Next scheduled: ${haulTask && haulTask.due_date ? haulTask.due_date : "not scheduled"}
+VESSEL: ${vessel.year || ''} ${vessel.make || ''} ${vessel.model || ''}, ${vessel.type === 'motor' ? 'motor vessel' : 'sailboat'}
+Engine hours: ${vessel.engineHours ? vessel.engineHours + ' hrs' : 'not recorded'}
+Home port: ${vessel.homePort || 'not set'}
+Last haul: ${haulTask && haulTask.last_completed ? haulTask.last_completed : 'not recorded'}
+Next scheduled: ${haulTask && haulTask.due_date ? haulTask.due_date : 'not scheduled'}
 
 OVERDUE MAINTENANCE (${overdueTasks.length} items):
-${overdueTasks.map(function(t){ return "- " + t.task + " (" + t.section + ", last done " + (t.lastService || "never") + ")"; }).join("\n") || "None"}
+${
+  overdueTasks
+    .map(function (t) {
+      return '- ' + t.task + ' (' + t.section + ', last done ' + (t.lastService || 'never') + ')';
+    })
+    .join('\n') || 'None'
+}
 
 DUE SOON (${dueSoonTasks.length} items):
-${dueSoonTasks.map(function(t){ return "- " + t.task + " (due " + t.dueDate + ")"; }).join("\n") || "None"}
+${
+  dueSoonTasks
+    .map(function (t) {
+      return '- ' + t.task + ' (due ' + t.dueDate + ')';
+    })
+    .join('\n') || 'None'
+}
 
 OPEN REPAIRS (${openRepairs.length}):
-${openRepairs.map(function(r){ return "- " + r.section + ": " + r.description; }).join("\n") || "None"}
+${
+  openRepairs
+    .map(function (r) {
+      return '- ' + r.section + ': ' + r.description;
+    })
+    .join('\n') || 'None'
+}
 
 EQUIPMENT:
-${(equipment || []).map(function(e){ return "- " + e.name + " (" + e.category + ")" + (e.status !== "good" ? " [" + e.status + "]" : ""); }).join("\n") || "None listed"}
+${
+  (equipment || [])
+    .map(function (e) {
+      return (
+        '- ' + e.name + ' (' + e.category + ')' + (e.status !== 'good' ? ' [' + e.status + ']' : '')
+      );
+    })
+    .join('\n') || 'None listed'
+}
 
 Generate a practical haul-out plan. Include standard items (bottom paint, zincs, cutlass bearing, through-hulls, prop, shaft seal) plus anything specific to this vessel's situation above.`;
 
     // Generate plan with Claude
-    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1800,
-        messages: [{ role: "user", content: userPrompt }],
+        messages: [{ role: 'user', content: userPrompt }],
         system: systemPrompt,
       }),
     });
 
     if (!aiRes.ok) {
-      const err = await aiRes.json().catch(function(){ return {}; });
-      return Response.json({ error: err.error?.message || "AI error " + aiRes.status }, { status: 500 });
+      const err = await aiRes.json().catch(function () {
+        return {};
+      });
+      return Response.json(
+        { error: err.error?.message || 'AI error ' + aiRes.status },
+        { status: 500 }
+      );
     }
 
     const aiData = await aiRes.json();
-    const planHtml = (aiData.content || []).map(function(b){ return b.text || ""; }).join("");
+    const planHtml = (aiData.content || [])
+      .map(function (b) {
+        return b.text || '';
+      })
+      .join('');
 
     // Build email
-    const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const today = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
 
     const html = `<!DOCTYPE html>
 <html>
@@ -123,29 +170,33 @@ Generate a practical haul-out plan. Include standard items (bottom paint, zincs,
 </html>`;
 
     // Send via Resend
-    const emailRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
+    const emailRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
       headers: {
-        "Authorization": "Bearer " + process.env.RESEND_API_KEY,
-        "Content-Type": "application/json",
+        Authorization: 'Bearer ' + process.env.RESEND_API_KEY,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: "First Mate <firstmate@keeply.boats>",
+        from: 'First Mate <firstmate@keeply.boats>',
         to: [userEmail],
-        subject: "Haul-Out Plan · " + vesselName,
+        subject: 'Haul-Out Plan · ' + vesselName,
         html: html,
       }),
     });
 
     if (!emailRes.ok) {
-      const err = await emailRes.json().catch(function(){ return {}; });
-      return Response.json({ error: "Email failed: " + (err.message || emailRes.status) }, { status: 500 });
+      const err = await emailRes.json().catch(function () {
+        return {};
+      });
+      return Response.json(
+        { error: 'Email failed: ' + (err.message || emailRes.status) },
+        { status: 500 }
+      );
     }
 
     return Response.json({ ok: true });
-
-  } catch(e) {
-    console.error("haul-plan error:", e);
+  } catch (e) {
+    console.error('haul-plan error:', e);
     return Response.json({ error: e.message }, { status: 500 });
   }
 }

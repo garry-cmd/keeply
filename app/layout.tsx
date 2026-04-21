@@ -1,38 +1,40 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import { PostHogProvider } from "@/components/PostHogProvider";
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
+import { PostHogProvider } from '@/components/PostHogProvider';
 
 export const metadata: Metadata = {
-  title: "Keeply — Boat Maintenance App & Vessel Tracker",
-  description: "Keeply is the AI-powered boat maintenance app for serious boat owners. Track maintenance schedules, equipment, repairs, and logbook entries — with First Mate AI always ready. 14-day free trial, no credit card required.",
-  manifest: "/manifest.json",
+  title: 'Keeply — Boat Maintenance App & Vessel Tracker',
+  description:
+    'Keeply is the AI-powered boat maintenance app for serious boat owners. Track maintenance schedules, equipment, repairs, and logbook entries — with First Mate AI always ready. 14-day free trial, no credit card required.',
+  manifest: '/manifest.json',
   alternates: {
-    canonical: "https://www.keeply.boats",
+    canonical: 'https://www.keeply.boats',
   },
   keywords: [
-    "boat maintenance app",
-    "vessel maintenance tracker",
-    "boat maintenance log",
-    "sailboat maintenance app",
-    "marine maintenance software",
-    "boat equipment tracker",
-    "boat repair log",
-    "liveaboard app",
+    'boat maintenance app',
+    'vessel maintenance tracker',
+    'boat maintenance log',
+    'sailboat maintenance app',
+    'marine maintenance software',
+    'boat equipment tracker',
+    'boat repair log',
+    'liveaboard app',
   ],
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Keeply",
+    statusBarStyle: 'default',
+    title: 'Keeply',
   },
   openGraph: {
-    type: "website",
-    url: "https://www.keeply.boats",
+    type: 'website',
+    url: 'https://www.keeply.boats',
     title: "Keeply — Your vessel's First Mate, always ready",
-    description: "AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI always ready when you are. 14-day free trial, no credit card required.",
-    siteName: "Keeply",
+    description:
+      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI always ready when you are. 14-day free trial, no credit card required.',
+    siteName: 'Keeply',
     images: [
       {
-        url: "https://www.keeply.boats/og-image.jpg",
+        url: 'https://www.keeply.boats/og-image.jpg',
         width: 1200,
         height: 630,
         alt: "Keeply — Your vessel's First Mate, always ready",
@@ -40,16 +42,17 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: 'summary_large_image',
     title: "Keeply — Your vessel's First Mate, always ready",
-    description: "AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI. 14-day free trial.",
-    images: ["https://www.keeply.boats/og-image.jpg"],
+    description:
+      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI. 14-day free trial.',
+    images: ['https://www.keeply.boats/og-image.jpg'],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f4c8a",
-  width: "device-width",
+  themeColor: '#0f4c8a',
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
 };
@@ -63,41 +66,42 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
-              "name": "Keeply",
-              "applicationCategory": "UtilitiesApplication",
-              "operatingSystem": "Web, iOS, Android",
-              "url": "https://www.keeply.boats",
-              "description": "AI-powered boat maintenance app for serious vessel owners. Track maintenance schedules, equipment, repairs, and logbook entries with First Mate AI.",
-              "offers": [
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: 'Keeply',
+              applicationCategory: 'UtilitiesApplication',
+              operatingSystem: 'Web, iOS, Android',
+              url: 'https://www.keeply.boats',
+              description:
+                'AI-powered boat maintenance app for serious vessel owners. Track maintenance schedules, equipment, repairs, and logbook entries with First Mate AI.',
+              offers: [
                 {
-                  "@type": "Offer",
-                  "name": "Basic",
-                  "price": "0",
-                  "priceCurrency": "USD",
-                  "description": "Free plan — 1 vessel, basic maintenance tracking"
+                  '@type': 'Offer',
+                  name: 'Basic',
+                  price: '0',
+                  priceCurrency: 'USD',
+                  description: 'Free plan — 1 vessel, basic maintenance tracking',
                 },
                 {
-                  "@type": "Offer",
-                  "name": "Standard",
-                  "price": "15",
-                  "priceCurrency": "USD",
-                  "description": "First Mate AI, logbook, unlimited maintenance tracking"
+                  '@type': 'Offer',
+                  name: 'Standard',
+                  price: '15',
+                  priceCurrency: 'USD',
+                  description: 'First Mate AI, logbook, unlimited maintenance tracking',
                 },
                 {
-                  "@type": "Offer",
-                  "name": "Pro",
-                  "price": "25",
-                  "priceCurrency": "USD",
-                  "description": "Full voice, weather, departure checks, 50 First Mate queries/month"
-                }
+                  '@type': 'Offer',
+                  name: 'Pro',
+                  price: '25',
+                  priceCurrency: 'USD',
+                  description: 'Full voice, weather, departure checks, 50 First Mate queries/month',
+                },
               ],
-              "publisher": {
-                "@type": "Organization",
-                "name": "Keeply",
-                "url": "https://www.keeply.boats"
-              }
+              publisher: {
+                '@type': 'Organization',
+                name: 'Keeply',
+                url: 'https://www.keeply.boats',
+              },
             }),
           }}
         />
@@ -113,8 +117,14 @@ gtag('config', 'G-FZWNP48NHN');`,
         />
         {/* ── Fonts ── */}
         <link rel="preconnect" href="https://api.fontshare.com" />
-        <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" />
-        <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap"
+        />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -124,9 +134,7 @@ gtag('config', 'G-FZWNP48NHN');`,
         <meta name="color-scheme" content="dark" />
       </head>
       <body className="dark-mode">
-        <PostHogProvider>
-        {children}
-        </PostHogProvider>
+        <PostHogProvider>{children}</PostHogProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if ('serviceWorker' in navigator) {

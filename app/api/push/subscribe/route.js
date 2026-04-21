@@ -3,10 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 export async function POST(request) {
@@ -16,15 +13,16 @@ export async function POST(request) {
       return Response.json({ error: 'Missing subscription or userId' }, { status: 400 });
     }
     const supabase = getSupabase();
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .upsert({
+    const { error } = await supabase.from('push_subscriptions').upsert(
+      {
         user_id: userId,
         vessel_id: vesselId || null,
         endpoint: subscription.endpoint,
         subscription: subscription,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,endpoint' });
+      },
+      { onConflict: 'user_id,endpoint' }
+    );
     if (error) throw error;
     return Response.json({ success: true });
   } catch (e) {

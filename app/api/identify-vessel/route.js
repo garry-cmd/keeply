@@ -1,10 +1,10 @@
 export async function POST(request) {
   try {
     const body = await request.json();
-    const description = body.description || "";
+    const description = body.description || '';
 
     if (!description.trim()) {
-      return Response.json({ error: "No description provided" }, { status: 400 });
+      return Response.json({ error: 'No description provided' }, { status: 400 });
     }
 
     const isSingleItem = body.singleItem === true;
@@ -25,7 +25,6 @@ Return ONLY valid JSON — no prose, no markdown, no code fences:
 { "name": "string", "manufacturer": "string|null", "model": "string|null", "category": "string", "tasks": [{ "task": "string", "interval_days": number }] }
 
 Maintenance intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Be specific to the equipment — a Vulcan anchor needs different tasks than a windlass.`
-
       : `You are an expert marine surveyor and boat maintenance specialist with deep knowledge of production boats, custom builds, and all types of vessels.
 
 The user has this vessel: "${description.trim()}"
@@ -44,35 +43,42 @@ Return ONLY valid JSON — no prose, no markdown, no code fences. The JSON must 
 
 Include 12-22 equipment items, each with 2-5 tasks and realistic intervals (365=annual, 180=biannual, 90=quarterly, 730=2years).`;
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     const data = await res.json();
     if (data.error) {
-      const errType = data.error.type || "";
-      const errMsg  = data.error.message || "";
-      if (errType === "rate_limit_error" || errType === "overloaded_error" ||
-          errMsg.includes("rate limit") || errMsg.includes("overloaded") ||
-          errMsg.includes("token") || errMsg.includes("capacity") || errMsg.includes("quota")) {
-        return Response.json({ error: "ai_busy", errorType: "capacity" }, { status: 503 });
+      const errType = data.error.type || '';
+      const errMsg = data.error.message || '';
+      if (
+        errType === 'rate_limit_error' ||
+        errType === 'overloaded_error' ||
+        errMsg.includes('rate limit') ||
+        errMsg.includes('overloaded') ||
+        errMsg.includes('token') ||
+        errMsg.includes('capacity') ||
+        errMsg.includes('quota')
+      ) {
+        return Response.json({ error: 'ai_busy', errorType: 'capacity' }, { status: 503 });
       }
-      return Response.json({ error: "ai_error", errorType: errType }, { status: 500 });
+      return Response.json({ error: 'ai_error', errorType: errType }, { status: 500 });
     }
 
-    const raw = data.content[0].text.trim()
-      .replace(/^```(?:json)?\n?/, "")
-      .replace(/\n?```$/, "")
+    const raw = data.content[0].text
+      .trim()
+      .replace(/^```(?:json)?\n?/, '')
+      .replace(/\n?```$/, '')
       .trim();
 
     const parsed = JSON.parse(raw);
@@ -84,10 +90,13 @@ Include 12-22 equipment items, each with 2-5 tasks and realistic intervals (365=
 
     // Vessel identification: AI now returns { vesselInfo, equipment }
     // Gracefully handle legacy array response just in case
-    const equipment = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.equipment) ? parsed.equipment : []);
+    const equipment = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed.equipment)
+        ? parsed.equipment
+        : [];
     const vesselInfo = parsed.vesselInfo || null;
     return Response.json({ equipment, vesselInfo });
-
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }

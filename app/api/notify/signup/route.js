@@ -1,17 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request) {
   try {
     // Verify webhook secret to prevent unauthorized calls
-    const secret = request.headers.get("x-webhook-secret");
+    const secret = request.headers.get('x-webhook-secret');
     if (secret !== process.env.SIGNUP_WEBHOOK_SECRET) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const payload = await request.json();
 
     // Only care about INSERTs on user_profiles
-    if (payload.type !== "INSERT" || !payload.record) {
+    if (payload.type !== 'INSERT' || !payload.record) {
       return Response.json({ ok: true });
     }
 
@@ -25,16 +25,16 @@ export async function POST(request) {
 
     // Look up email from auth.users
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(id);
-    const email = userData?.user?.email || "unknown";
-    const signedUpAt = new Date().toLocaleString("en-US", {
-      timeZone: "America/Los_Angeles",
-      dateStyle: "medium",
-      timeStyle: "short",
+    const email = userData?.user?.email || 'unknown';
+    const signedUpAt = new Date().toLocaleString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'medium',
+      timeStyle: 'short',
     });
 
     if (!process.env.RESEND_API_KEY) {
-      console.error("RESEND_API_KEY not set");
-      return Response.json({ error: "Email not configured" }, { status: 500 });
+      console.error('RESEND_API_KEY not set');
+      return Response.json({ error: 'Email not configured' }, { status: 500 });
     }
 
     const html = `
@@ -55,8 +55,8 @@ export async function POST(request) {
           <div style="display: flex; gap: 12px;">
             <div style="flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
               <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">PLAN</div>
-              <div style="font-size: 15px; font-weight: 600; color: ${plan === "free" ? "#64748b" : "#16a34a"};">
-                ${plan === "pro" ? "⭐ Pro" : plan === "standard" ? "✅ Standard" : "Free"}
+              <div style="font-size: 15px; font-weight: 600; color: ${plan === 'free' ? '#64748b' : '#16a34a'};">
+                ${plan === 'pro' ? '⭐ Pro' : plan === 'standard' ? '✅ Standard' : 'Free'}
               </div>
             </div>
             <div style="flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
@@ -68,29 +68,29 @@ export async function POST(request) {
       </div>
     `;
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
       headers: {
-        Authorization: "Bearer " + process.env.RESEND_API_KEY,
-        "Content-Type": "application/json",
+        Authorization: 'Bearer ' + process.env.RESEND_API_KEY,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: "Keeply <notifications@keeply.boats>",
-        to: ["garry@keeply.boats"],
-        subject: `⚓ New signup: ${email} (${plan || "free"})`,
+        from: 'Keeply <notifications@keeply.boats>',
+        to: ['garry@keeply.boats'],
+        subject: `⚓ New signup: ${email} (${plan || 'free'})`,
         html,
       }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.error("Resend error:", err);
-      return Response.json({ error: "Failed to send email" }, { status: 500 });
+      console.error('Resend error:', err);
+      return Response.json({ error: 'Failed to send email' }, { status: 500 });
     }
 
     return Response.json({ success: true });
   } catch (e) {
-    console.error("Signup notify error:", e);
+    console.error('Signup notify error:', e);
     return Response.json({ error: e.message }, { status: 500 });
   }
 }

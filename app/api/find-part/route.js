@@ -3,16 +3,16 @@ export async function POST(request) {
     const { partName, equipmentName, vesselContext, repairContext } = await request.json();
 
     if (!partName) {
-      return Response.json({ error: "No part name provided" }, { status: 400 });
+      return Response.json({ error: 'No part name provided' }, { status: 400 });
     }
     if (!process.env.ANTHROPIC_API_KEY) {
-      return Response.json({ error: "API key not configured" }, { status: 500 });
+      return Response.json({ error: 'API key not configured' }, { status: 500 });
     }
 
     const systemPrompt = `You are a marine parts purchasing assistant. Use web search to find real products currently for sale.
 
-Equipment: "${equipmentName || "Unknown"}"
-Vessel: "${vesselContext || "Unknown"}"
+Equipment: "${equipmentName || 'Unknown'}"
+Vessel: "${vesselContext || 'Unknown'}"
 Task: "${partName}"
 
 IMPORTANT: Search using the specific equipment brand and model as your primary search terms. For example:
@@ -33,55 +33,71 @@ Return ONLY a JSON array, no markdown:
 
 Prioritize: Fisheries Supply, West Marine, Defender, Jamestown Distributors, then other marine retailers. Only include results that clearly match the specific equipment model.`;
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
-        messages: [{ role: "user", content: systemPrompt }],
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: systemPrompt }],
       }),
     });
 
     if (res.status === 429) {
-      return Response.json({ error: "rate_limited", results: [] }, { status: 429 });
+      return Response.json({ error: 'rate_limited', results: [] }, { status: 429 });
     }
     if (!res.ok) {
-      return Response.json({ error: "Search failed — please try again", results: [] }, { status: res.status });
+      return Response.json(
+        { error: 'Search failed — please try again', results: [] },
+        { status: res.status }
+      );
     }
 
     const data = await res.json();
-    const textBlock = (data.content || []).filter(function(b){ return b.type === "text"; }).pop();
+    const textBlock = (data.content || [])
+      .filter(function (b) {
+        return b.type === 'text';
+      })
+      .pop();
     if (!textBlock) return Response.json({ results: [] });
 
-    const text = textBlock.text.trim().replace(/```json|```/g, "").trim();
+    const text = textBlock.text
+      .trim()
+      .replace(/```json|```/g, '')
+      .trim();
     const match = text.match(/\[[\s\S]*\]/);
 
     let results = [];
-    try { results = JSON.parse(match ? match[0] : "[]"); } catch(e) { results = []; }
+    try {
+      results = JSON.parse(match ? match[0] : '[]');
+    } catch (e) {
+      results = [];
+    }
 
     results = results
-      .filter(function(r){ return r && r.name && r.url; })
+      .filter(function (r) {
+        return r && r.name && r.url;
+      })
       .slice(0, 6)
-      .map(function(r){
+      .map(function (r) {
         return {
           name: r.name,
-          type: r.type || "part",
-          reason: r.reason || "",
-          vendor: r.vendor || "",
+          type: r.type || 'part',
+          reason: r.reason || '',
+          vendor: r.vendor || '',
           price: r.price || null,
-          url: r.url
+          url: r.url,
         };
       });
 
     return Response.json({ results });
   } catch (err) {
-    console.error("find-part error:", err);
+    console.error('find-part error:', err);
     return Response.json({ error: err.message, results: [] }, { status: 500 });
   }
 }

@@ -4,10 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 function initWebPush() {
@@ -63,7 +60,7 @@ export async function GET(request) {
       .in('id', vesselIds);
 
     const vesselMap = {};
-    for (const v of (vessels || [])) {
+    for (const v of vessels || []) {
       const prefix = v.vessel_type === 'motor' ? 'M/V' : 'S/V';
       vesselMap[v.id] = prefix + ' ' + v.vessel_name;
     }
@@ -74,7 +71,7 @@ export async function GET(request) {
       .in('vessel_id', vesselIds);
 
     const userVessels = {};
-    for (const m of (members || [])) {
+    for (const m of members || []) {
       if (!userVessels[m.user_id]) userVessels[m.user_id] = [];
       userVessels[m.user_id].push(m.vessel_id);
     }
@@ -94,16 +91,19 @@ export async function GET(request) {
 
     for (const sub of subs) {
       const vIds = userVessels[sub.user_id] || [];
-      let totalOverdue = 0, totalSoon = 0;
+      let totalOverdue = 0,
+        totalSoon = 0;
       let vesselNames = [];
-      let firstOverdueTask = null, firstSoonTask = null;
+      let firstOverdueTask = null,
+        firstSoonTask = null;
 
       for (const vid of vIds) {
         if (!byVessel[vid]) continue;
         totalOverdue += byVessel[vid].overdue.length;
         totalSoon += byVessel[vid].soon.length;
         if (vesselMap[vid]) vesselNames.push(vesselMap[vid]);
-        if (!firstOverdueTask && byVessel[vid].overdue[0]) firstOverdueTask = byVessel[vid].overdue[0];
+        if (!firstOverdueTask && byVessel[vid].overdue[0])
+          firstOverdueTask = byVessel[vid].overdue[0];
         if (!firstSoonTask && byVessel[vid].soon[0]) firstSoonTask = byVessel[vid].soon[0];
       }
 
@@ -115,9 +115,10 @@ export async function GET(request) {
 
       if (totalOverdue > 0) {
         title = '🔴 ' + totalOverdue + ' overdue task' + (totalOverdue > 1 ? 's' : '');
-        body = (firstOverdueTask
-          ? firstOverdueTask.task + (totalOverdue > 1 ? ' + ' + (totalOverdue - 1) + ' more' : '')
-          : vesselNames.join(', ')) + (totalSoon > 0 ? ' · ' + totalSoon + ' due soon' : '');
+        body =
+          (firstOverdueTask
+            ? firstOverdueTask.task + (totalOverdue > 1 ? ' + ' + (totalOverdue - 1) + ' more' : '')
+            : vesselNames.join(', ')) + (totalSoon > 0 ? ' · ' + totalSoon + ' due soon' : '');
       } else {
         title = '⚓ ' + totalSoon + ' task' + (totalSoon > 1 ? 's' : '') + ' due soon';
         body = firstSoonTask
@@ -126,12 +127,16 @@ export async function GET(request) {
       }
 
       try {
-        await webpush.sendNotification(sub.subscription, JSON.stringify({
-          title, body,
-          icon: '/apple-icon.png',
-          tag: 'keeply-maintenance',
-          data: { url: deepUrl },
-        }));
+        await webpush.sendNotification(
+          sub.subscription,
+          JSON.stringify({
+            title,
+            body,
+            icon: '/apple-icon.png',
+            tag: 'keeply-maintenance',
+            data: { url: deepUrl },
+          })
+        );
         sent++;
       } catch (pushErr) {
         if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {

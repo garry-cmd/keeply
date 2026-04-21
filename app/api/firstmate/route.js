@@ -1,11 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
 // ── Admin client ──────────────────────────────────────────────────────────────
 function getAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 // ── Plan limits ───────────────────────────────────────────────────────────────
@@ -401,127 +398,213 @@ Preventing Collisions at Sea), Chapman Piloting & Seamanship.`;
 // ── Vessel-specific prompt (dynamic, not cached) ──────────────────────────────
 function buildVesselPrompt(ctx) {
   const { vessel, tasks, repairs, logbook, equipment } = ctx;
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
 
-  const overdue   = tasks.filter(function(t){ return t.urgency === "critical" || t.urgency === "overdue"; });
-  const dueSoon   = tasks.filter(function(t){ return t.urgency === "due-soon"; });
-  const ok        = tasks.filter(function(t){ return t.urgency === "ok"; });
-  const withNotes = tasks.filter(function(t){ return t.recentNotes && t.recentNotes.length > 0; });
+  const overdue = tasks.filter(function (t) {
+    return t.urgency === 'critical' || t.urgency === 'overdue';
+  });
+  const dueSoon = tasks.filter(function (t) {
+    return t.urgency === 'due-soon';
+  });
+  const ok = tasks.filter(function (t) {
+    return t.urgency === 'ok';
+  });
+  const withNotes = tasks.filter(function (t) {
+    return t.recentNotes && t.recentNotes.length > 0;
+  });
 
-  const fmt = function(t) {
-    let line = "- " + t.task + " (" + t.section + ", every " + (t.interval || "?") + ")"
-      + (t.dueDate     ? ", due "       + t.dueDate     : "")
-      + (t.lastService ? ", last done " + t.lastService : ", never serviced");
+  const fmt = function (t) {
+    let line =
+      '- ' +
+      t.task +
+      ' (' +
+      t.section +
+      ', every ' +
+      (t.interval || '?') +
+      ')' +
+      (t.dueDate ? ', due ' + t.dueDate : '') +
+      (t.lastService ? ', last done ' + t.lastService : ', never serviced');
     if (t.recentNotes && t.recentNotes.length > 0) {
-      line += "\n  Completion notes: " + t.recentNotes.join(" | ");
+      line += '\n  Completion notes: ' + t.recentNotes.join(' | ');
     }
     return line;
   };
 
-  const passages    = (logbook || []).filter(function(e){ return e.entry_type === "passage"; });
-  const totalNm     = passages.reduce(function(acc, e){ return acc + (parseFloat(e.distance_nm) || 0); }, 0);
-  const totalEngHrs = passages.reduce(function(acc, e){ return acc + (parseFloat(e.hours_end)   || 0); }, 0);
+  const passages = (logbook || []).filter(function (e) {
+    return e.entry_type === 'passage';
+  });
+  const totalNm = passages.reduce(function (acc, e) {
+    return acc + (parseFloat(e.distance_nm) || 0);
+  }, 0);
+  const totalEngHrs = passages.reduce(function (acc, e) {
+    return acc + (parseFloat(e.hours_end) || 0);
+  }, 0);
   const lastPassage = passages[0];
-  const recentLog   = (logbook || []).slice(0, 20);
-  const openRepairs = (repairs   || []).filter(function(r){ return r.status !== "closed"; });
-  const equipIssues = (equipment || []).filter(function(e){ return e.status === "needs-service" || e.status === "watch"; });
+  const recentLog = (logbook || []).slice(0, 20);
+  const openRepairs = (repairs || []).filter(function (r) {
+    return r.status !== 'closed';
+  });
+  const equipIssues = (equipment || []).filter(function (e) {
+    return e.status === 'needs-service' || e.status === 'watch';
+  });
 
-  let p = "== THIS SESSION ==\n"
-    + "You are speaking with the owner of " + vessel.prefix + " " + vessel.name + ". Today is " + today + ".\n\n";
+  let p =
+    '== THIS SESSION ==\n' +
+    'You are speaking with the owner of ' +
+    vessel.prefix +
+    ' ' +
+    vessel.name +
+    '. Today is ' +
+    today +
+    '.\n\n';
 
-  p += "== VESSEL ==\n"
-    + "Name: " + vessel.prefix + " " + vessel.name + "\n"
-    + (vessel.make ? "Make/Model: " + [vessel.year, vessel.make, vessel.model].filter(Boolean).join(" ") + "\n" : "")
-    + "Engine hours: " + (vessel.engineHours
-        ? vessel.engineHours + " hrs" + (vessel.engineHoursDate ? " (as of " + vessel.engineHoursDate + ")" : "")
-        : "not recorded") + "\n"
-    + (vessel.fuelBurnRate ? "Fuel burn rate: " + vessel.fuelBurnRate + " gal/hr\n" : "")
-    + (vessel.homePort ? "Home port: " + vessel.homePort + "\n" : "")
-    + "\n";
+  p +=
+    '== VESSEL ==\n' +
+    'Name: ' +
+    vessel.prefix +
+    ' ' +
+    vessel.name +
+    '\n' +
+    (vessel.make
+      ? 'Make/Model: ' + [vessel.year, vessel.make, vessel.model].filter(Boolean).join(' ') + '\n'
+      : '') +
+    'Engine hours: ' +
+    (vessel.engineHours
+      ? vessel.engineHours +
+        ' hrs' +
+        (vessel.engineHoursDate ? ' (as of ' + vessel.engineHoursDate + ')' : '')
+      : 'not recorded') +
+    '\n' +
+    (vessel.fuelBurnRate ? 'Fuel burn rate: ' + vessel.fuelBurnRate + ' gal/hr\n' : '') +
+    (vessel.homePort ? 'Home port: ' + vessel.homePort + '\n' : '') +
+    '\n';
 
-  p += "== MAINTENANCE ==\n"
-    + (overdue.length > 0
-        ? "OVERDUE (" + overdue.length + "):\n" + overdue.map(fmt).join("\n") + "\n\n"
-        : "No overdue tasks.\n\n")
-    + (dueSoon.length > 0
-        ? "DUE SOON (" + dueSoon.length + "):\n" + dueSoon.map(fmt).join("\n") + "\n\n"
-        : "Nothing due soon.\n\n")
-    + (ok.length > 0
-        ? "UP TO DATE (" + ok.length + " tasks):\n" + ok.map(fmt).join("\n") + "\n\n"
-        : "");
+  p +=
+    '== MAINTENANCE ==\n' +
+    (overdue.length > 0
+      ? 'OVERDUE (' + overdue.length + '):\n' + overdue.map(fmt).join('\n') + '\n\n'
+      : 'No overdue tasks.\n\n') +
+    (dueSoon.length > 0
+      ? 'DUE SOON (' + dueSoon.length + '):\n' + dueSoon.map(fmt).join('\n') + '\n\n'
+      : 'Nothing due soon.\n\n') +
+    (ok.length > 0
+      ? 'UP TO DATE (' + ok.length + ' tasks):\n' + ok.map(fmt).join('\n') + '\n\n'
+      : '');
 
   if (withNotes.length > 0) {
-    p += "== COMPLETION NOTES & TRENDS ==\n"
-      + "Notes recorded when tasks were marked done. Look for patterns and deterioration:\n"
-      + withNotes.map(function(t){
-          return "- " + t.task + " (" + t.section + "):\n  " + t.recentNotes.join("\n  ");
-        }).join("\n") + "\n\n";
+    p +=
+      '== COMPLETION NOTES & TRENDS ==\n' +
+      'Notes recorded when tasks were marked done. Look for patterns and deterioration:\n' +
+      withNotes
+        .map(function (t) {
+          return '- ' + t.task + ' (' + t.section + '):\n  ' + t.recentNotes.join('\n  ');
+        })
+        .join('\n') +
+      '\n\n';
   }
 
-  p += "== OPEN REPAIRS (" + openRepairs.length + ") ==\n"
-    + (openRepairs.length > 0
-        ? openRepairs.map(function(r){
-            let line = "- " + r.section + ": " + r.description + " (opened " + r.date + ")";
-            if (r.notes) line += "\n  Notes: " + r.notes;
+  p +=
+    '== OPEN REPAIRS (' +
+    openRepairs.length +
+    ') ==\n' +
+    (openRepairs.length > 0
+      ? openRepairs
+          .map(function (r) {
+            let line = '- ' + r.section + ': ' + r.description + ' (opened ' + r.date + ')';
+            if (r.notes) line += '\n  Notes: ' + r.notes;
             return line;
-          }).join("\n")
-        : "No open repairs.")
-    + "\n\n";
+          })
+          .join('\n')
+      : 'No open repairs.') +
+    '\n\n';
 
-  p += "== LOGBOOK ==\n"
-    + "Total: " + Math.round(totalNm) + " nm across " + passages.length + " passages\n"
-    + (totalEngHrs > 0 ? "Engine hours logged across passages: " + Math.round(totalEngHrs) + " hrs\n" : "")
-    + (lastPassage
-        ? "Last passage: " + lastPassage.entry_date
-          + (lastPassage.from_location || lastPassage.to_location
-              ? " (" + (lastPassage.from_location || "?") + " → " + (lastPassage.to_location || "?") + ")"
-              : "")
-          + (lastPassage.distance_nm ? ", " + lastPassage.distance_nm + " nm" : "") + "\n"
-        : "")
-    + "\n"
-    + (recentLog.length > 0
-        ? "Recent entries (newest first):\n" + recentLog.map(function(e) {
-            var line = "- " + e.entry_date + " [" + (e.entry_type === "passage" ? "passage" : "note") + "]";
-            if (e.entry_type === "passage" && (e.from_location || e.to_location)) {
-              line += ": " + (e.from_location || "?") + " → " + (e.to_location || "?");
-              if (e.distance_nm) line += " (" + e.distance_nm + " nm)";
+  p +=
+    '== LOGBOOK ==\n' +
+    'Total: ' +
+    Math.round(totalNm) +
+    ' nm across ' +
+    passages.length +
+    ' passages\n' +
+    (totalEngHrs > 0
+      ? 'Engine hours logged across passages: ' + Math.round(totalEngHrs) + ' hrs\n'
+      : '') +
+    (lastPassage
+      ? 'Last passage: ' +
+        lastPassage.entry_date +
+        (lastPassage.from_location || lastPassage.to_location
+          ? ' (' +
+            (lastPassage.from_location || '?') +
+            ' → ' +
+            (lastPassage.to_location || '?') +
+            ')'
+          : '') +
+        (lastPassage.distance_nm ? ', ' + lastPassage.distance_nm + ' nm' : '') +
+        '\n'
+      : '') +
+    '\n' +
+    (recentLog.length > 0
+      ? 'Recent entries (newest first):\n' +
+        recentLog
+          .map(function (e) {
+            var line =
+              '- ' + e.entry_date + ' [' + (e.entry_type === 'passage' ? 'passage' : 'note') + ']';
+            if (e.entry_type === 'passage' && (e.from_location || e.to_location)) {
+              line += ': ' + (e.from_location || '?') + ' → ' + (e.to_location || '?');
+              if (e.distance_nm) line += ' (' + e.distance_nm + ' nm)';
             }
-            if (e.hours_end)  line += " [eng: " + e.hours_end + " hrs]";
-            if (e.crew)       line += " [crew: " + e.crew + "]";
-            if (e.conditions) line += " [" + e.conditions + "]";
-            if (e.sea_state)  line += " [sea: " + e.sea_state + "]";
-            if (e.title)      line += " — " + e.title;
-            if (e.notes)      line += " — notes: " + e.notes;
-            if (e.incident)   line += " — INCIDENT: " + e.incident;
+            if (e.hours_end) line += ' [eng: ' + e.hours_end + ' hrs]';
+            if (e.crew) line += ' [crew: ' + e.crew + ']';
+            if (e.conditions) line += ' [' + e.conditions + ']';
+            if (e.sea_state) line += ' [sea: ' + e.sea_state + ']';
+            if (e.title) line += ' — ' + e.title;
+            if (e.notes) line += ' — notes: ' + e.notes;
+            if (e.incident) line += ' — INCIDENT: ' + e.incident;
             return line;
-          }).join("\n")
-        : "No entries.")
-    + "\n\n";
+          })
+          .join('\n')
+      : 'No entries.') +
+    '\n\n';
 
-  p += "== EQUIPMENT ==\n"
-    + (equipIssues.length > 0
-        ? "Issues:\n" + equipIssues.map(function(e){ return "- " + e.name + ": " + e.status; }).join("\n")
-        : "No issues flagged.")
-    + "\n\n";
+  p +=
+    '== EQUIPMENT ==\n' +
+    (equipIssues.length > 0
+      ? 'Issues:\n' +
+        equipIssues
+          .map(function (e) {
+            return '- ' + e.name + ': ' + e.status;
+          })
+          .join('\n')
+      : 'No issues flagged.') +
+    '\n\n';
 
-  p += "== EQUIPMENT LOGS ==\n"
-    + (function(){
-        var withLogs = (equipment || []).filter(function(e){ return e.recentLogs && e.recentLogs.length > 0; });
-        if (withLogs.length === 0) return "No equipment log entries.\n\n";
-        return withLogs.map(function(e){
-          var info = e.notes ? " [" + e.notes.replace(/\n/g, " ").slice(0, 80) + "]" : "";
-          return "- " + e.name + " (" + e.category + ")" + info + ":\n  " + e.recentLogs.join("\n  ");
-        }).join("\n") + "\n\n";
-      })();
+  p +=
+    '== EQUIPMENT LOGS ==\n' +
+    (function () {
+      var withLogs = (equipment || []).filter(function (e) {
+        return e.recentLogs && e.recentLogs.length > 0;
+      });
+      if (withLogs.length === 0) return 'No equipment log entries.\n\n';
+      return (
+        withLogs
+          .map(function (e) {
+            var info = e.notes ? ' [' + e.notes.replace(/\n/g, ' ').slice(0, 80) + ']' : '';
+            return (
+              '- ' + e.name + ' (' + e.category + ')' + info + ':\n  ' + e.recentLogs.join('\n  ')
+            );
+          })
+          .join('\n') + '\n\n'
+      );
+    })();
 
-  p += "== BEHAVIOUR ==\n"
-    + "Blend vessel intelligence with app support naturally. If asked about the vessel, use the data above. "
-    + "If asked how to do something in the app, use the APP GUIDE. "
-    + "If asked about both in one message, answer both. "
-    + "CRITICAL: Never tell a user they cannot share a vessel or invite crew — Share Vessel is ungated and available to everyone. "
-    + "Actively scan logbook notes and completion notes for anomalies — flag any concerning patterns. "
-    + "When asked if the boat is ready: check overdue tasks, open repairs, and equipment issues. "
-    + "Never invent vessel data. Speak directly and casually to the owner.";
+  p +=
+    '== BEHAVIOUR ==\n' +
+    'Blend vessel intelligence with app support naturally. If asked about the vessel, use the data above. ' +
+    'If asked how to do something in the app, use the APP GUIDE. ' +
+    'If asked about both in one message, answer both. ' +
+    'CRITICAL: Never tell a user they cannot share a vessel or invite crew — Share Vessel is ungated and available to everyone. ' +
+    'Actively scan logbook notes and completion notes for anomalies — flag any concerning patterns. ' +
+    'When asked if the boat is ready: check overdue tasks, open repairs, and equipment issues. ' +
+    'Never invent vessel data. Speak directly and casually to the owner.';
 
   return p;
 }
@@ -531,43 +614,73 @@ export async function POST(request) {
     const { messages, vesselContext } = await request.json();
 
     if (!vesselContext || !vesselContext.vessel) {
-      return Response.json({ error: "No vessel context" }, { status: 400 });
+      return Response.json({ error: 'No vessel context' }, { status: 400 });
     }
     if (!process.env.ANTHROPIC_API_KEY) {
-      return Response.json({ error: "API key not configured" }, { status: 500 });
+      return Response.json({ error: 'API key not configured' }, { status: 500 });
     }
 
     // ── Auth + usage gating ───────────────────────────────────────────────────
-    const authHeader = request.headers.get("authorization") || "";
-    const token      = authHeader.replace("Bearer ", "").trim();
+    const authHeader = request.headers.get('authorization') || '';
+    const token = authHeader.replace('Bearer ', '').trim();
     if (token) {
       const admin = getAdmin();
-      const { data: { user }, error: authErr } = await admin.auth.getUser(token);
+      const {
+        data: { user },
+        error: authErr,
+      } = await admin.auth.getUser(token);
       if (!authErr && user) {
-        const { data: profile } = await admin.from("user_profiles").select("plan,created_at").eq("id", user.id).single();
-        const plan  = profile?.plan || "free";
+        const { data: profile } = await admin
+          .from('user_profiles')
+          .select('plan,created_at')
+          .eq('id', user.id)
+          .single();
+        const plan = profile?.plan || 'free';
         // Trial: free users within 14 days of signup get Pro-level access
         const daysSinceSignup = profile?.created_at
           ? (Date.now() - new Date(profile.created_at).getTime()) / 86400000
           : 999;
-        const trialActive   = plan === "free" && daysSinceSignup < 14;
-        const effectivePlan = trialActive ? "pro" : plan;
+        const trialActive = plan === 'free' && daysSinceSignup < 14;
+        const effectivePlan = trialActive ? 'pro' : plan;
         const limit = FM_LIMITS[effectivePlan] !== undefined ? FM_LIMITS[effectivePlan] : 0;
         if (limit === 0) {
-          return Response.json({ error: "First Mate is not available on the Free plan. Upgrade to Standard or Pro to chat with First Mate." }, { status: 403 });
+          return Response.json(
+            {
+              error:
+                'First Mate is not available on the Free plan. Upgrade to Standard or Pro to chat with First Mate.',
+            },
+            { status: 403 }
+          );
         }
         if (limit > 0) {
           const monthKey = new Date().toISOString().slice(0, 7);
-          const { data: usage } = await admin.from("firstmate_usage").select("count")
-            .eq("user_id", user.id).eq("month_key", monthKey).single();
+          const { data: usage } = await admin
+            .from('firstmate_usage')
+            .select('count')
+            .eq('user_id', user.id)
+            .eq('month_key', monthKey)
+            .single();
           const currentCount = usage?.count || 0;
           if (currentCount >= limit) {
-            return Response.json({ error: "You've used all " + limit + " First Mate queries this month. Upgrade to get more." }, { status: 429 });
+            return Response.json(
+              {
+                error:
+                  "You've used all " +
+                  limit +
+                  ' First Mate queries this month. Upgrade to get more.',
+              },
+              { status: 429 }
+            );
           }
-          await admin.from("firstmate_usage").upsert({
-            user_id: user.id, month_key: monthKey,
-            count: currentCount + 1, updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id,month_key" });
+          await admin.from('firstmate_usage').upsert(
+            {
+              user_id: user.id,
+              month_key: monthKey,
+              count: currentCount + 1,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,month_key' }
+          );
           request._fmUsage = { count: currentCount + 1, limit, plan };
         }
       }
@@ -578,45 +691,55 @@ export async function POST(request) {
     // Block 2 (vessel prompt): dynamic per session, not cached
     const systemBlocks = [
       {
-        type: "text",
+        type: 'text',
         text: APP_GUIDE,
-        cache_control: { type: "ephemeral" },
+        cache_control: { type: 'ephemeral' },
       },
       {
-        type: "text",
+        type: 'text',
         text: buildVesselPrompt(vesselContext),
       },
     ];
 
     // ── Call Anthropic ────────────────────────────────────────────────────────
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
-        "Content-Type":      "application/json",
-        "x-api-key":         process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta":    "prompt-caching-2024-07-31",
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31',
       },
       body: JSON.stringify({
-        model:      "claude-sonnet-4-20250514",
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2048,
-        system:     systemBlocks,
-        messages:   messages.map(function(m){ return { role: m.role, content: m.content }; }),
+        system: systemBlocks,
+        messages: messages.map(function (m) {
+          return { role: m.role, content: m.content };
+        }),
       }),
     });
 
     if (!anthropicRes.ok) {
-      const err = await anthropicRes.json().catch(function(){ return {}; });
-      return Response.json({ error: err.error?.message || "Anthropic error " + anthropicRes.status }, { status: 500 });
+      const err = await anthropicRes.json().catch(function () {
+        return {};
+      });
+      return Response.json(
+        { error: err.error?.message || 'Anthropic error ' + anthropicRes.status },
+        { status: 500 }
+      );
     }
 
-    const data      = await anthropicRes.json();
-    const text      = (data.content || []).map(function(b){ return b.text || ""; }).join("");
+    const data = await anthropicRes.json();
+    const text = (data.content || [])
+      .map(function (b) {
+        return b.text || '';
+      })
+      .join('');
     const usageMeta = request._fmUsage || null;
     return Response.json({ response: text, usage: usageMeta });
-
   } catch (e) {
-    console.error("First Mate error:", e);
+    console.error('First Mate error:', e);
     return Response.json({ error: e.message }, { status: 500 });
   }
 }

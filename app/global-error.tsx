@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { trackException } from "@/lib/posthog";
+import { useEffect } from 'react';
+import { trackException } from '@/lib/posthog';
 
 /**
  * Global error boundary — last line of defense.
@@ -23,10 +23,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Global error boundary caught:", error);
+    console.error('Global error boundary caught:', error);
     trackException(error, {
-      source: "error-boundary",
-      scope: "global",
+      source: 'error-boundary',
+      scope: 'global',
       digest: error.digest,
     });
   }, [error]);
@@ -36,16 +36,16 @@ export default function GlobalError({
       <body
         style={{
           margin: 0,
-          background: "#0e2847",
-          color: "#e2e8f0",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100vh",
-          padding: "32px 24px",
-          textAlign: "center",
+          background: '#0e2847',
+          color: '#e2e8f0',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          padding: '32px 24px',
+          textAlign: 'center',
         }}
       >
         <div style={{ fontSize: 64, marginBottom: 16 }}>⚓</div>
@@ -54,7 +54,7 @@ export default function GlobalError({
             fontSize: 24,
             fontWeight: 700,
             marginBottom: 8,
-            color: "#e2e8f0",
+            color: '#e2e8f0',
           }}
         >
           Something went seriously aground
@@ -62,26 +62,25 @@ export default function GlobalError({
         <p
           style={{
             fontSize: 15,
-            color: "#94a3b8",
+            color: '#94a3b8',
             maxWidth: 440,
             marginBottom: 24,
             lineHeight: 1.5,
           }}
         >
-          We hit a rough patch. Try reloading — if the problem continues, we're
-          already on it.
+          We hit a rough patch. Try reloading — if the problem continues, we're already on it.
         </p>
         <button
           onClick={() => reset()}
           style={{
-            padding: "10px 20px",
+            padding: '10px 20px',
             borderRadius: 8,
-            border: "none",
-            background: "#4a96d8",
-            color: "#ffffff",
+            border: 'none',
+            background: '#4a96d8',
+            color: '#ffffff',
             fontSize: 14,
             fontWeight: 600,
-            cursor: "pointer",
+            cursor: 'pointer',
           }}
         >
           Retry
@@ -91,8 +90,8 @@ export default function GlobalError({
             style={{
               marginTop: 24,
               fontSize: 11,
-              color: "#64748b",
-              fontFamily: "monospace",
+              color: '#64748b',
+              fontFamily: 'monospace',
             }}
           >
             Error ID: {error.digest}

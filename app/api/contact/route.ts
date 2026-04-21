@@ -8,7 +8,10 @@ export async function POST(req: NextRequest) {
     const { name, email, subject, message, type } = body;
 
     if (!name?.trim() || !email?.trim() || !message?.trim()) {
-      return NextResponse.json({ error: 'Name, email, and message are required.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Name, email, and message are required.' },
+        { status: 400 }
+      );
     }
 
     // Basic email format check
@@ -22,7 +25,12 @@ export async function POST(req: NextRequest) {
       : `[Keeply Contact] ${type === 'fleet' ? 'Fleet Enquiry' : type === 'feature' ? 'Feature Request' : 'General Support'}`;
 
     const safeMessage = message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const typeLabel = type === 'fleet' ? 'Fleet &amp; Commercial' : type === 'feature' ? 'Feature Request' : 'General Support';
+    const typeLabel =
+      type === 'fleet'
+        ? 'Fleet &amp; Commercial'
+        : type === 'feature'
+          ? 'Feature Request'
+          : 'General Support';
 
     // 1. Internal notification to Garry
     await resend.emails.send({
@@ -44,11 +52,15 @@ export async function POST(req: NextRequest) {
               <td style="padding: 12px 16px; font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.6px; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">Type</td>
               <td style="padding: 12px 16px; font-size: 14px; color: #1a1d23; border-bottom: 1px solid #f1f5f9;">${typeLabel}</td>
             </tr>
-            ${subject?.trim() ? `
+            ${
+              subject?.trim()
+                ? `
             <tr>
               <td style="padding: 12px 16px; font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.6px; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">Subject</td>
               <td style="padding: 12px 16px; font-size: 14px; color: #1a1d23; border-bottom: 1px solid #f1f5f9;">${subject}</td>
-            </tr>` : ''}
+            </tr>`
+                : ''
+            }
             <tr>
               <td style="padding: 12px 16px; font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.6px; background: #f8fafc; vertical-align: top;">Message</td>
               <td style="padding: 12px 16px; font-size: 14px; color: #1a1d23; line-height: 1.7; white-space: pre-wrap;">${safeMessage}</td>
@@ -66,7 +78,7 @@ export async function POST(req: NextRequest) {
     await resend.emails.send({
       from: 'Keeply Support <support@keeply.boats>',
       to: email,
-      subject: "We got your message — Keeply",
+      subject: 'We got your message — Keeply',
       html: `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1d23;">
           <div style="background: #07162d; padding: 28px 32px; border-radius: 10px 10px 0 0;">

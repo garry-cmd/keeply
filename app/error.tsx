@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { trackException } from "@/lib/posthog";
+import { useEffect } from 'react';
+import { trackException } from '@/lib/posthog';
 
 /**
  * Route-level error boundary.
@@ -21,10 +21,10 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Route error boundary caught:", error);
+    console.error('Route error boundary caught:', error);
     trackException(error, {
-      source: "error-boundary",
-      scope: "route",
+      source: 'error-boundary',
+      scope: 'route',
       digest: error.digest,
     });
   }, [error]);
@@ -32,14 +32,14 @@ export default function Error({
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "70vh",
-        padding: "32px 24px",
-        textAlign: "center",
-        fontFamily: "system-ui, -apple-system, sans-serif",
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '70vh',
+        padding: '32px 24px',
+        textAlign: 'center',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
       <div style={{ fontSize: 64, marginBottom: 16 }}>⚓</div>
@@ -48,7 +48,7 @@ export default function Error({
           fontSize: 24,
           fontWeight: 700,
           marginBottom: 8,
-          color: "var(--text-primary)",
+          color: 'var(--text-primary)',
         }}
       >
         Something went aground
@@ -56,27 +56,27 @@ export default function Error({
       <p
         style={{
           fontSize: 15,
-          color: "var(--text-secondary)",
+          color: 'var(--text-secondary)',
           maxWidth: 440,
           marginBottom: 24,
           lineHeight: 1.5,
         }}
       >
-        The issue is on our end, not yours. Hit retry to get back on course, or
-        head home and try again later.
+        The issue is on our end, not yours. Hit retry to get back on course, or head home and try
+        again later.
       </p>
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: 'flex', gap: 12 }}>
         <button
           onClick={() => reset()}
           style={{
-            padding: "10px 20px",
+            padding: '10px 20px',
             borderRadius: 8,
-            border: "none",
-            background: "var(--brand)",
-            color: "var(--text-on-brand)",
+            border: 'none',
+            background: 'var(--brand)',
+            color: 'var(--text-on-brand)',
             fontSize: 14,
             fontWeight: 600,
-            cursor: "pointer",
+            cursor: 'pointer',
           }}
         >
           Retry
@@ -84,16 +84,16 @@ export default function Error({
         <a
           href="/"
           style={{
-            padding: "10px 20px",
+            padding: '10px 20px',
             borderRadius: 8,
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-primary)",
+            border: '1px solid var(--border)',
+            background: 'transparent',
+            color: 'var(--text-primary)',
             fontSize: 14,
             fontWeight: 600,
-            textDecoration: "none",
-            display: "inline-flex",
-            alignItems: "center",
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
           }}
         >
           Go home
@@ -104,8 +104,8 @@ export default function Error({
           style={{
             marginTop: 24,
             fontSize: 11,
-            color: "var(--text-muted)",
-            fontFamily: "monospace",
+            color: 'var(--text-muted)',
+            fontFamily: 'monospace',
           }}
         >
           Error ID: {error.digest}

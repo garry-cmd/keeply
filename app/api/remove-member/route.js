@@ -1,10 +1,10 @@
 export async function POST(request) {
   try {
     const { email, vesselName, vesselType, removerName } = await request.json();
-    if (!email || !vesselName) return Response.json({ error: "Missing fields" }, { status: 400 });
-    if (!process.env.RESEND_API_KEY) return Response.json({ error: "No API key" }, { status: 500 });
+    if (!email || !vesselName) return Response.json({ error: 'Missing fields' }, { status: 400 });
+    if (!process.env.RESEND_API_KEY) return Response.json({ error: 'No API key' }, { status: 500 });
 
-    const prefix = vesselType === "motor" ? "M/V" : "S/V";
+    const prefix = vesselType === 'motor' ? 'M/V' : 'S/V';
 
     const html = `<!DOCTYPE html>
 <html>
@@ -25,7 +25,7 @@ export async function POST(request) {
   <tr><td style="background:#ffffff;padding:32px 28px;border-radius:0 0 12px 12px;">
 
     <p style="font-size:15px;color:#1a1d23;margin:0 0 16px;line-height:1.6;">
-      ${removerName || "The vessel owner"} has removed your access to <strong>${prefix} ${vesselName}</strong> on Keeply.
+      ${removerName || 'The vessel owner'} has removed your access to <strong>${prefix} ${vesselName}</strong> on Keeply.
     </p>
 
     <p style="font-size:13px;color:#6b7280;margin:0 0 28px;line-height:1.6;">
@@ -34,7 +34,7 @@ export async function POST(request) {
 
     <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin-bottom:28px;">
       <div style="font-size:13px;color:#374151;line-height:1.6;">
-        If you think this was a mistake, reach out to ${removerName || "the vessel owner"} directly to request access again.
+        If you think this was a mistake, reach out to ${removerName || 'the vessel owner'} directly to request access again.
       </div>
     </div>
 
@@ -61,14 +61,14 @@ export async function POST(request) {
 </body>
 </html>`;
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.RESEND_API_KEY}`
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Keeply <keeply@keeply.boats>",
+        from: 'Keeply <keeply@keeply.boats>',
         to: [email],
         subject: `Your access to ${prefix} ${vesselName} has been removed`,
         html,
@@ -77,7 +77,7 @@ export async function POST(request) {
 
     if (!res.ok) {
       const err = await res.json();
-      return Response.json({ error: err.message || "Send failed" }, { status: 500 });
+      return Response.json({ error: err.message || 'Send failed' }, { status: 500 });
     }
 
     return Response.json({ success: true });
