@@ -69,8 +69,8 @@ Copy rule: never use "sailors" — always "boaters."
 **Current state (Apr 21, 2026):** ESLint v9 + TypeScript v5 installed. Build uses Next.js defaults. **Missing:** tests (zero), error boundaries (zero), Prettier, pre-commit hooks, error monitoring. File mix: 34 `.js/.jsx` (including the 7,900-line monolith) vs 18 `.ts/.tsx`.
 
 ### Tier 1 — this week (~3 hrs)
-1. **Error boundary at app root.** Prevents white-screen-of-death from any uncaught React error.
-2. **Sentry free tier.** Production error visibility; Next.js integration is ~1 CLI command.
+1. **Error boundary at app root.** Prevents white-screen-of-death from any uncaught React error. ✅ Shipped Apr 21.
+2. **PostHog error tracking** (not Sentry — chose PostHog because it's already installed; one fewer service to manage; switching cost is low if insufficient). `capture_exceptions: true` + `trackException` helper wired into both error boundaries. ✅ Shipped Apr 21.
 3. **Prettier + format-on-save.** Kills style drift, makes diffs clean.
 
 ### Tier 2 — next 2 weeks (~4 hrs)

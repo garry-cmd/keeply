@@ -103,7 +103,7 @@ const OKRS = [
     objective: "Establish code hygiene baseline",
     krs: [
       { text: "Error boundary at app root — no white-screen crashes", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Sentry capturing production errors", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "PostHog capturing production errors", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Prettier + format-on-save configured", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Pre-commit hook (Husky + lint-staged) blocking bad commits", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Playwright smoke tests for 5 critical user paths", cur: 0, target: 5, unit: "tests", status: "not-started" },
