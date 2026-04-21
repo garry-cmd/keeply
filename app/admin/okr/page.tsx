@@ -102,7 +102,7 @@ const OKRS = [
     phase: "hygiene",
     objective: "Establish code hygiene baseline",
     krs: [
-      { text: "Error boundary at app root — no white-screen crashes", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Error boundary at app root — no white-screen crashes", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Sentry capturing production errors", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Prettier + format-on-save configured", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Pre-commit hook (Husky + lint-staged) blocking bad commits", cur: 0, target: 1, unit: "complete", status: "not-started" },
