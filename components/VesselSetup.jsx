@@ -234,6 +234,23 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
         await supabase.from('maintenance_tasks').insert(engineTasks);
       }
 
+      // Onboarding maintenance task — overdue by 1 day so it lands in the Critical urgent card
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      await supabase.from('maintenance_tasks').insert([
+        {
+          vessel_id: vessel.id,
+          equipment_id: null,
+          task: 'Complete your vessel setup — review equipment and add photos',
+          section: 'General',
+          interval_days: 36500,
+          priority: 'high',
+          last_service: today,
+          due_date: yesterday.toISOString().split('T')[0],
+          service_logs: [],
+        },
+      ]);
+
       // Default welcome repair tasks
       await supabase.from('repairs').insert([
         {
@@ -362,6 +379,23 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           }
         }
       }
+
+      // Onboarding maintenance task — overdue by 1 day so it lands in the Critical urgent card
+      const aiYesterday = new Date();
+      aiYesterday.setDate(aiYesterday.getDate() - 1);
+      await supabase.from('maintenance_tasks').insert([
+        {
+          vessel_id: vessel.id,
+          equipment_id: null,
+          task: 'Complete your vessel setup — review equipment and add photos',
+          section: 'General',
+          interval_days: 36500,
+          priority: 'high',
+          last_service: today,
+          due_date: aiYesterday.toISOString().split('T')[0],
+          service_logs: [],
+        },
+      ]);
 
       await supabase.from('repairs').insert([
         {
