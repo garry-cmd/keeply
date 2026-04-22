@@ -23,7 +23,7 @@ const BLUE      = "#7eb3f0";
 const PURPLE    = "#a78bfa";
 
 // ─── DATA — updated each session by Claude ───────────────────────────────────
-// Last updated: April 21, 2026
+// Last updated: April 22, 2026
 
 const MONTHS = ["Apr","May","Jun","Jul","Aug","Sep","Oct"];
 
@@ -34,6 +34,13 @@ const PHASES = [
     color: BLUE,
     months: [0, 1],
     description: "Stabilise, close beta, mobile audit",
+  },
+  {
+    id: "final",
+    label: "Final features",
+    color: "#10b981", // emerald — pre-GoLive feature delivery
+    months: [0, 1],
+    description: "Custom checklists, First Mate history, multi-engine tracking — due May 31",
   },
   {
     id: "hygiene",
@@ -92,10 +99,21 @@ const OKRS = [
     phase: "beta",
     objective: "Close beta successfully",
     krs: [
-      { text: "5 beta testers complete structured task plan", cur: 0, target: 5, unit: "testers", status: "on-track" },
+      { text: "5 beta testers complete structured task plan (deadline May 1)", cur: 0, target: 5, unit: "testers", status: "at-risk" },
       { text: "All 3 personas validated (Active Cruiser, Liveaboard, Upgrader)", cur: 1, target: 3, unit: "personas", status: "on-track" },
-      { text: "Zero critical bugs outstanding", cur: 0, target: 1, unit: "complete", status: "at-risk" },
       { text: "Feedback received from all testers", cur: 0, target: 5, unit: "responses", status: "not-started" },
+      { text: "Zero critical bugs outstanding", cur: 0, target: 1, unit: "complete", status: "at-risk" },
+      { text: "First Mate query limits — single source of truth (DB-driven, UI+API agree)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Push notifications validated end-to-end on real device", cur: 0, target: 1, unit: "complete", status: "not-started" },
+    ],
+  },
+  {
+    phase: "final",
+    objective: "Deliver final features",
+    krs: [
+      { text: "Logbook — Custom Checklists (Pro tier)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "First Mate — Conversation history (all tiers)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Multi-engine tracking", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],
   },
   {
@@ -181,10 +199,7 @@ const BACKLOG_STATUS: Record<string, { label: string; color: string; bg: string 
 };
 
 const BACKLOG = [
-  { name: "Logbook",             status: "in-progress", effort: "M", notes: "~90% complete. Passages, watch entries, pre-departure & arrival checklists." },
-  { name: "First Mate",          status: "in-progress", effort: "L", notes: "~90% shipped. Conversational AI assistant, bottom sheet, tier-gated queries." },
   { name: "Text First Mate",     status: "planned",     effort: "S", notes: "Post-GoLive. Chat with full vessel context." },
-  { name: "Engine hours",        status: "planned",     effort: "M", notes: "Post-GoLive. Dual-trigger consumables: time AND hours." },
   { name: "Consumables tracker", status: "planned",     effort: "S", notes: "Post-GoLive. Fluids, filters, spare parts — shown on equipment cards." },
   { name: "Weather (NOAA)",      status: "planned",     effort: "M", notes: "Post-GoLive. Pro tier. Windy co-marketing in Phase 2." },
   { name: "Context-aware FAB",   status: "done",        effort: "S", notes: "Shipped. FAB action changes by active tab." },
@@ -240,9 +255,10 @@ export default function OKRPage() {
     </div>
   );
 
-  const totalKRs = OKRS.flatMap(o => o.krs).length;
-  const doneKRs  = OKRS.flatMap(o => o.krs).filter(k => k.status === "done").length;
-  const atRiskKRs = OKRS.flatMap(o => o.krs).filter(k => k.status === "at-risk" || k.status === "blocked").length;
+  const krCount         = OKRS.length;
+  const milestoneCount  = OKRS.flatMap(o => o.krs).length;
+  const doneMilestones  = OKRS.flatMap(o => o.krs).filter(k => k.status === "done").length;
+  const atRiskMilestones = OKRS.flatMap(o => o.krs).filter(k => k.status === "at-risk" || k.status === "blocked").length;
 
   return (
     <div style={{ background:DARK_BG, color:TEXT, minHeight:"100vh", fontFamily:"'Inter',system-ui,sans-serif" }}>
@@ -258,11 +274,12 @@ export default function OKRPage() {
           <span style={{ fontSize:13, fontWeight:700, color:BLUE }}>Objective: </span>
           <span style={{ fontSize:13, color:TEXT }}>Stand up a viable product — stable app, live on both stores, offline capable, with a community-driven acquisition engine.</span>
         </div>
-        <div style={{ display:"flex", gap:12, marginTop:12 }}>
+        <div style={{ display:"flex", gap:12, marginTop:12, flexWrap:"wrap" }}>
           {[
-            { num: totalKRs, label:"total KRs", color: TEXT },
-            { num: doneKRs, label:"done", color: GREEN },
-            { num: atRiskKRs, label:"at risk / blocked", color: RED },
+            { num: krCount,          label:"KRs",                 color: TEXT },
+            { num: milestoneCount,   label:"Milestones",          color: TEXT },
+            { num: doneMilestones,   label:"done",                color: GREEN },
+            { num: atRiskMilestones, label:"at risk / blocked",   color: RED },
           ].map(s => (
             <div key={s.label} style={{ background:CARD_BG, border:`1px solid ${BDR}`, borderRadius:8, padding:"8px 14px" }}>
               <div style={{ fontSize:20, fontWeight:700, color: s.color }}>{s.num}</div>
@@ -387,7 +404,7 @@ export default function OKRPage() {
       </div>
 
       <div style={{ marginTop:32, paddingTop:14, borderTop:`1px solid ${BDR}`, fontSize:11, color:MUTED }}>
-        Updated by Claude · April 21, 2026 · Source of truth: <code style={{ color:TEXT }}>ROADMAP.md</code> in the repo.
+        Updated by Claude · April 22, 2026 · Source of truth: <code style={{ color:TEXT }}>ROADMAP.md</code> in the repo.
       </div>
     </div>
     </div>
