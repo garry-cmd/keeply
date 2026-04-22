@@ -93,11 +93,6 @@ Organized around two KRs pre-GoLive:
 
 Queued but NOT urgent. Order by discretion:
 
-- **Unverified-email banner** — thin nudge at top of app when `user.email_confirmed_at == null`: "⚠️ Please verify your email. [Resend]". Reappears on reload. Uses `supabase.auth.resend({ type: 'signup' })` to explicitly trigger the email.
-- **Three soft gates** on email-verification:
-  - `/api/stripe/checkout` — prevents chargeback fraud from unverified signups
-  - `/api/invite` — prevents Keeply being used as a spam vector
-  - `/api/cron/weekly-digest` — skip unverified users (don't waste Resend sends)
 - **Env vars to mark Sensitive in Vercel** (in priority order, each requires copying current value to password manager first since you can't view after upgrade):
   1. `ANTHROPIC_API_KEY` (biggest blast radius)
   2. `RESEND_API_KEY`
@@ -106,7 +101,9 @@ Queued but NOT urgent. Order by discretion:
   5. `VAPID_PRIVATE_KEY`
   - Skip `VAPID_PUBLIC_KEY` — public keys stay public, false-positive flag.
 - **VS Code format-on-save** — install `esbenp.prettier-vscode` + add `.vscode/settings.json` with `formatOnSave: true`. 30 seconds.
-- **Tier 2 code hygiene** — Husky pre-commit hook (~30 min) + Playwright smoke tests for 5 critical paths (~3–4 hrs total, spread across sessions).
+- **Tier 2 code hygiene** — Husky pre-commit hook (~30 min), Playwright smoke tests for 5 critical paths (~3–4 hrs), `/api/invite` rate limit (~30 min), `/api/stripe/checkout` JWT verification (~30 min). ~5 hrs total, spread across sessions.
+
+**Moved to icebox (Apr 22):** Unverified-email banner + three soft gates. The `.resend({type:'signup'})` path that Apr 21's plan relied on turns out to be a no-op on auto-confirmed users — blocked by Supabase's toggle-off behavior. At 14 users the underlying risks (chargeback fraud, invite spam, digest cost) are theoretical; revisit pre-scale or couple with a broader OAuth-primary auth decision. See ROADMAP icebox for detail.
 
 ---
 
@@ -119,9 +116,11 @@ Queued but NOT urgent. Order by discretion:
 2. **PostHog error tracking** (not Sentry — chose PostHog because it's already installed; one fewer service to manage; switching cost is low if insufficient). `capture_exceptions: true` + `trackException` helper wired into both error boundaries. ✅ Shipped Apr 21.
 3. **Prettier + format-on-save.** Kills style drift, makes diffs clean. ✅ Shipped Apr 21 (also removed dead `KeeplyApp.stripped.jsx` file that was caught by the format pass).
 
-### Tier 2 — next 2 weeks (~4 hrs)
+### Tier 2 — next 2 weeks (~5 hrs)
 4. **Husky + lint-staged pre-commit.** Solo-founder substitute for PR review; blocks unformatted/ESLint-failing commits.
-5. **Playwright smoke tests — 5 critical paths.** Signup + email verify, add vessel, add equipment + mark maintenance done, Stripe subscribe, First Mate query. One test per path is enough.
+5. **Playwright smoke tests — 5 critical paths.** Signup → lands in app, add vessel, add equipment + mark maintenance done, Stripe subscribe, First Mate query. One test per path is enough.
+6. **`/api/invite` rate limit.** Route currently has no auth; anyone knowing the endpoint can blast Keeply-branded emails. Verify Bearer token, reject if caller has sent >5 invites in the past hour (Supabase count query on `vessel_members` by inviter). Two-line check. Closes the spam-vector hole without needing verification plumbing. ~30 min.
+7. **`/api/stripe/checkout` JWT verification.** Route trusts client-sent `userId`. Add `supabase.auth.getUser(token)` check, reject if `userId !== token.sub`. Prevents a logged-in user from starting a checkout attributed to another user. ~30 min.
 
 ### Tier 3 — post-launch ONLY
 - Split `KeeplyApp.jsx` into sub-components
@@ -283,6 +282,8 @@ Running git commands from `C:\Users\garry` instead of `C:\Users\garry\keeply` pr
 
 ## Key learnings (Apr 22 session)
 
+- **Supabase auto-confirm breaks `.resend({type:'signup'})`.** Verified empirically: with "Confirm email" toggle OFF, signups return `email_confirmed_at = created_at` instantly and `.resend({type:'signup'})` returns 200 but is a silent no-op (confirmation_sent_at stays null, zero audit events). Any future verification-flow design has to either un-confirm users post-signup via service role, roll its own verification column, or move to OAuth-primary. Don't trust Supabase's toggle semantics without an empirical check.
+- **Verify a feature is still needed before building around a constraint.** Spent a chunk of the session designing a banner for a risk (chargeback fraud, invite spam, digest cost) that at 14 users is theoretical. The 30-minute mitigation — rate-limit `/api/invite` + verify auth token on `/api/stripe/checkout` — covers the actual surface without the architectural cost of a verification system. Scope question beats design question.
 - **Constants drift: `FM_LIMITS` hardcoded in 3 places with 3 values.** API route (`route.js`) enforces `free: 3 / standard: 10 / pro: 50`, `FirstMate.jsx` displays `5/30/50`, `FirstMateScreen.jsx` displays `3/10/50`. None read from the `plan_limits` table. A Standard user sees "30 queries/mo" in UI but gets cut off at 10 by the server. This is a correctness bug that explains mixed beta feedback. Lesson: DB-driven pricing is only DB-driven if the code reads from the DB — adding a table isn't enough.
 - **Infrastructure built ≠ infrastructure working.** Push notifications have subscribe route, unsubscribe route, VAPID keys, web-push lib, and a daily cron — but `push_subscriptions` has 1 row across 10 users. Code shipping and users being served are separate things. Always verify end-to-end on a real device before marking "done."
 - **Engine hours is already done for single-engine.** `vessels.engine_hours` + `engine_hours_date` columns, logbook passages auto-update them, KPI card renders them. The actual work in the new KR is *multi-engine extension*, not "add engine hours from scratch." Grepping the codebase surfaced this in under a minute.

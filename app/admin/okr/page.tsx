@@ -47,7 +47,7 @@ const PHASES = [
     label: "Code hygiene",
     color: "#94a3b8", // slate — foundational/infrastructure
     months: [0, 1],
-    description: "Error boundary, Sentry, Prettier, pre-commit, smoke tests",
+    description: "Error boundary, PostHog, Prettier, pre-commit, smoke tests, API hardening",
   },
   {
     id: "social",
@@ -125,6 +125,8 @@ const OKRS = [
       { text: "Prettier + format-on-save configured", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Pre-commit hook (Husky + lint-staged) blocking bad commits", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Playwright smoke tests for 5 critical user paths", cur: 0, target: 5, unit: "tests", status: "not-started" },
+      { text: "/api/invite rate limit — 5 invites/hour per authed user", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "/api/stripe/checkout verifies caller JWT (no spoofed userId)", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],
   },
   {
@@ -212,6 +214,7 @@ const BACKLOG = [
   { name: "Camera equipment ID",status: "icebox",      effort: "M", notes: "Take a photo of an engine plate/equipment label → AI identifies make/model. Net-new feature (not a prompt tweak — requires new API route or extension of scan-document). Genuinely differentiated; no competitor does this. Post-launch." },
   { name: "AI Coins / Credits",  status: "icebox",      effort: "L", notes: "Replace per-month query limits with rollover coin balance. Revisit at 500+ users with real usage data." },
   { name: "Theme audit — restore light mode toggle", status: "icebox", effort: "L", notes: "Current state is dark-only. Full restoration requires auditing ~40% of KeeplyApp.jsx still using hardcoded colors and converting to CSS variables. Only do this if light mode is a real product requirement." },
+  { name: "Email verification + soft gates", status: "icebox", effort: "M", notes: "Banner + gates on /api/stripe/checkout, /api/invite, /api/cron/weekly-digest. Blocked by Supabase auto-confirm behavior: with \"Confirm email\" toggle OFF, email_confirmed_at is populated at signup and supabase.auth.resend({type:'signup'}) is a silent no-op for already-confirmed users (verified empirically Apr 22). Implementation requires either un-confirming users post-signup with service role (hack), rolling our own verification column, or moving to OAuth-primary auth (Google/Apple first, email second). At 14 users the fraud/spam/digest-cost risk is theoretical; revisit at 500+ users or earlier if invite abuse surfaces." },
 ];
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {

@@ -25,7 +25,7 @@ The OKR page visualises these as a 6-month timeline. Summary here:
 |---|------------------------|------------|---------|----------------|
 | 1 | Close beta             | Apr–May 1  | Garry   | At risk (0/5)  |
 | 2 | Deliver final features | Apr–May 31 | Garry   | In progress    |
-| 3 | Code hygiene           | Apr–May    | Garry   | On track (3/5) |
+| 3 | Code hygiene           | Apr–May    | Garry   | On track (3/7) |
 | 4 | Community & social     | May–Sep    | Marty   | Not started    |
 | 5 | PWA foundation         | May        | Garry   | Not started    |
 | 6 | Capacitor integration  | May–Jun    | Garry   | Not started    |
@@ -86,6 +86,8 @@ Pre-launch baseline to prevent scaling pain.
 - ✓ Prettier + format-on-save configured
 - Pre-commit hook (Husky + lint-staged) blocking bad commits
 - Playwright smoke tests for 5 critical user paths
+- `/api/invite` rate limit — reject if caller sent >5 invites in the past hour (closes the spam-vector surface without verification plumbing)
+- `/api/stripe/checkout` verifies caller JWT — rejects if client-sent `userId` doesn't match `token.sub` (closes userId spoofing)
 
 ---
 
@@ -178,6 +180,7 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 - **Offline-first logbook** for offshore use
 - **Theme audit** — restore light mode toggle (currently dark-only; ~40% of KeeplyApp.jsx uses hardcoded colors)
 - **Insurance sponsorship model** (BoatUS/Geico) — requires consumer scale first
+- **Email verification + soft gates** — banner nudge + gates on `/api/stripe/checkout`, `/api/invite`, `/api/cron/weekly-digest`. Blocked by Supabase auto-confirm: with "Confirm email" OFF, `email_confirmed_at` is populated at signup and `.resend({type:'signup'})` is a no-op on already-confirmed users (verified empirically Apr 22). Implementation paths: (a) service-role un-confirm immediately post-signup, (b) roll our own `user_profiles.email_verified_at` column + token flow, (c) move to OAuth-primary (Google/Apple) and treat email/password as the minority path. At 14 users the fraud/spam/cost risk is theoretical; revisit at 500+ users or earlier if invite abuse surfaces.
 
 ---
 
