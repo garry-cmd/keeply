@@ -2598,6 +2598,7 @@ export default function App() {
   });
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docSavedMsg, setDocSavedMsg] = useState(null); // { eqId, label } — auto-clears 2s after set
+  const [addDocError, setAddDocError] = useState(null); // visible inline error in the add-doc form
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef(null);
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
@@ -3740,19 +3741,48 @@ export default function App() {
   };
 
   const addCustomDoc = async function (eqId) {
-    if (!newDocForm.label.trim()) return;
-    if (newDocForm.source === 'url' && !newDocForm.url.trim()) return;
-    if (newDocForm.source === 'file' && !newDocForm.fileObj) return;
+    console.log('[addCustomDoc] called', { eqId, form: newDocForm });
+    if (!newDocForm.label.trim()) {
+      setAddDocError('Document name is required.');
+      console.warn('[addCustomDoc] aborted: empty label');
+      return;
+    }
+    if (newDocForm.source === 'url' && !newDocForm.url.trim()) {
+      setAddDocError('Please enter a URL.');
+      console.warn('[addCustomDoc] aborted: empty URL');
+      return;
+    }
+    if (newDocForm.source === 'file' && !newDocForm.fileObj) {
+      setAddDocError('Please pick a file before adding.');
+      console.warn('[addCustomDoc] aborted: no fileObj', { fileName: newDocForm.fileName });
+      return;
+    }
     const eq = equipment.find(function (e) {
       return e.id === eqId;
     });
-    if (!eq) return;
+    if (!eq) {
+      setAddDocError('Internal error: equipment not found (' + eqId + ').');
+      console.warn('[addCustomDoc] aborted: equipment id not in state', {
+        eqId,
+        haveIds: equipment.map(function (e) {
+          return e.id;
+        }),
+      });
+      return;
+    }
+    setAddDocError(null);
     setSaving(true);
     setUploadingDoc(true);
     try {
       let fileUrl = newDocForm.url;
       if (newDocForm.source === 'file') {
+        console.log('[addCustomDoc] uploading file to storage', {
+          eqId,
+          fileName: newDocForm.fileName,
+          size: newDocForm.fileObj && newDocForm.fileObj.size,
+        });
         fileUrl = await uploadToStorage(newDocForm.fileObj, eqId);
+        console.log('[addCustomDoc] upload complete', { fileUrl });
       }
       const doc = {
         id: 'doc-' + Date.now(),
@@ -3789,8 +3819,10 @@ export default function App() {
           return m && m.eqId === eqId && m.label === doc.label ? null : m;
         });
       }, 2500);
+      console.log('[addCustomDoc] success', { docId: doc.id });
     } catch (err) {
-      setDbError(err.message);
+      console.error('[addCustomDoc] failed', err);
+      setAddDocError('Save failed: ' + (err && err.message ? err.message : 'unknown error'));
     } finally {
       setSaving(false);
       setUploadingDoc(false);
@@ -9604,10 +9636,26 @@ export default function App() {
                                   );
                                 })}
                               </select>
+                              {addDocError && (
+                                <div
+                                  style={{
+                                    padding: '8px 12px',
+                                    marginBottom: 10,
+                                    borderRadius: 8,
+                                    background: 'var(--danger-bg)',
+                                    color: 'var(--danger-text)',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {addDocError}
+                                </div>
+                              )}
                               <div style={{ display: 'flex', gap: 8 }}>
                                 <button
                                   onClick={function () {
                                     setAddingDocFor(null);
+                                    setAddDocError(null);
                                     setNewDocForm({
                                       label: '',
                                       url: '',
@@ -9655,6 +9703,7 @@ export default function App() {
                             <button
                               onClick={function () {
                                 setAddingDocFor(vesselEq.id);
+                                setAddDocError(null);
                                 setNewDocForm({
                                   label: '',
                                   url: '',
