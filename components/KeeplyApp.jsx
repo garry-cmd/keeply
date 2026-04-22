@@ -2597,6 +2597,7 @@ export default function App() {
     fileName: '',
   });
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [docSavedMsg, setDocSavedMsg] = useState(null); // { eqId, label } — auto-clears 2s after set
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef(null);
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
@@ -3782,6 +3783,12 @@ export default function App() {
         fileName: '',
       });
       setAddingDocFor(null);
+      setDocSavedMsg({ eqId, label: doc.label });
+      setTimeout(function () {
+        setDocSavedMsg(function (m) {
+          return m && m.eqId === eqId && m.label === doc.label ? null : m;
+        });
+      }, 2500);
     } catch (err) {
       setDbError(err.message);
     } finally {
@@ -9282,6 +9289,25 @@ export default function App() {
                             e.stopPropagation();
                           }}
                         >
+                          {docSavedMsg && docSavedMsg.eqId === vesselEq.id && (
+                            <div
+                              style={{
+                                padding: '8px 12px',
+                                marginBottom: 10,
+                                borderRadius: 8,
+                                background: 'var(--ok-bg)',
+                                color: 'var(--ok-text)',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                              }}
+                            >
+                              <span>✓</span>
+                              <span>Added “{docSavedMsg.label}”</span>
+                            </div>
+                          )}
                           {/* Existing docs */}
                           {(vesselEq.docs || []).map(function (doc) {
                             const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG['Other'];
@@ -9547,8 +9573,14 @@ export default function App() {
                                       onChange={function (e) {
                                         const file = e.target.files[0];
                                         if (!file) return;
+                                        const nameNoExt = file.name.replace(/\.[^.]+$/, '');
                                         setNewDocForm(function (f) {
-                                          return { ...f, fileObj: file, fileName: file.name };
+                                          return {
+                                            ...f,
+                                            fileObj: file,
+                                            fileName: file.name,
+                                            label: f.label && f.label.trim() ? f.label : nameNoExt,
+                                          };
                                         });
                                       }}
                                     />
