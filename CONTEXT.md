@@ -1,6 +1,6 @@
 # Keeply — Context
 
-**Updated:** April 21, 2026  
+**Updated:** April 22, 2026  
 **Phase:** Beta → Pre-Launch (GoLive imminent)  
 **Founder:** Garry Hoffman (solo) · Co-owner: Marty (20%, community/social OKR)  
 **Target:** $5K MRR to quit day job
@@ -15,12 +15,16 @@ Copy rule: never use "sailors" — always "boaters."
 
 ---
 
-## Current state (Apr 21, 2026)
+## Current state (Apr 22, 2026)
 
 - **5 active beta testers** (3 Active Cruisers, 2 Liveaboards, 0 Upgraders). +2 imminent (1 Cruiser, 1 Liveaboard) → 4/3/0 split.
-- **Biggest OKR risk:** 0/5 testers have completed the structured task plan. Worth sending re-engagement note now that signup friction is gone.
+- **Beta close deadline: May 1.** Structured task plan still 0/5 — KR moved from on-track → at-risk.
+- **New active KR: "Deliver final features" (due May 31):** Logbook Custom Checklists (Pro), First Mate Conversation History (all tiers), Multi-engine tracking. See `/admin/okr`.
 - **1/3 personas validated** (Upgrader still unvalidated — gap in cohort)
 - **iOS/Android:** DUNS in hand, Google Play account in flight, iOS build pending
+- **Apr 22 audit findings (now tracked in Close Beta KR):**
+  - `FM_LIMITS` hardcoded in 3 places with 3 different values (API: 3/10/50, FirstMate.jsx: 5/30/50, FirstMateScreen.jsx: 3/10/50) — none read from the `plan_limits` table. UI and server disagree about query caps. Single source of truth fix needed.
+  - `push_subscriptions` table has **1 row across 10 users.** Infrastructure complete (subscribe route, cron at 13:00 UTC, VAPID keys, web-push) but enrollment flow likely broken. Needs end-to-end real-device validation.
 - **Apr 21 session wins:** Tier 1 hygiene complete (error boundaries + PostHog exceptions + Prettier). Beta feedback from first personal run-through closed: onboarding urgent task, First Mate formatting, feedback copy, and biggest activation win — **email verification no longer blocks signup.** Users land in the app immediately.
 
 ---
@@ -60,19 +64,30 @@ Copy rule: never use "sailors" — always "boaters."
 - First Mate explicit formatting rules in system prompt — no markdown, plain dash lists, 1-2 sentence short answers, no "Great question!" preamble
 - Feedback confirmation copy: *"We'll respond when we get back to the dock."* (nautical, no founder name)
 
-**Roughly done (post-launch polish queued)**
-- **Logbook ~90%** — passages, watch entries, pre-departure & arrival checklists
-- **First Mate ~90%** — conversational AI assistant, bottom sheet, query limits by tier
+**Roughly done (remaining items tracked in "Deliver final features" KR, due May 31)**
+- **Logbook** — passages, watch entries, pre-departure & arrival checklists all working. **Remaining:** Custom Checklists (Pro tier) — currently checklist items are hardcoded JS constants in `LogbookPage.jsx`.
+- **First Mate** — conversational AI assistant, bottom sheet, query limits by tier, `APP_GUIDE` system prompt with prompt caching. **Remaining:** Conversation history (all tiers — beta tester request), FM_LIMITS single source of truth fix (Close Beta KR).
+- **Engine hours (single-engine)** — `vessels.engine_hours` + `vessels.engine_hours_date` columns shipped; logbook passages auto-update them; KPI card on My Boat tab. **Remaining:** Multi-engine extension (schema + UI + passage form + First Mate context).
 
 ---
 
 ## Active work
 
-- **Beta tester activation** — structured task plan still 0/5. Now that signup friction is gone, worth sending re-engagement: "Hey, verification is now instant — try again."
-- **Multi-engine support** (beta items #3 + #5 from Apr 21 run-through) — needs a dedicated half-day design+build session. Schema: `vessels.engine_hours` is single-value today, needs to become per-engine (port/stbd/kicker). AI onboarding prompt assumes one engine → hallucinates wrong single engine on twin-engine boats (Garry reported this from every test build). Engine IS already its own equipment category, so structurally multiple engine cards are possible — blocker is onboarding prompt + vessel-level hours schema + logbook passage hours input.
+Organized around two KRs pre-GoLive:
+
+**KR: Close beta successfully (deadline May 1)**
+- **Beta tester activation** — structured task plan still 0/5. Signup friction is gone; send re-engagement: "Hey, verification is now instant — try again."
+- **FM_LIMITS single source of truth** — rewire FirstMate.jsx, FirstMateScreen.jsx, and the API route to read from the `plan_limits` table (12 rows, DB-driven). Currently three hardcoded constants disagree with each other and with the DB.
+- **Push notifications validated end-to-end** — diagnose why `push_subscriptions` has only 1 row across 10 users. Test real-device delivery on the 13:00 UTC cron.
+
+**KR: Deliver final features (due May 31)**
+- **Custom Checklists (Pro)** — new table + CRUD UI on the existing Pre-Departure/Arrival tabs, Pro gate, fallback to defaults for Free/Standard. S–M sized.
+- **First Mate Conversation History** — new `first_mate_messages` table (user_id, vessel_id, role, content, created_at). Single rolling thread per vessel, free for all tiers, context-window cap at ~30 messages. Beta-user request.
+- **Multi-engine tracking** — schema change (one-to-many engines per vessel), UI (two meters on twin-engine boats), passage form changes, onboarding prompt fixes (AI currently hallucinates single engine on twin-engine boats per Apr 21 run-through).
+
+**Other in-flight (not in above KRs)**
 - **Google Play** account verification + 12-tester closed testing setup
 - **iOS** build prep
-- **Final polish** on Logbook + First Mate (the last 10%)
 
 ### Post-session pending (Apr 21)
 
@@ -97,7 +112,7 @@ Queued but NOT urgent. Order by discretion:
 
 ## Code hygiene plan
 
-**Current state (Apr 21, 2026):** Tier 1 complete. ESLint v9 + TypeScript v5 installed. Prettier configured and entire repo formatted. Route + global error boundaries shipped. PostHog exception capture wired up. **Still missing:** tests (zero), pre-commit hooks. File mix: 34 `.js/.jsx` (including the 7,900-line monolith) vs 18 `.ts/.tsx`.
+**Current state (Apr 21, 2026):** Tier 1 complete. ESLint v9 + TypeScript v5 installed. Prettier configured and entire repo formatted. Route + global error boundaries shipped. PostHog exception capture wired up. **Still missing:** tests (zero), pre-commit hooks. File mix: 34 `.js/.jsx` (including the ~26k-line monolith — Prettier reformat, ~8k substantive) vs 18 `.ts/.tsx`.
 
 ### Tier 1 — this week (~3 hrs)
 1. **Error boundary at app root.** Prevents white-screen-of-death from any uncaught React error. ✅ Shipped Apr 21.
@@ -126,16 +141,17 @@ Queued but NOT urgent. Order by discretion:
 
 ## First Mate build order (remaining)
 
+_Engine hours foundation is shipped; multi-engine is in the active "Deliver final features" KR. List below is post-GoLive._
+
 Ordered by strategic value:
 
-1. **Engine hours** tracking (dual-trigger consumables: time AND hours)
-2. **Consumables on equipment cards** (pre-populated at onboarding)
-3. **Text First Mate**
-4. **Weather API** — NOAA/Open-Meteo free tier (Windy/PredictWind partnership is Phase 2)
-5. **Provisioning & par system**
-6. **Voice input** for First Mate
-7. **Departure Check enrichment** (voice + weather on existing checklist)
-8. **Voice output**
+1. **Consumables on equipment cards** (pre-populated at onboarding; pairs with engine hours for dual-trigger)
+2. **Text First Mate**
+3. **Weather API** — NOAA/Open-Meteo free tier (Windy/PredictWind partnership is Phase 2)
+4. **Provisioning & par system**
+5. **Voice input** for First Mate
+6. **Departure Check enrichment** (voice + weather on existing checklist)
+7. **Voice output**
 
 ---
 
@@ -179,7 +195,7 @@ Ordered by strategic value:
 - Discuss architecture and show mockups before writing code
 - Flag honest tradeoffs; don't just build what's asked
 - Batch non-critical bugs; fix blockers immediately
-- **Do NOT split `KeeplyApp.jsx` (~7,900 lines) pre-launch** — post-launch tech debt
+- **Do NOT split `KeeplyApp.jsx` (~26,000 lines post-Prettier, ~8k substantive) pre-launch** — post-launch tech debt
 - When applying multiple patches, always work from the most recent file state
 - TypeScript errors in the container are pre-existing env issues, not regressions
 
@@ -262,6 +278,17 @@ Claude's connectors split into two layers — knowing which is which prevents wa
 ## Git gotcha
 
 Running git commands from `C:\Users\garry` instead of `C:\Users\garry\keeply` produces fatal "not a git repository" errors. Catch early.
+
+---
+
+## Key learnings (Apr 22 session)
+
+- **Constants drift: `FM_LIMITS` hardcoded in 3 places with 3 values.** API route (`route.js`) enforces `free: 3 / standard: 10 / pro: 50`, `FirstMate.jsx` displays `5/30/50`, `FirstMateScreen.jsx` displays `3/10/50`. None read from the `plan_limits` table. A Standard user sees "30 queries/mo" in UI but gets cut off at 10 by the server. This is a correctness bug that explains mixed beta feedback. Lesson: DB-driven pricing is only DB-driven if the code reads from the DB — adding a table isn't enough.
+- **Infrastructure built ≠ infrastructure working.** Push notifications have subscribe route, unsubscribe route, VAPID keys, web-push lib, and a daily cron — but `push_subscriptions` has 1 row across 10 users. Code shipping and users being served are separate things. Always verify end-to-end on a real device before marking "done."
+- **Engine hours is already done for single-engine.** `vessels.engine_hours` + `engine_hours_date` columns, logbook passages auto-update them, KPI card renders them. The actual work in the new KR is *multi-engine extension*, not "add engine hours from scratch." Grepping the codebase surfaced this in under a minute.
+- **Prettier reformat changed the monolith from 7,900 → 26,180 lines without adding features.** CONTEXT.md has been repeating the old number. Line count is a poor proxy for complexity after a mechanical reformat. Substantive code is closer to 8k.
+- **Backlog items in an active KR should exit the backlog.** Having Logbook, First Mate, and Engine hours in both the KR and the Feature Backlog table created implicit duplication. Rule going forward: once something enters an active KR, remove it from the backlog table; re-add if de-scoped.
+- **Repo root has accidental artifacts.** `ersgarrykeeply` (no extension, 10KB), `patch-pricing.js`, `patch-pricing2.js`, `strip-parts.py`, and `.bak` files are all one-shot tools living in main. Non-urgent cleanup.
 
 ---
 
