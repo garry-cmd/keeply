@@ -200,6 +200,7 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 - Stripe webhook coverage: `trial_will_end`, `invoice.payment_failed`, `subscription.updated`
 - Full theme audit / CSS variables
 - Repo cleanup: remove `.bak` files, one-shot patch scripts at repo root
+- **Finalize Share Vessel Permissions** — audit + tighten the member/owner model (surfaced Apr 22 during doc-attach debugging). `equipment` table has two overlapping RLS policies that need consolidation; no UI indicator of role on a vessel; no role hierarchy beyond owner/member. Scope to define: what members can do (delete vessel? add/remove other members? change billing? delete docs uploaded by others?), whether to add a viewer/read-only role, RLS cleanup (single policy per table), and UI affordances (who attached this doc, who closed this repair). Distinct from the "Share Vessel stays ungated" decision — that's about the invite flow, this is about the access model.
 
 ---
 
