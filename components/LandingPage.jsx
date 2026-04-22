@@ -3811,7 +3811,10 @@ export default function LandingPage() {
               <div
                 style={{
                   maxWidth: 1300,
-                  margin: '0 auto 80px',
+                  margin: '0 auto',
+                  paddingBottom: 48,
+                  marginBottom: 48,
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
                   display: 'grid',
                   gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
                   gap: isMobile ? 40 : 64,
@@ -3877,7 +3880,15 @@ export default function LandingPage() {
                     Get started {'\u2192'}
                   </button>
                 </div>
-                <div style={{ order: isMobile ? 1 : isEven ? 1 : 0 }}>
+                <div
+                  style={{
+                    order: isMobile ? 1 : isEven ? 1 : 0,
+                    minHeight: 760,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   <V />
                 </div>
               </div>
@@ -3885,9 +3896,9 @@ export default function LandingPage() {
                 <div
                   style={{
                     maxWidth: 1100,
-                    margin: '0 auto 80px',
-                    padding: isMobile ? '48px 0' : '64px 0',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                    margin: '0 auto',
+                    paddingBottom: 48,
+                    marginBottom: 48,
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
                     display: 'grid',
                     gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -3995,7 +4006,15 @@ export default function LandingPage() {
                       })}
                     </div>
                   </div>
-                  <div style={{ order: isMobile ? -1 : 0 }}>
+                  <div
+                    style={{
+                      order: isMobile ? -1 : 0,
+                      minHeight: 760,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <FirstMateLearnVisual />
                   </div>
                 </div>
