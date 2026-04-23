@@ -1,4 +1,4 @@
-export async function POST(request) {
+﻿export async function POST(request) {
   try {
     const body = await request.json();
     const description = body.description || '';
@@ -36,7 +36,8 @@ Return ONLY valid JSON — no prose, no markdown, no code fences. The JSON must 
   "vesselInfo": {
     "year": "4-digit year string, or empty string if not found",
     "make": "manufacturer name only — max 30 characters, no dimensions, specs, or extra attributes (e.g. 'Fountaine Pajot', 'Catalina', 'Ranger Tug')",
-    "model": "model name only — max 40 characters, no dimensions, specs, or extra attributes (e.g. 'Elba 45', '30', 'R-27')"
+    "model": "model name only — max 40 characters, no dimensions, specs, or extra attributes (e.g. 'Elba 45', '30', 'R-27')",
+    "vesselType": "EXACTLY one of: 'sail' for any sailboat (monohull or catamaran); 'motor' for any powerboat (center console, trawler, cruiser, sportfisher, cat power, etc.); 'other' only if genuinely unclear. Base this on the make/model, not on equipment. A Scout 255 Dorado is 'motor'. A Catalina 36 is 'sail'. A Leopard 45 is 'sail' (sailing catamaran). A Fountaine Pajot MY is 'motor'."
   },
   "equipment": [{ "name": "string", "manufacturer": "string|null", "model": "string|null", "category": "string (Engine|Electrical|Electronics|Rigging|Sails|Plumbing|Safety|Navigation|Deck|Bilge|Hull|Dinghy|Generator|Galley|Anchor|Mechanical|Steering|Watermaker)", "tasks": [{ "task": "string", "interval_days": number }] }]
 }

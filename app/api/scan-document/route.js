@@ -1,4 +1,4 @@
-export const runtime = 'nodejs';
+﻿export const runtime = 'nodejs';
 export const maxDuration = 30;
 
 export async function POST(request) {
@@ -52,7 +52,7 @@ export async function POST(request) {
 Extract these fields if present (use exact key names):
 - vessel_name: Official vessel name
 - hin: Hull Identification Number (HIN) — format like US-ABC12345D606
-- uscg_doc: USCG Documentation Number (federal doc number, 7 digits)
+- uscg_doc: USCG Documentation Number (federal doc number, typically 6-7 digits)
 - state_reg: State registration number (like WA1234AB)
 - mmsi: MMSI number (9 digits)
 - call_sign: Radio call sign

@@ -49,6 +49,52 @@ function safeJsonbArray(val) {
   return [];
 }
 
+// ── Vessel passport / registration fields ─────────────────────────────────
+// These live as real columns on public.vessels (added Apr 23 2026).
+// Previously the same data was stringified as JSON into the notes field of
+// a synthetic "Vessel" category equipment row — that path is deprecated.
+const VESSEL_INFO_KEYS = [
+  'hin', 'uscg_doc', 'state_reg', 'mmsi', 'call_sign',
+  'loa', 'beam', 'draft',
+  'insurance_carrier', 'policy_no', 'policy_exp',
+  'flag', 'home_port',
+];
+const VESSEL_INFO_NUMERIC_KEYS = ['loa', 'beam', 'draft'];
+
+// Read: build a display-friendly info object from a vessel record.
+// Returns {} for unknown vessel, omits empty/null fields so existing
+// conditional renders (e.g. `info.hin && <div>…`) keep working.
+function vesselInfoFromRecord(v) {
+  const o = {};
+  if (!v) return o;
+  for (let i = 0; i < VESSEL_INFO_KEYS.length; i++) {
+    const k = VESSEL_INFO_KEYS[i];
+    const val = v[k];
+    if (val !== null && val !== undefined && val !== '') o[k] = val;
+  }
+  return o;
+}
+
+// Write: build a typed PATCH payload for the vessels row from the edit form.
+// Empty/blank fields become explicit nulls so previously-set values clear
+// on save. Numeric fields are coerced; unparseable numbers become null.
+function vesselInfoPayload(form) {
+  const p = {};
+  for (let i = 0; i < VESSEL_INFO_KEYS.length; i++) {
+    const k = VESSEL_INFO_KEYS[i];
+    const raw = form ? form[k] : undefined;
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+      p[k] = null;
+    } else if (VESSEL_INFO_NUMERIC_KEYS.indexOf(k) >= 0) {
+      const n = parseFloat(raw);
+      p[k] = isFinite(n) ? n : null;
+    } else {
+      p[k] = String(raw).trim();
+    }
+  }
+  return p;
+}
+
 async function supa(table, opts) {
   const { method = 'GET', query = '', body, prefer } = opts || {};
   // Read token synchronously from localStorage first to avoid race condition on load
@@ -2545,6 +2591,21 @@ export default function App() {
               engineHours: v.engine_hours || null,
               engineHoursDate: v.engine_hours_date || null,
               fuelBurnRate: v.fuel_burn_rate || null,
+              // Registration / passport fields (kept snake_case to match DB
+              // columns and form keys — read via vesselInfoFromRecord).
+              hin: v.hin || null,
+              uscg_doc: v.uscg_doc || null,
+              state_reg: v.state_reg || null,
+              mmsi: v.mmsi || null,
+              call_sign: v.call_sign || null,
+              loa: v.loa || null,
+              beam: v.beam || null,
+              draft: v.draft || null,
+              insurance_carrier: v.insurance_carrier || null,
+              policy_no: v.policy_no || null,
+              policy_exp: v.policy_exp || null,
+              flag: v.flag || null,
+              home_port: v.home_port || '',
             };
           });
           setVessels(normalizedVessels);
@@ -3233,6 +3294,19 @@ export default function App() {
           engineHours: nv.engine_hours || null,
           engineHoursDate: nv.engine_hours_date || null,
           fuelBurnRate: nv.fuel_burn_rate || null,
+          hin: nv.hin || null,
+          uscg_doc: nv.uscg_doc || null,
+          state_reg: nv.state_reg || null,
+          mmsi: nv.mmsi || null,
+          call_sign: nv.call_sign || null,
+          loa: nv.loa || null,
+          beam: nv.beam || null,
+          draft: nv.draft || null,
+          insurance_carrier: nv.insurance_carrier || null,
+          policy_no: nv.policy_no || null,
+          policy_exp: nv.policy_exp || null,
+          flag: nv.flag || null,
+          home_port: nv.home_port || '',
         };
         setVessels(function (vs) {
           return [...vs, normalized];
@@ -8458,13 +8532,10 @@ export default function App() {
                 return e.category === 'Vessel' && e._vesselId === activeVesselId;
               });
               if (!vesselEq) return null;
-              let info = {};
-              try {
-                info = JSON.parse(vesselEq.notes || '{}');
-              } catch (er) {}
               const activeVessel = vessels.find(function (v) {
                 return v.id === activeVesselId;
               });
+              const info = vesselInfoFromRecord(activeVessel);
               const makeModel = [activeVessel?.year, activeVessel?.make, activeVessel?.model]
                 .filter(Boolean)
                 .join(' ');
@@ -8724,15 +8795,11 @@ export default function App() {
                         loadVesselAdminTasks(vesselEq._vesselId);
                       }
                       if (t === 'edit') {
-                        let inf = {};
-                        try {
-                          inf = JSON.parse(vesselEq.notes || '{}');
-                        } catch (er) {}
-                        setVesselInfoForm(inf);
-                        setEditingVesselInfo(true);
                         const av = vessels.find(function (v) {
                           return v.id === activeVesselId;
                         });
+                        setVesselInfoForm(vesselInfoFromRecord(av));
+                        setEditingVesselInfo(true);
                         if (av)
                           setVesselDetailForm({
                             vesselName: av.vesselName || '',
@@ -8872,15 +8939,11 @@ export default function App() {
                                 </div>
                                 <button
                                   onClick={function () {
-                                    let info = {};
-                                    try {
-                                      info = JSON.parse(vesselEq.notes || '{}');
-                                    } catch (er) {}
-                                    setVesselInfoForm(info);
-                                    setEditingVesselInfo(true);
                                     const av = vessels.find(function (v) {
                                       return v.id === activeVesselId;
                                     });
+                                    setVesselInfoForm(vesselInfoFromRecord(av));
+                                    setEditingVesselInfo(true);
                                     if (av)
                                       setVesselDetailForm({
                                         vesselName: av.vesselName || '',
@@ -11348,14 +11411,30 @@ export default function App() {
                             </button>
                             <button
                               onClick={async function () {
-                                const cleaned = Object.fromEntries(
-                                  Object.entries(vesselInfoForm).filter(function (e) {
-                                    return e[1];
-                                  })
-                                );
-                                await updateEquipment(vesselEq.id, {
-                                  notes: JSON.stringify(cleaned),
+                                const payload = vesselInfoPayload(vesselInfoForm);
+                                // Primary write: vessels.* columns are the
+                                // source of truth going forward.
+                                await supa('vessels', {
+                                  method: 'PATCH',
+                                  query: 'id=eq.' + activeVesselId,
+                                  body: payload,
+                                  prefer: 'return=minimal',
                                 });
+                                // Merge into local state so reads reflect
+                                // the save without a refetch.
+                                setVessels(function (vs) {
+                                  return vs.map(function (v) {
+                                    return v.id === activeVesselId
+                                      ? Object.assign({}, v, payload)
+                                      : v;
+                                  });
+                                });
+                                // Clear the deprecated JSON stash on the
+                                // Vessel equipment card so stale data doesn't
+                                // resurface if a future read regresses.
+                                if (vesselEq && vesselEq.notes) {
+                                  await updateEquipment(vesselEq.id, { notes: '' });
+                                }
                                 setEquipTab(function (prev) {
                                   const n = Object.assign({}, prev);
                                   n[vesselEq.id] = 'info';
@@ -13503,13 +13582,10 @@ export default function App() {
                                 {eq.name}
                               </div>
                               {(function () {
-                                let info = {};
-                                try {
-                                  info = JSON.parse(eq.notes || '{}');
-                                } catch (e) {}
                                 const vessel = vessels.find(function (v) {
                                   return v.id === activeVesselId;
                                 });
+                                const info = vesselInfoFromRecord(vessel);
                                 const makeModel = [vessel?.year, vessel?.make, vessel?.model]
                                   .filter(Boolean)
                                   .join(' ');
@@ -15927,13 +16003,10 @@ export default function App() {
                         {activeTab === 'info' &&
                           isVesselCard &&
                           (function () {
-                            let vesselInfo = {};
-                            try {
-                              vesselInfo = JSON.parse(eq.notes || '{}');
-                              if (typeof vesselInfo !== 'object') vesselInfo = {};
-                            } catch (e) {
-                              vesselInfo = {};
-                            }
+                            const vesselRec = vessels.find(function (v) {
+                              return v.id === eq._vesselId;
+                            });
+                            const vesselInfo = vesselInfoFromRecord(vesselRec);
                             const editingInfo = editingVesselInfo;
                             const setEditingInfo = setEditingVesselInfo;
                             const infoForm = vesselInfoForm;
@@ -16339,14 +16412,24 @@ export default function App() {
                                       </button>
                                       <button
                                         onClick={async function () {
-                                          const cleaned = Object.fromEntries(
-                                            Object.entries(infoForm).filter(function (e) {
-                                              return e[1];
-                                            })
-                                          );
-                                          await updateEquipment(eq.id, {
-                                            notes: JSON.stringify(cleaned),
+                                          const payload = vesselInfoPayload(infoForm);
+                                          const vid = eq._vesselId;
+                                          await supa('vessels', {
+                                            method: 'PATCH',
+                                            query: 'id=eq.' + vid,
+                                            body: payload,
+                                            prefer: 'return=minimal',
                                           });
+                                          setVessels(function (vs) {
+                                            return vs.map(function (v) {
+                                              return v.id === vid
+                                                ? Object.assign({}, v, payload)
+                                                : v;
+                                            });
+                                          });
+                                          if (eq.notes) {
+                                            await updateEquipment(eq.id, { notes: '' });
+                                          }
                                           setEditingInfo(false);
                                         }}
                                         style={{

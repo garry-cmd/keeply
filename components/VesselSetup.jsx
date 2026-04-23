@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from './supabase-client';
 
@@ -302,20 +302,35 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       const aiResult = Array.isArray(data.equipment) ? data.equipment : [];
-      const hasRigging = aiResult.some(function (i) {
-        return i.category === 'Rigging' || i.category === 'Sails';
-      });
-      const aiVesselType = hasRigging ? 'sail' : 'motor';
+      // Prefer the AI's explicit vesselType classification — it knows a
+      // Scout 255 Dorado is a powerboat even though outriggers get the
+      // "Rigging" category. Only fall back to the old equipment heuristic
+      // if the model response didn't include the field (legacy safety).
+      const aiStatedType = data.vesselInfo && data.vesselInfo.vesselType;
+      const validTypes = ['sail', 'motor', 'other'];
+      let aiVesselType;
+      if (aiStatedType && validTypes.indexOf(aiStatedType) >= 0) {
+        aiVesselType = aiStatedType;
+      } else {
+        const hasSailGear = aiResult.some(function (i) {
+          return i.category === 'Sails';
+        });
+        aiVesselType = hasSailGear ? 'sail' : 'motor';
+      }
+      // Prefer structured vesselInfo from the AI when present — it's far
+      // more reliable than regex-splitting the user's raw description.
+      const vInfo = data.vesselInfo || {};
       const parts = boatDescription.trim().split(' ');
-      const aiYear =
+      const regexYear =
         parts.find(function (p) {
           return /^\d{4}$/.test(p);
         }) || '';
       const rest = parts.filter(function (p) {
-        return p !== aiYear;
+        return p !== regexYear;
       });
-      const aiMake = rest[0] || '';
-      const aiModel = rest.slice(1).join(' ') || '';
+      const aiYear = (vInfo.year && String(vInfo.year).trim()) || regexYear;
+      const aiMake = (vInfo.make && String(vInfo.make).trim()) || rest[0] || '';
+      const aiModel = (vInfo.model && String(vInfo.model).trim()) || rest.slice(1).join(' ') || '';
 
       const vesselPayload = {
         vessel_name: vesselName,
