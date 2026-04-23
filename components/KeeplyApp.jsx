@@ -3202,15 +3202,63 @@ export default function App() {
     } catch (e) {}
     const userId =
       sess && sess.user ? sess.user.id : session && session.user ? session.user.id : null;
-    const ownedCount = userId
-      ? vessels.filter(function (v) {
+    // Authoritative ownedCount — query vessel_members directly so the gate
+    // can't miss due to stale local state (e.g., right after first-time
+    // onboarding when vesselMembers hasn't been refreshed). Falls back to
+    // local filter if the query fails.
+    let ownedCount = vessels.length;
+    if (userId) {
+      try {
+        const { data: ownedRows, error: ownedErr } = await supabase
+          .from('vessel_members')
+          .select('vessel_id')
+          .eq('user_id', userId)
+          .eq('role', 'owner');
+        if (!ownedErr && Array.isArray(ownedRows)) {
+          ownedCount = ownedRows.length;
+          // Keep local membership state in sync — this heals drift caused
+          // by onComplete handlers that only updated `vessels`.
+          setVesselMembers(function (prev) {
+            const existing = new Set(
+              prev
+                .filter(function (m) {
+                  return m.user_id === userId && m.role === 'owner';
+                })
+                .map(function (m) {
+                  return m.vessel_id;
+                })
+            );
+            const toAdd = ownedRows
+              .filter(function (r) {
+                return !existing.has(r.vessel_id);
+              })
+              .map(function (r) {
+                return { vessel_id: r.vessel_id, user_id: userId, role: 'owner' };
+              });
+            return toAdd.length > 0 ? prev.concat(toAdd) : prev;
+          });
+        } else {
+          // Fallback to local state count
+          ownedCount = vessels.filter(function (v) {
+            return vesselMembers.some(function (m) {
+              return m.vessel_id === v.id && m.user_id === userId && m.role === 'owner';
+            });
+          }).length;
+        }
+      } catch (e) {
+        ownedCount = vessels.filter(function (v) {
           return vesselMembers.some(function (m) {
             return m.vessel_id === v.id && m.user_id === userId && m.role === 'owner';
           });
-        }).length
-      : vessels.length;
-    if ((livePlan === 'free' || !livePlan) && ownedCount >= 1) {
-      setUpgradeReason('Entry accounts are limited to 1 vessel. Upgrade to Pro to add more.');
+        }).length;
+      }
+    }
+    if ((livePlan === 'free' || livePlan === 'standard' || !livePlan) && ownedCount >= 1) {
+      setUpgradeReason(
+        livePlan === 'standard'
+          ? 'Standard accounts include 1 vessel. Upgrade to Pro to add more.'
+          : 'Entry accounts are limited to 1 vessel. Upgrade to Pro to add more.'
+      );
       setShowUpgradeModal(true);
       setShowVesselDropdown(false);
       return;
@@ -6125,6 +6173,9 @@ export default function App() {
             fuelBurnRate: vessel.fuel_burn_rate || null,
           };
           setVessels([normalized]);
+          setVesselMembers([
+            { vessel_id: vessel.id, user_id: session.user.id, role: 'owner' },
+          ]);
           setActiveVesselId(vessel.id);
           localStorage.setItem('keeply_active_vessel', vessel.id);
           createDefaultAdminTasks(vessel.id, session.user.id);
