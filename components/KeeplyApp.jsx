@@ -2441,6 +2441,7 @@ export default function App() {
     fileType: 'Manual',
   });
   const [addingPartFor, setAddingPartFor] = useState(null);
+  const [editingPartId, setEditingPartId] = useState(null);
   const [newPartForm, setNewPartForm] = useState({
     name: '',
     url: '',
@@ -3591,6 +3592,70 @@ export default function App() {
       });
       setNewPartForm({ name: '', url: '', price: '', sku: '' });
       setAddingPartFor(null);
+    } catch (err) {
+      setDbError(err.message);
+    }
+  };
+
+  const saveEditedPart = async function (eqId) {
+    if (!newPartForm.name.trim()) return;
+    const eq = equipment.find(function (e) {
+      return e.id === eqId;
+    });
+    if (!eq) return;
+    const updatedParts = (eq.customParts || []).map(function (p) {
+      return p.id === editingPartId
+        ? Object.assign({}, p, {
+            name: newPartForm.name,
+            sku: newPartForm.sku,
+            notes: newPartForm.notes,
+            url: newPartForm.url,
+            price: newPartForm.price,
+            // User edited — no longer AI-suggested
+            ai_suggested: false,
+            confirmed: true,
+          })
+        : p;
+    });
+    try {
+      await supa('equipment', {
+        method: 'PATCH',
+        query: 'id=eq.' + eqId,
+        body: { custom_parts: updatedParts },
+        prefer: 'return=minimal',
+      });
+      setEquipment(function (prev) {
+        return prev.map(function (e) {
+          return e.id === eqId ? { ...e, customParts: updatedParts } : e;
+        });
+      });
+      setEditingPartId(null);
+      setNewPartForm({ name: '', url: '', price: '', sku: '', notes: '' });
+    } catch (err) {
+      setDbError(err.message);
+    }
+  };
+
+  const deletePart = async function (eqId, partId) {
+    const eq = equipment.find(function (e) {
+      return e.id === eqId;
+    });
+    if (!eq) return;
+    const updatedParts = (eq.customParts || []).filter(function (p) {
+      return p.id !== partId;
+    });
+    try {
+      await supa('equipment', {
+        method: 'PATCH',
+        query: 'id=eq.' + eqId,
+        body: { custom_parts: updatedParts },
+        prefer: 'return=minimal',
+      });
+      setEquipment(function (prev) {
+        return prev.map(function (e) {
+          return e.id === eqId ? { ...e, customParts: updatedParts } : e;
+        });
+      });
     } catch (err) {
       setDbError(err.message);
     }
@@ -16028,6 +16093,131 @@ export default function App() {
                                   MY PARTS
                                 </div>
                                 {eq.customParts.map(function (part) {
+                                  const isEditingThis = editingPartId === part.id;
+
+                                  if (isEditingThis) {
+                                    return (
+                                      <div
+                                        key={part.id}
+                                        style={{
+                                          padding: '12px 14px',
+                                          background: 'var(--bg-subtle)',
+                                          borderRadius: 10,
+                                          marginBottom: 10,
+                                          marginTop: 4,
+                                        }}
+                                      >
+                                        <input
+                                          placeholder="Part name *"
+                                          value={newPartForm.name}
+                                          onChange={function (e) {
+                                            setNewPartForm(function (f) {
+                                              return { ...f, name: e.target.value };
+                                            });
+                                          }}
+                                          style={s.inp}
+                                        />
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                          <input
+                                            placeholder="Part # (e.g. 211-60390)"
+                                            value={newPartForm.sku}
+                                            onChange={function (e) {
+                                              setNewPartForm(function (f) {
+                                                return { ...f, sku: e.target.value };
+                                              });
+                                            }}
+                                            style={{
+                                              ...s.inp,
+                                              flex: 2,
+                                              marginBottom: 0,
+                                              fontFamily: newPartForm.sku
+                                                ? 'DM Mono, monospace'
+                                                : 'inherit',
+                                            }}
+                                          />
+                                          <input
+                                            placeholder="Price"
+                                            value={newPartForm.price}
+                                            onChange={function (e) {
+                                              setNewPartForm(function (f) {
+                                                return { ...f, price: e.target.value };
+                                              });
+                                            }}
+                                            style={{ ...s.inp, flex: 1, marginBottom: 0 }}
+                                          />
+                                        </div>
+                                        <input
+                                          placeholder="Notes / supplier (e.g. Fisheries Supply)"
+                                          value={newPartForm.notes}
+                                          onChange={function (e) {
+                                            setNewPartForm(function (f) {
+                                              return { ...f, notes: e.target.value };
+                                            });
+                                          }}
+                                          style={s.inp}
+                                        />
+                                        <input
+                                          placeholder="Buy URL (optional)"
+                                          value={newPartForm.url}
+                                          onChange={function (e) {
+                                            setNewPartForm(function (f) {
+                                              return { ...f, url: e.target.value };
+                                            });
+                                          }}
+                                          style={s.inp}
+                                        />
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                          <button
+                                            onClick={function () {
+                                              setEditingPartId(null);
+                                              setNewPartForm({
+                                                name: '',
+                                                url: '',
+                                                price: '',
+                                                sku: '',
+                                                notes: '',
+                                              });
+                                            }}
+                                            style={{
+                                              flex: 1,
+                                              padding: '7px',
+                                              border: '1px solid var(--border)',
+                                              borderRadius: 8,
+                                              background: 'var(--bg-card)',
+                                              cursor: 'pointer',
+                                              fontSize: 12,
+                                              fontWeight: 600,
+                                            }}
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            onClick={function () {
+                                              saveEditedPart(eq.id);
+                                            }}
+                                            style={{
+                                              flex: 1,
+                                              padding: '7px',
+                                              border: 'none',
+                                              borderRadius: 8,
+                                              background: 'var(--brand)',
+                                              color: '#fff',
+                                              cursor: 'pointer',
+                                              fontSize: 12,
+                                              fontWeight: 700,
+                                            }}
+                                          >
+                                            Save Changes
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  const searchQuery = [part.sku, part.name, part.notes]
+                                    .filter(Boolean)
+                                    .join(' ');
+
                                   return (
                                     <div
                                       key={part.id}
@@ -16107,15 +16297,18 @@ export default function App() {
                                               </span>
                                             </div>
                                           )}
-                                          {part.sku && (
-                                            <div
-                                              style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 6,
-                                                marginTop: 2,
-                                              }}
-                                            >
+                                          {/* SKU chip + search link — search always available,
+                                              SKU chip only when we have a part number */}
+                                          <div
+                                            style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: 6,
+                                              marginTop: 2,
+                                              flexWrap: 'wrap',
+                                            }}
+                                          >
+                                            {part.sku && (
                                               <span
                                                 style={{
                                                   fontSize: 11,
@@ -16128,23 +16321,23 @@ export default function App() {
                                               >
                                                 #{part.sku}
                                               </span>
-                                              <a
-                                                href={
-                                                  'https://www.google.com/search?q=' +
-                                                  encodeURIComponent(part.sku + ' ' + part.name)
-                                                }
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                style={{
-                                                  fontSize: 10,
-                                                  color: 'var(--text-muted)',
-                                                  textDecoration: 'none',
-                                                }}
-                                              >
-                                                search
-                                              </a>
-                                            </div>
-                                          )}
+                                            )}
+                                            <a
+                                              href={
+                                                'https://www.google.com/search?q=' +
+                                                encodeURIComponent(searchQuery + ' marine')
+                                              }
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              style={{
+                                                fontSize: 10,
+                                                color: 'var(--text-muted)',
+                                                textDecoration: 'none',
+                                              }}
+                                            >
+                                              🔍 search
+                                            </a>
+                                          </div>
                                           {part.notes && (
                                             <div
                                               style={{
@@ -16191,6 +16384,53 @@ export default function App() {
                                               ↗ Buy
                                             </a>
                                           )}
+                                          <button
+                                            onClick={function () {
+                                              setEditingPartId(part.id);
+                                              setAddingPartFor(null);
+                                              setNewPartForm({
+                                                name: part.name || '',
+                                                sku: part.sku || '',
+                                                notes: part.notes || '',
+                                                url: part.url || '',
+                                                price: part.price || '',
+                                              });
+                                            }}
+                                            style={{
+                                              background: 'none',
+                                              border: '1px solid var(--border)',
+                                              borderRadius: 6,
+                                              padding: '3px 8px',
+                                              fontSize: 10,
+                                              color: 'var(--text-muted)',
+                                              cursor: 'pointer',
+                                              fontWeight: 600,
+                                            }}
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={function () {
+                                              showConfirm(
+                                                'Delete ' + (part.name || 'this part') + '?',
+                                                function () {
+                                                  deletePart(eq.id, part.id);
+                                                }
+                                              );
+                                            }}
+                                            style={{
+                                              background: 'none',
+                                              border: '1px solid var(--border)',
+                                              borderRadius: 6,
+                                              padding: '3px 8px',
+                                              fontSize: 10,
+                                              color: 'var(--text-muted)',
+                                              cursor: 'pointer',
+                                              fontWeight: 600,
+                                            }}
+                                          >
+                                            <TrashIcon />
+                                          </button>
                                         </div>
                                       </div>
                                     </div>
