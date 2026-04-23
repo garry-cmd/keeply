@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from './supabase-client';
+import { PLANS } from '../lib/pricing.js';
 
 const SUPA_URL = 'https://waapqyshmqaaamiiitso.supabase.co';
 const SUPA_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYXBxeXNobXFhYWFtaWlpdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjc0MDcsImV4cCI6MjA4OTk0MzQwN30.GGCPfMmCE8Rp5p8bGCZf9n7ckVWDyI2PgYSpkZSaZxE';
-const FM_LIMITS = { free: 3, standard: 10, pro: 50 };
 
 function getTaskUrgency(t) {
   if (!t.due_date) return 'ok';
@@ -261,7 +261,7 @@ export default function FirstMateScreen({
 
   const plan = userPlan || 'free';
   const effectivePlan = plan === 'free' && trialActive ? 'pro' : plan;
-  const limit = FM_LIMITS[effectivePlan] !== undefined ? FM_LIMITS[effectivePlan] : 0;
+  const limit = PLANS[effectivePlan]?.firstMate ?? 0;
   const isLimited = limit > 0;
   const isAtLimit = isLimited && fmCount >= limit;
 

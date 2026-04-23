@@ -1,12 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import { PLANS } from '../../../lib/pricing.js';
 
 // ── Admin client ──────────────────────────────────────────────────────────────
 function getAdmin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
-
-// ── Plan limits ───────────────────────────────────────────────────────────────
-const FM_LIMITS = { free: 3, standard: 10, pro: 50 };
 
 // ── Static app knowledge — cached by Anthropic, charged once per session ─────
 // Update this section whenever features change. Keep it accurate.
@@ -650,7 +648,7 @@ export async function POST(request) {
           : 999;
         const trialActive = plan === 'free' && daysSinceSignup < 14;
         const effectivePlan = trialActive ? 'pro' : plan;
-        const limit = FM_LIMITS[effectivePlan] !== undefined ? FM_LIMITS[effectivePlan] : 0;
+        const limit = PLANS[effectivePlan]?.firstMate ?? 0;
         if (limit === 0) {
           return Response.json(
             {
