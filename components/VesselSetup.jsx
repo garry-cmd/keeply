@@ -281,6 +281,34 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
     });
   }
 
+  // ── Welcome email — fires once, first-time onboarding only ─────────
+  // Gated on `!onCancel` because the Add-Vessel flow passes onCancel, and
+  // crew invitees don't route through VesselSetup at all. Fire-and-forget:
+  // errors are logged but never block onComplete or surface to the user.
+  async function fireWelcomeEmail(vessel) {
+    if (onCancel) return; // Add-Vessel flow — skip
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const toEmail = authData && authData.user && authData.user.email;
+      if (!toEmail) return;
+      // Fire-and-forget — don't await the fetch. User should reach the app
+      // immediately whether or not the send succeeds.
+      fetch('/api/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toEmail: toEmail,
+          firstName: (ownerName || '').trim().split(/\s+/)[0] || '',
+          vesselName: vessel && vessel.vessel_name ? vessel.vessel_name : vesselName,
+        }),
+      }).catch(function (e) {
+        console.warn('Welcome email request failed:', e);
+      });
+    } catch (e) {
+      console.warn('Welcome email setup failed:', e);
+    }
+  }
+
   // ── Common save scaffolding ─────────────────────────────────────────
   function vesselBasePayload(vesselType, engineRows) {
     const first = engineRows[0] || {};
@@ -555,6 +583,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
         },
       ]);
 
+      fireWelcomeEmail(vessel);
       onComplete(vessel);
     } catch (e) {
       setError(
@@ -612,6 +641,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
         },
       ]);
 
+      fireWelcomeEmail(vessel);
       onComplete(vessel);
     } catch (e) {
       setError('Something went wrong: ' + e.message + '. Please try again.');
