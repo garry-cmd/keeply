@@ -475,8 +475,65 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
       await insertVesselMember(vessel.id);
       await insertEngines(vessel.id, engineRows);
 
-      // ── Persist AI-generated equipment + tasks ─────────
+      // ── Enrich Engine equipment cards with engine-table data ─────
+      // The AI returns one generic "Engine" / "Main Engine" entry. The
+      // user, meanwhile, picked an actual make/model/year on the form.
+      // Replace the AI's generic entry with per-engine cards named with
+      // real identity (e.g. "Yanmar 4JH4-HTE" or "Yamaha F300 (Port)")
+      // and populate notes with the engine summary so the UI's Model
+      // regex-extraction picks up make/model correctly.
+      function engineCardNotes(eng) {
+        const parts = [];
+        if (eng.year) parts.push(String(eng.year));
+        if (eng.fuel_type) parts.push(eng.fuel_type);
+        if (eng.engine_hours != null) parts.push(eng.engine_hours + ' hrs');
+        const summary = parts.join(' · ');
+        const modelTag = 'Model: ' + eng.make + ' ' + eng.model;
+        return summary ? summary + ' | ' + modelTag : modelTag;
+      }
+      function titleCase(s) {
+        return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+      }
+
+      let engineTemplate = null;
+      const nonEngineAi = [];
       for (const item of aiEquipment) {
+        if (item.category === 'Engine' && !engineTemplate) {
+          engineTemplate = item;
+        } else if (item.category !== 'Engine') {
+          nonEngineAi.push(item);
+        }
+        // Drop any additional Engine entries — one template is enough.
+      }
+
+      const engineCards = [];
+      if (engineRows.length > 0) {
+        for (const eng of engineRows) {
+          const pos = eng.position ? ' (' + titleCase(eng.position) + ')' : '';
+          const base = engineTemplate || {
+            category: 'Engine',
+            manufacturer: null,
+            model: null,
+            tasks: [],
+          };
+          engineCards.push(
+            Object.assign({}, base, {
+              name: (eng.make + ' ' + eng.model + pos).trim(),
+              manufacturer: eng.make,
+              model: eng.model,
+              _notes: engineCardNotes(eng),
+            })
+          );
+        }
+      } else if (engineTemplate) {
+        // No user-entered engines (edge case); keep the AI's generic entry.
+        engineCards.push(engineTemplate);
+      }
+
+      const enrichedEquipment = engineCards.concat(nonEngineAi);
+
+      // ── Persist AI-generated equipment + tasks ─────────
+      for (const item of enrichedEquipment) {
         const { data: eq, error: eErr } = await supabase
           .from('equipment')
           .insert({
@@ -484,7 +541,7 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
             name: item.name,
             category: item.category,
             status: 'good',
-            notes: '',
+            notes: item._notes || '',
             custom_parts: [],
             docs: [],
             logs: [],
