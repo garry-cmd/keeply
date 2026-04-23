@@ -2493,6 +2493,7 @@ export default function App() {
     task: '',
     section: 'General',
     interval: '30 days',
+    interval_days_custom: '30',
     interval_hours: '',
     priority: 'medium',
     _equipmentId: null,
@@ -3992,6 +3993,8 @@ export default function App() {
         task: '',
         section: 'General',
         interval: '30 days',
+        interval_days_custom: '30',
+        interval_hours: '',
         priority: 'medium',
         _equipmentId: null,
       });
@@ -16050,6 +16053,60 @@ export default function App() {
                                           >
                                             {part.name}
                                           </div>
+                                          {part.ai_suggested && !part.confirmed && (
+                                            <div style={{ marginTop: 4 }}>
+                                              <span
+                                                onClick={async function (ev) {
+                                                  ev.stopPropagation();
+                                                  const updatedParts = (eq.customParts || []).map(
+                                                    function (p) {
+                                                      return p.id === part.id
+                                                        ? Object.assign({}, p, {
+                                                            confirmed: true,
+                                                            ai_suggested: false,
+                                                          })
+                                                        : p;
+                                                    }
+                                                  );
+                                                  try {
+                                                    await supa('equipment', {
+                                                      method: 'PATCH',
+                                                      query: 'id=eq.' + eq.id,
+                                                      body: { custom_parts: updatedParts },
+                                                      prefer: 'return=minimal',
+                                                    });
+                                                    setEquipment(function (prev) {
+                                                      return prev.map(function (e) {
+                                                        return e.id === eq.id
+                                                          ? Object.assign({}, e, {
+                                                              customParts: updatedParts,
+                                                            })
+                                                          : e;
+                                                      });
+                                                    });
+                                                  } catch (err) {
+                                                    setDbError(err.message);
+                                                  }
+                                                }}
+                                                title="Suggested by AI during onboarding. Tap to confirm this part is correct for your boat."
+                                                style={{
+                                                  fontSize: 10,
+                                                  fontWeight: 700,
+                                                  padding: '2px 8px',
+                                                  borderRadius: 10,
+                                                  color: '#f5b942',
+                                                  background: 'rgba(245,185,66,0.12)',
+                                                  border: '0.5px solid rgba(245,185,66,0.4)',
+                                                  fontFamily: 'DM Mono, monospace',
+                                                  whiteSpace: 'nowrap',
+                                                  cursor: 'pointer',
+                                                  display: 'inline-block',
+                                                }}
+                                              >
+                                                AI · verify
+                                              </span>
+                                            </div>
+                                          )}
                                           {part.sku && (
                                             <div
                                               style={{
@@ -17548,25 +17605,9 @@ export default function App() {
                   );
                 })}
               </select>
-              <select
-                value={newTask.interval}
-                onChange={function (e) {
-                  setNewTask(function (t) {
-                    return { ...t, interval: e.target.value };
-                  });
-                }}
-                style={{ ...s.sel, marginBottom: 0 }}
-              >
-                {['30 days', '60 days', '90 days', '6 months', 'annual', '2 years'].map(
-                  function (i) {
-                    return (
-                      <option key={i} value={i}>
-                        {i}
-                      </option>
-                    );
-                  }
-                )}
-              </select>
+              {/* Dual-trigger interval — DAYS and HRS side-by-side, matches
+                  the equipment-card inline edit form. Either or both may
+                  be set; whichever comes first triggers the task. */}
               <div
                 style={{
                   fontSize: 11,
@@ -17574,27 +17615,94 @@ export default function App() {
                   color: 'var(--text-muted)',
                   letterSpacing: '0.5px',
                   marginBottom: 6,
-                  marginTop: 12,
+                  marginTop: 4,
                 }}
               >
-                ENGINE HOURS INTERVAL (optional)
+                SERVICE INTERVAL
               </div>
-              <input
-                type="number"
-                placeholder="e.g. 100 (every 100 engine hours)"
-                value={newTask.interval_hours}
-                onChange={function (e) {
-                  setNewTask(function (t) {
-                    return { ...t, interval_hours: e.target.value };
-                  });
-                }}
-                style={{ ...s.inp, marginBottom: 0 }}
-                min="1"
-              />
+              <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="Every N days"
+                    value={newTask.interval_days_custom || ''}
+                    onChange={function (e) {
+                      setNewTask(function (t) {
+                        return {
+                          ...t,
+                          interval_days_custom: e.target.value,
+                          interval: e.target.value ? e.target.value + ' days' : t.interval,
+                        };
+                      });
+                    }}
+                    style={{ ...s.inp, marginBottom: 0 }}
+                    min="1"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="Every N hours"
+                    value={newTask.interval_hours}
+                    onChange={function (e) {
+                      setNewTask(function (t) {
+                        return { ...t, interval_hours: e.target.value };
+                      });
+                    }}
+                    style={{ ...s.inp, marginBottom: 0 }}
+                    min="1"
+                  />
+                </div>
+              </div>
               <div
-                style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, marginTop: 3 }}
+                style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, marginTop: 2 }}
               >
-                For engine/generator tasks tracked by hours
+                Set days, hours, or both — whichever comes first triggers the task
+              </div>
+              {/* Quick presets — one-tap common intervals */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                {[
+                  { label: 'Monthly', days: 30 },
+                  { label: 'Quarterly', days: 90 },
+                  { label: '6 months', days: 180 },
+                  { label: 'Annual', days: 365 },
+                  { label: '2 years', days: 730 },
+                ].map(function (preset) {
+                  return (
+                    <button
+                      key={preset.label}
+                      onClick={function () {
+                        setNewTask(function (t) {
+                          return {
+                            ...t,
+                            interval_days_custom: String(preset.days),
+                            interval: preset.days + ' days',
+                          };
+                        });
+                      }}
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: '4px 9px',
+                        borderRadius: 12,
+                        border: '1px solid var(--border)',
+                        background:
+                          newTask.interval_days_custom === String(preset.days)
+                            ? 'var(--brand-deep)'
+                            : 'var(--bg-card)',
+                        color:
+                          newTask.interval_days_custom === String(preset.days)
+                            ? 'var(--brand)'
+                            : 'var(--text-muted)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
               </div>
               <div
                 style={{
