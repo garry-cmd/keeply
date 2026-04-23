@@ -17115,7 +17115,7 @@ export default function App() {
                 e.stopPropagation();
               }}
             >
-              <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Task</div>
+              <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Add Maintenance</div>
               <div
                 style={{
                   fontSize: 11,
@@ -17160,7 +17160,7 @@ export default function App() {
                   })}
               </select>
               <input
-                placeholder="Task description"
+                placeholder="Maintenance description"
                 value={newTask.task}
                 onChange={function (e) {
                   setNewTask(function (t) {
@@ -17498,7 +17498,7 @@ export default function App() {
                     },
                   },
                   {
-                    label: 'Add Task',
+                    label: 'Add Maintenance',
                     stroke: '#34d399',
                     bg: 'rgba(52,211,153,0.15)',
                     icon: (
