@@ -82,26 +82,28 @@ function VesselSetupLoader() {
   );
 }
 
+// AI onboarding is universal — every plan gets the "describe your boat" flow.
+// If the AI call fails (network / rate limit / genuinely unidentifiable
+// vessel), a "Skip setup" fallback creates a stub vessel with vessel_type
+// defaulted to 'sail' so the user can still onboard and fill details later.
+// `userPlan` is kept in the prop signature for backward compat but is unused
+// within this component.
 export default function VesselSetup({ userId, userPlan, onComplete }) {
-  const isPaid = true; // AI onboarding is now available to all users
-
-  // Shared fields (step 1 for paid, all fields for free)
   const [vesselName, setVesselName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [homePort, setHomePort] = useState('');
   const [engineHours, setEngineHours] = useState('');
   const [fuelBurnRate, setFuelBurnRate] = useState('');
-  const [vesselType, setVesselType] = useState('sail');
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [year, setYear] = useState('');
 
-  // Paid-only AI flow
   const [step, setStep] = useState(1);
   const [boatDescription, setBoatDescription] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Tracks whether the current error came from a failed AI attempt. Gates
+  // visibility of the "Skip setup" escape hatch so it only appears after a
+  // genuine failure, not as a shortcut that bypasses the AI experience.
+  const [aiFailed, setAiFailed] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -156,132 +158,22 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
     },
   };
 
-  // ── Free user: single-step manual save ────────────────────────────────────
-  const handleManualSave = async function () {
-    if (!vesselName.trim()) {
-      setError('Please enter a vessel name.');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const vesselPayload = {
-        vessel_name: vesselName,
-        vessel_type: vesselType,
-        owner_name: ownerName || null,
-        home_port: homePort || null,
-        make: make || null,
-        model: model || null,
-        year: year || null,
-        user_id: userId,
-        engine_hours: engineHours ? parseFloat(engineHours) : null,
-        engine_hours_date: engineHours ? today : null,
-        fuel_burn_rate: fuelBurnRate ? parseFloat(fuelBurnRate) : null,
-      };
+  // Shared payload for the non-AI fields captured in step 1. Used by both
+  // the AI path (as a base, then merged with AI-derived make/model/year/type)
+  // and the stub fallback path.
+  function buildBasePayload() {
+    return {
+      vessel_name: vesselName,
+      owner_name: ownerName || null,
+      home_port: homePort || null,
+      user_id: userId,
+      engine_hours: engineHours ? parseFloat(engineHours) : null,
+      engine_hours_date: engineHours ? today : null,
+      fuel_burn_rate: fuelBurnRate ? parseFloat(fuelBurnRate) : null,
+    };
+  }
 
-      const { data: vessel, error: vErr } = await supabase
-        .from('vessels')
-        .insert(vesselPayload)
-        .select()
-        .single();
-      if (vErr) throw vErr;
-
-      await supabase
-        .from('vessel_members')
-        .insert({ vessel_id: vessel.id, user_id: userId, role: 'owner' });
-
-      // Auto-create a generic Engine card with 8 basic maintenance tasks for free users
-      const { data: engineCard } = await supabase
-        .from('equipment')
-        .insert({
-          vessel_id: vessel.id,
-          name: 'Engine',
-          category: 'Engine',
-          status: 'good',
-          notes: '',
-          custom_parts: [],
-          docs: [],
-          logs: [],
-        })
-        .select()
-        .single();
-
-      if (engineCard) {
-        const engineTasks = [
-          { task: 'Engine oil & filter change', interval_days: 365, priority: 'high' },
-          { task: 'Raw water impeller inspection', interval_days: 365, priority: 'high' },
-          { task: 'Primary fuel filter replacement', interval_days: 365, priority: 'high' },
-          { task: 'Secondary fuel filter replacement', interval_days: 730, priority: 'medium' },
-          { task: 'Drive belts inspection & tension', interval_days: 365, priority: 'medium' },
-          { task: 'Zinc anodes inspection & replace', interval_days: 180, priority: 'high' },
-          { task: 'Coolant level & condition check', interval_days: 365, priority: 'medium' },
-          { task: 'Transmission fluid check', interval_days: 365, priority: 'medium' },
-        ].map(function (t) {
-          const dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + t.interval_days);
-          return {
-            vessel_id: vessel.id,
-            equipment_id: engineCard.id,
-            task: t.task,
-            section: 'Engine',
-            interval_days: t.interval_days,
-            priority: t.priority,
-            last_service: today,
-            due_date: dueDate.toISOString().split('T')[0],
-            service_logs: [],
-          };
-        });
-        await supabase.from('maintenance_tasks').insert(engineTasks);
-      }
-
-      // Onboarding maintenance task — overdue by 1 day so it lands in the Critical urgent card
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      await supabase.from('maintenance_tasks').insert([
-        {
-          vessel_id: vessel.id,
-          equipment_id: null,
-          task: 'Complete your vessel setup — review equipment and add photos',
-          section: 'General',
-          interval_days: 36500,
-          priority: 'high',
-          last_service: today,
-          due_date: yesterday.toISOString().split('T')[0],
-          service_logs: [],
-        },
-      ]);
-
-      // Default welcome repair tasks
-      await supabase.from('repairs').insert([
-        {
-          vessel_id: vessel.id,
-          date: today,
-          section: 'General',
-          description: 'Add your equipment cards — tap the Equipment tab to get started',
-          status: 'open',
-          equipment_id: null,
-          due_date: null,
-        },
-        {
-          vessel_id: vessel.id,
-          date: today,
-          section: 'General',
-          description:
-            'Upload vessel docs — tap your Vessel card then the Docs tab to add manuals, insurance, or registration',
-          status: 'open',
-          equipment_id: null,
-          due_date: null,
-        },
-      ]);
-
-      onComplete(vessel);
-    } catch (e) {
-      setError('Something went wrong: ' + e.message + '. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  // ── Paid user: AI build ────────────────────────────────────────────────────
+  // ── AI build ────────────────────────────────────────────────────────────
   const handleBuildMyBoat = async function () {
     if (!vesselName.trim()) {
       setError('Please enter a vessel name.');
@@ -293,6 +185,7 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
     }
     setLoading(true);
     setError(null);
+    setAiFailed(false);
     try {
       const res = await fetch('/api/identify-vessel', {
         method: 'POST',
@@ -302,10 +195,11 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       const aiResult = Array.isArray(data.equipment) ? data.equipment : [];
+
       // Prefer the AI's explicit vesselType classification — it knows a
       // Scout 255 Dorado is a powerboat even though outriggers get the
-      // "Rigging" category. Only fall back to the old equipment heuristic
-      // if the model response didn't include the field (legacy safety).
+      // "Rigging" category. Fall back to the equipment-based heuristic
+      // only if the model response didn't include the field.
       const aiStatedType = data.vesselInfo && data.vesselInfo.vesselType;
       const validTypes = ['sail', 'motor', 'other'];
       let aiVesselType;
@@ -317,8 +211,8 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
         });
         aiVesselType = hasSailGear ? 'sail' : 'motor';
       }
-      // Prefer structured vesselInfo from the AI when present — it's far
-      // more reliable than regex-splitting the user's raw description.
+
+      // Prefer structured vesselInfo over regex-splitting the description.
       const vInfo = data.vesselInfo || {};
       const parts = boatDescription.trim().split(' ');
       const regexYear =
@@ -332,19 +226,12 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
       const aiMake = (vInfo.make && String(vInfo.make).trim()) || rest[0] || '';
       const aiModel = (vInfo.model && String(vInfo.model).trim()) || rest.slice(1).join(' ') || '';
 
-      const vesselPayload = {
-        vessel_name: vesselName,
+      const vesselPayload = Object.assign({}, buildBasePayload(), {
         vessel_type: aiVesselType,
-        owner_name: ownerName || null,
-        home_port: homePort || null,
         make: aiMake,
         model: aiModel,
         year: aiYear,
-        user_id: userId,
-        engine_hours: engineHours ? parseFloat(engineHours) : null,
-        engine_hours_date: engineHours ? today : null,
-        fuel_burn_rate: fuelBurnRate ? parseFloat(fuelBurnRate) : null,
-      };
+      });
 
       const { data: vessel, error: vErr } = await supabase
         .from('vessels')
@@ -437,12 +324,80 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
 
       onComplete(vessel);
     } catch (e) {
+      setError(
+        "Couldn't identify your vessel: " +
+          e.message +
+          '. Try again, or skip setup and add details later.'
+      );
+      setAiFailed(true);
+      setLoading(false);
+    }
+  };
+
+  // ── Stub fallback: create minimal vessel when AI is stuck ──────────────
+  // Defaults vessel_type to 'sail' per ICP (cruising sailors are the
+  // majority). User can change it on the Edit tab post-creation.
+  const handleStubFallback = async function () {
+    if (!vesselName.trim()) {
+      setError('Please enter a vessel name.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const vesselPayload = Object.assign({}, buildBasePayload(), {
+        vessel_type: 'sail',
+      });
+
+      const { data: vessel, error: vErr } = await supabase
+        .from('vessels')
+        .insert(vesselPayload)
+        .select()
+        .single();
+      if (vErr) throw vErr;
+
+      await supabase
+        .from('vessel_members')
+        .insert({ vessel_id: vessel.id, user_id: userId, role: 'owner' });
+
+      // Single overdue onboarding nudge pointing to the Equipment tab.
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      await supabase.from('maintenance_tasks').insert([
+        {
+          vessel_id: vessel.id,
+          equipment_id: null,
+          task: 'Add your equipment — tap the Equipment tab to add your engine, sails, electronics',
+          section: 'General',
+          interval_days: 36500,
+          priority: 'high',
+          last_service: today,
+          due_date: yesterday.toISOString().split('T')[0],
+          service_logs: [],
+        },
+      ]);
+
+      await supabase.from('repairs').insert([
+        {
+          vessel_id: vessel.id,
+          date: today,
+          section: 'General',
+          description:
+            'Upload vessel docs — tap your Vessel card then the Docs tab to add manuals, insurance, or registration',
+          status: 'open',
+          equipment_id: null,
+          due_date: null,
+        },
+      ]);
+
+      onComplete(vessel);
+    } catch (e) {
       setError('Something went wrong: ' + e.message + '. Please try again.');
       setLoading(false);
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div style={s.wrap}>
       <div style={s.card}>
@@ -459,38 +414,30 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
             ⚓ KEEPLY
           </div>
           <div style={{ fontSize: 21, fontWeight: 800, color: '#1a1d23' }}>
-            {isPaid
-              ? step === 1
-                ? 'Welcome aboard'
-                : 'Tell us about your boat'
-              : 'Set up your vessel'}
+            {step === 1 ? 'Welcome aboard' : 'Tell us about your boat'}
           </div>
           <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>
-            {isPaid
-              ? step === 1
-                ? "Let's get your vessel set up"
-                : "We'll build your full maintenance profile automatically"
-              : 'Enter your vessel details to get started'}
+            {step === 1
+              ? "Let's get your vessel set up"
+              : "We'll build your full maintenance profile automatically"}
           </div>
         </div>
 
-        {isPaid && (
-          <div style={{ display: 'flex', gap: 5, marginBottom: 24 }}>
-            {[1, 2].map(function (n) {
-              return (
-                <div
-                  key={n}
-                  style={{
-                    flex: 1,
-                    height: 3,
-                    borderRadius: 3,
-                    background: step >= n ? '#0f4c8a' : '#e2e8f0',
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 5, marginBottom: 24 }}>
+          {[1, 2].map(function (n) {
+            return (
+              <div
+                key={n}
+                style={{
+                  flex: 1,
+                  height: 3,
+                  borderRadius: 3,
+                  background: step >= n ? '#0f4c8a' : '#e2e8f0',
+                }}
+              />
+            );
+          })}
+        </div>
 
         {error && (
           <div
@@ -507,8 +454,8 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           </div>
         )}
 
-        {/* ── Step 1 (shared between free and paid) ── */}
-        {(!isPaid || step === 1) && (
+        {/* ── Step 1 — basic details everyone fills in ── */}
+        {step === 1 && (
           <>
             <label style={s.label}>VESSEL NAME *</label>
             <input
@@ -541,79 +488,6 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
               }}
               style={s.inp}
             />
-
-            {/* Free users get make/model/year/type here; paid users get it via AI on step 2 */}
-            {!isPaid && (
-              <>
-                <div style={{ height: 1, background: '#f1f5f9', margin: '4px 0 16px' }} />
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <div>
-                    <label style={s.label}>
-                      YEAR <span style={{ fontWeight: 400 }}>(optional)</span>
-                    </label>
-                    <input
-                      placeholder="e.g. 1985"
-                      value={year}
-                      onChange={function (e) {
-                        setYear(e.target.value);
-                      }}
-                      style={{ ...s.inp, marginBottom: 0 }}
-                    />
-                  </div>
-                  <div>
-                    <label style={s.label}>VESSEL TYPE</label>
-                    <select
-                      value={vesselType}
-                      onChange={function (e) {
-                        setVesselType(e.target.value);
-                      }}
-                      style={{ ...s.inp, marginBottom: 0 }}
-                    >
-                      <option value="sail">Sailboat</option>
-                      <option value="motor">Motorboat</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 12,
-                    marginTop: 12,
-                  }}
-                >
-                  <div>
-                    <label style={s.label}>
-                      MAKE <span style={{ fontWeight: 400 }}>(optional)</span>
-                    </label>
-                    <input
-                      placeholder="e.g. Catalina"
-                      value={make}
-                      onChange={function (e) {
-                        setMake(e.target.value);
-                      }}
-                      style={{ ...s.inp, marginBottom: 0 }}
-                    />
-                  </div>
-                  <div>
-                    <label style={s.label}>
-                      MODEL <span style={{ fontWeight: 400 }}>(optional)</span>
-                    </label>
-                    <input
-                      placeholder="e.g. 36 MkII"
-                      value={model}
-                      onChange={function (e) {
-                        setModel(e.target.value);
-                      }}
-                      style={{ ...s.inp, marginBottom: 0 }}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
 
             <div style={{ height: 1, background: '#f1f5f9', margin: '16px 0' }} />
 
@@ -653,26 +527,25 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
               passage.
             </div>
 
-            {isPaid ? (
-              <button
-                onClick={function () {
-                  if (!vesselName.trim()) {
-                    setError('Please enter a vessel name.');
-                    return;
-                  }
-                  setError(null);
-                  setStep(2);
-                }}
-                style={{ ...s.btn, background: '#0f4c8a', color: '#fff' }}
-              >
-                Next →
-              </button>
-            ) : null}
+            <button
+              onClick={function () {
+                if (!vesselName.trim()) {
+                  setError('Please enter a vessel name.');
+                  return;
+                }
+                setError(null);
+                setAiFailed(false);
+                setStep(2);
+              }}
+              style={{ ...s.btn, background: '#0f4c8a', color: '#fff' }}
+            >
+              Next →
+            </button>
           </>
         )}
 
-        {/* ── Step 2 — paid AI flow only ── */}
-        {isPaid && step === 2 && (
+        {/* ── Step 2 — universal AI flow ── */}
+        {step === 2 && (
           <>
             <div
               style={{
@@ -710,22 +583,45 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
             {loading ? (
               <VesselSetupLoader />
             ) : (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={function () {
-                    setStep(1);
-                  }}
-                  style={{ ...s.btn, flex: 1, background: '#f1f5f9', color: '#374151' }}
-                >
-                  ← Back
-                </button>
-                <button
-                  onClick={handleBuildMyBoat}
-                  style={{ ...s.btn, flex: 2, background: '#0f4c8a', color: '#fff' }}
-                >
-                  Launch Keeply ⚓
-                </button>
-              </div>
+              <>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={function () {
+                      setStep(1);
+                      setError(null);
+                      setAiFailed(false);
+                    }}
+                    style={{ ...s.btn, flex: 1, background: '#f1f5f9', color: '#374151' }}
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    onClick={handleBuildMyBoat}
+                    style={{ ...s.btn, flex: 2, background: '#0f4c8a', color: '#fff' }}
+                  >
+                    {aiFailed ? 'Try again' : 'Launch Keeply ⚓'}
+                  </button>
+                </div>
+
+                {/* Escape hatch — only appears after an AI failure so it
+                    doesn't function as a shortcut past the AI experience. */}
+                {aiFailed && (
+                  <button
+                    onClick={handleStubFallback}
+                    style={{
+                      ...s.btn,
+                      marginTop: 10,
+                      background: 'transparent',
+                      color: '#6b7280',
+                      border: '1px solid #e2e8f0',
+                      fontWeight: 600,
+                      fontSize: 13,
+                    }}
+                  >
+                    Skip setup — I'll add details later
+                  </button>
+                )}
+              </>
             )}
           </>
         )}
