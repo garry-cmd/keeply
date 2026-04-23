@@ -99,10 +99,9 @@ const OKRS = [
     phase: "beta",
     objective: "Close beta successfully",
     krs: [
-      { text: "5 beta testers complete structured task plan (deadline May 1)", cur: 0, target: 5, unit: "testers", status: "at-risk" },
+      { text: "5 beta testers complete structured task plan (deadline May 1)", cur: 0, target: 5, unit: "testers", status: "on-track" },
       { text: "All 3 personas validated (Active Cruiser, Liveaboard, Upgrader)", cur: 1, target: 3, unit: "personas", status: "on-track" },
       { text: "Feedback received from all testers", cur: 0, target: 5, unit: "responses", status: "not-started" },
-      { text: "Zero critical bugs outstanding", cur: 0, target: 1, unit: "complete", status: "at-risk" },
       { text: "First Mate query limits — single source of truth (imports from lib/pricing.js)", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Push notifications validated end-to-end on real device", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],

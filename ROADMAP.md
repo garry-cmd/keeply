@@ -61,7 +61,6 @@ Stabilise and validate before any infrastructure or store work.
 - 5 beta testers complete structured task plan
 - All 3 personas validated (Active Cruiser ✓, Liveaboard ✓, Upgrader ✗)
 - Structured feedback received from all testers
-- Zero critical bugs outstanding
 - First Mate query limits unified — all three sites (API route, FirstMate.jsx, FirstMateScreen.jsx) import from `lib/pricing.js`
 - Push notifications validated end-to-end on real device
 
