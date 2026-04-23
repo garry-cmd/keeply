@@ -107,7 +107,7 @@ function blankEngine(position) {
   };
 }
 
-export default function VesselSetup({ userId, userPlan, onComplete }) {
+export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) {
   // ── Boat fields ─────────────────────────────────────────────────────
   const [vesselName, setVesselName] = useState('');
   const [ownerName, setOwnerName] = useState('');
@@ -930,6 +930,23 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
   return (
     <div style={s.wrap}>
       <div style={s.card}>
+        {/* Cancel link — only shown when caller provides onCancel
+            (i.e. returning user adding another vessel, not first-time setup). */}
+        {onCancel && (
+          <div style={{ textAlign: 'right', marginBottom: 10 }}>
+            <span
+              onClick={onCancel}
+              style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.5)',
+                cursor: 'pointer',
+              }}
+            >
+              ← Cancel
+            </span>
+          </div>
+        )}
+
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 22 }}>
           <div
@@ -943,9 +960,11 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           >
             ⚓ KEEPLY
           </div>
-          <div style={{ fontSize: 20, fontWeight: 500, color: '#fff' }}>Welcome aboard</div>
+          <div style={{ fontSize: 20, fontWeight: 500, color: '#fff' }}>
+            {onCancel ? 'Add a vessel' : 'Welcome aboard'}
+          </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
-            A few details and we'll build your boat
+            {onCancel ? "A few details and we'll set up your next boat" : "A few details and we'll build your boat"}
           </div>
         </div>
 
@@ -1096,7 +1115,7 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
               onClick={handleBuildMyBoat}
               style={Object.assign({}, s.btn, { background: '#1f6fd6', color: '#fff' })}
             >
-              {aiFailed ? 'Try again' : 'Launch Keeply ⚓'}
+              {aiFailed ? 'Try again' : onCancel ? 'Add Vessel ⚓' : 'Launch Keeply ⚓'}
             </button>
 
             {/* Escape hatch — only after an AI failure */}

@@ -2341,6 +2341,7 @@ export default function App() {
   const [equipAiLoading, setEquipAiLoading] = useState(false);
   const [equipAiError, setEquipAiError] = useState(null);
   const [showAddVesselAI, setShowAddVesselAI] = useState(false);
+  const [showVesselSetup, setShowVesselSetup] = useState(false);
   const [avStep, setAvStep] = useState(1);
   const [avEngineTaskEdits, setAvEngineTaskEdits] = useState({});
   const [avName, setAvName] = useState('');
@@ -3231,17 +3232,11 @@ export default function App() {
       return;
     }
     setShowVesselDropdown(false);
-    setAvStep(1);
-    setAvName('');
-    setAvOwner('');
-    setAvPort('');
-    setAvDesc('');
-    setAvResult(null);
-    setAvError(null);
-    setAvLoading(false);
-    setAvEngineHours('');
-    setAvFuelBurnRate('');
-    setShowAddVesselAI(true);
+    // Route to the new catalog-based VesselSetup flow (same dark-theme
+    // one-screen experience as first-time onboarding). The legacy
+    // showAddVesselAI modal stays defined below but is unreachable now —
+    // post-launch cleanup.
+    setShowVesselSetup(true);
   };
   const openEditVessel = function (vessel) {
     setEditingVesselId(vessel.id);
@@ -6136,6 +6131,50 @@ export default function App() {
           // Load all equipment and tasks that were just created by AI onboarding
           switchVessel(vessel.id);
           // Stripe is now triggered immediately after signup in LandingPage.jsx
+        }}
+      />
+    );
+
+  // Mid-app "Add Vessel" — full-screen takeover, same flow as first-time.
+  // Returning user who already has vessels is adding another.
+  if (showVesselSetup && session)
+    return (
+      <VesselSetup
+        userId={session.user.id}
+        userPlan={userPlan}
+        trialActive={trialActive}
+        onCancel={function () {
+          setShowVesselSetup(false);
+        }}
+        onComplete={function (vessel) {
+          const normalized = {
+            id: vessel.id,
+            vesselType: vessel.vessel_type || 'sail',
+            vesselName: vessel.vessel_name || '',
+            ownerName: vessel.owner_name || '',
+            address: vessel.home_port || '',
+            make: vessel.make || '',
+            model: vessel.model || '',
+            year: vessel.year || '',
+            photoUrl: vessel.photo_url || '',
+            engineHours: vessel.engine_hours || null,
+            engineHoursDate: vessel.engine_hours_date || null,
+            fuelBurnRate: vessel.fuel_burn_rate || null,
+          };
+          setVessels(function (vs) {
+            return vs.concat([normalized]);
+          });
+          setVesselMembers(function (vm) {
+            return vm.concat([
+              { vessel_id: vessel.id, user_id: session.user.id, role: 'owner' },
+            ]);
+          });
+          setActiveVesselId(vessel.id);
+          localStorage.setItem('keeply_active_vessel', vessel.id);
+          createDefaultAdminTasks(vessel.id, session.user.id);
+          // switchVessel reloads equipment/tasks/repairs for the new vessel
+          switchVessel(vessel.id);
+          setShowVesselSetup(false);
         }}
       />
     );
