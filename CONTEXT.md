@@ -249,9 +249,14 @@ Ordered by strategic value:
 
 ## Session-start ritual
 
+CONTEXT.md and ROADMAP.md live in git as the single source of truth. They are **not** kept in Claude project knowledge — project knowledge is reserved for reference material that doesn't change (ICP, marketing plan, logo). Session-start fetches the live docs directly from the repo.
+
 1. `recent_chats` — last 3–5 threads
-2. Read this file (CONTEXT.md)
-3. `tool_search` to load Chrome MCP tools, then navigate to `https://keeply.boats/admin/okr` for live state (auth-gated on `garry@keeply.boats`; Chrome extension must be active in browser)
+2. Clone the repo: `git clone --depth 1 https://github.com/garry-cmd/keeply.git /home/claude/keeply` (~4 sec, gets whole codebase ready for grep/edit as a side effect)
+3. Read `/home/claude/keeply/CONTEXT.md` and `/home/claude/keeply/ROADMAP.md`
+4. `tool_search` to load Chrome MCP tools, then navigate to `https://keeply.boats/admin/okr` for live OKR state (auth-gated on `garry@keeply.boats`; Chrome extension must be active in browser)
+
+**If the clone fails with auth error:** repo is private. Ask Garry to flip it public (his standard pattern) or supply a read-only GitHub PAT in-chat. Don't silently fall back to project knowledge — that defeats the single-source-of-truth rule.
 
 ---
 
@@ -276,7 +281,7 @@ Claude's connectors split into two layers — knowing which is which prevents wa
 ### Other tooling notes
 
 - **Supabase auth token key:** `sb-waapqyshmqaaamiiitso-auth-token`
-- `raw.githubusercontent.com` is blocked — use GitHub API (`api.github.com/repos/.../contents/...`) instead
+- `raw.githubusercontent.com` and `api.github.com` are both blocked in Claude's network allowlist. Only `github.com` itself is reachable, which means `git clone --depth 1 https://github.com/garry-cmd/keeply.git` is the canonical way to read repo contents. Don't attempt API or raw-content URLs — they'll 403.
 - User deletion in Supabase: `DELETE FROM auth.users` cascades to all child tables
 - Auth diagnostics via Supabase `get_logs` with `service: "auth"`
 
