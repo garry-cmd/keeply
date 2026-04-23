@@ -23575,10 +23575,27 @@ export default function App() {
                     setShowProfilePanel(false);
                   }}
                 >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--danger-text)' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
                     Sign out
                   </span>
                   <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>›</span>
+                </div>
+                <div
+                  style={{
+                    padding: '18px 20px 8px',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.8px',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    DANGER ZONE
+                  </div>
                 </div>
                 <div
                   style={{
