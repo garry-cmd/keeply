@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabase-client';
 
+// ── Loader messages ──────────────────────────────────────────────────────
 var VESSEL_MSGS = [
   { msg: 'Looking up your vessel specs…', sub: null },
   { msg: 'Generating your equipment list…', sub: 'Scanning known configurations…' },
@@ -41,7 +42,7 @@ function VesselSetupLoader() {
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: '#0f4c8a',
+                background: '#6fa8e0',
                 animation: 'keeplyWave 1.3s ease-in-out infinite',
                 animationDelay: i * 0.12 + 's',
               }}
@@ -52,7 +53,7 @@ function VesselSetupLoader() {
       <div
         style={{
           height: 3,
-          background: 'rgba(15,76,138,0.1)',
+          background: 'rgba(111,168,224,0.15)',
           borderRadius: 2,
           overflow: 'hidden',
           marginBottom: 14,
@@ -66,51 +67,113 @@ function VesselSetupLoader() {
             left: 0,
             height: '100%',
             width: '50%',
-            background: 'rgba(15,76,138,0.35)',
+            background: 'rgba(111,168,224,0.5)',
             borderRadius: 2,
             animation: 'keeplyShimmer 1.8s ease-in-out infinite',
           }}
         />
       </div>
       <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.3s ease' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f4c8a' }}>{current.msg}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#6fa8e0' }}>{current.msg}</div>
         {current.sub && (
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>{current.sub}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>
+            {current.sub}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// AI onboarding is universal — every plan gets the "describe your boat" flow.
-// If the AI call fails (network / rate limit / genuinely unidentifiable
-// vessel), a "Skip setup" fallback creates a stub vessel with vessel_type
-// defaulted to 'sail' so the user can still onboard and fill details later.
-// `userPlan` is kept in the prop signature for backward compat but is unused
-// within this component.
+// ── Main component ───────────────────────────────────────────────────────
+// AI onboarding is universal — every plan gets the Make/Model catalog +
+// AI equipment generation. On AI failure, a "Skip setup" stub fallback
+// creates the vessel + engines with vessel_type='sail' (cruising sail is
+// the ICP majority) so the user is never stuck. `userPlan` is kept in
+// the prop signature for back-compat but is unused.
+function blankEngine(position) {
+  return {
+    makeId: '',
+    makeName: '',
+    isMakeOther: false,
+    makeOtherText: '',
+    modelId: '',
+    modelName: '',
+    modelSpecs: null,
+    year: '',
+    hours: '',
+    fuelBurn: '',
+    position: position || null,
+  };
+}
+
 export default function VesselSetup({ userId, userPlan, onComplete }) {
+  // ── Boat fields ─────────────────────────────────────────────────────
   const [vesselName, setVesselName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [homePort, setHomePort] = useState('');
-  const [engineHours, setEngineHours] = useState('');
-  const [fuelBurnRate, setFuelBurnRate] = useState('');
+  const [vesselYear, setVesselYear] = useState('');
+  const [vesselMake, setVesselMake] = useState('');
+  const [vesselModel, setVesselModel] = useState('');
 
-  const [step, setStep] = useState(1);
-  const [boatDescription, setBoatDescription] = useState('');
+  // ── Engines (up to 2) ───────────────────────────────────────────────
+  const [engines, setEngines] = useState([blankEngine(null)]);
 
+  // ── Catalog ─────────────────────────────────────────────────────────
+  const [makes, setMakes] = useState([]);
+  const [modelsByMake, setModelsByMake] = useState({});
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+
+  // ── Flow state ──────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  // Tracks whether the current error came from a failed AI attempt. Gates
-  // visibility of the "Skip setup" escape hatch so it only appears after a
-  // genuine failure, not as a shortcut that bypasses the AI experience.
   const [aiFailed, setAiFailed] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 
+  // ── Load catalog on mount ───────────────────────────────────────────
+  useEffect(function () {
+    let cancelled = false;
+    (async function () {
+      try {
+        const makesRes = await supabase
+          .from('engine_makes')
+          .select('id, name, category, sort_order')
+          .eq('is_active', true)
+          .order('sort_order');
+        const modelsRes = await supabase
+          .from('engine_models')
+          .select('id, make_id, name, fuel_type, cylinders, horsepower, sort_order')
+          .eq('is_active', true)
+          .order('sort_order');
+        if (cancelled) return;
+        const makeRows = makesRes.data || [];
+        const modelRows = modelsRes.data || [];
+        const grouped = {};
+        for (let i = 0; i < modelRows.length; i++) {
+          const m = modelRows[i];
+          if (!grouped[m.make_id]) grouped[m.make_id] = [];
+          grouped[m.make_id].push(m);
+        }
+        setMakes(makeRows);
+        setModelsByMake(grouped);
+        setCatalogLoaded(true);
+      } catch (e) {
+        if (!cancelled) {
+          setCatalogLoaded(true);
+        }
+      }
+    })();
+    return function () {
+      cancelled = true;
+    };
+  }, []);
+
+  // ── Style tokens (dark theme, matches rest of app) ──────────────────
   const s = {
     wrap: {
       minHeight: '100vh',
-      background: '#f4f6f9',
+      background: '#0a1a3d',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -118,33 +181,60 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
       fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
     },
     card: {
-      background: '#fff',
+      background: '#0e1e3e',
       borderRadius: 20,
-      padding: '32px 28px',
+      padding: '28px 24px',
       width: '100%',
       maxWidth: 480,
-      boxShadow: '0 8px 40px rgba(0,0,0,0.10)',
+      border: '0.5px solid rgba(255,255,255,0.08)',
     },
     inp: {
       width: '100%',
-      border: '1px solid #e2e8f0',
+      border: '1px solid rgba(255,255,255,0.1)',
       borderRadius: 10,
       padding: '11px 14px',
       fontSize: 14,
       boxSizing: 'border-box',
       outline: 'none',
-      marginBottom: 12,
+      marginBottom: 0,
       fontFamily: 'inherit',
-      background: '#fff',
-      color: '#1a1d23',
+      background: 'rgba(255,255,255,0.04)',
+      color: '#fff',
+    },
+    select: {
+      width: '100%',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: 10,
+      padding: '11px 14px',
+      fontSize: 14,
+      boxSizing: 'border-box',
+      outline: 'none',
+      fontFamily: 'inherit',
+      background: 'rgba(255,255,255,0.04)',
+      color: '#fff',
+      appearance: 'none',
+      WebkitAppearance: 'none',
+      cursor: 'pointer',
     },
     label: {
       fontSize: 11,
       fontWeight: 700,
-      color: '#6b7280',
+      color: 'rgba(255,255,255,0.5)',
       letterSpacing: '0.6px',
       marginBottom: 6,
       display: 'block',
+    },
+    section: {
+      fontSize: 11,
+      fontWeight: 700,
+      color: '#6fa8e0',
+      letterSpacing: '0.8px',
+      marginBottom: 10,
+    },
+    divider: {
+      height: 1,
+      background: 'rgba(255,255,255,0.08)',
+      margin: '16px 0',
     },
     btn: {
       width: '100%',
@@ -158,133 +248,270 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
     },
   };
 
-  // Shared payload for the non-AI fields captured in step 1. Used by both
-  // the AI path (as a base, then merged with AI-derived make/model/year/type)
-  // and the stub fallback path.
-  function buildBasePayload() {
+  // ── Engine state helpers ────────────────────────────────────────────
+  function updateEngine(idx, patch) {
+    setEngines(function (prev) {
+      return prev.map(function (e, i) {
+        return i === idx ? Object.assign({}, e, patch) : e;
+      });
+    });
+  }
+
+  function handleMakeChange(idx, makeId) {
+    if (!makeId) {
+      updateEngine(idx, {
+        makeId: '',
+        makeName: '',
+        isMakeOther: false,
+        makeOtherText: '',
+        modelId: '',
+        modelName: '',
+        modelSpecs: null,
+      });
+      return;
+    }
+    const m = makes.find(function (x) {
+      return x.id === makeId;
+    });
+    const isOther = m && m.name === 'Other';
+    updateEngine(idx, {
+      makeId: makeId,
+      makeName: m ? m.name : '',
+      isMakeOther: !!isOther,
+      makeOtherText: isOther ? engines[idx].makeOtherText : '',
+      modelId: '',
+      modelName: '',
+      modelSpecs: null,
+    });
+  }
+
+  function handleModelChange(idx, modelId) {
+    const engine = engines[idx];
+    const list = modelsByMake[engine.makeId] || [];
+    const m = list.find(function (x) {
+      return x.id === modelId;
+    });
+    updateEngine(idx, {
+      modelId: modelId,
+      modelName: m ? m.name : '',
+      modelSpecs: m
+        ? {
+            fuel_type: m.fuel_type,
+            cylinders: m.cylinders,
+            horsepower: m.horsepower,
+          }
+        : null,
+    });
+  }
+
+  function addSecondEngine() {
+    // Promote the single engine to 'port', add 'starboard' alongside.
+    setEngines(function (prev) {
+      return [
+        Object.assign({}, prev[0], { position: 'port' }),
+        blankEngine('starboard'),
+      ];
+    });
+  }
+
+  function removeEngine(idx) {
+    setEngines(function (prev) {
+      const remaining = prev.filter(function (_, i) {
+        return i !== idx;
+      });
+      // Single engine left — clear position back to null
+      return remaining.map(function (e) {
+        return Object.assign({}, e, { position: null });
+      });
+    });
+  }
+
+  // ── Validation ──────────────────────────────────────────────────────
+  function validate() {
+    if (!vesselName.trim()) return 'Please enter a vessel name.';
+    if (!vesselYear.trim()) return 'Please enter your vessel year.';
+    if (!vesselMake.trim()) return 'Please enter your vessel make.';
+    if (!vesselModel.trim()) return 'Please enter your vessel model.';
+    for (let i = 0; i < engines.length; i++) {
+      const e = engines[i];
+      const posLabel =
+        engines.length > 1 ? (e.position === 'starboard' ? 'starboard' : 'port') + ' engine ' : 'engine ';
+      const resolvedMake = e.isMakeOther ? e.makeOtherText : e.makeName;
+      if (!resolvedMake || !resolvedMake.trim()) {
+        return 'Please select a ' + posLabel + 'make.';
+      }
+      if (!e.modelName || !e.modelName.trim()) {
+        return 'Please enter a ' + posLabel + 'model.';
+      }
+    }
+    return null;
+  }
+
+  function canonicalEngines() {
+    return engines.map(function (e) {
+      const make = e.isMakeOther ? e.makeOtherText.trim() : e.makeName;
+      const model = e.modelName.trim();
+      const hp = e.modelSpecs && e.modelSpecs.horsepower;
+      const cyl = e.modelSpecs && e.modelSpecs.cylinders;
+      const fuel = e.modelSpecs && e.modelSpecs.fuel_type;
+      return {
+        make: make,
+        model: model,
+        year: e.year ? parseInt(e.year, 10) : null,
+        horsepower: hp || null,
+        cylinders: cyl || null,
+        fuel_type: fuel || null,
+        engine_hours: e.hours ? parseInt(e.hours, 10) : null,
+        engine_hours_date: e.hours ? today : null,
+        fuel_burn_rate: e.fuelBurn ? parseFloat(e.fuelBurn) : null,
+        position: engines.length > 1 ? e.position : null,
+      };
+    });
+  }
+
+  // ── Common save scaffolding ─────────────────────────────────────────
+  function vesselBasePayload(vesselType, engineRows) {
+    const first = engineRows[0] || {};
     return {
       vessel_name: vesselName,
+      vessel_type: vesselType,
       owner_name: ownerName || null,
       home_port: homePort || null,
+      make: vesselMake || null,
+      model: vesselModel || null,
+      year: vesselYear || null,
       user_id: userId,
-      engine_hours: engineHours ? parseFloat(engineHours) : null,
-      engine_hours_date: engineHours ? today : null,
-      fuel_burn_rate: fuelBurnRate ? parseFloat(fuelBurnRate) : null,
+      // Back-compat mirror — existing dashboard reads vessels.engine_hours.
+      // For twins, port engine's values get mirrored.
+      engine_hours: first.engine_hours,
+      engine_hours_date: first.engine_hours_date,
+      fuel_burn_rate: first.fuel_burn_rate,
     };
   }
 
-  // ── AI build ────────────────────────────────────────────────────────────
+  async function insertVessel(payload) {
+    const { data: vessel, error: vErr } = await supabase
+      .from('vessels')
+      .insert(payload)
+      .select()
+      .single();
+    if (vErr) throw vErr;
+    return vessel;
+  }
+
+  async function insertVesselMember(vesselId) {
+    await supabase
+      .from('vessel_members')
+      .insert({ vessel_id: vesselId, user_id: userId, role: 'owner' });
+  }
+
+  async function insertEngines(vesselId, engineRows) {
+    if (!engineRows.length) return;
+    const rows = engineRows.map(function (e) {
+      return {
+        vessel_id: vesselId,
+        make: e.make,
+        model: e.model,
+        year: e.year,
+        horsepower: e.horsepower,
+        cylinders: e.cylinders,
+        fuel_type: e.fuel_type,
+        engine_hours: e.engine_hours,
+        engine_hours_date: e.engine_hours_date,
+        fuel_burn_rate: e.fuel_burn_rate,
+        position: e.position,
+      };
+    });
+    await supabase.from('engines').insert(rows);
+  }
+
+  // ── AI build: the happy path ────────────────────────────────────────
   const handleBuildMyBoat = async function () {
-    if (!vesselName.trim()) {
-      setError('Please enter a vessel name.');
-      return;
-    }
-    if (!boatDescription.trim()) {
-      setError('Please describe your vessel.');
+    const vErr = validate();
+    if (vErr) {
+      setError(vErr);
       return;
     }
     setLoading(true);
     setError(null);
     setAiFailed(false);
     try {
+      const engineRows = canonicalEngines();
+
+      // Ask the AI to classify vessel type + generate equipment using
+      // structured input (make/model/year + engine specs), not freeform.
       const res = await fetch('/api/identify-vessel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: boatDescription.trim() }),
+        body: JSON.stringify({
+          vessel: { make: vesselMake, model: vesselModel, year: vesselYear },
+          engines: engineRows.map(function (e) {
+            return {
+              make: e.make,
+              model: e.model,
+              year: e.year,
+              horsepower: e.horsepower,
+              cylinders: e.cylinders,
+              fuel_type: e.fuel_type,
+              position: e.position,
+            };
+          }),
+        }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      const aiResult = Array.isArray(data.equipment) ? data.equipment : [];
 
-      // Prefer the AI's explicit vesselType classification — it knows a
-      // Scout 255 Dorado is a powerboat even though outriggers get the
-      // "Rigging" category. Fall back to the equipment-based heuristic
-      // only if the model response didn't include the field.
+      const aiEquipment = Array.isArray(data.equipment) ? data.equipment : [];
       const aiStatedType = data.vesselInfo && data.vesselInfo.vesselType;
       const validTypes = ['sail', 'motor', 'other'];
-      let aiVesselType;
-      if (aiStatedType && validTypes.indexOf(aiStatedType) >= 0) {
-        aiVesselType = aiStatedType;
-      } else {
-        const hasSailGear = aiResult.some(function (i) {
-          return i.category === 'Sails';
-        });
-        aiVesselType = hasSailGear ? 'sail' : 'motor';
-      }
+      const vesselType =
+        aiStatedType && validTypes.indexOf(aiStatedType) >= 0 ? aiStatedType : 'motor';
 
-      // Prefer structured vesselInfo over regex-splitting the description.
-      const vInfo = data.vesselInfo || {};
-      const parts = boatDescription.trim().split(' ');
-      const regexYear =
-        parts.find(function (p) {
-          return /^\d{4}$/.test(p);
-        }) || '';
-      const rest = parts.filter(function (p) {
-        return p !== regexYear;
-      });
-      const aiYear = (vInfo.year && String(vInfo.year).trim()) || regexYear;
-      const aiMake = (vInfo.make && String(vInfo.make).trim()) || rest[0] || '';
-      const aiModel = (vInfo.model && String(vInfo.model).trim()) || rest.slice(1).join(' ') || '';
+      // ── Persist vessel + members + engines ──────────────
+      const vessel = await insertVessel(vesselBasePayload(vesselType, engineRows));
+      await insertVesselMember(vessel.id);
+      await insertEngines(vessel.id, engineRows);
 
-      const vesselPayload = Object.assign({}, buildBasePayload(), {
-        vessel_type: aiVesselType,
-        make: aiMake,
-        model: aiModel,
-        year: aiYear,
-      });
-
-      const { data: vessel, error: vErr } = await supabase
-        .from('vessels')
-        .insert(vesselPayload)
-        .select()
-        .single();
-      if (vErr) throw vErr;
-
-      await supabase
-        .from('vessel_members')
-        .insert({ vessel_id: vessel.id, user_id: userId, role: 'owner' });
-
-      if (aiResult.length > 0) {
-        for (const item of aiResult) {
-          const { data: eq, error: eErr } = await supabase
-            .from('equipment')
-            .insert({
+      // ── Persist AI-generated equipment + tasks ─────────
+      for (const item of aiEquipment) {
+        const { data: eq, error: eErr } = await supabase
+          .from('equipment')
+          .insert({
+            vessel_id: vessel.id,
+            name: item.name,
+            category: item.category,
+            status: 'good',
+            notes: '',
+            custom_parts: [],
+            docs: [],
+            logs: [],
+          })
+          .select()
+          .single();
+        if (eErr) continue;
+        if (item.tasks && item.tasks.length > 0) {
+          const taskRows = item.tasks.map(function (t) {
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + (t.interval_days || 365));
+            return {
               vessel_id: vessel.id,
-              name: item.name,
-              category: item.category,
-              status: 'good',
-              notes: '',
-              custom_parts: [],
-              docs: [],
-              logs: [],
-            })
-            .select()
-            .single();
-          if (eErr) continue;
-          if (item.tasks && item.tasks.length > 0) {
-            const taskRows = item.tasks.map(function (t) {
-              const dueDate = new Date();
-              dueDate.setDate(dueDate.getDate() + (t.interval_days || 365));
-              return {
-                vessel_id: vessel.id,
-                equipment_id: eq.id,
-                task: t.task,
-                section: item.category,
-                interval_days: t.interval_days || 365,
-                priority: 'medium',
-                last_service: today,
-                due_date: dueDate.toISOString().split('T')[0],
-                service_logs: [],
-              };
-            });
-            await supabase.from('maintenance_tasks').insert(taskRows);
-          }
+              equipment_id: eq.id,
+              task: t.task,
+              section: item.category,
+              interval_days: t.interval_days || 365,
+              priority: 'medium',
+              last_service: today,
+              due_date: dueDate.toISOString().split('T')[0],
+              service_logs: [],
+            };
+          });
+          await supabase.from('maintenance_tasks').insert(taskRows);
         }
       }
 
-      // Onboarding maintenance task — overdue by 1 day so it lands in the Critical urgent card
-      const aiYesterday = new Date();
-      aiYesterday.setDate(aiYesterday.getDate() - 1);
+      // Onboarding prompts
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
       await supabase.from('maintenance_tasks').insert([
         {
           vessel_id: vessel.id,
@@ -294,11 +521,10 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           interval_days: 36500,
           priority: 'high',
           last_service: today,
-          due_date: aiYesterday.toISOString().split('T')[0],
+          due_date: yesterday.toISOString().split('T')[0],
           service_logs: [],
         },
       ]);
-
       await supabase.from('repairs').insert([
         {
           vessel_id: vessel.id,
@@ -334,33 +560,23 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
     }
   };
 
-  // ── Stub fallback: create minimal vessel when AI is stuck ──────────────
-  // Defaults vessel_type to 'sail' per ICP (cruising sailors are the
-  // majority). User can change it on the Edit tab post-creation.
+  // ── Stub fallback: create minimal vessel when AI is stuck ───────────
+  // Defaults vessel_type to 'sail' per ICP (cruising sail is majority).
+  // Engines still persisted — the user filled them in, no reason to drop.
   const handleStubFallback = async function () {
-    if (!vesselName.trim()) {
-      setError('Please enter a vessel name.');
+    const vErr = validate();
+    if (vErr) {
+      setError(vErr);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const vesselPayload = Object.assign({}, buildBasePayload(), {
-        vessel_type: 'sail',
-      });
+      const engineRows = canonicalEngines();
+      const vessel = await insertVessel(vesselBasePayload('sail', engineRows));
+      await insertVesselMember(vessel.id);
+      await insertEngines(vessel.id, engineRows);
 
-      const { data: vessel, error: vErr } = await supabase
-        .from('vessels')
-        .insert(vesselPayload)
-        .select()
-        .single();
-      if (vErr) throw vErr;
-
-      await supabase
-        .from('vessel_members')
-        .insert({ vessel_id: vessel.id, user_id: userId, role: 'owner' });
-
-      // Single overdue onboarding nudge pointing to the Equipment tab.
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       await supabase.from('maintenance_tasks').insert([
@@ -376,7 +592,6 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           service_logs: [],
         },
       ]);
-
       await supabase.from('repairs').insert([
         {
           vessel_id: vessel.id,
@@ -397,53 +612,287 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────
+  // ── Engine block renderer ───────────────────────────────────────────
+  function renderEngineBlock(engine, idx) {
+    const models = modelsByMake[engine.makeId] || [];
+    const isTwin = engines.length > 1;
+    const positionLabel =
+      engine.position === 'port'
+        ? 'Port engine'
+        : engine.position === 'starboard'
+          ? 'Starboard engine'
+          : null;
+
+    // Confirmation pill shows only when we have catalog specs (not for Other path).
+    const specs = engine.modelSpecs;
+    const showPill = !engine.isMakeOther && specs && engine.modelName;
+    const pillBits = [];
+    if (showPill) {
+      if (specs.horsepower) pillBits.push(specs.horsepower + 'hp');
+      if (specs.cylinders) pillBits.push(specs.cylinders + '-cyl');
+      if (specs.fuel_type) pillBits.push(specs.fuel_type);
+    }
+
+    return (
+      <div key={idx} style={{ marginBottom: 16 }}>
+        {isTwin && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#6fa8e0',
+                letterSpacing: '0.6px',
+              }}
+            >
+              {positionLabel && positionLabel.toUpperCase()}
+            </div>
+            <span
+              onClick={function () {
+                removeEngine(idx);
+              }}
+              style={{
+                fontSize: 11,
+                color: 'rgba(255,255,255,0.5)',
+                cursor: 'pointer',
+              }}
+            >
+              Remove
+            </span>
+          </div>
+        )}
+
+        {/* Make + Model row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div>
+            <label style={s.label}>MAKE *</label>
+            {engine.isMakeOther ? (
+              <input
+                value={engine.makeOtherText}
+                onChange={function (e) {
+                  updateEngine(idx, { makeOtherText: e.target.value });
+                }}
+                placeholder="Engine make"
+                style={s.inp}
+              />
+            ) : (
+              <select
+                value={engine.makeId}
+                onChange={function (e) {
+                  handleMakeChange(idx, e.target.value);
+                }}
+                style={s.select}
+              >
+                <option value="" style={{ background: '#0e1e3e', color: '#fff' }}>
+                  {catalogLoaded ? 'Select make…' : 'Loading…'}
+                </option>
+                {makes.map(function (m) {
+                  return (
+                    <option
+                      key={m.id}
+                      value={m.id}
+                      style={{ background: '#0e1e3e', color: '#fff' }}
+                    >
+                      {m.name}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
+          </div>
+          <div>
+            <label style={s.label}>MODEL *</label>
+            {engine.isMakeOther ? (
+              <input
+                value={engine.modelName}
+                onChange={function (e) {
+                  updateEngine(idx, { modelName: e.target.value, modelSpecs: null });
+                }}
+                placeholder="Engine model"
+                style={s.inp}
+              />
+            ) : (
+              <select
+                value={engine.modelId}
+                onChange={function (e) {
+                  handleModelChange(idx, e.target.value);
+                }}
+                disabled={!engine.makeId}
+                style={Object.assign({}, s.select, {
+                  opacity: engine.makeId ? 1 : 0.5,
+                  cursor: engine.makeId ? 'pointer' : 'not-allowed',
+                })}
+              >
+                <option value="" style={{ background: '#0e1e3e', color: '#fff' }}>
+                  {engine.makeId ? 'Select model…' : '—'}
+                </option>
+                {models.map(function (m) {
+                  return (
+                    <option
+                      key={m.id}
+                      value={m.id}
+                      style={{ background: '#0e1e3e', color: '#fff' }}
+                    >
+                      {m.name}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
+          </div>
+        </div>
+
+        {/* Confirmation pill (catalog hit only) */}
+        {showPill && (
+          <div
+            style={{
+              background: 'rgba(80, 200, 150, 0.1)',
+              border: '0.5px solid rgba(80, 200, 150, 0.3)',
+              borderRadius: 8,
+              padding: '9px 12px',
+              marginBottom: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                flexShrink: 0,
+                borderRadius: '50%',
+                background: '#2aa06e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <svg width="9" height="9" viewBox="0 0 10 10">
+                <path
+                  d="M2 5.5 L4 7.5 L8 2.5"
+                  stroke="#fff"
+                  strokeWidth="1.6"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: '#fff' }}>
+              <span style={{ fontWeight: 500 }}>
+                {engine.makeName} {engine.modelName}
+              </span>
+              {pillBits.length > 0 && (
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>
+                  {' · ' + pillBits.join(' · ')}
+                </span>
+              )}
+            </div>
+            <span
+              onClick={function () {
+                // Reset model (re-open dropdown)
+                updateEngine(idx, {
+                  modelId: '',
+                  modelName: '',
+                  modelSpecs: null,
+                });
+              }}
+              style={{
+                fontSize: 11,
+                color: '#6fa8e0',
+                fontWeight: 500,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Not this?
+            </span>
+          </div>
+        )}
+
+        {/* Year | Hours | Fuel burn */}
+        <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 10 }}>
+          <div>
+            <label style={s.label}>YEAR</label>
+            <input
+              type="number"
+              placeholder="2020"
+              value={engine.year}
+              onChange={function (e) {
+                updateEngine(idx, { year: e.target.value });
+              }}
+              style={Object.assign({}, s.inp, { padding: '11px 10px' })}
+            />
+          </div>
+          <div>
+            <label style={s.label}>ENGINE HOURS</label>
+            <input
+              type="number"
+              placeholder="e.g. 1284"
+              value={engine.hours}
+              onChange={function (e) {
+                updateEngine(idx, { hours: e.target.value });
+              }}
+              style={s.inp}
+            />
+          </div>
+          <div>
+            <label style={s.label}>
+              FUEL BURN <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>gal/hr</span>
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              placeholder="e.g. 0.7"
+              value={engine.fuelBurn}
+              onChange={function (e) {
+                updateEngine(idx, { fuelBurn: e.target.value });
+              }}
+              style={s.inp}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────
   return (
     <div style={s.wrap}>
       <div style={s.card}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 22 }}>
           <div
             style={{
-              fontSize: 13,
-              fontWeight: 800,
-              color: '#0f4c8a',
-              letterSpacing: 1,
+              fontSize: 12,
+              fontWeight: 500,
+              color: '#6fa8e0',
+              letterSpacing: 1.2,
               marginBottom: 4,
             }}
           >
             ⚓ KEEPLY
           </div>
-          <div style={{ fontSize: 21, fontWeight: 800, color: '#1a1d23' }}>
-            {step === 1 ? 'Welcome aboard' : 'Tell us about your boat'}
+          <div style={{ fontSize: 20, fontWeight: 500, color: '#fff' }}>Welcome aboard</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
+            A few details and we'll build your boat
           </div>
-          <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>
-            {step === 1
-              ? "Let's get your vessel set up"
-              : "We'll build your full maintenance profile automatically"}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 5, marginBottom: 24 }}>
-          {[1, 2].map(function (n) {
-            return (
-              <div
-                key={n}
-                style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 3,
-                  background: step >= n ? '#0f4c8a' : '#e2e8f0',
-                }}
-              />
-            );
-          })}
         </div>
 
         {error && (
           <div
             style={{
-              background: '#fef2f2',
-              color: '#dc2626',
+              background: 'rgba(220, 38, 38, 0.15)',
+              border: '0.5px solid rgba(220, 38, 38, 0.3)',
+              color: '#fca5a5',
               borderRadius: 8,
               padding: '10px 14px',
               fontSize: 13,
@@ -454,9 +903,13 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           </div>
         )}
 
-        {/* ── Step 1 — basic details everyone fills in ── */}
-        {step === 1 && (
+        {loading ? (
+          <VesselSetupLoader />
+        ) : (
           <>
+            {/* ── YOUR BOAT ── */}
+            <div style={s.section}>YOUR BOAT</div>
+
             <label style={s.label}>VESSEL NAME *</label>
             <input
               placeholder="e.g. Irene, Blue Horizon"
@@ -464,164 +917,141 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
               onChange={function (e) {
                 setVesselName(e.target.value);
               }}
-              style={s.inp}
+              style={Object.assign({}, s.inp, { marginBottom: 12 })}
             />
 
-            <label style={s.label}>YOUR NAME</label>
-            <input
-              placeholder="Captain's name"
-              value={ownerName}
-              onChange={function (e) {
-                setOwnerName(e.target.value);
-              }}
-              style={s.inp}
-            />
-
-            <label style={s.label}>
-              HOME PORT <span style={{ fontWeight: 400 }}>(optional)</span>
-            </label>
-            <input
-              placeholder="e.g. Port Ludlow, La Cruz"
-              value={homePort}
-              onChange={function (e) {
-                setHomePort(e.target.value);
-              }}
-              style={s.inp}
-            />
-
-            <div style={{ height: 1, background: '#f1f5f9', margin: '16px 0' }} />
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 10, marginBottom: 12 }}>
               <div>
-                <label style={s.label}>
-                  ENGINE HOURS <span style={{ fontWeight: 400 }}>(optional)</span>
-                </label>
+                <label style={s.label}>YEAR *</label>
                 <input
                   type="number"
-                  placeholder="e.g. 1284"
-                  value={engineHours}
+                  placeholder="1985"
+                  value={vesselYear}
                   onChange={function (e) {
-                    setEngineHours(e.target.value);
+                    setVesselYear(e.target.value);
                   }}
-                  style={{ ...s.inp, marginBottom: 0 }}
+                  style={Object.assign({}, s.inp, { padding: '11px 10px' })}
                 />
               </div>
               <div>
-                <label style={s.label}>
-                  FUEL BURN <span style={{ fontWeight: 400 }}>gal/hr</span>
-                </label>
+                <label style={s.label}>MAKE *</label>
                 <input
-                  type="number"
-                  step="0.1"
-                  placeholder="e.g. 0.7"
-                  value={fuelBurnRate}
+                  placeholder="e.g. Catalina"
+                  value={vesselMake}
                   onChange={function (e) {
-                    setFuelBurnRate(e.target.value);
+                    setVesselMake(e.target.value);
                   }}
-                  style={{ ...s.inp, marginBottom: 0 }}
+                  style={s.inp}
+                />
+              </div>
+              <div>
+                <label style={s.label}>MODEL *</label>
+                <input
+                  placeholder="e.g. 36 MkII"
+                  value={vesselModel}
+                  onChange={function (e) {
+                    setVesselModel(e.target.value);
+                  }}
+                  style={s.inp}
                 />
               </div>
             </div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 20, marginTop: 4 }}>
-              Engine hours update automatically from your logbook. Fuel burn derives fuel used per
-              passage.
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={s.label}>YOUR NAME</label>
+                <input
+                  placeholder="Captain's name"
+                  value={ownerName}
+                  onChange={function (e) {
+                    setOwnerName(e.target.value);
+                  }}
+                  style={s.inp}
+                />
+              </div>
+              <div>
+                <label style={s.label}>HOME PORT</label>
+                <input
+                  placeholder="e.g. Port Ludlow"
+                  value={homePort}
+                  onChange={function (e) {
+                    setHomePort(e.target.value);
+                  }}
+                  style={s.inp}
+                />
+              </div>
             </div>
 
-            <button
-              onClick={function () {
-                if (!vesselName.trim()) {
-                  setError('Please enter a vessel name.');
-                  return;
-                }
-                setError(null);
-                setAiFailed(false);
-                setStep(2);
-              }}
-              style={{ ...s.btn, background: '#0f4c8a', color: '#fff' }}
-            >
-              Next →
-            </button>
-          </>
-        )}
+            <div style={s.divider}></div>
 
-        {/* ── Step 2 — universal AI flow ── */}
-        {step === 2 && (
-          <>
+            {/* ── ENGINE ── */}
             <div
               style={{
-                background: '#eff6ff',
-                border: '1px solid #bfdbfe',
-                borderRadius: 10,
-                padding: '12px 14px',
-                marginBottom: 16,
-                fontSize: 13,
-                color: '#1e40af',
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                marginBottom: 10,
               }}
             >
-              <strong>
-                We'll build your complete equipment and maintenance list automatically.
-              </strong>{' '}
-              Just tell us what you have.
+              <div style={{ ...s.section, marginBottom: 0 }}>ENGINE</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                So we get your service intervals right
+              </div>
             </div>
 
-            <label style={s.label}>DESCRIBE YOUR VESSEL</label>
-            <textarea
-              placeholder={
-                'e.g. 2018 Ranger Tug R-27\nor: 1985 Pacific Seacraft 40 with Yanmar diesel\nor: 2022 Leopard 45 catamaran'
-              }
-              value={boatDescription}
-              onChange={function (e) {
-                setBoatDescription(e.target.value);
-              }}
-              rows={3}
-              style={{ ...s.inp, resize: 'none', lineHeight: 1.6, marginBottom: 8 }}
-            />
-            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 20 }}>
-              Year, make, and model is all we need. More detail = better results.
-            </div>
+            {engines.map(function (e, i) {
+              return renderEngineBlock(e, i);
+            })}
 
-            {loading ? (
-              <VesselSetupLoader />
-            ) : (
-              <>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button
-                    onClick={function () {
-                      setStep(1);
-                      setError(null);
-                      setAiFailed(false);
-                    }}
-                    style={{ ...s.btn, flex: 1, background: '#f1f5f9', color: '#374151' }}
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    onClick={handleBuildMyBoat}
-                    style={{ ...s.btn, flex: 2, background: '#0f4c8a', color: '#fff' }}
-                  >
-                    {aiFailed ? 'Try again' : 'Launch Keeply ⚓'}
-                  </button>
-                </div>
+            {engines.length === 1 && (
+              <div style={{ padding: '10px 0 18px', textAlign: 'center' }}>
+                <span
+                  onClick={addSecondEngine}
+                  style={{
+                    fontSize: 12,
+                    color: '#6fa8e0',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Add another engine
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: 'rgba(255,255,255,0.4)',
+                    marginLeft: 6,
+                  }}
+                >
+                  for twin-engine vessels
+                </span>
+              </div>
+            )}
+            {engines.length === 2 && <div style={{ height: 10 }}></div>}
 
-                {/* Escape hatch — only appears after an AI failure so it
-                    doesn't function as a shortcut past the AI experience. */}
-                {aiFailed && (
-                  <button
-                    onClick={handleStubFallback}
-                    style={{
-                      ...s.btn,
-                      marginTop: 10,
-                      background: 'transparent',
-                      color: '#6b7280',
-                      border: '1px solid #e2e8f0',
-                      fontWeight: 600,
-                      fontSize: 13,
-                    }}
-                  >
-                    Skip setup — I'll add details later
-                  </button>
-                )}
-              </>
+            {/* ── Primary action ── */}
+            <button
+              onClick={handleBuildMyBoat}
+              style={Object.assign({}, s.btn, { background: '#1f6fd6', color: '#fff' })}
+            >
+              {aiFailed ? 'Try again' : 'Launch Keeply ⚓'}
+            </button>
+
+            {/* Escape hatch — only after an AI failure */}
+            {aiFailed && (
+              <button
+                onClick={handleStubFallback}
+                style={Object.assign({}, s.btn, {
+                  marginTop: 10,
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.65)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                })}
+              >
+                Skip setup — I'll add details later
+              </button>
             )}
           </>
         )}
