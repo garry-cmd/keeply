@@ -196,6 +196,7 @@ Ordered by strategic value:
 4. **Never push straight to main**
 5. Rollback: Vercel → Deployments → READY deploy → Promote to Production
 6. Always end coding sessions with PowerShell commands (staging first, then production)
+7. **Code and docs deploy together.** Any PowerShell deploy bundle that ships code must either include matching CONTEXT.md / ROADMAP.md / OKR page updates in the same commit, or Claude must explicitly state "no context changes needed" at the top of the deploy instructions. Never ship code in one push and reconcile docs in the next session — that is exactly how "Database-driven pricing" made it into CONTEXT.md for months while the code did something else entirely.
 
 **Coding**
 - Discuss architecture and show mockups before writing code
