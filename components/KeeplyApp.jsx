@@ -14532,6 +14532,10 @@ export default function App() {
                                       });
                                     } catch (err) {
                                       console.error('Equipment photo upload failed:', err);
+                                      setDbError(
+                                        "Couldn't upload photo: " +
+                                          (err && err.message ? err.message : 'Unknown error')
+                                      );
                                     } finally {
                                       setUploadingRepairPhoto(function (prev) {
                                         var n = Object.assign({}, prev);
