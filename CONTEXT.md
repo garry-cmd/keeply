@@ -1,6 +1,6 @@
 # Keeply — Context
 
-**Updated:** April 22, 2026  
+**Updated:** April 23, 2026  
 **Phase:** Beta → Pre-Launch (GoLive imminent)  
 **Founder:** Garry Hoffman (solo) · Co-owner: Marty (20%, community/social OKR)  
 **Target:** $5K MRR to quit day job
@@ -15,15 +15,15 @@ Copy rule: never use "sailors" — always "boaters."
 
 ---
 
-## Current state (Apr 22, 2026)
+## Current state (Apr 23, 2026)
 
 - **5 active beta testers** (3 Active Cruisers, 2 Liveaboards, 0 Upgraders). +2 imminent (1 Cruiser, 1 Liveaboard) → 4/3/0 split.
 - **Beta close deadline: May 1.** Structured task plan still 0/5 — KR moved from on-track → at-risk.
-- **New active KR: "Deliver final features" (due May 31):** Logbook Custom Checklists (Pro), First Mate Conversation History (all tiers), Multi-engine tracking. See `/admin/okr`.
+- **Active KR: "Deliver final features" (due May 31):** Logbook Custom Checklists (Pro), First Mate Conversation History (all tiers), Multi-engine tracking. See `/admin/okr`.
 - **1/3 personas validated** (Upgrader still unvalidated — gap in cohort)
 - **iOS/Android:** DUNS in hand, Google Play account in flight, iOS build pending
-- **Apr 22 audit findings (now tracked in Close Beta KR):**
-  - `FM_LIMITS` hardcoded in 3 places with 3 different values (API: 3/10/50, FirstMate.jsx: 5/30/50, FirstMateScreen.jsx: 3/10/50) — none read from the `plan_limits` table. UI and server disagree about query caps. Single source of truth fix needed.
+- **Apr 23 session win:** Doc attach bug fixed — regular-equipment Docs tab file picker now auto-fills the label from the filename, matching the vessel-scoped tab. Closes the bug that blocked attaching files to the Jabsco bilge pump on SV Irene (and every other regular equipment card since commit `a166837`).
+- **Apr 22 audit finding (still open):**
   - `push_subscriptions` table has **1 row across 10 users.** Infrastructure complete (subscribe route, cron at 13:00 UTC, VAPID keys, web-push) but enrollment flow likely broken. Needs end-to-end real-device validation.
 - **Apr 21 session wins:** Tier 1 hygiene complete (error boundaries + PostHog exceptions + Prettier). Beta feedback from first personal run-through closed: onboarding urgent task, First Mate formatting, feedback copy, and biggest activation win — **email verification no longer blocks signup.** Users land in the app immediately.
 
@@ -44,7 +44,7 @@ Copy rule: never use "sailors" — always "boaters."
 
 **Platform**
 - Supabase auth + RLS
-- Database-driven pricing (live tuning via `/admin/pricing`, no redeploy)
+- Static pricing config in `lib/pricing.js` — single source of truth for prices, Stripe price IDs, plan limits, and features. Consumed by Stripe webhook, LandingPage, and First Mate routes/components. Edit + deploy to change pricing.
 - Stripe subscriptions, webhooks, customer portal
 - Resend transactional email
 - **Frictionless signup** — "Confirm email" gate OFF in Supabase (Apr 21); users land in app immediately. "Secure email change" ON for account-change protection. Branded confirmation email template ships from `Keeply <noreply@keeply.boats>` (used for explicit resend, password reset, email-change verify).
@@ -64,9 +64,17 @@ Copy rule: never use "sailors" — always "boaters."
 - First Mate explicit formatting rules in system prompt — no markdown, plain dash lists, 1-2 sentence short answers, no "Great question!" preamble
 - Feedback confirmation copy: *"We'll respond when we get back to the dock."* (nautical, no founder name)
 
+**Bug fixes & polish (Apr 23)**
+- **FM_LIMITS single source of truth** — `app/api/firstmate/route.js`, `components/FirstMate.jsx`, and `components/FirstMateScreen.jsx` now all import `PLANS` from `lib/pricing.js`. The three hardcoded constants (each with different values, none matching the DB) are deleted. Standard users now see 30 in both UI surfaces and get 30 from the server, not 10. Stale 403 message ("First Mate is not available on the Free plan…") reworded to plan-agnostic and hardened with a `console.error` log so the now-unreachable branch becomes observable if it ever fires.
+- **Orphan pricing schema cleanup** — dropped five unreferenced tables: `plan_limits`, `plan_marketing_features`, `pricing_plans`, `pricing_experiments`, `user_experiment_assignments`. Zero code references existed; they were seed data / A/B testing scaffolding from prior sessions that never got consumers. `lib/pricing.js` is now the unambiguous single source of truth with no parallel DB system creating drift.
+- Doc attach auto-fill parity — the file picker on the regular-equipment Docs tab now auto-fills the label field from the filename, matching the vessel-scoped tab. Commit `a166837` ("Doc attach UX: auto-fill label from filename") only updated one of two file picker sites; today's one-line fix (onChange handler at line ~17017 in `KeeplyApp.jsx`) restores parity. Diagnostic logs from `4147a7d` made the diagnosis trivial — `[addCustomDoc] aborted: empty label` with a dumped form state told the whole story.
+- DOC_LIBRARY removed (-335 LOC) — the "Suggested Documents" feature linked to `google.com/search?q=...` URLs dressed up as curated manufacturer manuals. Misleading; user clicks "Beta Marine Operators Manual" and gets a Google results page. Verified zero existing equipment rows had these URLs persisted (208 equipment rows checked), so no data cleanup. Replaced with a small empty-state on the Docs tab pointing users to "+ Add Document".
+- Settings Danger Zone separator — Sign Out went from red to neutral text color (it's a routine action, not destructive); a "DANGER ZONE" muted label now sits between Sign Out and Delete Account. Prevents the misclick where two adjacent red buttons did very different things.
+- FAB "Add Task" → "Add Maintenance" — beta users were confused by "Add Task" since the action creates a maintenance item attached to equipment. Updated the FAB sub-menu label, modal heading, and form placeholder. Tab labels (`Maintenance Tasks`) intentionally left alone — the broader task→maintenance audit stays in the icebox.
+
 **Roughly done (remaining items tracked in "Deliver final features" KR, due May 31)**
 - **Logbook** — passages, watch entries, pre-departure & arrival checklists all working. **Remaining:** Custom Checklists (Pro tier) — currently checklist items are hardcoded JS constants in `LogbookPage.jsx`.
-- **First Mate** — conversational AI assistant, bottom sheet, query limits by tier, `APP_GUIDE` system prompt with prompt caching. **Remaining:** Conversation history (all tiers — beta tester request), FM_LIMITS single source of truth fix (Close Beta KR).
+- **First Mate** — conversational AI assistant, bottom sheet, query limits by tier (all three sites now import from `lib/pricing.js`), `APP_GUIDE` system prompt with prompt caching. **Remaining:** Conversation history (all tiers — beta tester request).
 - **Engine hours (single-engine)** — `vessels.engine_hours` + `vessels.engine_hours_date` columns shipped; logbook passages auto-update them; KPI card on My Boat tab. **Remaining:** Multi-engine extension (schema + UI + passage form + First Mate context).
 
 ---
@@ -77,7 +85,6 @@ Organized around two KRs pre-GoLive:
 
 **KR: Close beta successfully (deadline May 1)**
 - **Beta tester activation** — structured task plan still 0/5. Signup friction is gone; send re-engagement: "Hey, verification is now instant — try again."
-- **FM_LIMITS single source of truth** — rewire FirstMate.jsx, FirstMateScreen.jsx, and the API route to read from the `plan_limits` table (12 rows, DB-driven). Currently three hardcoded constants disagree with each other and with the DB.
 - **Push notifications validated end-to-end** — diagnose why `push_subscriptions` has only 1 row across 10 users. Test real-device delivery on the 13:00 UTC cron.
 
 **KR: Deliver final features (due May 31)**
@@ -197,6 +204,7 @@ Ordered by strategic value:
 - **Do NOT split `KeeplyApp.jsx` (~26,000 lines post-Prettier, ~8k substantive) pre-launch** — post-launch tech debt
 - When applying multiple patches, always work from the most recent file state
 - TypeScript errors in the container are pre-existing env issues, not regressions
+- **Verify handoff specs against live DB / live code before executing them.** Specs written in one session and executed in another can silently drift out of sync with reality. Preflight (grep counts + DB state check) takes a minute and prevents catastrophic edits.
 
 **Content**
 - Never "sailors" → always "boaters"
@@ -280,11 +288,23 @@ Running git commands from `C:\Users\garry` instead of `C:\Users\garry\keeply` pr
 
 ---
 
+## Key learnings (Apr 23 session)
+
+- **Orphan schema creates recurring forensic cost.** CONTEXT.md claimed "Database-driven pricing (live tuning via `/admin/pricing`, no redeploy)" — but zero code referenced the `plan_limits` / `pricing_plans` / `plan_marketing_features` tables, and `/admin/pricing` didn't exist. 15 minutes of the session went to reconciling stated state vs. actual state. The right fix wasn't to build the missing consumers — it was to delete the unused tables so CONTEXT.md could tell the truth in one line. Rule: infrastructure without a consumer is a liability, not an asset. At 14 users, speculative schema is pure forensic tax on every future session.
+- **Also: aspirational docs rot faster than code.** `lib/pricing.js` has declared itself "SINGLE SOURCE OF TRUTH" in its header for months, yet three FirstMate files each hardcoded their own version of the same data. The rule was written; the rule wasn't enforced. If a file's header asserts a cross-file invariant, add a grep check to CI or to the deploy PowerShell — otherwise the invariant will drift.
+- **Verify handoff specs before executing them.** A prior session produced `keeply-docs-photos-rebuild.md` — a 900-line surgical-edit spec whose opening paragraph stated a DB migration was already applied. It wasn't: the `documents` and `photos` tables don't exist, and the old JSONB columns (`equipment.docs`, `maintenance_tasks.photos`, `maintenance_tasks.attachments`, `repairs.photos`) are all still present. Running Phase 1 of that spec would have removed working code to match a non-existent schema. Preflight (one SQL query + one grep) caught it in under a minute. Spec has been deleted from project knowledge; it was never safe to execute as written.
+- **Diagnostic logs pay for themselves.** The `[addCustomDoc] aborted: empty label` log line with a dumped form state told the whole story of today's bug. Commit `4147a7d` ("replace silent returns with visible errors + diagnostic logs") was the exact tool that made the fix trivial. Next time there's a temptation to remove verbose logging from a sensitive flow, don't.
+- **Duplicated UI patterns will drift.** Two file-picker sites, same `newDocForm` state, one updated with auto-fill in commit `a166837` and the other missed. Monolithic `KeeplyApp.jsx` makes this pattern inevitable until the post-launch component split. For now: whenever a UX change touches a pattern that may appear twice in a single state object, grep the file for all callers before committing.
+- **Equipment RLS overlap was real but not today's bug.** The `equipment` table carries two ALL-command policies — one owner-only (`vessels.user_id = auth.uid()`), one member-aware (`get_my_vessel_ids()`). For owners on their own vessels both pass; for shared members with certain access patterns UPDATE can silently fail. Already on the backlog as "Finalize Share Vessel Permissions." Doc-attach debugging surfaced it, didn't cause it.
+- **The actual user-visible symptom ≠ the root cause in the last Claude's head.** The prior session went to a full JSONB→normalized-tables refactor when the bug was a single missing line in one of two onChange handlers. Resist the urge to rewrite architecture when a bug can be explained by drift between two sites of the same pattern.
+
+---
+
 ## Key learnings (Apr 22 session)
 
 - **Supabase auto-confirm breaks `.resend({type:'signup'})`.** Verified empirically: with "Confirm email" toggle OFF, signups return `email_confirmed_at = created_at` instantly and `.resend({type:'signup'})` returns 200 but is a silent no-op (confirmation_sent_at stays null, zero audit events). Any future verification-flow design has to either un-confirm users post-signup via service role, roll its own verification column, or move to OAuth-primary. Don't trust Supabase's toggle semantics without an empirical check.
 - **Verify a feature is still needed before building around a constraint.** Spent a chunk of the session designing a banner for a risk (chargeback fraud, invite spam, digest cost) that at 14 users is theoretical. The 30-minute mitigation — rate-limit `/api/invite` + verify auth token on `/api/stripe/checkout` — covers the actual surface without the architectural cost of a verification system. Scope question beats design question.
-- **Constants drift: `FM_LIMITS` hardcoded in 3 places with 3 values.** API route (`route.js`) enforces `free: 3 / standard: 10 / pro: 50`, `FirstMate.jsx` displays `5/30/50`, `FirstMateScreen.jsx` displays `3/10/50`. None read from the `plan_limits` table. A Standard user sees "30 queries/mo" in UI but gets cut off at 10 by the server. This is a correctness bug that explains mixed beta feedback. Lesson: DB-driven pricing is only DB-driven if the code reads from the DB — adding a table isn't enough.
+- **Constants drift: `FM_LIMITS` hardcoded in 3 places with 3 values.** API route (`route.js`) enforced `free: 3 / standard: 10 / pro: 50`, `FirstMate.jsx` displayed `5/30/50`, `FirstMateScreen.jsx` displayed `3/10/50`. None read from the `plan_limits` table. A Standard user saw "30 queries/mo" in UI but got cut off at 10 by the server. Correctness bug that explained mixed beta feedback. Shipped fix Apr 23: all three sites now import from `lib/pricing.js`; orphan `plan_limits`/`pricing_plans`/`plan_marketing_features`/`pricing_experiments`/`user_experiment_assignments` tables dropped. Lesson: DB-driven pricing isn't real just because a table exists — and at this scale, "static config in a lib file" beats "half-built DB-driven system with no admin UI." The right fix for speculative infrastructure is often deletion, not completion.
 - **Infrastructure built ≠ infrastructure working.** Push notifications have subscribe route, unsubscribe route, VAPID keys, web-push lib, and a daily cron — but `push_subscriptions` has 1 row across 10 users. Code shipping and users being served are separate things. Always verify end-to-end on a real device before marking "done."
 - **Engine hours is already done for single-engine.** `vessels.engine_hours` + `engine_hours_date` columns, logbook passages auto-update them, KPI card renders them. The actual work in the new KR is *multi-engine extension*, not "add engine hours from scratch." Grepping the codebase surfaced this in under a minute.
 - **Prettier reformat changed the monolith from 7,900 → 26,180 lines without adding features.** CONTEXT.md has been repeating the old number. Line count is a poor proxy for complexity after a mechanical reformat. Substantive code is closer to 8k.

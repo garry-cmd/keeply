@@ -1,5 +1,5 @@
 # Keeply Roadmap
-_Last updated: April 22, 2026_
+_Last updated: April 23, 2026_
 
 > **Granular tracking lives at [`/admin/okr`](https://keeply.boats/admin/okr).**
 > This document is the strategic frame — swim lanes, sequencing, and decisions.
@@ -39,7 +39,7 @@ The OKR page visualises these as a 6-month timeline. Summary here:
 
 - Web app live at keeply.boats (Next.js / Supabase / Vercel)
 - 5-person closed beta underway; +2 testers joining this week
-- Stripe billing active — Free / Standard / Pro / Fleet tiers, DB-driven pricing
+- Stripe billing active — Free / Standard / Pro / Fleet tiers, pricing config in `lib/pricing.js`
 - First Mate AI assistant live (bottom sheet + full screen), ~90% feature-complete
 - Logbook live (passages + watch entries + pre-departure + arrival checklists), ~90% feature-complete
 - Engine hours shipped for single-engine (vessels.engine_hours + auto-update from logbook)
@@ -62,7 +62,7 @@ Stabilise and validate before any infrastructure or store work.
 - All 3 personas validated (Active Cruiser ✓, Liveaboard ✓, Upgrader ✗)
 - Structured feedback received from all testers
 - Zero critical bugs outstanding
-- First Mate query limits unified against `plan_limits` table (UI + API agree)
+- First Mate query limits unified — all three sites (API route, FirstMate.jsx, FirstMateScreen.jsx) import from `lib/pricing.js`
 - Push notifications validated end-to-end on real device
 
 ### Deliver final features (due May 31)
@@ -169,6 +169,7 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 9. **Quick Capture** — photo → AI identify → one-time or recurring (depends on Camera equipment ID)
 10. **Camera equipment ID** — photo of engine plate → AI identifies make/model (net-new, differentiated)
 11. **AI Coins / Credits** — replace per-month query limits with rollover balance (revisit at 500+ users)
+12. **Drag-and-drop file upload on Docs tab** (desktop only) — drag a PDF or image from desktop onto an equipment card's Docs tab; opens the existing Add Document form pre-loaded with the file (label auto-filled from filename). ~30-40 LOC, no new deps, HTML5 drag/drop API. Two sites to wire (vessel-scoped + regular equipment Docs tab) to avoid the parity bug pattern. Mobile/iPad gets nothing — touch devices don't support filesystem drag — but desktop liveaboards reviewing manuals on a laptop in the saloon get a small delight win.
 
 ---
 
@@ -181,6 +182,7 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 - **Theme audit** — restore light mode toggle (currently dark-only; ~40% of KeeplyApp.jsx uses hardcoded colors)
 - **Insurance sponsorship model** (BoatUS/Geico) — requires consumer scale first
 - **Email verification + soft gates** — banner nudge + gates on `/api/stripe/checkout`, `/api/invite`, `/api/cron/weekly-digest`. Blocked by Supabase auto-confirm: with "Confirm email" OFF, `email_confirmed_at` is populated at signup and `.resend({type:'signup'})` is a no-op on already-confirmed users (verified empirically Apr 22). Implementation paths: (a) service-role un-confirm immediately post-signup, (b) roll our own `user_profiles.email_verified_at` column + token flow, (c) move to OAuth-primary (Google/Apple) and treat email/password as the minority path. At 14 users the fraud/spam/cost risk is theoretical; revisit at 500+ users or earlier if invite abuse surfaces.
+- **Docs/Photos normalization (JSONB → tables)** — migrate `equipment.docs`, `maintenance_tasks.photos/attachments`, `repairs.photos` from JSONB columns to normalized `documents` and `photos` tables with polymorphic `parent_type`/`parent_id`. Scaffolded components exist on staging (`DocumentAttachments.jsx`, `PhotoGallery.jsx`) but DB migration was never applied. Evaluated Apr 22–23 as not urgent: JSONB works fine for the current scale, and the refactor is ~35 edit sites across a 26k-line file — a class of change that should wait until the monolith is split (post-launch tech debt). Revisit once `KeeplyApp.jsx` is componentized.
 
 ---
 
@@ -200,7 +202,9 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 - Stripe webhook coverage: `trial_will_end`, `invoice.payment_failed`, `subscription.updated`
 - Full theme audit / CSS variables
 - Repo cleanup: remove `.bak` files, one-shot patch scripts at repo root
-- **Finalize Share Vessel Permissions** — audit + tighten the member/owner model (surfaced Apr 22 during doc-attach debugging). `equipment` table has two overlapping RLS policies that need consolidation; no UI indicator of role on a vessel; no role hierarchy beyond owner/member. Scope to define: what members can do (delete vessel? add/remove other members? change billing? delete docs uploaded by others?), whether to add a viewer/read-only role, RLS cleanup (single policy per table), and UI affordances (who attached this doc, who closed this repair). Distinct from the "Share Vessel stays ungated" decision — that's about the invite flow, this is about the access model.
+- **Finalize Share Vessel Permissions** — audit + tighten the member/owner model (surfaced Apr 22 during doc-attach debugging). `equipment` table has two overlapping ALL-command RLS policies (owner-only + member-aware `get_my_vessel_ids()`) that need consolidation; no UI indicator of role on a vessel; no role hierarchy beyond owner/member. Scope to define: what members can do (delete vessel? add/remove other members? change billing? delete docs uploaded by others?), whether to add a viewer/read-only role, RLS cleanup (single policy per table), and UI affordances (who attached this doc, who closed this repair). Distinct from the "Share Vessel stays ungated" decision — that's about the invite flow, this is about the access model.
+- **Dedupe duplicated UI patterns in `KeeplyApp.jsx`** — the Apr 23 doc-attach bug was caused by two file-picker sites sharing `newDocForm` state with one updated and one missed. Other duplicated patterns almost certainly exist; the post-launch component split should eliminate the class of bug, not just instances.
+- **Vessel photo upload leaks orphaned files** — every replace creates a new `vessel-photo-{vessel_id}-{timestamp}/...` folder in the `vessel-docs` bucket without deleting the old one. Already 12 MB orphaned across a single vessel (5 dupes of one 3 MB photo) at 14 users. Two-part fix: (1) ~15 LOC in the upload handler to delete prior `vessel-photo-{vessel_id}-*` folders before the new upload, (2) one-shot SQL/storage cleanup script that keeps only the most-recent folder per vessel. Trivial at beta scale; could be gigabytes at 1,000 users.
 
 ---
 
@@ -214,3 +218,4 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 - **Paid ads are a validation tool** only, until CAC/LTV math is proven.
 - **Primary acquisition = community + YouTube + micro-influencers**, not paid search.
 - **Dark mode only** through launch. Light mode toggle is icebox unless a real product requirement emerges.
+- **No docs/photos schema migration pre-launch.** The `keeply-docs-photos-rebuild.md` spec was evaluated Apr 23: viable design, wrong timing. The old JSONB columns work fine at current scale; the refactor should wait until `KeeplyApp.jsx` is componentized so surgical edits across a 26k-line file aren't required. See Icebox.
