@@ -95,6 +95,60 @@ function vesselInfoPayload(form) {
   return p;
 }
 
+// Silent classifier for what kind of doc was just scanned. Used both for
+// the docs list badge (doc.type) and for the success banner label.
+// Returns { type, label } — type must be a key in DOC_TYPE_CFG.
+function classifyScannedDoc(fields) {
+  if (!fields) return { type: 'Other', label: 'Vessel Document' };
+  if (fields.uscg_doc)          return { type: 'Registration', label: 'USCG Documentation' };
+  if (fields.state_reg || fields.hin) return { type: 'Registration', label: 'Vessel Registration' };
+  if (fields.policy_no || fields.insurance_carrier || fields.policy_exp) {
+    return { type: 'Insurance', label: 'Insurance Policy' };
+  }
+  return { type: 'Other', label: 'Vessel Document' };
+}
+
+// Build the scan auto-commit payload. Passport fields (hin, loa, etc.) always
+// overwrite from the scan. Top-level vessel fields (make, model, year,
+// owner_name, vessel_name) fill in only when currently empty — we don't want
+// a user's "Frodo" nickname replaced by the registration's full legal name.
+function scanCommitPayload(fields, existingVessel) {
+  const passport = vesselInfoPayload(fields || {});
+  const topLevel = {};
+  const topLevelMap = [
+    ['vessel_name', 'vesselName'],
+    ['make', 'make'],
+    ['model', 'model'],
+    ['year', 'year'],
+    ['owner_name', 'ownerName'],
+  ];
+  for (let i = 0; i < topLevelMap.length; i++) {
+    const dbKey = topLevelMap[i][0];
+    const stateKey = topLevelMap[i][1];
+    const incoming = fields && fields[dbKey];
+    const current = existingVessel ? existingVessel[stateKey] : null;
+    if (incoming && String(incoming).trim() && !(current && String(current).trim())) {
+      topLevel[dbKey] = String(incoming).trim();
+    }
+  }
+  // Return both the DB payload and a state-merge object keyed for
+  // React state (camelCase where the normalizer uses it).
+  return {
+    dbPayload: Object.assign({}, passport, topLevel),
+    statePatch: Object.assign({}, passport, (function () {
+      const s = {};
+      if (topLevel.vessel_name) s.vesselName = topLevel.vessel_name;
+      if (topLevel.make) s.make = topLevel.make;
+      if (topLevel.model) s.model = topLevel.model;
+      if (topLevel.year) s.year = topLevel.year;
+      if (topLevel.owner_name) s.ownerName = topLevel.owner_name;
+      // home_port is normalized to both home_port AND address
+      if (passport.home_port) s.address = passport.home_port;
+      return s;
+    })()),
+  };
+}
+
 async function supa(table, opts) {
   const { method = 'GET', query = '', body, prefer } = opts || {};
   // Read token synchronously from localStorage first to avoid race condition on load
@@ -339,6 +393,8 @@ const DOC_TYPE_CFG = {
   Warranty: { color: 'var(--warn-text)', bg: 'var(--warn-bg)', icon: '📜' },
   Photo: { color: 'var(--info-text)', bg: 'var(--info-bg)', icon: '📷' },
   License: { color: 'var(--warn-text)', bg: 'var(--warn-bg)', icon: '🪪' },
+  Registration: { color: 'var(--ok-text)', bg: 'var(--ok-bg)', icon: '📄' },
+  Insurance: { color: 'var(--warn-text)', bg: 'var(--warn-bg)', icon: '🛡️' },
   Other: { color: 'var(--text-muted)', bg: 'var(--bg-subtle)', icon: '📄' },
 };
 
@@ -2364,6 +2420,9 @@ export default function App() {
   const [vesselInfoForm, setVesselInfoForm] = useState({});
   const [scanningVesselDoc, setScanningVesselDoc] = useState(false);
   const [scanError, setScanError] = useState(null);
+  // After a successful scan: { count, docLabel, docType, at } or null.
+  // Drives the green banner on the Docs tab; cleared on dismiss or tab switch.
+  const [scanSuccess, setScanSuccess] = useState(null);
   const [uploadingEditDoc, setUploadingEditDoc] = useState(false);
   const [equipFilter, setEquipFilter] = useState('All');
   const [equipSectionFilter, setEquipSectionFilter] = useState('All');
@@ -8925,53 +8984,7 @@ export default function App() {
                             { key: 'policy_no', label: 'Policy No.' },
                             { key: 'policy_exp', label: 'Policy Expiry' },
                           ];
-                          if (!hasData)
-                            return (
-                              <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                                <div
-                                  style={{
-                                    fontSize: 12,
-                                    color: 'var(--text-muted)',
-                                    marginBottom: 12,
-                                  }}
-                                >
-                                  No vessel ID info yet
-                                </div>
-                                <button
-                                  onClick={function () {
-                                    const av = vessels.find(function (v) {
-                                      return v.id === activeVesselId;
-                                    });
-                                    setVesselInfoForm(vesselInfoFromRecord(av));
-                                    setEditingVesselInfo(true);
-                                    if (av)
-                                      setVesselDetailForm({
-                                        vesselName: av.vesselName || '',
-                                        make: av.make || '',
-                                        model: av.model || '',
-                                        year: av.year || '',
-                                      });
-                                    setEquipTab(function (prev) {
-                                      const n = Object.assign({}, prev);
-                                      n[vesselEq.id] = 'edit';
-                                      return n;
-                                    });
-                                  }}
-                                  style={{
-                                    background: 'var(--brand)',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: 8,
-                                    padding: '8px 16px',
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  + Add Vessel ID
-                                </button>
-                              </div>
-                            );
+                          const monoKeys = ['hin', 'uscg_doc', 'mmsi', 'call_sign', 'policy_no', 'state_reg'];
                           var haulTask = (vesselAdminTasks[activeVesselId] || []).find(
                             function (t) {
                               return t.name && t.name.toLowerCase().includes('haul');
@@ -9054,54 +9067,79 @@ export default function App() {
                               <div
                                 style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}
                               >
-                                {infoFields
-                                  .filter(function (f) {
-                                    return info[f.key];
-                                  })
-                                  .map(function (f) {
-                                    return (
+                                {infoFields.map(function (f) {
+                                  const val = info[f.key];
+                                  const isEmpty = val === undefined || val === null || val === '';
+                                  return (
+                                    <div
+                                      key={f.key}
+                                      style={{
+                                        padding: '7px 0',
+                                        borderBottom: '0.5px solid var(--border)',
+                                      }}
+                                    >
                                       <div
-                                        key={f.key}
                                         style={{
-                                          padding: '7px 0',
-                                          borderBottom: '0.5px solid var(--border)',
+                                          fontSize: 9,
+                                          fontWeight: 700,
+                                          color: 'var(--text-muted)',
+                                          letterSpacing: '0.5px',
+                                          textTransform: 'uppercase',
+                                          marginBottom: 2,
                                         }}
                                       >
-                                        <div
-                                          style={{
-                                            fontSize: 9,
-                                            fontWeight: 700,
-                                            color: 'var(--text-muted)',
-                                            letterSpacing: '0.5px',
-                                            textTransform: 'uppercase',
-                                            marginBottom: 2,
-                                          }}
-                                        >
-                                          {f.label}
-                                        </div>
-                                        <div
-                                          style={{
-                                            fontSize: 12,
-                                            fontWeight: 600,
-                                            color: 'var(--text-primary)',
-                                            fontFamily: [
-                                              'hin',
-                                              'uscg_doc',
-                                              'mmsi',
-                                              'call_sign',
-                                              'policy_no',
-                                              'state_reg',
-                                            ].includes(f.key)
+                                        {f.label}
+                                      </div>
+                                      <div
+                                        style={{
+                                          fontSize: 12,
+                                          fontWeight: isEmpty ? 400 : 600,
+                                          color: isEmpty
+                                            ? 'var(--text-muted)'
+                                            : 'var(--text-primary)',
+                                          fontFamily:
+                                            !isEmpty && monoKeys.indexOf(f.key) >= 0
                                               ? 'DM Mono, monospace'
                                               : 'inherit',
-                                          }}
-                                        >
-                                          {info[f.key]}
-                                        </div>
+                                        }}
+                                      >
+                                        {isEmpty ? '—' : val}
                                       </div>
-                                    );
-                                  })}
+                                    </div>
+                                  );
+                                })}
                               </div>
+                              {!hasData && (
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: 'var(--text-muted)',
+                                    textAlign: 'center',
+                                    padding: '14px 8px 4px',
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  Scan your registration on the{' '}
+                                  <span
+                                    onClick={function (e) {
+                                      e.stopPropagation();
+                                      setEquipTab(function (prev) {
+                                        const n = Object.assign({}, prev);
+                                        n[vesselEq.id] = 'docs';
+                                        return n;
+                                      });
+                                    }}
+                                    style={{
+                                      color: 'var(--brand)',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Docs tab
+                                  </span>
+                                  , or tap Edit to enter manually.
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
@@ -9111,6 +9149,318 @@ export default function App() {
                             e.stopPropagation();
                           }}
                         >
+                          {/* ── Scan success banner (auto-commit) ── */}
+                          {scanSuccess && (
+                            <div
+                              style={{
+                                padding: '10px 12px',
+                                marginBottom: 10,
+                                borderRadius: 8,
+                                background: 'var(--ok-bg)',
+                                color: 'var(--ok-text)',
+                                fontSize: 12,
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 8,
+                              }}
+                            >
+                              <span style={{ fontWeight: 700, flexShrink: 0 }}>✓</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 700 }}>
+                                  Saved {scanSuccess.count} field
+                                  {scanSuccess.count === 1 ? '' : 's'} from your{' '}
+                                  {scanSuccess.docLabel.toLowerCase()}
+                                </div>
+                                {scanSuccess.fieldLabels && (
+                                  <div
+                                    style={{
+                                      fontSize: 11,
+                                      marginTop: 3,
+                                      opacity: 0.85,
+                                      lineHeight: 1.5,
+                                    }}
+                                  >
+                                    {scanSuccess.fieldLabels}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={function () {
+                                  setScanSuccess(null);
+                                }}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'inherit',
+                                  cursor: 'pointer',
+                                  fontSize: 14,
+                                  opacity: 0.6,
+                                  padding: 0,
+                                  lineHeight: 1,
+                                  flexShrink: 0,
+                                }}
+                                aria-label="Dismiss"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+
+                          {/* ── Scan error banner ── */}
+                          {scanError && (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--danger-text)',
+                                background: 'var(--danger-bg)',
+                                borderRadius: 8,
+                                padding: '8px 12px',
+                                marginBottom: 10,
+                              }}
+                            >
+                              {scanError}
+                            </div>
+                          )}
+
+                          {/* ── Scan CTA card ── */}
+                          <label
+                            style={{
+                              display: 'block',
+                              border: '1.5px dashed var(--border)',
+                              borderRadius: 10,
+                              padding: '14px 14px 16px',
+                              textAlign: 'center',
+                              cursor: scanningVesselDoc ? 'default' : 'pointer',
+                              marginBottom: 12,
+                              boxSizing: 'border-box',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: 'var(--text-primary)',
+                                marginBottom: 4,
+                              }}
+                            >
+                              {scanningVesselDoc
+                                ? 'Scanning document…'
+                                : 'Scan a document'}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: 'var(--text-muted)',
+                                marginBottom: 10,
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              Registration, insurance, or USCG documentation —
+                              <br />
+                              we'll pull identity fields into the ID tab
+                            </div>
+                            <div
+                              style={{
+                                display: 'inline-block',
+                                background: 'var(--brand)',
+                                color: '#fff',
+                                padding: '8px 16px',
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 700,
+                                opacity: scanningVesselDoc ? 0.6 : 1,
+                              }}
+                            >
+                              {scanningVesselDoc ? 'Scanning…' : '📷 Scan or upload'}
+                            </div>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              style={{ display: 'none' }}
+                              disabled={scanningVesselDoc}
+                              onChange={async function (e) {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                setScanningVesselDoc(true);
+                                setScanError(null);
+                                setScanSuccess(null);
+                                try {
+                                  // Client-side compress for big images
+                                  let uploadFile = file;
+                                  if (
+                                    file.type !== 'application/pdf' &&
+                                    file.size > 4 * 1024 * 1024
+                                  ) {
+                                    uploadFile = await new Promise(function (resolve) {
+                                      const img = new Image();
+                                      const url = URL.createObjectURL(file);
+                                      img.onload = function () {
+                                        const canvas = document.createElement('canvas');
+                                        let w = img.width;
+                                        let h = img.height;
+                                        const maxDim = 2400;
+                                        if (w > maxDim || h > maxDim) {
+                                          if (w > h) {
+                                            h = Math.round((h * maxDim) / w);
+                                            w = maxDim;
+                                          } else {
+                                            w = Math.round((w * maxDim) / h);
+                                            h = maxDim;
+                                          }
+                                        }
+                                        canvas.width = w;
+                                        canvas.height = h;
+                                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                                        canvas.toBlob(
+                                          function (blob) {
+                                            resolve(
+                                              new File([blob], file.name, {
+                                                type: 'image/jpeg',
+                                              })
+                                            );
+                                          },
+                                          'image/jpeg',
+                                          0.85
+                                        );
+                                      };
+                                      img.src = url;
+                                    });
+                                  }
+
+                                  const fd = new FormData();
+                                  fd.append('file', uploadFile);
+                                  const res = await fetch('/api/scan-document', {
+                                    method: 'POST',
+                                    body: fd,
+                                  });
+                                  const d = await res.json();
+                                  if (d.error) {
+                                    setScanError(d.error);
+                                    return;
+                                  }
+                                  const fields = d.fields || {};
+
+                                  // Silent classify → doc type + label
+                                  const classified = classifyScannedDoc(fields);
+
+                                  // ── AUTO-COMMIT ────────────────────────
+                                  // Passport fields always overwrite; top-level
+                                  // vessel fields (name/make/model/year/owner)
+                                  // only fill when empty.
+                                  const activeVessel = vessels.find(function (v) {
+                                    return v.id === activeVesselId;
+                                  });
+                                  const commit = scanCommitPayload(fields, activeVessel);
+                                  await supa('vessels', {
+                                    method: 'PATCH',
+                                    query: 'id=eq.' + activeVesselId,
+                                    body: commit.dbPayload,
+                                    prefer: 'return=minimal',
+                                  });
+                                  setVessels(function (vs) {
+                                    return vs.map(function (v) {
+                                      return v.id === activeVesselId
+                                        ? Object.assign({}, v, commit.statePatch)
+                                        : v;
+                                    });
+                                  });
+
+                                  // ── File the document in docs[] ──────
+                                  try {
+                                    const ext =
+                                      uploadFile.name.split('.').pop().toLowerCase() || 'jpg';
+                                    const vesselNm =
+                                      (activeVessel && activeVessel.vesselName) || '';
+                                    const cleanName =
+                                      (
+                                        classified.label +
+                                        (vesselNm ? '-' + vesselNm : '')
+                                      ).replace(/[^a-zA-Z0-9-]/g, '-') +
+                                      '.' +
+                                      ext;
+                                    const renamedFile = new File([uploadFile], cleanName, {
+                                      type: uploadFile.type,
+                                    });
+                                    const fileUrl = await uploadToStorage(
+                                      renamedFile,
+                                      vesselEq.id
+                                    );
+                                    const newDoc = {
+                                      id: 'doc-' + Date.now(),
+                                      label: classified.label,
+                                      type: classified.type,
+                                      url: fileUrl,
+                                      fileName: cleanName,
+                                      isFile: true,
+                                    };
+                                    const updatedDocs = [...(vesselEq.docs || []), newDoc];
+                                    await supa('equipment', {
+                                      method: 'PATCH',
+                                      query: 'id=eq.' + vesselEq.id,
+                                      body: { docs: updatedDocs },
+                                      prefer: 'return=minimal',
+                                    });
+                                    setEquipment(function (prev) {
+                                      return prev.map(function (eItem) {
+                                        return eItem.id === vesselEq.id
+                                          ? { ...eItem, docs: updatedDocs }
+                                          : eItem;
+                                      });
+                                    });
+                                  } catch (docErr) {
+                                    console.error('Doc save error:', docErr);
+                                  }
+
+                                  // ── Success banner ────────────────────
+                                  const fieldLabelMap = {
+                                    hin: 'HIN',
+                                    uscg_doc: 'USCG Doc',
+                                    state_reg: 'State reg',
+                                    mmsi: 'MMSI',
+                                    call_sign: 'Call sign',
+                                    flag: 'Flag',
+                                    home_port: 'Home port',
+                                    loa: 'LOA',
+                                    beam: 'Beam',
+                                    draft: 'Draft',
+                                    insurance_carrier: 'Insurer',
+                                    policy_no: 'Policy no.',
+                                    policy_exp: 'Policy expiry',
+                                    vessel_name: 'Vessel name',
+                                    make: 'Make',
+                                    model: 'Model',
+                                    year: 'Year',
+                                    owner_name: 'Owner',
+                                  };
+                                  const savedKeys = Object.keys(commit.dbPayload).filter(
+                                    function (k) {
+                                      return (
+                                        commit.dbPayload[k] !== null &&
+                                        commit.dbPayload[k] !== undefined &&
+                                        commit.dbPayload[k] !== ''
+                                      );
+                                    }
+                                  );
+                                  setScanSuccess({
+                                    count: savedKeys.length,
+                                    docLabel: classified.label,
+                                    docType: classified.type,
+                                    fieldLabels: savedKeys
+                                      .map(function (k) {
+                                        return fieldLabelMap[k] || k;
+                                      })
+                                      .join(' · '),
+                                  });
+                                } catch (err) {
+                                  setScanError('Scan failed: ' + err.message);
+                                } finally {
+                                  setScanningVesselDoc(false);
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+
                           {docSavedMsg && docSavedMsg.eqId === vesselEq.id && (
                             <div
                               style={{
@@ -9128,6 +9478,20 @@ export default function App() {
                             >
                               <span>✓</span>
                               <span>Added “{docSavedMsg.label}”</span>
+                            </div>
+                          )}
+                          {(vesselEq.docs || []).length > 0 && (
+                            <div
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                letterSpacing: '0.8px',
+                                marginBottom: 6,
+                                paddingTop: 4,
+                              }}
+                            >
+                              RECENT
                             </div>
                           )}
                           {/* Existing docs */}
@@ -11128,181 +11492,6 @@ export default function App() {
                                 </>
                               );
                             })()}
-                          </div>
-                          {/* AI scan button */}
-                          <label
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 8,
-                              width: '100%',
-                              padding: '10px',
-                              border: '1.5px dashed #ddd6fe',
-                              borderRadius: 8,
-                              cursor: scanningVesselDoc ? 'default' : 'pointer',
-                              fontSize: 13,
-                              fontWeight: 700,
-                              color: 'var(--brand)',
-                              background: 'var(--brand-deep)',
-                              marginBottom: 14,
-                              boxSizing: 'border-box',
-                            }}
-                          >
-                            {scanningVesselDoc ? 'Scanning document…' : 'Scan document with AI'}
-                            <input
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              style={{ display: 'none' }}
-                              disabled={scanningVesselDoc}
-                              onChange={async function (e) {
-                                const file = e.target.files[0];
-                                if (!file) return;
-                                setScanningVesselDoc(true);
-                                setScanError(null);
-                                try {
-                                  let uploadFile = file;
-                                  if (
-                                    file.type !== 'application/pdf' &&
-                                    file.size > 4 * 1024 * 1024
-                                  ) {
-                                    uploadFile = await new Promise(function (resolve) {
-                                      const img = new Image();
-                                      const url = URL.createObjectURL(file);
-                                      img.onload = function () {
-                                        URL.revokeObjectURL(url);
-                                        const canvas = document.createElement('canvas');
-                                        let w = img.width;
-                                        let h = img.height;
-                                        const maxDim = 2000;
-                                        if (w > maxDim || h > maxDim) {
-                                          if (w > h) {
-                                            h = Math.round((h * maxDim) / w);
-                                            w = maxDim;
-                                          } else {
-                                            w = Math.round((w * maxDim) / h);
-                                            h = maxDim;
-                                          }
-                                        }
-                                        canvas.width = w;
-                                        canvas.height = h;
-                                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                                        canvas.toBlob(
-                                          function (blob) {
-                                            resolve(
-                                              new File([blob], file.name, { type: 'image/jpeg' })
-                                            );
-                                          },
-                                          'image/jpeg',
-                                          0.85
-                                        );
-                                      };
-                                      img.src = url;
-                                    });
-                                  }
-                                  const fd = new FormData();
-                                  fd.append('file', uploadFile);
-                                  const res = await fetch('/api/scan-document', {
-                                    method: 'POST',
-                                    body: fd,
-                                  });
-                                  const d = await res.json();
-                                  if (d.error) {
-                                    setScanError(d.error);
-                                    return;
-                                  }
-                                  if (d.fields)
-                                    setVesselInfoForm(function (prev) {
-                                      return Object.assign({}, prev, d.fields);
-                                    });
-                                  // Also save the scanned document to the vessel's Docs tab
-                                  try {
-                                    const docLabel =
-                                      d.fields && d.fields.uscg_doc
-                                        ? 'USCG Documentation'
-                                        : d.fields && d.fields.state_reg
-                                          ? 'Vessel Registration'
-                                          : d.fields && d.fields.insurance_carrier
-                                            ? 'Insurance Document'
-                                            : d.fields && d.fields.policy_no
-                                              ? 'Insurance Policy'
-                                              : 'Vessel Document';
-                                    const ext =
-                                      uploadFile.name.split('.').pop().toLowerCase() || 'jpg';
-                                    const vesselName =
-                                      (
-                                        vessels.find(function (v) {
-                                          return v.id === activeVesselId;
-                                        }) || {}
-                                      ).vesselName || '';
-                                    const cleanName =
-                                      (docLabel + (vesselName ? '-' + vesselName : '')).replace(
-                                        /[^a-zA-Z0-9-]/g,
-                                        '-'
-                                      ) +
-                                      '.' +
-                                      ext;
-                                    const renamedFile = new File([uploadFile], cleanName, {
-                                      type: uploadFile.type,
-                                    });
-                                    const fileUrl = await uploadToStorage(renamedFile, vesselEq.id);
-                                    const newDoc = {
-                                      id: 'doc-' + Date.now(),
-                                      label: docLabel,
-                                      type: 'Registration',
-                                      url: fileUrl,
-                                      fileName: cleanName,
-                                      isFile: true,
-                                    };
-                                    const updatedDocs = [...(vesselEq.docs || []), newDoc];
-                                    await supa('equipment', {
-                                      method: 'PATCH',
-                                      query: 'id=eq.' + vesselEq.id,
-                                      body: { docs: updatedDocs },
-                                      prefer: 'return=minimal',
-                                    });
-                                    setEquipment(function (prev) {
-                                      return prev.map(function (e) {
-                                        return e.id === vesselEq.id
-                                          ? { ...e, docs: updatedDocs }
-                                          : e;
-                                      });
-                                    });
-                                  } catch (docErr) {
-                                    console.error('Doc save error:', docErr);
-                                  }
-                                } catch (err) {
-                                  setScanError('Scan failed: ' + err.message);
-                                } finally {
-                                  setScanningVesselDoc(false);
-                                  e.target.value = '';
-                                }
-                              }}
-                            />
-                          </label>
-                          {scanError && (
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: 'var(--danger-text)',
-                                background: 'var(--danger-bg)',
-                                borderRadius: 8,
-                                padding: '8px 12px',
-                                marginBottom: 10,
-                              }}
-                            >
-                              {scanError}
-                            </div>
-                          )}
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: 'var(--text-muted)',
-                              textAlign: 'center',
-                              marginBottom: 14,
-                            }}
-                          >
-                            or fill in manually below
                           </div>
                           {[
                             {
