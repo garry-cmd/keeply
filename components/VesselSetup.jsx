@@ -343,6 +343,9 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
       if (!e.modelName || !e.modelName.trim()) {
         return 'Please enter a ' + posLabel + 'model.';
       }
+      if (!e.year || !String(e.year).trim()) {
+        return 'Please enter the ' + posLabel + 'year.';
+      }
     }
     return null;
   }
@@ -623,14 +626,16 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
           ? 'Starboard engine'
           : null;
 
-    // Confirmation pill shows only when we have catalog specs (not for Other path).
+    // Confirmation pill shows for any catalog match (not for Other path).
+    // Shows only what we can claim reliably: make/model (user-picked),
+    // year (user-typed), fuel_type (stable per model name). HP/cyl are
+    // NOT shown — they vary by year variant and we'd often be wrong.
     const specs = engine.modelSpecs;
-    const showPill = !engine.isMakeOther && specs && engine.modelName;
+    const showPill = !engine.isMakeOther && engine.modelName;
     const pillBits = [];
     if (showPill) {
-      if (specs.horsepower) pillBits.push(specs.horsepower + 'hp');
-      if (specs.cylinders) pillBits.push(specs.cylinders + '-cyl');
-      if (specs.fuel_type) pillBits.push(specs.fuel_type);
+      if (engine.year) pillBits.push(engine.year);
+      if (specs && specs.fuel_type) pillBits.push(specs.fuel_type);
     }
 
     return (
@@ -821,7 +826,7 @@ export default function VesselSetup({ userId, userPlan, onComplete }) {
         {/* Year | Hours | Fuel burn */}
         <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 10 }}>
           <div>
-            <label style={s.label}>YEAR</label>
+            <label style={s.label}>YEAR *</label>
             <input
               type="number"
               placeholder="2020"

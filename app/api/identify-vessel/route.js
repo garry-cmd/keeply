@@ -54,11 +54,11 @@ Maintenance intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Be sp
         if (e.make) parts.push(String(e.make));
         if (e.model) parts.push(String(e.model));
         const idBit = parts.join(' ');
-        const specs = [];
-        if (e.horsepower) specs.push(e.horsepower + 'hp');
-        if (e.cylinders) specs.push(e.cylinders + '-cyl');
-        if (e.fuel_type) specs.push(String(e.fuel_type));
-        const specBit = specs.length ? ' (' + specs.join(', ') + ')' : '';
+        // Only include fuel_type in the engine spec — it's stable per
+        // model name. HP/cyl vary by year and aren't passed from the
+        // catalog; the model itself is asked to infer them from
+        // make/model/year.
+        const specBit = e.fuel_type ? ' (' + String(e.fuel_type) + ')' : '';
         const posBit = e.position ? ' — ' + e.position : '';
         return '- ' + idBit + specBit + posBit;
       });
@@ -73,7 +73,9 @@ VESSEL: ${vesselLine || '(unknown)'}
 ENGINE${engines.length === 1 ? '' : 'S'}:
 ${engineBlock}
 
-Generate a complete, specific equipment list that an owner of THIS exact vessel would track for maintenance. Tailor tasks to the actual engine(s) listed — oil specs, impeller size, fuel filter part numbers, zinc locations, and service intervals should match the specific engine make/model when known.
+The engine year is especially important — the same model name often spans multiple generations with different base engines, cylinder counts, displacements, and part numbers. Reason about the SPECIFIC year variant when generating tasks and part specs. If the year falls in a transition period where you're not sure which variant, note that in the relevant task text rather than guess.
+
+Generate a complete, specific equipment list that an owner of THIS exact vessel would track for maintenance. Tailor tasks to the actual engine(s) listed — oil specs, impeller size, fuel filter part numbers, zinc locations, and service intervals should match the specific engine make/model/year.
 
 Classify the vessel type based on the make/model: 'sail' for sailboats (monohull or catamaran), 'motor' for powerboats (center console, trawler, cruiser, sportfisher, etc.), 'other' only if genuinely unclear. Base this on vessel identity, not on equipment categories.
 
