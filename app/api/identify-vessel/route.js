@@ -48,17 +48,19 @@ Maintenance intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Be sp
       const v = body.vessel;
       const vesselLine = [v.year, v.make, v.model].filter(Boolean).join(' ').trim();
       const engines = Array.isArray(body.engines) ? body.engines : [];
+      const anyHours = engines.some(function (e) {
+        return e.engine_hours != null;
+      });
       const engineLines = engines.map(function (e) {
         const parts = [];
         if (e.year) parts.push(String(e.year));
         if (e.make) parts.push(String(e.make));
         if (e.model) parts.push(String(e.model));
         const idBit = parts.join(' ');
-        // Only include fuel_type in the engine spec — it's stable per
-        // model name. HP/cyl vary by year and aren't passed from the
-        // catalog; the model itself is asked to infer them from
-        // make/model/year.
-        const specBit = e.fuel_type ? ' (' + String(e.fuel_type) + ')' : '';
+        const specs = [];
+        if (e.fuel_type) specs.push(String(e.fuel_type));
+        if (e.engine_hours != null) specs.push(e.engine_hours + ' hrs');
+        const specBit = specs.length ? ' (' + specs.join(', ') + ')' : '';
         const posBit = e.position ? ' — ' + e.position : '';
         return '- ' + idBit + specBit + posBit;
       });
@@ -66,6 +68,10 @@ Maintenance intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Be sp
         engineLines.length > 0
           ? engineLines.join('\n')
           : '- (engine details not provided)';
+
+      const hourGuidance = anyHours
+        ? `\n\nEngine hours are provided, so engine-category maintenance tasks MUST include interval_hours in addition to interval_days — this lets the app trigger whichever comes first. Typical marine diesel intervals: oil & filter 100 hrs / 365 days, impeller 300 hrs / 365 days, primary fuel filter 250 hrs / 365 days, transmission fluid 300 hrs / 730 days, engine zincs 200 hrs / 365 days, raw water strainer 50 hrs / 30 days, belts & hoses inspection 200 hrs / 365 days, injector service 1000 hrs / 1095 days. Adjust for the specific engine make/model/year. Non-engine tasks (rigging, sails, hull, etc.) should have interval_days only.`
+        : '';
 
       prompt = `You are an expert marine surveyor and boat maintenance specialist with deep knowledge of production boats, custom builds, and all types of vessels.
 
@@ -75,7 +81,11 @@ ${engineBlock}
 
 The engine year is especially important — the same model name often spans multiple generations with different base engines, cylinder counts, displacements, and part numbers. Reason about the SPECIFIC year variant when generating tasks and part specs. If the year falls in a transition period where you're not sure which variant, note that in the relevant task text rather than guess.
 
-Generate a complete, specific equipment list that an owner of THIS exact vessel would track for maintenance. Tailor tasks to the actual engine(s) listed — oil specs, impeller size, fuel filter part numbers, zinc locations, and service intervals should match the specific engine make/model/year.
+Generate a complete, specific equipment list that an owner of THIS exact vessel would track for maintenance. Tailor tasks to the actual engine(s) listed — oil specs, impeller size, fuel filter part numbers, zinc locations, and service intervals should match the specific engine make/model/year.${hourGuidance}
+
+For each equipment item, return TWO separate arrays — tasks and parts:
+- tasks: the ACTION to perform, clean and action-focused. Good: "Replace raw water impeller". Bad: "Replace raw water impeller (Johnson 09-812B or equivalent)". Do NOT put part numbers, fluid specs, or quantities in task names — those belong in parts.
+- parts: the specific parts / fluids needed for this equipment's maintenance. Include part number in part_number when you're confident, otherwise leave null. Parts are best-guess and the user can correct them.
 
 Classify the vessel type based on the make/model: 'sail' for sailboats (monohull or catamaran), 'motor' for powerboats (center console, trawler, cruiser, sportfisher, etc.), 'other' only if genuinely unclear. Base this on vessel identity, not on equipment categories.
 
@@ -85,13 +95,22 @@ Return ONLY valid JSON — no prose, no markdown, no code fences:
     "vesselType": "sail | motor | other"
   },
   "equipment": [
-    { "name": "string", "manufacturer": "string|null", "model": "string|null",
+    {
+      "name": "string",
+      "manufacturer": "string|null",
+      "model": "string|null",
       "category": "string (Engine|Electrical|Electronics|Rigging|Sails|Plumbing|Safety|Navigation|Deck|Bilge|Hull|Dinghy|Generator|Galley|Anchor|Mechanical|Steering|Watermaker)",
-      "tasks": [{ "task": "string", "interval_days": number }] }
+      "tasks": [
+        { "task": "string (action only, no part numbers)", "interval_days": number, "interval_hours": number | null }
+      ],
+      "parts": [
+        { "name": "string", "part_number": "string | null", "notes": "string | null (e.g. quantity, spec)" }
+      ]
+    }
   ]
 }
 
-Include 12-22 equipment items, each with 2-5 tasks and realistic intervals (365=annual, 180=biannual, 90=quarterly, 730=2years). Include one Engine entry that reflects the engine(s) listed above — for twin-engine vessels, one Engine entry covering both is fine.`;
+Include 12-22 equipment items. Each should have 2-5 tasks and 0-6 parts (parts only for equipment where specific consumables/replacements matter — oil, filters, zincs, belts, impellers, batteries, etc.). Realistic intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Include one Engine entry that reflects the engine(s) listed above — for twin-engine vessels, one Engine entry covering both is fine.`;
     } else {
       prompt = `You are an expert marine surveyor and boat maintenance specialist with deep knowledge of production boats, custom builds, and all types of vessels.
 

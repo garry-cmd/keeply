@@ -18700,6 +18700,32 @@ export default function App() {
             onBack={function () {
               setTab('boat');
             }}
+            onConfirmPart={async function (eqId, partId) {
+              const eq = equipment.find(function (e) {
+                return e.id === eqId;
+              });
+              if (!eq) return;
+              const updatedParts = (eq.customParts || []).map(function (p) {
+                return p.id === partId
+                  ? Object.assign({}, p, { confirmed: true, ai_suggested: false })
+                  : p;
+              });
+              try {
+                await supa('equipment', {
+                  method: 'PATCH',
+                  query: 'id=eq.' + eqId,
+                  body: { custom_parts: updatedParts },
+                  prefer: 'return=minimal',
+                });
+                setEquipment(function (prev) {
+                  return prev.map(function (e) {
+                    return e.id === eqId ? Object.assign({}, e, { customParts: updatedParts }) : e;
+                  });
+                });
+              } catch (err) {
+                setDbError(err.message);
+              }
+            }}
           />
         )}
 

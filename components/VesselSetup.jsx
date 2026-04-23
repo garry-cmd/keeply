@@ -362,9 +362,8 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
               make: e.make,
               model: e.model,
               year: e.year,
-              horsepower: e.horsepower,
-              cylinders: e.cylinders,
               fuel_type: e.fuel_type,
+              engine_hours: e.engine_hours,
               position: e.position,
             };
           }),
@@ -443,6 +442,29 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
 
       // ── Persist AI-generated equipment + tasks ─────────
       for (const item of enrichedEquipment) {
+        // Parts — AI returns specific parts/fluids per equipment; we stash
+        // them in custom_parts as ai_suggested so the UI can prompt the
+        // user to confirm. Users may correct part numbers the AI got wrong.
+        const partsPayload = Array.isArray(item.parts)
+          ? item.parts
+              .filter(function (p) {
+                return p && p.name;
+              })
+              .map(function (p, i) {
+                return {
+                  id: 'cp-' + Date.now() + '-' + i + '-' + Math.random().toString(36).substr(2, 5),
+                  name: p.name || '',
+                  sku: p.part_number || '',
+                  notes: p.notes || '',
+                  url: '',
+                  price: '',
+                  vendor: 'ai',
+                  ai_suggested: true,
+                  confirmed: false,
+                };
+              })
+          : [];
+
         const { data: eq, error: eErr } = await supabase
           .from('equipment')
           .insert({
@@ -451,7 +473,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
             category: item.category,
             status: 'good',
             notes: item._notes || '',
-            custom_parts: [],
+            custom_parts: partsPayload,
             docs: [],
             logs: [],
           })
@@ -459,10 +481,18 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
           .single();
         if (eErr) continue;
         if (item.tasks && item.tasks.length > 0) {
+          // For engine-category tasks, compute due_hours from the first
+          // engine's current hours + interval_hours. (Single-engine:
+          // straightforward. Twins: we mirror port engine's hours.)
+          const firstEngineHours =
+            engineRows[0] && engineRows[0].engine_hours != null
+              ? engineRows[0].engine_hours
+              : null;
+
           const taskRows = item.tasks.map(function (t) {
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + (t.interval_days || 365));
-            return {
+            const row = {
               vessel_id: vessel.id,
               equipment_id: eq.id,
               task: t.task,
@@ -473,6 +503,14 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
               due_date: dueDate.toISOString().split('T')[0],
               service_logs: [],
             };
+            // Dual-trigger: if AI provided interval_hours and we have a
+            // starting engine hours reading, compute due_hours.
+            if (t.interval_hours && firstEngineHours != null) {
+              row.interval_hours = t.interval_hours;
+              row.last_service_hours = firstEngineHours;
+              row.due_hours = firstEngineHours + t.interval_hours;
+            }
+            return row;
           });
           await supabase.from('maintenance_tasks').insert(taskRows);
         }

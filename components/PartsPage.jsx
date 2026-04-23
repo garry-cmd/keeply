@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useMemo } from 'react';
 
 const s = {
@@ -26,7 +26,7 @@ const s = {
   }),
 };
 
-export default function PartsPage({ equipment, onBack }) {
+export default function PartsPage({ equipment, onBack, onConfirmPart }) {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
 
@@ -333,6 +333,23 @@ export default function PartsPage({ equipment, onBack }) {
                       <div
                         style={{ display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center' }}
                       >
+                        {part.ai_suggested && !part.confirmed && (
+                          <span
+                            onClick={function () {
+                              if (typeof onConfirmPart === 'function') {
+                                onConfirmPart(part._eqId, part.id);
+                              }
+                            }}
+                            title="Suggested by AI during onboarding. Tap to confirm this part is correct for your boat."
+                            style={Object.assign(
+                              {},
+                              s.chip('#f5b942', 'rgba(245,185,66,0.12)', 'rgba(245,185,66,0.4)'),
+                              { cursor: 'pointer' }
+                            )}
+                          >
+                            AI · verify
+                          </span>
+                        )}
                         {hasPartNum && (
                           <span style={s.chip('var(--brand)', 'var(--brand-deep)', 'var(--brand)')}>
                             #{part.sku}
