@@ -17014,8 +17014,15 @@ export default function App() {
                                         onChange={function (e) {
                                           const file = e.target.files[0];
                                           if (!file) return;
+                                          const nameNoExt = file.name.replace(/\.[^.]+$/, '');
                                           setNewDocForm(function (f) {
-                                            return { ...f, fileObj: file, fileName: file.name };
+                                            return {
+                                              ...f,
+                                              fileObj: file,
+                                              fileName: file.name,
+                                              label:
+                                                f.label && f.label.trim() ? f.label : nameNoExt,
+                                            };
                                           });
                                         }}
                                       />
