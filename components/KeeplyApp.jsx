@@ -286,249 +286,6 @@ const EQUIPMENT_PARTS = {
   Hydrovane: ['p18'],
 };
 
-const DOC_LIBRARY = [
-  {
-    id: 'beta-ops',
-    keywords: ['beta'],
-    type: 'Manual',
-    label: 'Beta Marine Operators Manual',
-    url: 'https://www.google.com/search?q=Beta+Marine+operators+manual+PDF',
-  },
-  {
-    id: 'beta-parts',
-    keywords: ['beta'],
-    type: 'Parts List',
-    label: 'Beta Marine Parts List',
-    url: 'https://www.google.com/search?q=Beta+Marine+parts+list+PDF',
-  },
-  {
-    id: 'beta-install',
-    keywords: ['beta'],
-    type: 'Manual',
-    label: 'Beta Marine Installation Manual',
-    url: 'https://www.google.com/search?q=Beta+Marine+installation+manual+PDF',
-  },
-  {
-    id: 'yanmar-ops',
-    keywords: ['yanmar'],
-    type: 'Manual',
-    label: 'Yanmar Engine Operators Manual',
-    url: 'https://www.google.com/search?q=Yanmar+marine+diesel+operators+manual+PDF',
-  },
-  {
-    id: 'yanmar-parts',
-    keywords: ['yanmar'],
-    type: 'Parts List',
-    label: 'Yanmar Engine Parts Catalog',
-    url: 'https://www.google.com/search?q=Yanmar+marine+engine+parts+catalog+PDF',
-  },
-  {
-    id: 'volvo-ops',
-    keywords: ['volvo'],
-    type: 'Manual',
-    label: 'Volvo Penta Operators Manual',
-    url: 'https://www.google.com/search?q=Volvo+Penta+operators+manual+PDF',
-  },
-  {
-    id: 'volvo-parts',
-    keywords: ['volvo'],
-    type: 'Parts List',
-    label: 'Volvo Penta Parts Catalog',
-    url: 'https://www.google.com/search?q=Volvo+Penta+parts+catalog+PDF',
-  },
-  {
-    id: 'universal-ops',
-    keywords: ['universal', 'atomic'],
-    type: 'Manual',
-    label: 'Universal Atomic 4 Manual',
-    url: 'https://www.google.com/search?q=Universal+Atomic+4+engine+manual+PDF',
-  },
-  {
-    id: 'harken-furl',
-    keywords: ['harken', 'furling'],
-    type: 'Manual',
-    label: 'Harken Furling System Manual',
-    url: 'https://www.google.com/search?q=Harken+furling+system+installation+manual+PDF',
-  },
-  {
-    id: 'harken-parts',
-    keywords: ['harken'],
-    type: 'Parts List',
-    label: 'Harken Parts & Spares Guide',
-    url: 'https://www.google.com/search?q=Harken+marine+parts+spares+catalog',
-  },
-  {
-    id: 'lewmar-win',
-    keywords: ['lewmar', 'windlass'],
-    type: 'Manual',
-    label: 'Lewmar Windlass Manual',
-    url: 'https://www.google.com/search?q=Lewmar+windlass+installation+manual+PDF',
-  },
-  {
-    id: 'lewmar-parts',
-    keywords: ['lewmar'],
-    type: 'Parts List',
-    label: 'Lewmar Parts Diagram',
-    url: 'https://www.google.com/search?q=Lewmar+windlass+parts+diagram+PDF',
-  },
-  {
-    id: 'victron-mp',
-    keywords: ['victron', 'multiplus'],
-    type: 'Manual',
-    label: 'Victron MultiPlus Manual',
-    url: 'https://www.google.com/search?q=Victron+MultiPlus+manual+PDF',
-  },
-  {
-    id: 'victron-wir',
-    keywords: ['victron'],
-    type: 'Build Sheet',
-    label: 'Victron Wiring Unlimited Guide',
-    url: 'https://www.google.com/search?q=Victron+Wiring+Unlimited+guide+PDF',
-  },
-  {
-    id: 'garmin-chart',
-    keywords: ['garmin', 'chartplotter', 'chart plotter'],
-    type: 'Manual',
-    label: 'Garmin Chartplotter Manual',
-    url: 'https://www.google.com/search?q=Garmin+chartplotter+owners+manual+PDF',
-  },
-  {
-    id: 'raymarine',
-    keywords: ['raymarine'],
-    type: 'Manual',
-    label: 'Raymarine Manual',
-    url: 'https://www.google.com/search?q=Raymarine+manual+PDF',
-  },
-  {
-    id: 'furuno',
-    keywords: ['furuno'],
-    type: 'Manual',
-    label: 'Furuno Manual',
-    url: 'https://www.google.com/search?q=Furuno+marine+manual+PDF',
-  },
-  {
-    id: 'whale-bilge',
-    keywords: ['whale', 'gusher', 'bilge pump'],
-    type: 'Manual',
-    label: 'Bilge Pump Service Manual',
-    url: 'https://www.google.com/search?q=marine+bilge+pump+service+manual+PDF',
-  },
-  {
-    id: 'jabsco',
-    keywords: ['jabsco'],
-    type: 'Manual',
-    label: 'Jabsco Manual',
-    url: 'https://www.google.com/search?q=Jabsco+marine+manual+PDF',
-  },
-  {
-    id: 'jabsco-parts',
-    keywords: ['jabsco'],
-    type: 'Parts List',
-    label: 'Jabsco Parts Catalog',
-    url: 'https://www.google.com/search?q=Jabsco+parts+catalog+PDF',
-  },
-  {
-    id: 'hv-manual',
-    keywords: ['hydrovane'],
-    type: 'Manual',
-    label: 'Hydrovane User Manual',
-    url: 'https://www.google.com/search?q=Hydrovane+installation+user+manual+PDF',
-  },
-  {
-    id: 'hv-parts',
-    keywords: ['hydrovane'],
-    type: 'Parts List',
-    label: 'Hydrovane Parts Diagram',
-    url: 'https://www.google.com/search?q=Hydrovane+spare+parts+diagram',
-  },
-  {
-    id: 'wm-guide',
-    keywords: ['watermaker', 'water maker'],
-    type: 'Manual',
-    label: 'Watermaker Operation Manual',
-    url: 'https://www.google.com/search?q=marine+watermaker+operation+maintenance+manual+PDF',
-  },
-  {
-    id: 'racor-fuel',
-    keywords: ['racor', 'fuel filter'],
-    type: 'Manual',
-    label: 'Racor Fuel Filter Manual',
-    url: 'https://www.google.com/search?q=Racor+fuel+filter+service+manual+PDF',
-  },
-  {
-    id: 'westerbeke',
-    keywords: ['westerbeke'],
-    type: 'Manual',
-    label: 'Westerbeke Engine Manual',
-    url: 'https://www.google.com/search?q=Westerbeke+marine+engine+manual+PDF',
-  },
-  {
-    id: 'mercury',
-    keywords: ['mercury'],
-    type: 'Manual',
-    label: 'Mercury Outboard Manual',
-    url: 'https://www.google.com/search?q=Mercury+outboard+service+manual+PDF',
-  },
-  {
-    id: 'honda-ob',
-    keywords: ['honda'],
-    type: 'Manual',
-    label: 'Honda Outboard Manual',
-    url: 'https://www.google.com/search?q=Honda+outboard+service+manual+PDF',
-  },
-  {
-    id: 'tohatsu',
-    keywords: ['tohatsu'],
-    type: 'Manual',
-    label: 'Tohatsu Outboard Manual',
-    url: 'https://www.google.com/search?q=Tohatsu+outboard+service+manual+PDF',
-  },
-  {
-    id: 'max-prop',
-    keywords: ['max-prop', 'maxprop', 'feathering prop'],
-    type: 'Manual',
-    label: 'Max-Prop Manual',
-    url: 'https://www.google.com/search?q=Max-Prop+feathering+propeller+manual+PDF',
-  },
-  {
-    id: 'autoprop',
-    keywords: ['autoprop'],
-    type: 'Manual',
-    label: 'Autoprop Manual',
-    url: 'https://www.google.com/search?q=Autoprop+feathering+propeller+manual+PDF',
-  },
-  {
-    id: 'simrad',
-    keywords: ['simrad'],
-    type: 'Manual',
-    label: 'Simrad Manual',
-    url: 'https://www.google.com/search?q=Simrad+marine+manual+PDF',
-  },
-  {
-    id: 'side-power',
-    keywords: ['side-power', 'sidepower', 'thruster', 'bow thruster'],
-    type: 'Manual',
-    label: 'Bow Thruster Manual',
-    url: 'https://www.google.com/search?q=Side-Power+bow+thruster+installation+manual+PDF',
-  },
-  {
-    id: 'bukh',
-    keywords: ['bukh'],
-    type: 'Manual',
-    label: 'Bukh Engine Manual',
-    url: 'https://www.google.com/search?q=Bukh+marine+diesel+engine+manual+PDF',
-  },
-];
-
-function getAutoSuggestedDocs(equipmentName) {
-  const lower = equipmentName.toLowerCase();
-  return DOC_LIBRARY.filter((doc) =>
-    doc.keywords.some(function (kw) {
-      return lower.indexOf(kw) >= 0;
-    })
-  );
-}
-
 const DOC_TYPE_CFG = {
   Manual: { color: 'var(--info-text)', bg: 'var(--info-bg)', icon: '📖' },
   'Parts List': { color: 'var(--ok-text)', bg: 'var(--ok-bg)', icon: '🔩' },
@@ -3538,11 +3295,10 @@ export default function App() {
   // ─── EQUIPMENT CRUD ──────────────────────────────────────────────────────────
   const addEquipment = async function () {
     if (!newEquip.name.trim()) return;
-    const autoSuggested = getAutoSuggestedDocs(newEquip.name);
     setSaving(true);
     if (newEquip.fileObj) setUploadingDoc(true);
     try {
-      const initialDocs = [...autoSuggested];
+      const initialDocs = [];
       if (newEquip.fileObj) {
         const tempId = 'eq-new-' + Date.now();
         const fileUrl = await uploadToStorage(newEquip.fileObj, tempId);
@@ -3864,35 +3620,6 @@ export default function App() {
     const updatedDocs = (eq.docs || []).filter(function (d) {
       return d.id !== docId;
     });
-    try {
-      await supa('equipment', {
-        method: 'PATCH',
-        query: 'id=eq.' + eqId,
-        body: { docs: updatedDocs },
-        prefer: 'return=minimal',
-      });
-      setEquipment(function (prev) {
-        return prev.map(function (e) {
-          return e.id === eqId ? { ...e, docs: updatedDocs } : e;
-        });
-      });
-    } catch (err) {
-      setDbError(err.message);
-    }
-  };
-
-  const addSuggestedDoc = async function (eqId, doc) {
-    const eq = equipment.find(function (e) {
-      return e.id === eqId;
-    });
-    if (!eq) return;
-    if (
-      (eq.docs || []).find(function (d) {
-        return d.id === doc.id;
-      })
-    )
-      return;
-    const updatedDocs = [...(eq.docs || []), doc];
     try {
       await supa('equipment', {
         method: 'PATCH',
@@ -13739,11 +13466,6 @@ export default function App() {
               .map(function (eq) {
                 const isExpanded = expandedEquip === eq.id;
                 const activeTab = equipTab[eq.id] || 'maintenance';
-                const autoSugDocs = getAutoSuggestedDocs(eq.name).filter(function (d) {
-                  return !(eq.docs || []).find(function (ed) {
-                    return ed.id === d.id;
-                  });
-                });
                 const isVesselCard = false;
                 return (
                   <div key={eq.id} style={{ ...s.card, overflow: 'hidden' }}>
@@ -16835,89 +16557,32 @@ export default function App() {
                                 })}
                               </>
                             )}
-                            {autoSugDocs.length > 0 && (
-                              <div
-                                style={{
-                                  background: 'var(--warn-bg)',
-                                  border: '1px solid #fde68a',
-                                  borderRadius: 10,
-                                  padding: 12,
-                                  marginTop: 12,
-                                }}
-                              >
+                            {(!eq.docs || eq.docs.length === 0) &&
+                              addingDocFor !== eq.id && (
                                 <div
                                   style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    color: 'var(--warn-text)',
-                                    marginBottom: 8,
+                                    background: 'var(--bg-subtle)',
+                                    borderRadius: 10,
+                                    padding: 12,
+                                    marginTop: 12,
+                                    fontSize: 12,
+                                    color: 'var(--text-muted)',
+                                    textAlign: 'center',
+                                    lineHeight: 1.5,
                                   }}
                                 >
-                                  SUGGESTED DOCUMENTS
+                                  No documents attached yet. Tap{' '}
+                                  <span
+                                    style={{
+                                      fontWeight: 700,
+                                      color: 'var(--text-primary)',
+                                    }}
+                                  >
+                                    + Add Document
+                                  </span>{' '}
+                                  below to attach a manual, parts list, or photo.
                                 </div>
-                                {autoSugDocs.slice(0, 3).map(function (doc) {
-                                  const dc = DOC_TYPE_CFG[doc.type] || DOC_TYPE_CFG['Other'];
-                                  return (
-                                    <div
-                                      key={doc.id}
-                                      style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        padding: '6px 0',
-                                        borderBottom: '1px solid #fde68a25',
-                                      }}
-                                    >
-                                      <div
-                                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                                      >
-                                        <span
-                                          style={{
-                                            background: dc.bg,
-                                            color: dc.color,
-                                            borderRadius: 5,
-                                            padding: '2px 7px',
-                                            fontSize: 10,
-                                            fontWeight: 700,
-                                          }}
-                                        >
-                                          {doc.type}
-                                        </span>
-                                        <a
-                                          href={doc.url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          style={{
-                                            fontSize: 12,
-                                            color: 'var(--brand)',
-                                            textDecoration: 'none',
-                                          }}
-                                        >
-                                          {doc.label} ↗
-                                        </a>
-                                      </div>
-                                      <button
-                                        onClick={function () {
-                                          addSuggestedDoc(eq.id, doc);
-                                        }}
-                                        style={{
-                                          background: 'var(--brand)',
-                                          color: '#fff',
-                                          border: 'none',
-                                          borderRadius: 6,
-                                          padding: '3px 10px',
-                                          fontSize: 11,
-                                          fontWeight: 700,
-                                          cursor: 'pointer',
-                                        }}
-                                      >
-                                        + Add
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
+                              )}
                             {addingDocFor === eq.id ? (
                               <div
                                 style={{
