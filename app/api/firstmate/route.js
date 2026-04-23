@@ -650,10 +650,15 @@ export async function POST(request) {
         const effectivePlan = trialActive ? 'pro' : plan;
         const limit = PLANS[effectivePlan]?.firstMate ?? 0;
         if (limit === 0) {
+          console.error('[firstmate] unknown plan — no First Mate quota', {
+            userId: user.id,
+            plan,
+            effectivePlan,
+          });
           return Response.json(
             {
               error:
-                'First Mate is not available on the Free plan. Upgrade to Standard or Pro to chat with First Mate.',
+                "First Mate isn't available on your current plan. Please contact support if this seems wrong.",
             },
             { status: 403 }
           );
