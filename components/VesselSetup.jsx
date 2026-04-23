@@ -86,20 +86,22 @@ function VesselSetupLoader() {
 }
 
 // ── Main component ───────────────────────────────────────────────────────
-// AI onboarding is universal — every plan gets the Make/Model catalog +
-// AI equipment generation. On AI failure, a "Skip setup" stub fallback
+// AI onboarding is universal — every plan gets the onboarding form + AI
+// equipment generation. On AI failure, a "Skip setup" stub fallback
 // creates the vessel + engines with vessel_type='sail' (cruising sail is
 // the ICP majority) so the user is never stuck. `userPlan` is kept in
 // the prop signature for back-compat but is unused.
+//
+// As of Apr 2026 the engine make/model are free-text inputs, not catalog
+// dropdowns — catalog curation at year-variant precision proved
+// unreliable (Beta 35 is 3-cyl in 2008, 4-cyl in 2015, etc.). Free text
+// + AI inference from make/model/year yields better results and is
+// simpler. engine_makes/engine_models tables remain in the DB but are
+// no longer consulted from the UI.
 function blankEngine(position) {
   return {
-    makeId: '',
-    makeName: '',
-    isMakeOther: false,
-    makeOtherText: '',
-    modelId: '',
-    modelName: '',
-    modelSpecs: null,
+    make: '',
+    model: '',
     year: '',
     hours: '',
     fuelBurn: '',
@@ -119,55 +121,12 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
   // ── Engines (up to 2) ───────────────────────────────────────────────
   const [engines, setEngines] = useState([blankEngine(null)]);
 
-  // ── Catalog ─────────────────────────────────────────────────────────
-  const [makes, setMakes] = useState([]);
-  const [modelsByMake, setModelsByMake] = useState({});
-  const [catalogLoaded, setCatalogLoaded] = useState(false);
-
   // ── Flow state ──────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [aiFailed, setAiFailed] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
-
-  // ── Load catalog on mount ───────────────────────────────────────────
-  useEffect(function () {
-    let cancelled = false;
-    (async function () {
-      try {
-        const makesRes = await supabase
-          .from('engine_makes')
-          .select('id, name, category, sort_order')
-          .eq('is_active', true)
-          .order('sort_order');
-        const modelsRes = await supabase
-          .from('engine_models')
-          .select('id, make_id, name, fuel_type, cylinders, horsepower, sort_order')
-          .eq('is_active', true)
-          .order('sort_order');
-        if (cancelled) return;
-        const makeRows = makesRes.data || [];
-        const modelRows = modelsRes.data || [];
-        const grouped = {};
-        for (let i = 0; i < modelRows.length; i++) {
-          const m = modelRows[i];
-          if (!grouped[m.make_id]) grouped[m.make_id] = [];
-          grouped[m.make_id].push(m);
-        }
-        setMakes(makeRows);
-        setModelsByMake(grouped);
-        setCatalogLoaded(true);
-      } catch (e) {
-        if (!cancelled) {
-          setCatalogLoaded(true);
-        }
-      }
-    })();
-    return function () {
-      cancelled = true;
-    };
-  }, []);
 
   // ── Style tokens (dark theme, matches rest of app) ──────────────────
   const s = {
@@ -257,53 +216,6 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
     });
   }
 
-  function handleMakeChange(idx, makeId) {
-    if (!makeId) {
-      updateEngine(idx, {
-        makeId: '',
-        makeName: '',
-        isMakeOther: false,
-        makeOtherText: '',
-        modelId: '',
-        modelName: '',
-        modelSpecs: null,
-      });
-      return;
-    }
-    const m = makes.find(function (x) {
-      return x.id === makeId;
-    });
-    const isOther = m && m.name === 'Other';
-    updateEngine(idx, {
-      makeId: makeId,
-      makeName: m ? m.name : '',
-      isMakeOther: !!isOther,
-      makeOtherText: isOther ? engines[idx].makeOtherText : '',
-      modelId: '',
-      modelName: '',
-      modelSpecs: null,
-    });
-  }
-
-  function handleModelChange(idx, modelId) {
-    const engine = engines[idx];
-    const list = modelsByMake[engine.makeId] || [];
-    const m = list.find(function (x) {
-      return x.id === modelId;
-    });
-    updateEngine(idx, {
-      modelId: modelId,
-      modelName: m ? m.name : '',
-      modelSpecs: m
-        ? {
-            fuel_type: m.fuel_type,
-            cylinders: m.cylinders,
-            horsepower: m.horsepower,
-          }
-        : null,
-    });
-  }
-
   function addSecondEngine() {
     // Promote the single engine to 'port', add 'starboard' alongside.
     setEngines(function (prev) {
@@ -336,11 +248,10 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
       const e = engines[i];
       const posLabel =
         engines.length > 1 ? (e.position === 'starboard' ? 'starboard' : 'port') + ' engine ' : 'engine ';
-      const resolvedMake = e.isMakeOther ? e.makeOtherText : e.makeName;
-      if (!resolvedMake || !resolvedMake.trim()) {
-        return 'Please select a ' + posLabel + 'make.';
+      if (!e.make || !e.make.trim()) {
+        return 'Please enter a ' + posLabel + 'make.';
       }
-      if (!e.modelName || !e.modelName.trim()) {
+      if (!e.model || !e.model.trim()) {
         return 'Please enter a ' + posLabel + 'model.';
       }
       if (!e.year || !String(e.year).trim()) {
@@ -352,18 +263,16 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
 
   function canonicalEngines() {
     return engines.map(function (e) {
-      const make = e.isMakeOther ? e.makeOtherText.trim() : e.makeName;
-      const model = e.modelName.trim();
-      const hp = e.modelSpecs && e.modelSpecs.horsepower;
-      const cyl = e.modelSpecs && e.modelSpecs.cylinders;
-      const fuel = e.modelSpecs && e.modelSpecs.fuel_type;
       return {
-        make: make,
-        model: model,
+        make: e.make.trim(),
+        model: e.model.trim(),
         year: e.year ? parseInt(e.year, 10) : null,
-        horsepower: hp || null,
-        cylinders: cyl || null,
-        fuel_type: fuel || null,
+        // HP/cyl/fuel_type intentionally null — the AI infers these from
+        // make/model/year in the identify-vessel route. Free-text UI
+        // means we don't pretend to have catalog-grade specs up front.
+        horsepower: null,
+        cylinders: null,
+        fuel_type: null,
         engine_hours: e.hours ? parseInt(e.hours, 10) : null,
         engine_hours_date: e.hours ? today : null,
         fuel_burn_rate: e.fuelBurn ? parseFloat(e.fuelBurn) : null,
@@ -674,7 +583,6 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
 
   // ── Engine block renderer ───────────────────────────────────────────
   function renderEngineBlock(engine, idx) {
-    const models = modelsByMake[engine.makeId] || [];
     const isTwin = engines.length > 1;
     const positionLabel =
       engine.position === 'port'
@@ -682,18 +590,6 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
         : engine.position === 'starboard'
           ? 'Starboard engine'
           : null;
-
-    // Confirmation pill shows for any catalog match (not for Other path).
-    // Shows only what we can claim reliably: make/model (user-picked),
-    // year (user-typed), fuel_type (stable per model name). HP/cyl are
-    // NOT shown — they vary by year variant and we'd often be wrong.
-    const specs = engine.modelSpecs;
-    const showPill = !engine.isMakeOther && engine.modelName;
-    const pillBits = [];
-    if (showPill) {
-      if (engine.year) pillBits.push(engine.year);
-      if (specs && specs.fuel_type) pillBits.push(specs.fuel_type);
-    }
 
     return (
       <div key={idx} style={{ marginBottom: 16 }}>
@@ -735,150 +631,27 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
           <div>
             <label style={s.label}>MAKE *</label>
-            {engine.isMakeOther ? (
-              <input
-                value={engine.makeOtherText}
-                onChange={function (e) {
-                  updateEngine(idx, { makeOtherText: e.target.value });
-                }}
-                placeholder="Engine make"
-                style={s.inp}
-              />
-            ) : (
-              <select
-                value={engine.makeId}
-                onChange={function (e) {
-                  handleMakeChange(idx, e.target.value);
-                }}
-                style={s.select}
-              >
-                <option value="" style={{ background: '#0e1e3e', color: '#fff' }}>
-                  {catalogLoaded ? 'Select make…' : 'Loading…'}
-                </option>
-                {makes.map(function (m) {
-                  return (
-                    <option
-                      key={m.id}
-                      value={m.id}
-                      style={{ background: '#0e1e3e', color: '#fff' }}
-                    >
-                      {m.name}
-                    </option>
-                  );
-                })}
-              </select>
-            )}
+            <input
+              value={engine.make}
+              onChange={function (e) {
+                updateEngine(idx, { make: e.target.value });
+              }}
+              placeholder="e.g. Yanmar"
+              style={s.inp}
+            />
           </div>
           <div>
             <label style={s.label}>MODEL *</label>
-            {engine.isMakeOther ? (
-              <input
-                value={engine.modelName}
-                onChange={function (e) {
-                  updateEngine(idx, { modelName: e.target.value, modelSpecs: null });
-                }}
-                placeholder="Engine model"
-                style={s.inp}
-              />
-            ) : (
-              <select
-                value={engine.modelId}
-                onChange={function (e) {
-                  handleModelChange(idx, e.target.value);
-                }}
-                disabled={!engine.makeId}
-                style={Object.assign({}, s.select, {
-                  opacity: engine.makeId ? 1 : 0.5,
-                  cursor: engine.makeId ? 'pointer' : 'not-allowed',
-                })}
-              >
-                <option value="" style={{ background: '#0e1e3e', color: '#fff' }}>
-                  {engine.makeId ? 'Select model…' : '—'}
-                </option>
-                {models.map(function (m) {
-                  return (
-                    <option
-                      key={m.id}
-                      value={m.id}
-                      style={{ background: '#0e1e3e', color: '#fff' }}
-                    >
-                      {m.name}
-                    </option>
-                  );
-                })}
-              </select>
-            )}
+            <input
+              value={engine.model}
+              onChange={function (e) {
+                updateEngine(idx, { model: e.target.value });
+              }}
+              placeholder="e.g. 4JH4-HTE"
+              style={s.inp}
+            />
           </div>
         </div>
-
-        {/* Confirmation pill (catalog hit only) */}
-        {showPill && (
-          <div
-            style={{
-              background: 'rgba(80, 200, 150, 0.1)',
-              border: '0.5px solid rgba(80, 200, 150, 0.3)',
-              borderRadius: 8,
-              padding: '9px 12px',
-              marginBottom: 12,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}
-          >
-            <div
-              style={{
-                width: 16,
-                height: 16,
-                flexShrink: 0,
-                borderRadius: '50%',
-                background: '#2aa06e',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <svg width="9" height="9" viewBox="0 0 10 10">
-                <path
-                  d="M2 5.5 L4 7.5 L8 2.5"
-                  stroke="#fff"
-                  strokeWidth="1.6"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: '#fff' }}>
-              <span style={{ fontWeight: 500 }}>
-                {engine.makeName} {engine.modelName}
-              </span>
-              {pillBits.length > 0 && (
-                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>
-                  {' · ' + pillBits.join(' · ')}
-                </span>
-              )}
-            </div>
-            <span
-              onClick={function () {
-                // Reset model (re-open dropdown)
-                updateEngine(idx, {
-                  modelId: '',
-                  modelName: '',
-                  modelSpecs: null,
-                });
-              }}
-              style={{
-                fontSize: 11,
-                color: '#6fa8e0',
-                fontWeight: 500,
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >
-              Not this?
-            </span>
-          </div>
-        )}
 
         {/* Year | Hours | Fuel burn */}
         <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 10 }}>
