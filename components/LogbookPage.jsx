@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase-client';
+import { hasCapability } from '../lib/pricing';
 
 const SUPA_URL = 'https://waapqyshmqaaamiiitso.supabase.co';
 const SUPA_KEY =
@@ -219,8 +220,8 @@ export default function LogbookPage({
   onAddFormOpened,
   userPlan,
 }) {
-  const isPro = userPlan === 'pro';
-  const isStandard = userPlan === 'standard' || userPlan === 'pro';
+  const hasWatchEntries = hasCapability(userPlan, 'watchEntries');
+  const hasPassageExport = hasCapability(userPlan, 'passageExport');
   // Navigation
   const [logbookTab, setLogbookTab] = useState('pre_departure');
   const [showHistory, setShowHistory] = useState(false);
@@ -1294,7 +1295,7 @@ export default function LogbookPage({
             {saving ? 'Saving…' : editingId ? 'Update passage' : 'Save passage'}
           </button>
         </div>
-        {!editingId && isPro && !activePassage && (
+        {!editingId && hasWatchEntries && !activePassage && (
           <button
             onClick={startPassage}
             disabled={saving || !form.from_location}
@@ -1322,7 +1323,7 @@ export default function LogbookPage({
 
   // ── Active passage card ────────────────────────────────────────────────
   function renderActivePassageCard() {
-    if (!activePassage || !isPro) return null;
+    if (!activePassage || !hasWatchEntries) return null;
     const wInp = {
       border: '1px solid rgba(255,255,255,0.15)',
       borderRadius: 8,
@@ -2213,7 +2214,7 @@ export default function LogbookPage({
         <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Logbook</div>
         {/* History link — always accessible */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {showHistory && isPro && (
+          {showHistory && hasPassageExport && (
             <button
               onClick={async function () {
                 const passages = entries.filter(function (e) {
@@ -2324,7 +2325,7 @@ export default function LogbookPage({
               Export CSV
             </button>
           )}
-          {showHistory && !isPro && entries.length > 0 && (
+          {showHistory && !hasPassageExport && entries.length > 0 && (
             <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'inherit' }}>
               Export — Pro
             </span>

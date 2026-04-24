@@ -44,7 +44,7 @@ Copy rule: never use "sailors" — always "boaters."
 
 **Platform**
 - Supabase auth + RLS
-- Static pricing config in `lib/pricing.js` — single source of truth for prices, Stripe price IDs, plan limits, storage quotas (`storageBytes`/`storageLabel`), and a `CAPABILITIES` registry for boolean feature gates (11 capabilities). Exposes `hasCapability()`, `requiredPlanFor()`, and natural-language formatters (`formatPlanSummary`, `PLAN_PROMPT_LINES`, `UPGRADE_FAQ_ANSWER`) so every user-facing plan description derives from PLANS/CAPABILITIES — no more hardcoded limit strings at call sites. Consumed by webhook, LandingPage, First Mate route/components, Support FAQ, and KeeplyApp upgrade cards.
+- Static pricing config in `lib/pricing.js` — single source of truth for prices, Stripe price IDs, plan limits, storage quotas (`storageBytes`/`storageLabel`), and a `CAPABILITIES` registry for boolean feature gates (11 capabilities). Exposes `hasCapability()`, `requiredPlanFor()`, and natural-language formatters (`formatPlanSummary`, `PLAN_PROMPT_LINES`, `UPGRADE_FAQ_ANSWER`) so every user-facing plan description derives from PLANS/CAPABILITIES — no more hardcoded limit strings at call sites. Consumed by webhook, LandingPage, First Mate route/components, Support FAQ, KeeplyApp upgrade cards, LogbookPage (watch entries + passage export gates), and KeeplyApp haul-out gate.
 - Stripe subscriptions, webhooks, customer portal
 - Resend transactional email
 - **Frictionless signup** — "Confirm email" gate OFF in Supabase (Apr 21); users land in app immediately. "Secure email change" ON for account-change protection. Branded confirmation email template ships from `Keeply <noreply@keeply.boats>` (used for explicit resend, password reset, email-change verify).

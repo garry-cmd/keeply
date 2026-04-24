@@ -7,7 +7,7 @@ import LogbookPage from './LogbookPage';
 import PartsPage from './PartsPage';
 import FirstMate from './FirstMate';
 import FirstMateScreen from './FirstMateScreen';
-import { formatPlanSummary } from '../lib/pricing';
+import { formatPlanSummary, hasCapability } from '../lib/pricing';
 
 // ── Part search helpers ──────────────────────────────────────────────────────
 // Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
@@ -10520,7 +10520,7 @@ export default function App() {
                               )}
                               {/* Generate haul plan — Pro feature */}
                               {(function () {
-                                var isPro = userPlan === 'pro';
+                                var hasHaulOut = hasCapability(userPlan, 'haulOutPlanner');
                                 return (
                                   <div style={{ margin: '14px 0 6px' }}>
                                     {haulPlanMsg && (
@@ -10547,9 +10547,9 @@ export default function App() {
                                       </div>
                                     )}
                                     <button
-                                      disabled={haulPlanLoading || !isPro}
+                                      disabled={haulPlanLoading || !hasHaulOut}
                                       onClick={async function () {
-                                        if (!isPro) return;
+                                        if (!hasHaulOut) return;
                                         setHaulPlanLoading(true);
                                         setHaulPlanMsg(null);
                                         try {
@@ -10626,28 +10626,28 @@ export default function App() {
                                       style={{
                                         width: '100%',
                                         padding: '10px 0',
-                                        background: isPro
+                                        background: hasHaulOut
                                           ? haulPlanLoading
                                             ? 'var(--brand-deep)'
                                             : 'var(--brand)'
                                           : 'var(--bg-subtle)',
-                                        color: isPro ? '#fff' : 'var(--text-muted)',
-                                        border: isPro ? 'none' : '1px solid var(--border)',
+                                        color: hasHaulOut ? '#fff' : 'var(--text-muted)',
+                                        border: hasHaulOut ? 'none' : '1px solid var(--border)',
                                         borderRadius: 10,
                                         fontSize: 13,
                                         fontWeight: 700,
-                                        cursor: isPro && !haulPlanLoading ? 'pointer' : 'default',
+                                        cursor: hasHaulOut && !haulPlanLoading ? 'pointer' : 'default',
                                         fontFamily: 'inherit',
                                         transition: 'background 0.15s',
                                       }}
                                     >
                                       {haulPlanLoading
                                         ? 'Generating plan…'
-                                        : isPro
+                                        : hasHaulOut
                                           ? 'Email my haul-out plan'
                                           : 'Email haul-out plan (Pro)'}
                                     </button>
-                                    {!isPro && (
+                                    {!hasHaulOut && (
                                       <div
                                         style={{
                                           fontSize: 11,
