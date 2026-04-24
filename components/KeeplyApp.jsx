@@ -7,7 +7,7 @@ import LogbookPage from './LogbookPage';
 import PartsPage from './PartsPage';
 import FirstMate from './FirstMate';
 import FirstMateScreen from './FirstMateScreen';
-import { formatPlanSummary, hasCapability } from '../lib/pricing';
+import { formatPlanSummary, hasCapability, canAddRepair } from '../lib/pricing';
 
 // ── Part search helpers ──────────────────────────────────────────────────────
 // Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
@@ -4150,6 +4150,15 @@ export default function App() {
   // ─── REPAIRS CRUD ────────────────────────────────────────────────────────────
   const addRepair = async function () {
     if (!newRepair.description.trim()) return;
+
+    // Plan gate: Free users are limited to 3 repair cards (onboarding counts).
+    // Paid plans are unlimited (canAddRepair returns true when limit is -1).
+    if (!canAddRepair(userPlan, repairs.length)) {
+      setShowAddRepair(false);
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {

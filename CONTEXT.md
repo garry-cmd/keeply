@@ -234,7 +234,7 @@ Ordered by strategic value:
 
 | Tier | Monthly | Annual | Limits |
 |---|---|---|---|
-| Free | $0 | — | 1 vessel, 10 equipment, 5 First Mate queries |
+| Free | $0 | — | 1 vessel, 10 equipment, 3 repairs, 5 First Mate queries |
 | Standard | $15 | $144 | unlimited equipment, 30 AI queries, 14-day trial |
 | Pro | $25 | $240 | + voice + weather + departure checks |
 | Fleet | $49.99+ | — | multi-vessel |
