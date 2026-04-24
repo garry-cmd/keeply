@@ -258,6 +258,11 @@ export default function LogbookPage({
   const [movingIdx, setMovingIdx] = useState(null); // index of item being moved; null = none
   const [savingChecklist, setSavingChecklist] = useState(false);
 
+  // Long-press gesture tracking (refs, not state — they shouldn't trigger re-renders)
+  const holdTimerRef = useRef(null);
+  const longPressFiredRef = useRef(false);
+  const holdStartRef = useRef({ x: 0, y: 0 });
+
   // ── Live passage / watch entries ───────────────────────────────────────
   const [activePassage, setActivePassage] = useState(null);
   const [watchEntries, setWatchEntries] = useState([]);
@@ -1093,21 +1098,59 @@ export default function LogbookPage({
         return next;
       });
     }
-    function handleCardTap(idx) {
-      if (movingIdx === null) {
-        setMovingIdx(idx);
-      } else if (movingIdx === idx) {
-        setMovingIdx(null);
-      } else {
-        moveItemTo(movingIdx, idx);
-        setMovingIdx(null);
-      }
-    }
     function addItem() {
       setChecklistDraft(function (prev) {
         return prev.concat([{ tempId: 'new-' + Date.now() + '-' + prev.length, label: '' }]);
       });
       setMovingIdx(null);
+    }
+
+    // Long-press to pick up — regular tap to drop / cancel / edit.
+    // Timer: 400ms. >10px drag cancels. longPressFiredRef suppresses the
+    // click that fires after a completed long-press so it isn't treated as a drop.
+    function startHold(idx, e) {
+      holdStartRef.current = { x: e.clientX, y: e.clientY };
+      longPressFiredRef.current = false;
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = setTimeout(function () {
+        longPressFiredRef.current = true;
+        setMovingIdx(idx);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(30); } catch (err) { /* silent */ }
+        }
+      }, 400);
+    }
+    function cancelHoldOnMove(e) {
+      if (!holdTimerRef.current) return;
+      const dx = Math.abs(e.clientX - holdStartRef.current.x);
+      const dy = Math.abs(e.clientY - holdStartRef.current.y);
+      if (dx > 10 || dy > 10) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
+    }
+    function cancelHold() {
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
+    }
+    function handleCardClick(idx) {
+      // Suppress the click that immediately follows a long-press pickup
+      if (longPressFiredRef.current) {
+        longPressFiredRef.current = false;
+        return;
+      }
+      // If something is picked up, this tap is a drop (or cancel)
+      if (movingIdx !== null) {
+        if (movingIdx === idx) {
+          setMovingIdx(null);
+        } else {
+          moveItemTo(movingIdx, idx);
+          setMovingIdx(null);
+        }
+      }
+      // Otherwise: no-op (native input/button handlers run independently)
     }
 
     const hasBlank = checklistDraft.some(function (d) { return !d.label || !d.label.trim(); });
@@ -1164,7 +1207,7 @@ export default function LogbookPage({
           </div>
         </div>
 
-        {/* Move-mode hint banner (only shown during editing — changes copy based on state) */}
+        {/* Move-mode hint banner */}
         <div
           style={{
             fontSize: 11,
@@ -1181,17 +1224,22 @@ export default function LogbookPage({
         >
           {movingItem
             ? `Moving "${movingItem.label || 'new item'}" — tap where you want it (or tap it again to cancel).`
-            : 'Tap an item to pick it up, then tap another item to move it there.'}
+            : 'Press and hold any item to pick it up, then tap where you want it.'}
         </div>
 
-        {/* Item rows — whole card is click-to-move; input & delete stop propagation */}
+        {/* Item rows — long-press anywhere on the card picks up; tap anywhere drops */}
         {checklistDraft.map(function (item, idx) {
           const isMoving = movingIdx === idx;
           const isDropTarget = movingIdx !== null && movingIdx !== idx;
           return (
             <div
               key={item.tempId}
-              onClick={function () { handleCardTap(idx); }}
+              onPointerDown={function (e) { startHold(idx, e); }}
+              onPointerMove={cancelHoldOnMove}
+              onPointerUp={cancelHold}
+              onPointerCancel={cancelHold}
+              onPointerLeave={cancelHold}
+              onClick={function () { handleCardClick(idx); }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1205,12 +1253,13 @@ export default function LogbookPage({
                     : '0.5px solid var(--border)',
                 borderRadius: 10,
                 padding: '8px 10px',
-                cursor: 'pointer',
+                cursor: movingIdx !== null ? 'pointer' : 'default',
                 userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
                 transition: 'background 0.15s, border 0.15s',
               }}
             >
-              {/* Visual affordance that this is a movable item */}
               <div
                 style={{
                   fontSize: 14,
@@ -1226,7 +1275,12 @@ export default function LogbookPage({
               <input
                 value={item.label}
                 onChange={function (e) { updateItem(idx, e.target.value); }}
-                onClick={function (e) { e.stopPropagation(); }}
+                onClick={function (e) {
+                  // Let typing work normally when no item is picked up.
+                  // When an item IS picked up, let the click bubble so a tap
+                  // on the input still counts as a drop.
+                  if (movingIdx === null) e.stopPropagation();
+                }}
                 placeholder="Checklist item…"
                 style={{
                   flex: 1,
@@ -1237,10 +1291,13 @@ export default function LogbookPage({
                   outline: 'none',
                   fontFamily: 'inherit',
                   padding: '6px 4px',
+                  userSelect: 'text',
+                  WebkitUserSelect: 'text',
                 }}
               />
               <button
                 onClick={function (e) { e.stopPropagation(); deleteItem(idx); }}
+                onPointerDown={function (e) { e.stopPropagation(); }}
                 aria-label="Delete item"
                 style={{
                   background: 'none',
