@@ -255,13 +255,7 @@ export default function LogbookPage({
   // Edit mode: null | 'pre_departure' | 'arrival' — only one list edited at a time
   const [editingChecklist, setEditingChecklist] = useState(null);
   const [checklistDraft, setChecklistDraft] = useState([]); // [{ tempId, label }]
-  const [movingIdx, setMovingIdx] = useState(null); // index of item being moved; null = none
   const [savingChecklist, setSavingChecklist] = useState(false);
-
-  // Long-press gesture tracking (refs, not state — they shouldn't trigger re-renders)
-  const holdTimerRef = useRef(null);
-  const longPressFiredRef = useRef(false);
-  const holdStartRef = useRef({ x: 0, y: 0 });
 
   // ── Live passage / watch entries ───────────────────────────────────────
   const [activePassage, setActivePassage] = useState(null);
@@ -752,13 +746,11 @@ export default function LogbookPage({
       return { tempId: 'edit-' + Date.now() + '-' + idx, label: item.label };
     });
     setChecklistDraft(draft);
-    setMovingIdx(null);
     setEditingChecklist(type);
   }
 
   function cancelEditChecklist() {
     setChecklistDraft([]);
-    setMovingIdx(null);
     setEditingChecklist(null);
   }
 
@@ -798,7 +790,6 @@ export default function LogbookPage({
       else setArCustomItems(inserted);
       setEditingChecklist(null);
       setChecklistDraft([]);
-      setMovingIdx(null);
     } catch (e) {
       /* keep draft + edit mode so user can retry */
     } finally {
@@ -822,7 +813,6 @@ export default function LogbookPage({
       else setArCustomItems([]);
       setEditingChecklist(null);
       setChecklistDraft([]);
-      setMovingIdx(null);
     } catch (e) {
       /* silent */
     }
@@ -1082,19 +1072,24 @@ export default function LogbookPage({
       setChecklistDraft(function (prev) {
         return prev.filter(function (_, i) { return i !== idx; });
       });
-      // Keep movingIdx consistent when deletions shift the indices
-      if (movingIdx === idx) {
-        setMovingIdx(null);
-      } else if (movingIdx !== null && idx < movingIdx) {
-        setMovingIdx(movingIdx - 1);
-      }
     }
-    function moveItemTo(fromIdx, toIdx) {
+    function moveUp(idx) {
+      if (idx === 0) return;
       setChecklistDraft(function (prev) {
-        if (fromIdx === toIdx) return prev;
         const next = prev.slice();
-        const [item] = next.splice(fromIdx, 1);
-        next.splice(toIdx, 0, item);
+        const tmp = next[idx - 1];
+        next[idx - 1] = next[idx];
+        next[idx] = tmp;
+        return next;
+      });
+    }
+    function moveDown(idx) {
+      setChecklistDraft(function (prev) {
+        if (idx === prev.length - 1) return prev;
+        const next = prev.slice();
+        const tmp = next[idx + 1];
+        next[idx + 1] = next[idx];
+        next[idx] = tmp;
         return next;
       });
     }
@@ -1102,59 +1097,9 @@ export default function LogbookPage({
       setChecklistDraft(function (prev) {
         return prev.concat([{ tempId: 'new-' + Date.now() + '-' + prev.length, label: '' }]);
       });
-      setMovingIdx(null);
-    }
-
-    // Long-press to pick up — regular tap to drop / cancel / edit.
-    // Timer: 400ms. >10px drag cancels. longPressFiredRef suppresses the
-    // click that fires after a completed long-press so it isn't treated as a drop.
-    function startHold(idx, e) {
-      holdStartRef.current = { x: e.clientX, y: e.clientY };
-      longPressFiredRef.current = false;
-      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = setTimeout(function () {
-        longPressFiredRef.current = true;
-        setMovingIdx(idx);
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          try { navigator.vibrate(30); } catch (err) { /* silent */ }
-        }
-      }, 400);
-    }
-    function cancelHoldOnMove(e) {
-      if (!holdTimerRef.current) return;
-      const dx = Math.abs(e.clientX - holdStartRef.current.x);
-      const dy = Math.abs(e.clientY - holdStartRef.current.y);
-      if (dx > 10 || dy > 10) {
-        clearTimeout(holdTimerRef.current);
-        holdTimerRef.current = null;
-      }
-    }
-    function cancelHold() {
-      if (holdTimerRef.current) {
-        clearTimeout(holdTimerRef.current);
-        holdTimerRef.current = null;
-      }
-    }
-    function handleCardClick(idx) {
-      // Suppress the click that immediately follows a long-press pickup
-      if (longPressFiredRef.current) {
-        longPressFiredRef.current = false;
-        return;
-      }
-      // If something is picked up, this tap is a drop (or cancel)
-      if (movingIdx !== null) {
-        if (movingIdx === idx) {
-          setMovingIdx(null);
-        } else {
-          moveItemTo(movingIdx, idx);
-          setMovingIdx(null);
-        }
-      }
-      // Otherwise: no-op (native input/button handlers run independently)
     }
 
     const hasBlank = checklistDraft.some(function (d) { return !d.label || !d.label.trim(); });
-    const movingItem = movingIdx !== null ? checklistDraft[movingIdx] : null;
 
     return (
       <div style={{ paddingBottom: 80 }}>
@@ -1207,80 +1152,60 @@ export default function LogbookPage({
           </div>
         </div>
 
-        {/* Move-mode hint banner */}
-        <div
-          style={{
-            fontSize: 11,
-            color: movingItem ? 'var(--brand)' : 'var(--text-muted)',
-            background: movingItem ? 'rgba(15, 76, 138, 0.08)' : 'var(--bg-elevated)',
-            border: movingItem
-              ? '0.5px solid rgba(15, 76, 138, 0.3)'
-              : '0.5px solid var(--border)',
-            borderRadius: 8,
-            padding: '8px 10px',
-            marginBottom: 10,
-            lineHeight: 1.4,
-          }}
-        >
-          {movingItem
-            ? `Moving "${movingItem.label || 'new item'}" — tap where you want it (or tap it again to cancel).`
-            : 'Press and hold any item to pick it up, then tap where you want it.'}
-        </div>
-
-        {/* Item rows — long-press anywhere on the card picks up; tap anywhere drops */}
+        {/* Item rows — up/down arrows for reorder, input for rename, ✕ for delete */}
         {checklistDraft.map(function (item, idx) {
-          const isMoving = movingIdx === idx;
-          const isDropTarget = movingIdx !== null && movingIdx !== idx;
           return (
             <div
               key={item.tempId}
-              onPointerDown={function (e) { startHold(idx, e); }}
-              onPointerMove={cancelHoldOnMove}
-              onPointerUp={cancelHold}
-              onPointerCancel={cancelHold}
-              onPointerLeave={cancelHold}
-              onClick={function () { handleCardClick(idx); }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 4,
                 marginBottom: 6,
-                background: isMoving ? 'rgba(15, 76, 138, 0.12)' : 'var(--bg-card)',
-                border: isMoving
-                  ? '1.5px solid var(--brand)'
-                  : isDropTarget
-                    ? '0.5px dashed var(--brand)'
-                    : '0.5px solid var(--border)',
+                background: 'var(--bg-card)',
+                border: '0.5px solid var(--border)',
                 borderRadius: 10,
-                padding: '8px 10px',
-                cursor: movingIdx !== null ? 'pointer' : 'default',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                WebkitTouchCallout: 'none',
-                transition: 'background 0.15s, border 0.15s',
+                padding: '6px 8px',
               }}
             >
-              <div
+              <button
+                onClick={function () { moveUp(idx); }}
+                disabled={idx === 0}
+                aria-label="Move up"
                 style={{
-                  fontSize: 14,
-                  color: isMoving ? 'var(--brand)' : 'var(--text-muted)',
-                  flexShrink: 0,
-                  lineHeight: 1,
+                  background: 'none',
+                  border: 'none',
+                  cursor: idx === 0 ? 'default' : 'pointer',
+                  color: idx === 0 ? 'var(--border)' : 'var(--text-muted)',
+                  fontSize: 16,
+                  padding: '4px 6px',
                   fontFamily: 'inherit',
+                  minWidth: 28,
                 }}
-                aria-hidden="true"
               >
-                ⇅
-              </div>
+                ↑
+              </button>
+              <button
+                onClick={function () { moveDown(idx); }}
+                disabled={idx === checklistDraft.length - 1}
+                aria-label="Move down"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: idx === checklistDraft.length - 1 ? 'default' : 'pointer',
+                  color:
+                    idx === checklistDraft.length - 1 ? 'var(--border)' : 'var(--text-muted)',
+                  fontSize: 16,
+                  padding: '4px 6px',
+                  fontFamily: 'inherit',
+                  minWidth: 28,
+                }}
+              >
+                ↓
+              </button>
               <input
                 value={item.label}
                 onChange={function (e) { updateItem(idx, e.target.value); }}
-                onClick={function (e) {
-                  // Let typing work normally when no item is picked up.
-                  // When an item IS picked up, let the click bubble so a tap
-                  // on the input still counts as a drop.
-                  if (movingIdx === null) e.stopPropagation();
-                }}
                 placeholder="Checklist item…"
                 style={{
                   flex: 1,
@@ -1291,21 +1216,18 @@ export default function LogbookPage({
                   outline: 'none',
                   fontFamily: 'inherit',
                   padding: '6px 4px',
-                  userSelect: 'text',
-                  WebkitUserSelect: 'text',
                 }}
               />
               <button
-                onClick={function (e) { e.stopPropagation(); deleteItem(idx); }}
-                onPointerDown={function (e) { e.stopPropagation(); }}
+                onClick={function () { deleteItem(idx); }}
                 aria-label="Delete item"
                 style={{
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
                   color: 'var(--text-muted)',
-                  fontSize: 13,
-                  padding: '2px 6px',
+                  fontSize: 14,
+                  padding: '4px 8px',
                   fontFamily: 'inherit',
                 }}
               >
