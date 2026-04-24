@@ -1,7 +1,7 @@
-// Keeply Service Worker — offline caching + push notifications
-// v1.1 — April 2026
+﻿// Keeply Service Worker — offline caching + push notifications
+// v2 — April 2026 (cache bump to force shell refresh on existing installs)
 
-var CACHE_NAME = 'keeply-shell-v1';
+var CACHE_NAME = 'keeply-shell-v2';
 
 // App shell — pages and assets to cache on install
 var SHELL_ASSETS = [

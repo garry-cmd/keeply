@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from 'next';
+﻿import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
@@ -139,7 +139,7 @@ gtag('config', 'G-FZWNP48NHN');`,
           dangerouslySetInnerHTML={{
             __html: `if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js');
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
   });
 }`,
           }}
