@@ -255,6 +255,7 @@ export default function LogbookPage({
   // Edit mode: null | 'pre_departure' | 'arrival' — only one list edited at a time
   const [editingChecklist, setEditingChecklist] = useState(null);
   const [checklistDraft, setChecklistDraft] = useState([]); // [{ tempId, label }]
+  const [movingIdx, setMovingIdx] = useState(null); // index of item being moved; null = none
   const [savingChecklist, setSavingChecklist] = useState(false);
 
   // ── Live passage / watch entries ───────────────────────────────────────
@@ -746,11 +747,13 @@ export default function LogbookPage({
       return { tempId: 'edit-' + Date.now() + '-' + idx, label: item.label };
     });
     setChecklistDraft(draft);
+    setMovingIdx(null);
     setEditingChecklist(type);
   }
 
   function cancelEditChecklist() {
     setChecklistDraft([]);
+    setMovingIdx(null);
     setEditingChecklist(null);
   }
 
@@ -790,6 +793,7 @@ export default function LogbookPage({
       else setArCustomItems(inserted);
       setEditingChecklist(null);
       setChecklistDraft([]);
+      setMovingIdx(null);
     } catch (e) {
       /* keep draft + edit mode so user can retry */
     } finally {
@@ -813,6 +817,7 @@ export default function LogbookPage({
       else setArCustomItems([]);
       setEditingChecklist(null);
       setChecklistDraft([]);
+      setMovingIdx(null);
     } catch (e) {
       /* silent */
     }
@@ -1072,34 +1077,41 @@ export default function LogbookPage({
       setChecklistDraft(function (prev) {
         return prev.filter(function (_, i) { return i !== idx; });
       });
+      // Keep movingIdx consistent when deletions shift the indices
+      if (movingIdx === idx) {
+        setMovingIdx(null);
+      } else if (movingIdx !== null && idx < movingIdx) {
+        setMovingIdx(movingIdx - 1);
+      }
     }
-    function moveUp(idx) {
-      if (idx === 0) return;
+    function moveItemTo(fromIdx, toIdx) {
       setChecklistDraft(function (prev) {
+        if (fromIdx === toIdx) return prev;
         const next = prev.slice();
-        const tmp = next[idx - 1];
-        next[idx - 1] = next[idx];
-        next[idx] = tmp;
+        const [item] = next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, item);
         return next;
       });
     }
-    function moveDown(idx) {
-      setChecklistDraft(function (prev) {
-        if (idx === prev.length - 1) return prev;
-        const next = prev.slice();
-        const tmp = next[idx + 1];
-        next[idx + 1] = next[idx];
-        next[idx] = tmp;
-        return next;
-      });
+    function handleCardTap(idx) {
+      if (movingIdx === null) {
+        setMovingIdx(idx);
+      } else if (movingIdx === idx) {
+        setMovingIdx(null);
+      } else {
+        moveItemTo(movingIdx, idx);
+        setMovingIdx(null);
+      }
     }
     function addItem() {
       setChecklistDraft(function (prev) {
         return prev.concat([{ tempId: 'new-' + Date.now() + '-' + prev.length, label: '' }]);
       });
+      setMovingIdx(null);
     }
 
     const hasBlank = checklistDraft.some(function (d) { return !d.label || !d.label.trim(); });
+    const movingItem = movingIdx !== null ? checklistDraft[movingIdx] : null;
 
     return (
       <div style={{ paddingBottom: 80 }}>
@@ -1152,58 +1164,69 @@ export default function LogbookPage({
           </div>
         </div>
 
-        {/* Item rows */}
+        {/* Move-mode hint banner (only shown during editing — changes copy based on state) */}
+        <div
+          style={{
+            fontSize: 11,
+            color: movingItem ? 'var(--brand)' : 'var(--text-muted)',
+            background: movingItem ? 'rgba(15, 76, 138, 0.08)' : 'var(--bg-elevated)',
+            border: movingItem
+              ? '0.5px solid rgba(15, 76, 138, 0.3)'
+              : '0.5px solid var(--border)',
+            borderRadius: 8,
+            padding: '8px 10px',
+            marginBottom: 10,
+            lineHeight: 1.4,
+          }}
+        >
+          {movingItem
+            ? `Moving "${movingItem.label || 'new item'}" — tap where you want it (or tap it again to cancel).`
+            : 'Tap an item to pick it up, then tap another item to move it there.'}
+        </div>
+
+        {/* Item rows — whole card is click-to-move; input & delete stop propagation */}
         {checklistDraft.map(function (item, idx) {
+          const isMoving = movingIdx === idx;
+          const isDropTarget = movingIdx !== null && movingIdx !== idx;
           return (
             <div
               key={item.tempId}
+              onClick={function () { handleCardTap(idx); }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
                 marginBottom: 6,
-                background: 'var(--bg-card)',
-                border: '0.5px solid var(--border)',
+                background: isMoving ? 'rgba(15, 76, 138, 0.12)' : 'var(--bg-card)',
+                border: isMoving
+                  ? '1.5px solid var(--brand)'
+                  : isDropTarget
+                    ? '0.5px dashed var(--brand)'
+                    : '0.5px solid var(--border)',
                 borderRadius: 10,
-                padding: '6px 8px',
+                padding: '8px 10px',
+                cursor: 'pointer',
+                userSelect: 'none',
+                transition: 'background 0.15s, border 0.15s',
               }}
             >
-              <button
-                onClick={function () { moveUp(idx); }}
-                disabled={idx === 0}
-                aria-label="Move up"
+              {/* Visual affordance that this is a movable item */}
+              <div
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: idx === 0 ? 'default' : 'pointer',
-                  color: idx === 0 ? 'var(--border)' : 'var(--text-muted)',
                   fontSize: 14,
-                  padding: '2px 4px',
+                  color: isMoving ? 'var(--brand)' : 'var(--text-muted)',
+                  flexShrink: 0,
+                  lineHeight: 1,
                   fontFamily: 'inherit',
                 }}
+                aria-hidden="true"
               >
-                ↑
-              </button>
-              <button
-                onClick={function () { moveDown(idx); }}
-                disabled={idx === checklistDraft.length - 1}
-                aria-label="Move down"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: idx === checklistDraft.length - 1 ? 'default' : 'pointer',
-                  color:
-                    idx === checklistDraft.length - 1 ? 'var(--border)' : 'var(--text-muted)',
-                  fontSize: 14,
-                  padding: '2px 4px',
-                  fontFamily: 'inherit',
-                }}
-              >
-                ↓
-              </button>
+                ⇅
+              </div>
               <input
                 value={item.label}
                 onChange={function (e) { updateItem(idx, e.target.value); }}
+                onClick={function (e) { e.stopPropagation(); }}
                 placeholder="Checklist item…"
                 style={{
                   flex: 1,
@@ -1217,7 +1240,7 @@ export default function LogbookPage({
                 }}
               />
               <button
-                onClick={function () { deleteItem(idx); }}
+                onClick={function (e) { e.stopPropagation(); deleteItem(idx); }}
                 aria-label="Delete item"
                 style={{
                   background: 'none',
