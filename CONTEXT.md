@@ -44,7 +44,7 @@ Copy rule: never use "sailors" — always "boaters."
 
 **Platform**
 - Supabase auth + RLS
-- Static pricing config in `lib/pricing.js` — single source of truth for prices, Stripe price IDs, plan limits, and features. Consumed by Stripe webhook, LandingPage, and First Mate routes/components. Edit + deploy to change pricing.
+- Static pricing config in `lib/pricing.js` — single source of truth for prices, Stripe price IDs, plan limits, storage quotas (`storageBytes`/`storageLabel`), and a `CAPABILITIES` registry for boolean feature gates (11 capabilities). Exposes `hasCapability()`, `requiredPlanFor()`, and natural-language formatters (`formatPlanSummary`, `PLAN_PROMPT_LINES`, `UPGRADE_FAQ_ANSWER`) so every user-facing plan description derives from PLANS/CAPABILITIES — no more hardcoded limit strings at call sites. Consumed by webhook, LandingPage, First Mate route/components, Support FAQ, and KeeplyApp upgrade cards.
 - Stripe subscriptions, webhooks, customer portal
 - Resend transactional email
 - **Frictionless signup** — "Confirm email" gate OFF in Supabase (Apr 21); users land in app immediately. "Secure email change" ON for account-change protection. Branded confirmation email template ships from `Keeply <noreply@keeply.boats>` (used for explicit resend, password reset, email-change verify).
@@ -291,6 +291,16 @@ Claude's connectors split into two layers — knowing which is which prevents wa
 ## Git gotcha
 
 Running git commands from `C:\Users\garry` instead of `C:\Users\garry\keeply` produces fatal "not a git repository" errors. Catch early.
+
+---
+
+## Key learnings (Apr 24 session)
+
+- **The Apr 23 FM_LIMITS fix killed the symptom, not the class.** Apr 23 migrated three FirstMate enforcement constants into `lib/pricing.js`, correctly fixing Standard users being cut off at 10 queries while their UI showed 30. But the same numbers also lived as hardcoded text inside the First Mate system prompt (`APP_GUIDE` in `app/api/firstmate/route.js`) and the public support FAQ — neither touched by the constant unification. A Free-tier user asking First Mate *"why can't I add more repairs?"* got back an answer citing a 3-repair limit that does not exist in code. Aspirational text drifts faster than code because it has no compiler.
+- **The fix for this class of bug is a rule, not a patch.** Added a `CAPABILITIES` registry, storage as first-class fields, and derived constants (`PLAN_PROMPT_LINES`, `UPGRADE_FAQ_ANSWER`, `formatPlanSummary`). File header now asserts: *"every natural-language description of a plan must come from a helper in this file."* Future plan changes surface any remaining hardcoded strings automatically — wrong numbers become immediately visible the moment a limit shifts.
+- **Numeric limits and boolean gates are different axes; one schema was fighting both.** PLANS previously carried both vessel counts and feature flags (inside `features: []` arrays). Splitting boolean gating into a separate `CAPABILITIES` object means the pricing comparison table on LandingPage can render directly from the registry, and runtime gates use `hasCapability(plan, key)` instead of hardcoded `plan === 'pro'` checks scattered across the monolith. Adding a new gated feature is now a 1-line registry entry plus a 1-line call-site check.
+- **Scope discipline on the refactor.** 12 call sites reference plan data across the codebase. 5 had drift-bug-level problems; 7 are currently correct but hardcoded (FAQ page, LandingPage pricing-table rows, LandingPage feature bullets). Phase 1 migrated only the 5 broken sites — the other 7 stay on a Phase 1b backlog, to migrate organically when the next plan change surfaces drift. Smaller deploy, smaller blast radius, cheaper rollback.
+- **`canAddRepair()` has been defined-but-unused since Apr 22.** Grep confirmed zero imports anywhere. The repair paywall the beta task plan warned about does not exist — no code enforces a repair limit on any tier. Left the function in place because Garry has a repair gate planned; flipping `repairs: 3` on Free plus one `canAddRepair()` call site in KeeplyApp is now the complete enforcement path (Phase 2, separate deploy).
 
 ---
 

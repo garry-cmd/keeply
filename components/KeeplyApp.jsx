@@ -7,6 +7,7 @@ import LogbookPage from './LogbookPage';
 import PartsPage from './PartsPage';
 import FirstMate from './FirstMate';
 import FirstMateScreen from './FirstMateScreen';
+import { formatPlanSummary } from '../lib/pricing';
 
 // ── Part search helpers ──────────────────────────────────────────────────────
 // Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
@@ -23328,7 +23329,7 @@ export default function App() {
                       Standard
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                      1 vessel · 10 equipment · unlimited repairs · First Mate 10/mo
+                      {formatPlanSummary('standard')}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -23453,7 +23454,7 @@ export default function App() {
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ok-text)' }}>Pro</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    2 vessels · unlimited equipment · First Mate 50/mo · AI logbook
+                    {formatPlanSummary('pro')}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { PLANS } from '../../../lib/pricing.js';
+import { PLANS, PLAN_PROMPT_LINES, UPGRADE_FAQ_ANSWER } from '../../../lib/pricing.js';
 
 // ── Admin client ──────────────────────────────────────────────────────────────
 function getAdmin() {
@@ -242,9 +242,9 @@ engine hours, and how the Keeply app works. Ask anything:
 - Analysis: "Have there been any trends in my maintenance notes?"
 
 --- PLANS & PRICING ---
-Free:     1 vessel · AI vessel setup · 1 equipment card visible · unlimited tasks · First Mate 3/mo · 250MB storage
-Standard: $15/mo or $144/yr · 1 vessel · unlimited equipment · unlimited repairs · First Mate 10/mo · 1GB storage
-Pro:      $25/mo or $240/yr · 2 vessels · unlimited equipment · unlimited repairs · First Mate 50/mo · unlimited storage
+${PLAN_PROMPT_LINES.free}
+${PLAN_PROMPT_LINES.standard}
+${PLAN_PROMPT_LINES.pro}
 
 To upgrade: Profile tab → tap your plan name or the "Upgrade" button.
 To manage/cancel: Profile → "Manage Subscription" → Stripe customer portal.
@@ -297,7 +297,7 @@ Q: How do I import equipment from a spreadsheet?
 A: Profile tab → "Import Data" → choose Equipment or Maintenance Tasks → upload your CSV or Excel.
 
 Q: Why can't I add more equipment / repairs?
-A: You've hit your plan limit. Free: 3 equipment, 3 repairs. Upgrade to Standard or Pro for more.
+A: ${UPGRADE_FAQ_ANSWER}
 
 Q: How do I enable push notifications?
 A: Profile tab → tap "Enable Notifications" → allow when prompted. On iPhone, add Keeply to your
