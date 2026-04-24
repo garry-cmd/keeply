@@ -219,6 +219,7 @@ export default function LogbookPage({
   openAddForm,
   onAddFormOpened,
   userPlan,
+  onEngineHoursUpdate,
 }) {
   const hasWatchEntries = hasCapability(userPlan, 'watchEntries');
   const hasPassageExport = hasCapability(userPlan, 'passageExport');
@@ -652,10 +653,14 @@ export default function LogbookPage({
           });
         });
         if (body.hours_end) {
-          await supabase
+          const { error: vErr } = await supabase
             .from('vessels')
             .update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date })
             .eq('id', vesselId);
+          // Only sync parent state if the write actually landed
+          if (!vErr && typeof onEngineHoursUpdate === 'function') {
+            onEngineHoursUpdate(body.hours_end, body.entry_date);
+          }
         }
         clearDraft(vesselId);
         resetForm();
@@ -664,10 +669,13 @@ export default function LogbookPage({
         const { data, error: e } = await supabase.from('logbook').insert(body).select().single();
         if (e) throw e;
         if (body.hours_end) {
-          await supabase
+          const { error: vErr } = await supabase
             .from('vessels')
             .update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date })
             .eq('id', vesselId);
+          if (!vErr && typeof onEngineHoursUpdate === 'function') {
+            onEngineHoursUpdate(body.hours_end, body.entry_date);
+          }
         }
         clearDraft(vesselId);
         resetForm();

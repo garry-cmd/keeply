@@ -19045,6 +19045,17 @@ export default function App() {
               setShowAddLog(false);
             }}
             userPlan={userPlan || 'free'}
+            onEngineHoursUpdate={function (hours, dateStr) {
+              // Keep KeeplyApp's vessels state in sync with DB writes done inside
+              // LogbookPage so the engine-hours KPI on My Boat updates immediately.
+              setVessels(function (vs) {
+                return vs.map(function (v) {
+                  return v.id === activeVesselId
+                    ? { ...v, engineHours: hours, engineHoursDate: dateStr }
+                    : v;
+                });
+              });
+            }}
           />
         )}
 
