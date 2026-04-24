@@ -249,6 +249,13 @@ export default function LogbookPage({
   const [pdReset, setPdReset] = useState(null);
   const [arChecked, setArChecked] = useState([]);
   const [arReset, setArReset] = useState(null);
+  // Custom checklist items (empty array = use hardcoded defaults)
+  const [pdCustomItems, setPdCustomItems] = useState([]);
+  const [arCustomItems, setArCustomItems] = useState([]);
+  // Edit mode: null | 'pre_departure' | 'arrival' — only one list edited at a time
+  const [editingChecklist, setEditingChecklist] = useState(null);
+  const [checklistDraft, setChecklistDraft] = useState([]); // [{ tempId, label }]
+  const [savingChecklist, setSavingChecklist] = useState(false);
 
   // ── Live passage / watch entries ───────────────────────────────────────
   const [activePassage, setActivePassage] = useState(null);
@@ -381,6 +388,30 @@ export default function LogbookPage({
           }
         })
         .catch(function () {});
+    },
+    [vesselId]
+  );
+
+  // ── Load custom checklist items (all tiers) ────────────────────────────
+
+  useEffect(
+    function () {
+      if (!vesselId) return;
+      (async function () {
+        try {
+          const { data } = await supabase
+            .from('vessel_checklist_items')
+            .select('id, label, sort_order, checklist_type')
+            .eq('vessel_id', vesselId)
+            .order('sort_order', { ascending: true });
+          if (data) {
+            setPdCustomItems(data.filter(function (i) { return i.checklist_type === 'pre_departure'; }));
+            setArCustomItems(data.filter(function (i) { return i.checklist_type === 'arrival'; }));
+          }
+        } catch (e) {
+          /* silent — fall back to hardcoded defaults */
+        }
+      })();
     },
     [vesselId]
   );
@@ -703,6 +734,90 @@ export default function LogbookPage({
     }
   }
 
+  // ── Custom checklist editing ───────────────────────────────────────────
+
+  function startEditChecklist(type) {
+    // Seed draft from current effective items (custom if present, defaults otherwise)
+    const current =
+      type === 'pre_departure'
+        ? (pdCustomItems.length > 0 ? pdCustomItems : PRE_DEPARTURE_ITEMS)
+        : (arCustomItems.length > 0 ? arCustomItems : ARRIVAL_ITEMS);
+    const draft = current.map(function (item, idx) {
+      return { tempId: 'edit-' + Date.now() + '-' + idx, label: item.label };
+    });
+    setChecklistDraft(draft);
+    setEditingChecklist(type);
+  }
+
+  function cancelEditChecklist() {
+    setChecklistDraft([]);
+    setEditingChecklist(null);
+  }
+
+  async function saveChecklistEdits() {
+    if (!vesselId || !editingChecklist) return;
+    setSavingChecklist(true);
+    const type = editingChecklist;
+    const rows = checklistDraft
+      .filter(function (d) { return d.label && d.label.trim(); })
+      .map(function (d, idx) {
+        return {
+          vessel_id: vesselId,
+          checklist_type: type,
+          label: d.label.trim(),
+          sort_order: idx,
+        };
+      });
+    try {
+      // Delete existing custom rows for this vessel+type, then insert new set.
+      // Not perfectly atomic, but the rare mid-failure is visibly recoverable
+      // (the user can re-edit). Protecting against the silent data-loss case
+      // would require a Postgres function — overkill for v1.
+      await supabase
+        .from('vessel_checklist_items')
+        .delete()
+        .eq('vessel_id', vesselId)
+        .eq('checklist_type', type);
+      let inserted = [];
+      if (rows.length > 0) {
+        const { data } = await supabase
+          .from('vessel_checklist_items')
+          .insert(rows)
+          .select('id, label, sort_order, checklist_type');
+        inserted = data || [];
+      }
+      if (type === 'pre_departure') setPdCustomItems(inserted);
+      else setArCustomItems(inserted);
+      setEditingChecklist(null);
+      setChecklistDraft([]);
+    } catch (e) {
+      /* keep draft + edit mode so user can retry */
+    } finally {
+      setSavingChecklist(false);
+    }
+  }
+
+  async function resetChecklistToDefaults(type) {
+    if (!vesselId) return;
+    const ok =
+      typeof window !== 'undefined' &&
+      window.confirm('Restore original checklist? Your custom items will be deleted.');
+    if (!ok) return;
+    try {
+      await supabase
+        .from('vessel_checklist_items')
+        .delete()
+        .eq('vessel_id', vesselId)
+        .eq('checklist_type', type);
+      if (type === 'pre_departure') setPdCustomItems([]);
+      else setArCustomItems([]);
+      setEditingChecklist(null);
+      setChecklistDraft([]);
+    } catch (e) {
+      /* silent */
+    }
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────
 
   function fmtReset(ts) {
@@ -778,23 +893,42 @@ export default function LogbookPage({
               </div>
             )}
           </div>
-          <button
-            onClick={function () {
-              resetChecklist(type);
-            }}
-            style={{
-              background: 'none',
-              border: '0.5px solid var(--border)',
-              borderRadius: 8,
-              padding: '5px 12px',
-              fontSize: 12,
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              fontFamily: 'inherit',
-            }}
-          >
-            ↺ Reset
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={function () {
+                startEditChecklist(type);
+              }}
+              style={{
+                background: 'none',
+                border: '0.5px solid var(--border)',
+                borderRadius: 8,
+                padding: '5px 12px',
+                fontSize: 12,
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontFamily: 'inherit',
+              }}
+            >
+              ✎ Edit
+            </button>
+            <button
+              onClick={function () {
+                resetChecklist(type);
+              }}
+              style={{
+                background: 'none',
+                border: '0.5px solid var(--border)',
+                borderRadius: 8,
+                padding: '5px 12px',
+                fontSize: 12,
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontFamily: 'inherit',
+              }}
+            >
+              ↺ Reset
+            </button>
+          </div>
         </div>
         <div
           style={{
@@ -915,6 +1049,241 @@ export default function LogbookPage({
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
               Tap Reset before your next trip
             </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Checklist editor ───────────────────────────────────────────────────
+
+  function renderChecklistEditor(type) {
+    const hasCustomItems =
+      type === 'pre_departure' ? pdCustomItems.length > 0 : arCustomItems.length > 0;
+
+    function updateItem(idx, value) {
+      setChecklistDraft(function (prev) {
+        const next = prev.slice();
+        next[idx] = Object.assign({}, next[idx], { label: value });
+        return next;
+      });
+    }
+    function deleteItem(idx) {
+      setChecklistDraft(function (prev) {
+        return prev.filter(function (_, i) { return i !== idx; });
+      });
+    }
+    function moveUp(idx) {
+      if (idx === 0) return;
+      setChecklistDraft(function (prev) {
+        const next = prev.slice();
+        const tmp = next[idx - 1];
+        next[idx - 1] = next[idx];
+        next[idx] = tmp;
+        return next;
+      });
+    }
+    function moveDown(idx) {
+      setChecklistDraft(function (prev) {
+        if (idx === prev.length - 1) return prev;
+        const next = prev.slice();
+        const tmp = next[idx + 1];
+        next[idx + 1] = next[idx];
+        next[idx] = tmp;
+        return next;
+      });
+    }
+    function addItem() {
+      setChecklistDraft(function (prev) {
+        return prev.concat([{ tempId: 'new-' + Date.now() + '-' + prev.length, label: '' }]);
+      });
+    }
+
+    const hasBlank = checklistDraft.some(function (d) { return !d.label || !d.label.trim(); });
+
+    return (
+      <div style={{ paddingBottom: 80 }}>
+        {/* Header: Save / Cancel */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 0 14px',
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Editing checklist
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={cancelEditChecklist}
+              disabled={savingChecklist}
+              style={{
+                background: 'none',
+                border: '0.5px solid var(--border)',
+                borderRadius: 8,
+                padding: '5px 12px',
+                fontSize: 12,
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontFamily: 'inherit',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveChecklistEdits}
+              disabled={savingChecklist || hasBlank}
+              style={{
+                background: savingChecklist || hasBlank ? 'var(--bg-elevated)' : 'var(--brand)',
+                color: savingChecklist || hasBlank ? 'var(--text-muted)' : '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '6px 14px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: savingChecklist || hasBlank ? 'default' : 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {savingChecklist ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
+
+        {/* Item rows */}
+        {checklistDraft.map(function (item, idx) {
+          return (
+            <div
+              key={item.tempId}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 6,
+                background: 'var(--bg-card)',
+                border: '0.5px solid var(--border)',
+                borderRadius: 10,
+                padding: '6px 8px',
+              }}
+            >
+              <button
+                onClick={function () { moveUp(idx); }}
+                disabled={idx === 0}
+                aria-label="Move up"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: idx === 0 ? 'default' : 'pointer',
+                  color: idx === 0 ? 'var(--border)' : 'var(--text-muted)',
+                  fontSize: 14,
+                  padding: '2px 4px',
+                  fontFamily: 'inherit',
+                }}
+              >
+                ↑
+              </button>
+              <button
+                onClick={function () { moveDown(idx); }}
+                disabled={idx === checklistDraft.length - 1}
+                aria-label="Move down"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: idx === checklistDraft.length - 1 ? 'default' : 'pointer',
+                  color:
+                    idx === checklistDraft.length - 1 ? 'var(--border)' : 'var(--text-muted)',
+                  fontSize: 14,
+                  padding: '2px 4px',
+                  fontFamily: 'inherit',
+                }}
+              >
+                ↓
+              </button>
+              <input
+                value={item.label}
+                onChange={function (e) { updateItem(idx, e.target.value); }}
+                placeholder="Checklist item…"
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  padding: '6px 4px',
+                }}
+              />
+              <button
+                onClick={function () { deleteItem(idx); }}
+                aria-label="Delete item"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  fontSize: 13,
+                  padding: '2px 6px',
+                  fontFamily: 'inherit',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
+
+        {/* Add item */}
+        <button
+          onClick={addItem}
+          style={{
+            width: '100%',
+            background: 'none',
+            border: '1px dashed var(--border)',
+            borderRadius: 10,
+            padding: '10px 12px',
+            fontSize: 13,
+            cursor: 'pointer',
+            color: 'var(--text-muted)',
+            fontFamily: 'inherit',
+            marginTop: 8,
+          }}
+        >
+          + Add item
+        </button>
+
+        {/* Reset to defaults — only if custom items already saved */}
+        {hasCustomItems && (
+          <div style={{ marginTop: 20, textAlign: 'center' }}>
+            <button
+              onClick={function () { resetChecklistToDefaults(type); }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontSize: 12,
+                fontFamily: 'inherit',
+                textDecoration: 'underline',
+              }}
+            >
+              Reset to defaults
+            </button>
+          </div>
+        )}
+
+        {hasBlank && (
+          <div
+            style={{
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              textAlign: 'center',
+              marginTop: 10,
+            }}
+          >
+            Fill in all items before saving
           </div>
         )}
       </div>
@@ -2400,10 +2769,24 @@ export default function LogbookPage({
 
           {/* Tab content */}
           {logbookTab === 'pre_departure' &&
-            renderChecklist('pre_departure', PRE_DEPARTURE_ITEMS, pdChecked, pdReset)}
+            (editingChecklist === 'pre_departure'
+              ? renderChecklistEditor('pre_departure')
+              : renderChecklist(
+                  'pre_departure',
+                  pdCustomItems.length > 0 ? pdCustomItems : PRE_DEPARTURE_ITEMS,
+                  pdChecked,
+                  pdReset
+                ))}
           {logbookTab === 'passages' && renderPassageForm()}
           {logbookTab === 'arrival' &&
-            renderChecklist('arrival', ARRIVAL_ITEMS, arChecked, arReset)}
+            (editingChecklist === 'arrival'
+              ? renderChecklistEditor('arrival')
+              : renderChecklist(
+                  'arrival',
+                  arCustomItems.length > 0 ? arCustomItems : ARRIVAL_ITEMS,
+                  arChecked,
+                  arReset
+                ))}
         </>
       )}
 

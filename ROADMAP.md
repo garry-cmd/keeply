@@ -66,9 +66,9 @@ Stabilise and validate before any infrastructure or store work.
 
 ### Deliver final features (due May 31)
 
-Three net-new features that need to ship before GoLive:
+Net-new features that need to ship before GoLive:
 
-- **Logbook — Custom Checklists** (Pro tier)
+- ~~**Logbook — Custom Checklists**~~ ✅ Shipped Apr 24 (narrow scope, all tiers — Pre-Departure & Arrival editable per vessel)
 - **First Mate — Conversation history** (all tiers)
 - **Multi-engine tracking**
 
@@ -169,6 +169,7 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 10. **Camera equipment ID** — photo of engine plate → AI identifies make/model (net-new, differentiated)
 11. **AI Coins / Credits** — replace per-month query limits with rollover balance (revisit at 500+ users)
 12. **Drag-and-drop file upload on Docs tab** (desktop only) — drag a PDF or image from desktop onto an equipment card's Docs tab; opens the existing Add Document form pre-loaded with the file (label auto-filled from filename). ~30-40 LOC, no new deps, HTML5 drag/drop API. Two sites to wire (vessel-scoped + regular equipment Docs tab) to avoid the parity bug pattern. Mobile/iPad gets nothing — touch devices don't support filesystem drag — but desktop liveaboards reviewing manuals on a laptop in the saloon get a small delight win.
+13. **Full customizable checklists** — beyond the narrow v1 that ships Apr 24 (editable Pre-Departure + Arrival only). This expands to: create arbitrary new checklist types (Weekly Inspection, Winterization, Pre-Race Setup, etc.), bind each to a trigger event or make them on-demand, add category/color-grouping support, restore `sailOnly` style conditional items, share checklists across own vessels, possibly share with crew. Likely a Pro-tier feature when it ships. Needs a checklist manager UI + event-binding design pass. Revisit post-launch when demand is validated by user feedback on the narrow v1.
 
 ---
 

@@ -88,7 +88,7 @@ Organized around two KRs pre-GoLive:
 - **Push notifications validated end-to-end** — diagnose why `push_subscriptions` has only 1 row across 10 users. Test real-device delivery on the 13:00 UTC cron.
 
 **KR: Deliver final features (due May 31)**
-- **Custom Checklists (Pro)** — new table + CRUD UI on the existing Pre-Departure/Arrival tabs, Pro gate, fallback to defaults for Free/Standard. S–M sized.
+- ~~**Custom Checklists**~~ — ✅ Shipped Apr 24 (narrow scope, all tiers). New `vessel_checklist_items` table; Pre-Departure and Arrival tabs get an "Edit" button that lets users add/remove/reorder/rename items. First edit seeds from the hardcoded defaults and replaces them; "Reset to defaults" deletes custom rows and falls back. Hardcoded sail-only flag and category grouping NOT ported to custom items — simpler edit UI, users can name/prefix items as they like. Full version (arbitrary new checklists with trigger binding) moved to post-launch backlog in ROADMAP.md.
 - **First Mate Conversation History** — new `first_mate_messages` table (user_id, vessel_id, role, content, created_at). Single rolling thread per vessel, free for all tiers, context-window cap at ~30 messages. Beta-user request.
 - **Multi-engine tracking** — schema change (one-to-many engines per vessel), UI (two meters on twin-engine boats), passage form changes, onboarding prompt fixes (AI currently hallucinates single engine on twin-engine boats per Apr 21 run-through).
 
