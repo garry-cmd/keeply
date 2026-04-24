@@ -196,15 +196,24 @@ async function uploadToStorage(file, eqId) {
   const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = eqId + '/' + Date.now() + '-' + safeFileName;
   const sess = await supabase.auth.getSession();
-  const token =
-    sess.data.session && sess.data.session.access_token ? sess.data.session.access_token : SUPA_KEY;
+  const accessToken =
+    sess.data.session && sess.data.session.access_token ? sess.data.session.access_token : null;
+  // The equipment-docs bucket RLS requires auth.uid() IS NOT NULL.
+  // Falling back to the anon key here just produces a confusing RLS error —
+  // bail with a clear message instead. This typically happens after a PWA
+  // reinstall or session expiry.
+  if (!accessToken) {
+    throw new Error(
+      "You're signed out. Please sign in again, then retry the upload."
+    );
+  }
   const res = await fetch(
     'https://waapqyshmqaaamiiitso.supabase.co/storage/v1/object/equipment-docs/' + path,
     {
       method: 'POST',
       headers: {
         apikey: SUPA_KEY,
-        Authorization: 'Bearer ' + token,
+        Authorization: 'Bearer ' + accessToken,
         'Content-Type': file.type || 'application/octet-stream',
         'x-upsert': 'true',
       },
@@ -13044,7 +13053,11 @@ export default function App() {
                                         });
                                       });
                                     } catch (err) {
-                                      console.error('Photo upload failed:', err);
+                                      console.error('Repair photo upload failed:', err);
+                                      setDbError(
+                                        "Couldn't upload photo: " +
+                                          (err && err.message ? err.message : 'Unknown error')
+                                      );
                                     } finally {
                                       setUploadingRepairPhoto(function (prev) {
                                         var n = Object.assign({}, prev);
@@ -13638,6 +13651,10 @@ export default function App() {
                                           });
                                         } catch (err) {
                                           console.error('Task photo upload failed:', err);
+                                          setDbError(
+                                            "Couldn't upload photo: " +
+                                              (err && err.message ? err.message : 'Unknown error')
+                                          );
                                         } finally {
                                           setUploadingRepairPhoto(function (prev) {
                                             var n = Object.assign({}, prev);
@@ -19781,7 +19798,11 @@ export default function App() {
                                         });
                                       });
                                     } catch (err) {
-                                      console.error('Photo upload failed:', err);
+                                      console.error('Repair photo upload failed:', err);
+                                      setDbError(
+                                        "Couldn't upload photo: " +
+                                          (err && err.message ? err.message : 'Unknown error')
+                                      );
                                     } finally {
                                       setUploadingRepairPhoto(function (prev) {
                                         var n = Object.assign({}, prev);
