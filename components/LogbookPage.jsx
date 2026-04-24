@@ -1206,6 +1206,13 @@ export default function LogbookPage({
               <input
                 value={item.label}
                 onChange={function (e) { updateItem(idx, e.target.value); }}
+                onKeyDown={function (e) {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                  }
+                }}
+                enterKeyHint="done"
                 placeholder="Checklist item…"
                 style={{
                   flex: 1,
