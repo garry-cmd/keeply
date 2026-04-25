@@ -2005,7 +2005,6 @@ const DISPLAY_PLANS = [
       PRICING_CONFIG.free.repairs + ' repairs',
       'Unlimited maintenance tasks',
       PRICING_CONFIG.free.firstMate + ' First Mate AI queries/mo',
-      'Parts catalog',
       'Engine hours tracking',
       'Basic checklists',
       'Passage logbook',
@@ -4359,7 +4358,6 @@ export default function LandingPage() {
                       'Unlimited',
                     ],
                     ['Repairs', PRICING_CONFIG.free.repairs, 'Unlimited', 'Unlimited'],
-                    ['Parts catalog', '\u2713', '\u2713', '\u2713'],
                     ['Engine hours tracking', '\u2713', '\u2713', '\u2713'],
                     ['Document storage', '250 MB', '1 GB', 'Unlimited'],
                     ['Push notifications', '\u2713', '\u2713', '\u2713'],
@@ -4806,7 +4804,6 @@ export default function LandingPage() {
                     '1 vessel',
                     PRICING_CONFIG.free.equipment + ' equipment cards',
                     PRICING_CONFIG.free.repairs + ' repairs',
-                    'Parts catalog',
                   ].map(
                     function (f) {
                       return (

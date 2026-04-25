@@ -103,7 +103,7 @@ const CATEGORIES = [
     faqs: [
       {
         q: 'What does the free Basic plan include?',
-        a: `Basic is free with no credit card required. You get ${formatVesselLimit('free')}, unlimited maintenance, ${formatEquipmentLimit('free')}, ${formatRepairLimit('free').toLowerCase()}, parts catalog, engine hours tracking, and ${formatStorage('free')} document storage.`,
+        a: `Basic is free with no credit card required. You get ${formatVesselLimit('free')}, unlimited maintenance, ${formatEquipmentLimit('free')}, ${formatRepairLimit('free').toLowerCase()}, engine hours tracking, and ${formatStorage('free')} document storage.`,
       },
       {
         q: 'How do I upgrade my plan?',
