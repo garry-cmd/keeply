@@ -3491,6 +3491,10 @@ export default function App() {
     }).length;
     if (!canAddEquipment(userPlan, currentCount)) {
       setShowAddEquip(false);
+      setUpgradeReason(
+        'Free accounts include ' + getEquipmentLimit('free') +
+        ' equipment cards. Upgrade to Standard for unlimited equipment.'
+      );
       setShowUpgradeModal(true);
       return;
     }
@@ -5524,6 +5528,10 @@ export default function App() {
         });
         if (!canAddEquipment(userPlan, currentEquipCount)) {
           setImportSaving(false);
+          setUpgradeReason(
+            'Free accounts include ' + getEquipmentLimit('free') +
+            ' equipment cards. Upgrade to Standard for unlimited equipment.'
+          );
           setShowUpgradeModal(true);
           return;
         }
@@ -18725,6 +18733,21 @@ export default function App() {
                     ) : (
                       <button
                         onClick={async function () {
+                          // Plan gate: same check as manual addEquipment.
+                          // AI confirm-add does its own inline insert and would
+                          // otherwise bypass the limit silently.
+                          const currentEquipCount = equipment.filter(function (e) {
+                            return e._vesselId === activeVesselId && e.category !== 'Vessel';
+                          }).length;
+                          if (!canAddEquipment(userPlan, currentEquipCount)) {
+                            setShowAddEquip(false);
+                            setUpgradeReason(
+                              'Free accounts include ' + getEquipmentLimit('free') +
+                              ' equipment cards. Upgrade to Standard for unlimited equipment.'
+                            );
+                            setShowUpgradeModal(true);
+                            return;
+                          }
                           setSaving(true);
                           try {
                             const aiNotes = [
