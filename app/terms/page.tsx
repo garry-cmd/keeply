@@ -16,33 +16,21 @@ export default function TermsPage() {
         padding: '0 0 80px',
       }}
     >
-      {/* Header */}
-      <div style={{ background: '#0f4c8a', padding: '48px 24px 40px' }}>
+      {/* Page heading */}
+      <div style={{ background: '#0f4c8a', padding: '28px 24px 24px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <a
-            href="/"
-            style={{
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: 14,
-              textDecoration: 'none',
-              display: 'inline-block',
-              marginBottom: 16,
-            }}
-          >
-            ⚓ Keeply
-          </a>
           <h1
             style={{
               color: '#fff',
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: 700,
-              margin: '0 0 8px',
+              margin: '0 0 6px',
               fontFamily: 'system-ui, sans-serif',
             }}
           >
             Terms of Service
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: 14 }}>
+          <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: 13 }}>
             Effective {EFFECTIVE}
           </p>
         </div>
@@ -299,16 +287,6 @@ export default function TermsPage() {
               Keeply LLC · Miami-Dade County, FL, United States
             </p>
           </Section>
-        </div>
-
-        <div style={{ textAlign: 'center', marginTop: 32, fontSize: 13, color: '#9ca3af' }}>
-          <a href="/privacy" style={{ color: '#6b7280', textDecoration: 'none' }}>
-            Privacy Policy
-          </a>
-          {' · '}
-          <a href="/" style={{ color: '#6b7280', textDecoration: 'none' }}>
-            Back to Keeply
-          </a>
         </div>
       </div>
     </div>
