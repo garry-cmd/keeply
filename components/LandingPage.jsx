@@ -4256,6 +4256,11 @@ export default function LandingPage() {
                         try {
                           localStorage.setItem('keeply_pending_price_id', pid);
                         } catch (e) {}
+                      } else {
+                        // Free tier: clear any stale priceId from a previous Standard/Pro click
+                        try {
+                          localStorage.removeItem('keeply_pending_price_id');
+                        } catch (e) {}
                       }
                       setPendingPlan(plan.planId);
                       trackPlanSelected(plan.planId, pid);
@@ -4681,6 +4686,10 @@ export default function LandingPage() {
                 onClick={function () {
                   try {
                     localStorage.setItem('keeply_pending_plan', 'free');
+                  } catch (e) {}
+                  // Free tier: clear any stale priceId from a previous Standard/Pro click
+                  try {
+                    localStorage.removeItem('keeply_pending_price_id');
                   } catch (e) {}
                   setPendingPlan('free');
                   trackPlanSelected('free');
