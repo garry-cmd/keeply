@@ -7,7 +7,7 @@ import SiteFooter from '@/components/SiteFooter';
 export const metadata: Metadata = {
   title: 'Keeply — Boat Maintenance App & Vessel Tracker',
   description:
-    'Keeply is the AI-powered boat maintenance app for serious boat owners. Track maintenance schedules, equipment, repairs, and logbook entries — with First Mate AI always ready. 14-day free trial, no credit card required.',
+    'Keeply is the AI-powered boat maintenance app for serious boat owners. Track maintenance schedules, equipment, repairs, and logbook entries — with First Mate AI always ready.',
   manifest: '/manifest.json',
   alternates: {
     canonical: 'https://www.keeply.boats',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     url: 'https://www.keeply.boats',
     title: "Keeply — Your vessel's First Mate, always ready",
     description:
-      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI always ready when you are. 14-day free trial, no credit card required.',
+      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI always ready when you are.',
     siteName: 'Keeply',
     images: [
       {
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "Keeply — Your vessel's First Mate, always ready",
     description:
-      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI. 14-day free trial.',
+      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI.',
     images: ['https://www.keeply.boats/og-image.jpg'],
   },
 };

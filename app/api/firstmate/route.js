@@ -638,22 +638,15 @@ export async function POST(request) {
       if (!authErr && user) {
         const { data: profile } = await admin
           .from('user_profiles')
-          .select('plan,created_at')
+          .select('plan')
           .eq('id', user.id)
           .single();
         const plan = profile?.plan || 'free';
-        // Trial: free users within 14 days of signup get Pro-level access
-        const daysSinceSignup = profile?.created_at
-          ? (Date.now() - new Date(profile.created_at).getTime()) / 86400000
-          : 999;
-        const trialActive = plan === 'free' && daysSinceSignup < 14;
-        const effectivePlan = trialActive ? 'pro' : plan;
-        const limit = PLANS[effectivePlan]?.firstMate ?? 0;
+        const limit = PLANS[plan]?.firstMate ?? 0;
         if (limit === 0) {
           console.error('[firstmate] unknown plan — no First Mate quota', {
             userId: user.id,
             plan,
-            effectivePlan,
           });
           return Response.json(
             {

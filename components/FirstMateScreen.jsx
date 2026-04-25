@@ -247,7 +247,6 @@ export default function FirstMateScreen({
   repairs,
   equipment,
   userPlan,
-  trialActive,
   onUpgradeClick,
 }) {
   const [messages, setMessages] = useState([]);
@@ -260,8 +259,7 @@ export default function FirstMateScreen({
   const scrollRef = useRef(null);
 
   const plan = userPlan || 'free';
-  const effectivePlan = plan === 'free' && trialActive ? 'pro' : plan;
-  const limit = PLANS[effectivePlan]?.firstMate ?? 0;
+  const limit = PLANS[plan]?.firstMate ?? 0;
   const isLimited = limit > 0;
   const isAtLimit = isLimited && fmCount >= limit;
 

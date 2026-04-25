@@ -2336,7 +2336,7 @@ export default function App() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
   const [userPlan, setUserPlan] = useState('free'); // 'free'|'standard'|'pro'|'fleet'
-  const [trialActive, setTrialActive] = useState(false); // true if free user within 14-day trial
+  // Trial removed — free users no longer get auto-Pro for 14 days.
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState('');
@@ -2596,7 +2596,6 @@ export default function App() {
             if (r.data) {
               var plan = r.data.plan || 'free';
               setUserPlan(plan);
-              setTrialActive(false);
             }
           });
         // Load alert prefs from user metadata
@@ -3121,7 +3120,6 @@ export default function App() {
           .single();
         if (!r.data || r.data.plan === 'free') return false; // webhook not fired yet
         setUserPlan(r.data.plan);
-        setTrialActive(false);
         if (!fired) {
           fired = true;
           // Use subscription ID as transaction_id — stable, deduplicates on page reload
@@ -3234,7 +3232,6 @@ export default function App() {
         if (pr.data && pr.data.plan) {
           livePlan = pr.data.plan;
           setUserPlan(pr.data.plan);
-          setTrialActive(false);
         }
       }
     } catch (e) {}
@@ -6302,7 +6299,6 @@ export default function App() {
       <VesselSetup
         userId={session.user.id}
         userPlan={userPlan}
-        trialActive={trialActive}
         onComplete={function (vessel) {
           setNeedsSetup(false);
           const normalized = {
@@ -6340,7 +6336,6 @@ export default function App() {
       <VesselSetup
         userId={session.user.id}
         userPlan={userPlan}
-        trialActive={trialActive}
         onCancel={function () {
           setShowVesselSetup(false);
         }}
@@ -13976,8 +13971,8 @@ export default function App() {
               .filter(function (eq, idx) {
                 // Free users: show up to the plan limit (engine + 1 other);
                 // any additional cards from prior state are locked behind the
-                // upgrade banner. Trial users see everything.
-                if ((userPlan === 'free' || !userPlan) && !trialActive) {
+                // upgrade banner.
+                if (userPlan === 'free' || !userPlan) {
                   return idx < getEquipmentLimit('free');
                 }
                 return true;
@@ -17787,7 +17782,7 @@ export default function App() {
 
             {/* ── Free plan equipment locked banner ── */}
             {(function () {
-              if ((userPlan !== 'free' && userPlan) || trialActive) return null;
+              if (userPlan !== 'free' && userPlan) return null;
               const totalEquip = equipment.filter(function (e) {
                 return e._vesselId === activeVesselId && e.category !== 'Vessel';
               }).length;
@@ -18293,7 +18288,7 @@ export default function App() {
                         return e._vesselId === activeVesselId && e.category !== 'Vessel';
                       }).length;
                       var fabIsFree = !userPlan || userPlan === 'free';
-                      if (fabIsFree && !trialActive && fabEqCount >= 10) {
+                      if (fabIsFree && fabEqCount >= 10) {
                         setShowFab(false);
                         setShowUpgradeModal(true);
                         return;
@@ -19114,7 +19109,6 @@ export default function App() {
                 return e._vesselId === activeVesselId;
               })}
               userPlan={userPlan}
-              trialActive={trialActive}
               onUpgradeClick={function () {
                 setShowUpgradeModal(true);
               }}
@@ -19165,7 +19159,6 @@ export default function App() {
               setShowFirstMatePanel(false);
             }}
             userPlan={userPlan}
-            trialActive={trialActive}
             onUpgradeClick={function () {
               setShowFirstMatePanel(false);
               setShowUpgradeModal(true);

@@ -3447,8 +3447,6 @@ export default function LandingPage() {
           lineHeight: 1.5,
         }}
       >
-        14-day free trial on Standard and Pro
-        <span style={{ margin: '0 8px', opacity: 0.35 }}>·</span>
         No credit card needed
         <span style={{ margin: '0 8px', opacity: 0.35 }}>·</span>
         <button
@@ -4027,7 +4025,7 @@ export default function LandingPage() {
             >
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>
-                14-day free trial · No credit card needed
+                No credit card needed
               </span>
             </div>
             <h2
@@ -4425,7 +4423,7 @@ export default function LandingPage() {
               color: 'rgba(255,255,255,0.45)',
             }}
           >
-            14-day free trial on Standard and Pro. Cancel any time.
+            Cancel any time.
           </p>
 
           {/* Trust signals */}
@@ -5433,17 +5431,6 @@ export default function LandingPage() {
                                 ? PRICING_CONFIG[pendingPlan].effectiveMonthly
                                 : PRICING_CONFIG[pendingPlan].price}
                               /mo
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 600,
-                                color: 'rgba(255,255,255,0.5)',
-                                letterSpacing: '0.2px',
-                                marginTop: 2,
-                              }}
-                            >
-                              14-day free trial
                             </div>
                           </div>
                         </div>

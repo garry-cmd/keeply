@@ -52,7 +52,6 @@ Copy rule: never use "sailors" — always "boaters."
 - PostHog, GA4, Search Console, Google Ads, Microsoft Clarity
 - **PostHog exception capture** (Apr 21) — `capture_exceptions: true` + `trackException` helper wired into route + global error boundaries
 - SEO: sitemap, robots.txt, JSON-LD
-- 14-day Standard trial
 
 **Stability (Apr 21)**
 - Route-level error boundary (`app/error.tsx`) — "Something went aground" with Retry
@@ -72,8 +71,15 @@ Copy rule: never use "sailors" — always "boaters."
 
 **Customer-facing BETA / early-access language removed (Apr 25)**
 - Beta is wrapping; the website was still loud with "early access," "Join the beta," and `BETA2026` discount-code copy in 9 different sites of `LandingPage.jsx`. All 9 scrubbed in a single pass: top banner, social-proof "IN EARLY ACCESS" pill, pricing-section green pill + headline + subhead ("Choose the plan that fits your boat" replaces "Join the beta"), comparison-table discount-code row, "Use code BETA2026" line below the table, the full BETA2026 promo callout `<div>` block in the plan-picker modal, and the strikethrough-price + "2 months free with BETA2026" badge in the signup modal price column.
-- Replacement copy leans on the existing 14-day free trial — honest, durable, doesn't expire. No new promotional language was introduced; the goal was to make the site read like a shipped product, not an ongoing beta.
+- Replacement copy originally leaned on the 14-day free trial — but the trial itself was removed Apr 25 (see "Trial removed" entry below). No new promotional language was introduced; the goal was to make the site read like a shipped product, not an ongoing beta.
 - "Beta" refs left in active code are all legitimate and intentionally kept: `app/admin/okr/page.tsx` (internal OKR dashboard), `VesselSetup.jsx` Beta Marine engine comment, and the `anthropic-beta` HTTP header in the First Mate route (Anthropic prompt-caching API flag, unrelated to Keeply beta).
+
+**Trial removed (Apr 25)**
+- The 14-day free trial is gone — both the marketing callouts and the backend mechanic. `lib/pricing.js`: `trial: 14` removed from Standard and Pro. `app/api/firstmate/route.js`: the "free users with `daysSinceSignup < 14` get Pro-level First Mate access" gate is deleted; effective plan is now just `plan`. `components/KeeplyApp.jsx`: `trialActive` state, three `setTrialActive(false)` setters, three conditional checks, and four prop passes all removed. `components/FirstMate.jsx` and `FirstMateScreen.jsx`: `trialActive` prop dropped; `effectivePlan` simplified to `plan`. `components/LandingPage.jsx`: four user-visible callouts removed (top banner segment, pricing-section badge text, pricing-table footer line, signup-modal price sub-line). `app/layout.tsx`: trial removed from main meta description, Open Graph, and Twitter card.
+- Reason: clean up the offer. Free tier limits (1 vessel · 2 equipment · 3 repairs · 5 First Mate/mo) are tight enough that a true conversion event happens at the limit, not at trial expiration. Trial-expiration churn is also a worse signal than limit-hit conversion.
+- **Stale dev cruft NOT deleted:** `patch-pricing.js` and `patch-pricing2.js` are one-off migration scripts that originally added the trial. Already-run, no longer referenced — safe to delete in a future pass.
+- **Stripe price-level trials are NOT touched here.** The four Stripe price IDs may still have a `trial_period_days` configured at the Stripe dashboard. Our `app/api/stripe/checkout/route.js` doesn't pass trial params, so subs created after this change won't trial — but if a price-level trial is configured, it'll still apply. Verify in Stripe dashboard if any subs are created with `status: 'trialing'`.
+- **Admin "Trialing" stat left in place** at `app/admin/page.tsx:894` — it reads from Stripe's `subscriptions.list({ status: 'trialing' })` and is now a passive diagnostic. Should always be 0 going forward; if non-zero, something is configured at the Stripe price level.
 
 **Bug fixes & polish (Apr 23)**
 - **FM_LIMITS single source of truth** — `app/api/firstmate/route.js`, `components/FirstMate.jsx`, and `components/FirstMateScreen.jsx` now all import `PLANS` from `lib/pricing.js`. The three hardcoded constants (each with different values, none matching the DB) are deleted. Standard users now see 30 in both UI surfaces and get 30 from the server, not 10. Stale 403 message ("First Mate is not available on the Free plan…") reworded to plan-agnostic and hardened with a `console.error` log so the now-unreachable branch becomes observable if it ever fires.
@@ -246,7 +252,7 @@ Ordered by strategic value:
 | Tier | Monthly | Annual | Limits |
 |---|---|---|---|
 | Free | $0 | — | 1 vessel, 10 equipment, 3 repairs, 5 First Mate queries |
-| Standard | $15 | $144 | unlimited equipment, 30 AI queries, 14-day trial |
+| Standard | $15 | $144 | unlimited equipment, 30 AI queries |
 | Pro | $25 | $240 | + voice + weather + departure checks |
 | Fleet | $49.99+ | — | multi-vessel |
 
