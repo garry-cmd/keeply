@@ -24072,117 +24072,127 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ── Alert Thresholds ── */}
-              <div
-                style={{
-                  padding: '16px 20px 8px',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: 'var(--text-secondary)',
-                  letterSpacing: '0.6px',
-                }}
-              >
-                ALERT THRESHOLDS
-              </div>
-              <div
-                style={{
-                  background: 'var(--bg-elevated)',
-                  borderTop: '0.5px solid var(--border)',
-                  borderBottom: '0.5px solid var(--border)',
-                }}
-              >
-                {[
-                  {
-                    key: 'alertOverdue',
-                    label: 'Overdue',
-                    sub: 'Past due date',
-                    dot: 'var(--danger-text)',
-                  },
-                  {
-                    key: 'alertDayOf',
-                    label: 'Day of',
-                    sub: 'Due today',
-                    dot: 'var(--text-muted)',
-                  },
-                  {
-                    key: 'alert3day',
-                    label: '3 days out',
-                    sub: 'Due in 3 days',
-                    dot: 'var(--warn-text)',
-                  },
-                  {
-                    key: 'alert7day',
-                    label: '7 days out',
-                    sub: 'Due in 7 days',
-                    dot: 'var(--duesoon-text)',
-                  },
-                ].map(function (item, i, arr) {
-                  return (
-                    <div
-                      key={item.key}
-                      style={{
-                        padding: '11px 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        borderBottom: i < arr.length - 1 ? '0.5px solid var(--border)' : 'none',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          background: item.dot,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <div style={{ flex: 1 }}>
+              {/* ── Alert Thresholds ── HIDDEN until cron honors per-user thresholds.
+                   The toggles save to user_metadata but app/api/cron/notifications
+                   never reads them — sending granular alerts requires bucketing the
+                   cron's tasks into overdue / dayOf / 3day / 7day windows and
+                   filtering per-subscription. Until then, showing toggles that
+                   don't affect behavior breaks user trust. Re-enable by removing
+                   the {false && (...)} wrapper. */}
+              {false && (
+                <>
+                  <div
+                    style={{
+                      padding: '16px 20px 8px',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: 'var(--text-secondary)',
+                      letterSpacing: '0.6px',
+                    }}
+                  >
+                    ALERT THRESHOLDS
+                  </div>
+                  <div
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      borderTop: '0.5px solid var(--border)',
+                      borderBottom: '0.5px solid var(--border)',
+                    }}
+                  >
+                    {[
+                      {
+                        key: 'alertOverdue',
+                        label: 'Overdue',
+                        sub: 'Past due date',
+                        dot: 'var(--danger-text)',
+                      },
+                      {
+                        key: 'alertDayOf',
+                        label: 'Day of',
+                        sub: 'Due today',
+                        dot: 'var(--text-muted)',
+                      },
+                      {
+                        key: 'alert3day',
+                        label: '3 days out',
+                        sub: 'Due in 3 days',
+                        dot: 'var(--warn-text)',
+                      },
+                      {
+                        key: 'alert7day',
+                        label: '7 days out',
+                        sub: 'Due in 7 days',
+                        dot: 'var(--duesoon-text)',
+                      },
+                    ].map(function (item, i, arr) {
+                      return (
                         <div
-                          style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}
-                        >
-                          {item.label}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                          {item.sub}
-                        </div>
-                      </div>
-                      <div
-                        onClick={function () {
-                          setProfilePrefs(function (p) {
-                            const n = Object.assign({}, p);
-                            n[item.key] = !p[item.key];
-                            return n;
-                          });
-                        }}
-                        style={{
-                          width: 40,
-                          height: 24,
-                          borderRadius: 12,
-                          background: profilePrefs[item.key] ? 'var(--brand)' : 'var(--border)',
-                          position: 'relative',
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                          transition: 'background 0.2s',
-                        }}
-                      >
-                        <div
+                          key={item.key}
                           style={{
-                            position: 'absolute',
-                            width: 18,
-                            height: 18,
-                            borderRadius: '50%',
-                            background: '#ffffff',
-                            top: 3,
-                            left: profilePrefs[item.key] ? 19 : 3,
-                            transition: 'left 0.2s',
+                            padding: '11px 20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            borderBottom: i < arr.length - 1 ? '0.5px solid var(--border)' : 'none',
                           }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                        >
+                          <div
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background: item.dot,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}
+                            >
+                              {item.label}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                              {item.sub}
+                            </div>
+                          </div>
+                          <div
+                            onClick={function () {
+                              setProfilePrefs(function (p) {
+                                const n = Object.assign({}, p);
+                                n[item.key] = !p[item.key];
+                                return n;
+                              });
+                            }}
+                            style={{
+                              width: 40,
+                              height: 24,
+                              borderRadius: 12,
+                              background: profilePrefs[item.key] ? 'var(--brand)' : 'var(--border)',
+                              position: 'relative',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            <div
+                              style={{
+                                position: 'absolute',
+                                width: 18,
+                                height: 18,
+                                borderRadius: '50%',
+                                background: '#ffffff',
+                                top: 3,
+                                left: profilePrefs[item.key] ? 19 : 3,
+                                transition: 'left 0.2s',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               {/* ── Email Digest Timing ── */}
               {profilePrefs.alertEmail && (
