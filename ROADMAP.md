@@ -23,7 +23,7 @@ The OKR page visualises these as a 6-month timeline. Summary here:
 
 | # | Swim lane              | When       | Owner   | State          |
 |---|------------------------|------------|---------|----------------|
-| 1 | Close beta             | Apr–May 1  | Garry   | In flight (0/5)|
+| 1 | Close beta             | Apr–May 1  | Garry   | At risk (0/5)  |
 | 2 | Deliver final features | Apr–May 31 | Garry   | In progress    |
 | 3 | Code hygiene           | Apr–May    | Garry   | On track (3/7) |
 | 4 | Community & social     | May–Sep    | Marty   | Not started    |
@@ -171,6 +171,7 @@ Features deferred until after GoLive ships. Ordered by strategic value:
 12. **Drag-and-drop file upload on Docs tab** (desktop only) — drag a PDF or image from desktop onto an equipment card's Docs tab; opens the existing Add Document form pre-loaded with the file (label auto-filled from filename). ~30-40 LOC, no new deps, HTML5 drag/drop API. Two sites to wire (vessel-scoped + regular equipment Docs tab) to avoid the parity bug pattern. Mobile/iPad gets nothing — touch devices don't support filesystem drag — but desktop liveaboards reviewing manuals on a laptop in the saloon get a small delight win.
 13. **Full customizable checklists** — beyond the narrow v1 that ships Apr 24 (editable Pre-Departure + Arrival only). This expands to: create arbitrary new checklist types (Weekly Inspection, Winterization, Pre-Race Setup, etc.), bind each to a trigger event or make them on-demand, add category/color-grouping support, restore `sailOnly` style conditional items, share checklists across own vessels, possibly share with crew. Likely a Pro-tier feature when it ships. Needs a checklist manager UI + event-binding design pass. Revisit post-launch when demand is validated by user feedback on the narrow v1.
 14. **Engine hours: compute as `MAX(hours_end)` across passages, not last-write-wins.** Today, `vessels.engine_hours` is overwritten with whatever `hours_end` value the last-saved passage carried — including when an OLD passage is edited. Editing an Apr 1 passage with `hours_end=1002` will downgrade the stored engine hours from 1050 (set by an Apr 15 passage) to 1002, even though the boat genuinely has 1050 hours. ~10-15 min fix in two save paths (`KeeplyApp.jsx` and `LogbookPage.jsx`): instead of `update({ engine_hours: body.hours_end })`, query the max across the vessel's passages first and use that. Only matters for users who edit historical passages — likely small but real.
+15. **Type-to-search equipment-picker dropdowns.** The Apr 24 fix grouped equipment by category using native `<optgroup>` across all 5 picker call sites (Add Repair, Edit Repair, +3 others). Native grouping scales to ~40 items per vessel. Past that — fully-loaded liveaboard catamaran territory, the Liveaboard persona — even grouped lists become unscannable, and users will want to type "anchor" or "racor" and have the list filter. Build a small custom searchable picker component (text input + filtered grouped list + click-to-select), replace the 5 `<select>` sites with it. ~80–150 LOC, no new dependencies, must handle keyboard nav for accessibility. Trigger: first user complaint or first vessel reaching 40+ equipment items in production. Track count via `SELECT vessel_id, count(*) FROM equipment GROUP BY vessel_id ORDER BY 2 DESC LIMIT 5;` periodically.
 
 ---
 
