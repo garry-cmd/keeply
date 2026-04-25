@@ -3107,6 +3107,56 @@ export default function App() {
     [activeVesselId]
   );
 
+  // Handle post-verification redirect (from /api/verify-email)
+  useEffect(function () {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const verified = params.get('verified');
+    if (verified !== '1' && verified !== '0') return;
+
+    const reason = params.get('reason') || '';
+    const already = params.get('already') === '1';
+
+    // Strip the params from the URL immediately
+    window.history.replaceState({}, '', window.location.pathname);
+
+    if (verified === '1') {
+      // Refresh session so the new app_metadata.email_self_verified=true
+      // flows into the local session and the banner auto-hides.
+      supabase.auth.refreshSession().catch(function () {
+        // No-op — even without refresh, banner will hide on next session reload
+      });
+      setVerifyMessage({
+        text: already ? 'Already verified ✓' : 'Email verified ✓ Thanks!',
+        type: 'success',
+      });
+      // Auto-clear after 5 seconds
+      setTimeout(function () {
+        setVerifyMessage(function (m) {
+          return m && (m.text === 'Email verified ✓ Thanks!' || m.text === 'Already verified ✓')
+            ? null
+            : m;
+        });
+      }, 5000);
+    } else {
+      // Failure path — surface a friendly reason
+      const reasonMessages = {
+        missing: 'Verification link was incomplete. Try clicking it again.',
+        config: 'Verification is temporarily unavailable. Try again shortly.',
+        notfound: 'We couldn’t find that account. Try resending.',
+        notoken: 'No verification was pending. Try resending.',
+        mismatch: 'That link is no longer valid. Try resending.',
+        expired: 'That link expired. Try resending.',
+        update: 'Verification failed. Try resending.',
+        exception: 'Something went wrong. Try resending.',
+      };
+      setVerifyMessage({
+        text: reasonMessages[reason] || 'Verification failed. Try resending.',
+        type: 'error',
+      });
+    }
+  }, []);
+
   // Handle post-checkout redirect
   useEffect(function () {
     if (typeof window === 'undefined' || !window.location.search.includes('upgraded=1')) return;
@@ -3237,11 +3287,22 @@ export default function App() {
     setVerifyBusy(true);
     setVerifyMessage(null);
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: session.user.email,
+      const sess = await supabase.auth.getSession();
+      const accessToken = sess?.data?.session?.access_token;
+      if (!accessToken) throw new Error('Session expired. Please sign in again.');
+
+      const res = await fetch('/api/send-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + accessToken,
+        },
       });
-      if (error) throw error;
+      const data = await res.json().catch(function () {
+        return {};
+      });
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
+
       setVerifyMessage({ text: 'Sent ✓ Check your inbox', type: 'success' });
       setTimeout(function () {
         setVerifyMessage(function (m) {
@@ -3269,8 +3330,26 @@ export default function App() {
     setVerifyBusy(true);
     setVerifyMessage(null);
     try {
-      const { error } = await supabase.auth.updateUser({ email: trimmed });
-      if (error) throw error;
+      const sess = await supabase.auth.getSession();
+      const accessToken = sess?.data?.session?.access_token;
+      if (!accessToken) throw new Error('Session expired. Please sign in again.');
+
+      const res = await fetch('/api/change-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + accessToken,
+        },
+        body: JSON.stringify({ newEmail: trimmed }),
+      });
+      const data = await res.json().catch(function () {
+        return {};
+      });
+      if (!res.ok) throw new Error(data.error || 'Failed to update email');
+
+      // Force a session refresh so the local user object reflects the new email
+      await supabase.auth.refreshSession();
+
       setVerifyMessage({ text: 'Sent verification to ' + trimmed, type: 'success' });
       setVerifyEditMode(false);
       setVerifyNewEmail('');
@@ -6663,7 +6742,10 @@ export default function App() {
       {/* ── Verify-email banner ── */}
       {(function () {
         if (!session?.user) return null;
-        if (session.user.email_confirmed_at) return null;
+        // Trigger off our custom app_metadata flag (set server-side at signup,
+        // flipped by /api/verify-email). Existing users from the autoconfirm era
+        // and Google OAuth users have undefined here, so they're exempt.
+        if (session.user.app_metadata?.email_self_verified !== false) return null;
         if (verifyDismissed) return null;
 
         const userEmail = session.user.email || '';

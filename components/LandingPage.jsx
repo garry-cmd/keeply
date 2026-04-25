@@ -3344,6 +3344,28 @@ export default function LandingPage() {
             }
           }
           trackSignupCompleted(effectivePlan || 'free', false);
+
+          // Fire-and-forget: trigger custom email verification via app_metadata flag.
+          // Uses our own /api/send-verification — not Supabase's built-in email confirm —
+          // so the user can stay in the app while we collect a verification.
+          (function fireVerificationEmail() {
+            try {
+              var accessToken = result.data?.session?.access_token;
+              if (!accessToken) return; // No session (e.g. confirm-email is on); skip
+              fetch('/api/send-verification', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: 'Bearer ' + accessToken,
+                },
+              }).catch(function () {
+                // Silent failure — user can hit Resend in the banner
+              });
+            } catch (e) {
+              // Silent failure
+            }
+          })();
+
           setSignupEmail(email);
         }
       } else {
