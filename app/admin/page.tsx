@@ -12,7 +12,7 @@ interface AdminStats {
     newThisWeek: number;
     newLastWeek: number;
     newThisMonth: number;
-    recentSignups: { email: string; createdAt: string; confirmed: boolean }[];
+    recentSignups: { id: string; email: string; createdAt: string; confirmed: boolean }[];
   };
   product: {
     vessels: number;
@@ -50,7 +50,13 @@ interface AdminStats {
   };
   orphans: {
     count: number;
-    list: { email: string; wantedPlan: string; createdAt: string; daysAgo: number }[];
+    list: {
+      id: string;
+      email: string;
+      wantedPlan: string;
+      createdAt: string;
+      daysAgo: number;
+    }[];
   };
   fetchedAt: string;
 }
@@ -349,6 +355,55 @@ export default function AdminPage() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [signupsOpen, setSignupsOpen] = useState(false);
   const [orphansOpen, setOrphansOpen] = useState(false);
+
+  // Delete-test-user modal state
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    email: string;
+    context: string;
+  } | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<string | null>(null);
+
+  const performDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
+    setDeleteResult(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setDeleteResult('Error: not authenticated');
+        return;
+      }
+      const r = await fetch('/api/admin/delete-test-user', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: deleteTarget.id }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        setDeleteResult(`Error: ${data.error || 'HTTP ' + r.status}`);
+        return;
+      }
+      const rep = data.report;
+      setDeleteResult(
+        `Deleted ${deleteTarget.email}. ` +
+          `Stripe sub: ${rep.stripe.subscriptionCanceled}, ` +
+          `Stripe customer: ${rep.stripe.customerDeleted}, ` +
+          `vessels removed: ${rep.supabase.vesselsDeleted}, ` +
+          `auth user: ${rep.supabase.authUserDeleted ? 'deleted' : 'failed'}`
+      );
+    } catch (e) {
+      setDeleteResult(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }, [deleteTarget]);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -1086,6 +1141,7 @@ export default function AdminPage() {
                     <th style={s.th}>Email</th>
                     <th style={s.th}>Joined</th>
                     <th style={s.th}>Status</th>
+                    <th style={s.th}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1100,11 +1156,34 @@ export default function AdminPage() {
                           <span style={s.pill('#fb923c', '#2c1006')}>Pending</span>
                         )}
                       </td>
+                      <td style={s.td}>
+                        <button
+                          onClick={() =>
+                            setDeleteTarget({
+                              id: u.id,
+                              email: u.email,
+                              context: 'Recent Signups',
+                            })
+                          }
+                          style={{
+                            background: 'none',
+                            border: '1px solid #3f1d22',
+                            color: '#f87171',
+                            fontSize: 11,
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            cursor: 'pointer',
+                            fontFamily: sans,
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {users.recentSignups.length === 0 && (
                     <tr>
-                      <td colSpan={3} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
+                      <td colSpan={4} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
                         No signups yet
                       </td>
                     </tr>
@@ -1158,6 +1237,7 @@ export default function AdminPage() {
                     <th style={s.th}>Wanted</th>
                     <th style={s.th}>Joined</th>
                     <th style={s.th}>Age</th>
+                    <th style={s.th}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1182,11 +1262,34 @@ export default function AdminPage() {
                             ? '1 day ago'
                             : `${o.daysAgo} days ago`}
                       </td>
+                      <td style={s.td}>
+                        <button
+                          onClick={() =>
+                            setDeleteTarget({
+                              id: o.id,
+                              email: o.email,
+                              context: 'Paid Intent Orphans',
+                            })
+                          }
+                          style={{
+                            background: 'none',
+                            border: '1px solid #3f1d22',
+                            color: '#f87171',
+                            fontSize: 11,
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            cursor: 'pointer',
+                            fontFamily: sans,
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {orphans.list.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
+                      <td colSpan={5} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
                         No paid intent orphans — every paid-intent signup converted ✓
                       </td>
                     </tr>
@@ -1247,6 +1350,140 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Delete-test-user confirmation modal ─────────────────────────── */}
+      {deleteTarget && (
+        <div
+          onClick={() => {
+            if (!deleteBusy) {
+              setDeleteTarget(null);
+              setDeleteResult(null);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            fontFamily: sans,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#0f172a',
+              border: '1px solid #1e293b',
+              borderRadius: 8,
+              padding: 24,
+              maxWidth: 480,
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700, color: text, marginBottom: 16 }}>
+              Permanently delete this test user?
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: '#cbd5e1',
+                marginBottom: 14,
+                padding: '10px 12px',
+                background: '#020617',
+                borderRadius: 6,
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            >
+              {deleteTarget.email}
+              <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{deleteTarget.id}</div>
+            </div>
+            <div style={{ fontSize: 12, color: muted, marginBottom: 8 }}>
+              This will permanently delete:
+            </div>
+            <ul style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 16, paddingLeft: 18 }}>
+              <li>Active Stripe subscription (if any)</li>
+              <li>Stripe Customer record</li>
+              <li>All vessels, equipment, repairs, logbook, maintenance tasks</li>
+              <li>User profile + auth account</li>
+            </ul>
+            <div
+              style={{
+                fontSize: 11,
+                color: '#fb923c',
+                background: '#2c1006',
+                padding: '8px 12px',
+                borderRadius: 4,
+                marginBottom: 16,
+              }}
+            >
+              ⚠ Cannot be undone. Use only on test users.
+            </div>
+
+            {deleteResult && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: deleteResult.startsWith('Error') ? '#f87171' : '#86efac',
+                  background: deleteResult.startsWith('Error') ? '#2c1006' : '#052e1c',
+                  padding: '10px 12px',
+                  borderRadius: 4,
+                  marginBottom: 16,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  lineHeight: 1.5,
+                }}
+              >
+                {deleteResult}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setDeleteTarget(null);
+                  setDeleteResult(null);
+                  // Refresh to reflect deletion in stats
+                  if (deleteResult && !deleteResult.startsWith('Error')) fetchStats();
+                }}
+                disabled={deleteBusy}
+                style={{
+                  background: 'none',
+                  border: '1px solid #334155',
+                  color: muted,
+                  fontSize: 12,
+                  padding: '8px 16px',
+                  borderRadius: 4,
+                  cursor: deleteBusy ? 'not-allowed' : 'pointer',
+                  fontFamily: sans,
+                }}
+              >
+                {deleteResult ? 'Close' : 'Cancel'}
+              </button>
+              {!deleteResult && (
+                <button
+                  onClick={performDelete}
+                  disabled={deleteBusy}
+                  style={{
+                    background: deleteBusy ? '#7f1d1d' : '#dc2626',
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '8px 16px',
+                    borderRadius: 4,
+                    cursor: deleteBusy ? 'not-allowed' : 'pointer',
+                    fontFamily: sans,
+                  }}
+                >
+                  {deleteBusy ? 'Deleting…' : 'Delete permanently'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

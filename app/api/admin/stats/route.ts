@@ -117,6 +117,7 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10)
     .map((u) => ({
+      id: u.id,
       email: u.email ?? '—',
       createdAt: u.created_at,
       confirmed: !!u.email_confirmed_at,
@@ -233,6 +234,7 @@ export async function GET(req: NextRequest) {
   const planByUserId = new Map<string, string | null>(profileRows.map((p) => [p.id, p.plan]));
 
   type Orphan = {
+    id: string;
     email: string;
     wantedPlan: string;
     createdAt: string;
@@ -246,6 +248,7 @@ export async function GET(req: NextRequest) {
       const currentPlan = planByUserId.get(u.id) ?? 'free';
       if (currentPlan === 'standard' || currentPlan === 'pro') return null; // they completed
       return {
+        id: u.id,
         email: u.email ?? '—',
         wantedPlan: wanted,
         createdAt: u.created_at,
