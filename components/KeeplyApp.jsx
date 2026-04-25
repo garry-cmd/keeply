@@ -2296,6 +2296,12 @@ function TaskRow({ task, idx, total, onToggle, onDelete, onSave, onAddLog, showS
 export default function App() {
   // ── Auth state ──
   const [session, setSession] = useState(undefined); // undefined = loading, null = not logged in
+  // ── Verify-email banner state ──
+  const [verifyDismissed, setVerifyDismissed] = useState(false);
+  const [verifyEditMode, setVerifyEditMode] = useState(false);
+  const [verifyNewEmail, setVerifyNewEmail] = useState('');
+  const [verifyMessage, setVerifyMessage] = useState(null); // { text: string, type: 'success' | 'error' }
+  const [verifyBusy, setVerifyBusy] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [logEntries, setLogEntries] = useState([]);
@@ -2581,6 +2587,15 @@ export default function App() {
   // upgraded=true handler replaced by upgraded=1 handler below
 
   // ─── AUTH SESSION ────────────────────────────────────────────────────────────
+  useEffect(function () {
+    // Read verify-email banner dismissal from sessionStorage (clears on tab close)
+    try {
+      if (sessionStorage.getItem('keeply_verify_dismissed') === '1') {
+        setVerifyDismissed(true);
+      }
+    } catch (e) {}
+  }, []);
+
   useEffect(function () {
     supabase.auth.getSession().then(function (res) {
       setSession(res.data.session);
@@ -3216,6 +3231,63 @@ export default function App() {
   }, []);
 
   // ─── VESSEL CRUD ─────────────────────────────────────────────────────────────
+  // ── Verify-email banner handlers ──
+  async function handleVerifyResend() {
+    if (!session?.user?.email) return;
+    setVerifyBusy(true);
+    setVerifyMessage(null);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: session.user.email,
+      });
+      if (error) throw error;
+      setVerifyMessage({ text: 'Sent ✓ Check your inbox', type: 'success' });
+      setTimeout(function () {
+        setVerifyMessage(function (m) {
+          // Only clear if still showing the same success message (avoid stomping a later error)
+          return m && m.text === 'Sent ✓ Check your inbox' ? null : m;
+        });
+      }, 4000);
+    } catch (e) {
+      setVerifyMessage({ text: e?.message || 'Failed to send. Try again.', type: 'error' });
+    } finally {
+      setVerifyBusy(false);
+    }
+  }
+
+  async function handleVerifyChangeEmail() {
+    const trimmed = (verifyNewEmail || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setVerifyMessage({ text: 'Enter a valid email address.', type: 'error' });
+      return;
+    }
+    if (session?.user?.email && trimmed.toLowerCase() === session.user.email.toLowerCase()) {
+      setVerifyMessage({ text: "That's already your email.", type: 'error' });
+      return;
+    }
+    setVerifyBusy(true);
+    setVerifyMessage(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ email: trimmed });
+      if (error) throw error;
+      setVerifyMessage({ text: 'Sent verification to ' + trimmed, type: 'success' });
+      setVerifyEditMode(false);
+      setVerifyNewEmail('');
+    } catch (e) {
+      setVerifyMessage({ text: e?.message || 'Failed to update email.', type: 'error' });
+    } finally {
+      setVerifyBusy(false);
+    }
+  }
+
+  function handleVerifyDismiss() {
+    setVerifyDismissed(true);
+    try {
+      sessionStorage.setItem('keeply_verify_dismissed', '1');
+    } catch (e) {}
+  }
+
   const openAddVessel = async function () {
     // Always fetch fresh plan from DB to avoid stale state after upgrade
     var livePlan = userPlan;
@@ -6588,6 +6660,199 @@ export default function App() {
         setShowVesselDropdown(false);
       }}
     >
+      {/* ── Verify-email banner ── */}
+      {(function () {
+        if (!session?.user) return null;
+        if (session.user.email_confirmed_at) return null;
+        if (verifyDismissed) return null;
+
+        const userEmail = session.user.email || '';
+        return (
+          <div
+            style={{
+              background: '#2c1006',
+              borderBottom: '1px solid #fb923c',
+              padding: '10px 14px',
+              fontSize: 13,
+              color: '#fed7aa',
+              fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif",
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10,
+                maxWidth: 1100,
+                margin: '0 auto',
+              }}
+            >
+              <span style={{ color: '#fb923c', fontSize: 16, lineHeight: 1, flexShrink: 0 }}>
+                ⚠
+              </span>
+              <div style={{ flex: '1 1 220px', minWidth: 0, lineHeight: 1.4 }}>
+                <span style={{ fontWeight: 700, color: '#fb923c' }}>Verify your email.</span>{' '}
+                <span style={{ color: '#fed7aa' }}>
+                  So you can reset your password and recover your account later. Link sent to{' '}
+                </span>
+                <span style={{ color: '#fff', fontWeight: 600 }}>{userEmail}</span>
+                <span style={{ color: '#fed7aa' }}>.</span>
+              </div>
+
+              {!verifyEditMode && (
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleVerifyResend}
+                    disabled={verifyBusy}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #fb923c',
+                      color: '#fb923c',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '5px 12px',
+                      borderRadius: 4,
+                      cursor: verifyBusy ? 'not-allowed' : 'pointer',
+                      opacity: verifyBusy ? 0.5 : 1,
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {verifyBusy ? 'Sending…' : 'Resend'}
+                  </button>
+                  <button
+                    onClick={function () {
+                      setVerifyEditMode(true);
+                      setVerifyNewEmail(userEmail);
+                      setVerifyMessage(null);
+                    }}
+                    disabled={verifyBusy}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #fb923c',
+                      color: '#fb923c',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '5px 12px',
+                      borderRadius: 4,
+                      cursor: verifyBusy ? 'not-allowed' : 'pointer',
+                      opacity: verifyBusy ? 0.5 : 1,
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Change email
+                  </button>
+                  <button
+                    onClick={handleVerifyDismiss}
+                    aria-label="Dismiss"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#fed7aa',
+                      fontSize: 18,
+                      lineHeight: 1,
+                      padding: '0 6px',
+                      cursor: 'pointer',
+                      opacity: 0.7,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              {verifyEditMode && (
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
+                  <input
+                    type="email"
+                    autoFocus
+                    value={verifyNewEmail}
+                    onChange={function (e) {
+                      setVerifyNewEmail(e.target.value);
+                    }}
+                    onKeyDown={function (e) {
+                      if (e.key === 'Enter') handleVerifyChangeEmail();
+                      if (e.key === 'Escape') {
+                        setVerifyEditMode(false);
+                        setVerifyNewEmail('');
+                        setVerifyMessage(null);
+                      }
+                    }}
+                    placeholder="new@email.com"
+                    disabled={verifyBusy}
+                    style={{
+                      background: '#1a0805',
+                      border: '1px solid #fb923c',
+                      color: '#fff',
+                      fontSize: 12,
+                      padding: '5px 10px',
+                      borderRadius: 4,
+                      minWidth: 200,
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={handleVerifyChangeEmail}
+                    disabled={verifyBusy}
+                    style={{
+                      background: '#fb923c',
+                      border: 'none',
+                      color: '#1a0805',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: '5px 12px',
+                      borderRadius: 4,
+                      cursor: verifyBusy ? 'not-allowed' : 'pointer',
+                      opacity: verifyBusy ? 0.5 : 1,
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {verifyBusy ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    onClick={function () {
+                      setVerifyEditMode(false);
+                      setVerifyNewEmail('');
+                      setVerifyMessage(null);
+                    }}
+                    disabled={verifyBusy}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #fb923c',
+                      color: '#fb923c',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '5px 12px',
+                      borderRadius: 4,
+                      cursor: verifyBusy ? 'not-allowed' : 'pointer',
+                      opacity: verifyBusy ? 0.5 : 1,
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {verifyMessage && (
+              <div
+                style={{
+                  maxWidth: 1100,
+                  margin: '6px auto 0',
+                  paddingLeft: 26,
+                  fontSize: 12,
+                  color: verifyMessage.type === 'error' ? '#fca5a5' : '#86efac',
+                }}
+              >
+                {verifyMessage.text}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── TOP BAR ── */}
       <div style={s.topBar}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
