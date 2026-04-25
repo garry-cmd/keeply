@@ -107,14 +107,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
-        {/* ── Google Analytics 4 ── */}
+        {/* ── Google Analytics 4 + Google Ads conversion tracking ── */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-FZWNP48NHN" />
         <script
           dangerouslySetInnerHTML={{
             __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-FZWNP48NHN');`,
+gtag('config', 'G-FZWNP48NHN');
+gtag('config', 'AW-18080905583');`,
           }}
         />
         {/* ── Fonts ── */}
