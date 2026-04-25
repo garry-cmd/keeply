@@ -7,7 +7,7 @@ import LogbookPage from './LogbookPage';
 import PartsPage from './PartsPage';
 import FirstMate from './FirstMate';
 import FirstMateScreen from './FirstMateScreen';
-import { formatPlanSummary, hasCapability, canAddRepair } from '../lib/pricing';
+import { formatPlanSummary, hasCapability, canAddRepair, canAddEquipment, getEquipmentLimit } from '../lib/pricing';
 
 // ── Part search helpers ──────────────────────────────────────────────────────
 // Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
@@ -3483,6 +3483,18 @@ export default function App() {
   // ─── EQUIPMENT CRUD ──────────────────────────────────────────────────────────
   const addEquipment = async function () {
     if (!newEquip.name.trim()) return;
+
+    // Plan gate: Free users are limited to 2 equipment cards (engine + 1 other,
+    // typically established during AI onboarding). Paid plans are unlimited.
+    const currentCount = equipment.filter(function (e) {
+      return e._vesselId === activeVesselId && e.category !== 'Vessel';
+    }).length;
+    if (!canAddEquipment(userPlan, currentCount)) {
+      setShowAddEquip(false);
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setSaving(true);
     if (newEquip.fileObj) setUploadingDoc(true);
     try {
@@ -5501,10 +5513,24 @@ export default function App() {
     let done = 0;
     try {
       if (importType === 'equipment') {
-        const payloads = importRows
-          .filter(function (r) {
-            return r.name.trim();
-          })
+        // Plan gate: truncate the import to whatever slots remain on the
+        // user's plan. Free users with 1 of 2 equipment used can import 1 row;
+        // those at limit see the upgrade modal.
+        const currentEquipCount = equipment.filter(function (e) {
+          return e._vesselId === activeVesselId && e.category !== 'Vessel';
+        }).length;
+        const validRows = importRows.filter(function (r) {
+          return r.name.trim();
+        });
+        if (!canAddEquipment(userPlan, currentEquipCount)) {
+          setImportSaving(false);
+          setShowUpgradeModal(true);
+          return;
+        }
+        const equipLimit = getEquipmentLimit(userPlan);
+        const slotsLeft = equipLimit === -1 ? validRows.length : Math.max(0, equipLimit - currentEquipCount);
+        const rowsToImport = validRows.slice(0, slotsLeft);
+        const payloads = rowsToImport
           .map(function (r) {
             return {
               vessel_id: activeVesselId,
@@ -13912,8 +13938,12 @@ export default function App() {
                 return eq.category !== 'Vessel';
               })
               .filter(function (eq, idx) {
-                // Free users: show up to 10 equipment cards; rest locked behind upgrade banner
-                if ((userPlan === 'free' || !userPlan) && !trialActive) return idx < 10;
+                // Free users: show up to the plan limit (engine + 1 other);
+                // any additional cards from prior state are locked behind the
+                // upgrade banner. Trial users see everything.
+                if ((userPlan === 'free' || !userPlan) && !trialActive) {
+                  return idx < getEquipmentLimit('free');
+                }
                 return true;
               })
               .map(function (eq) {

@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from './supabase-client';
+import { getEquipmentLimit } from '../lib/pricing';
 
 // ── Loader messages ──────────────────────────────────────────────────────
 var VESSEL_MSGS = [
@@ -89,8 +90,13 @@ function VesselSetupLoader() {
 // AI onboarding is universal — every plan gets the onboarding form + AI
 // equipment generation. On AI failure, a "Skip setup" stub fallback
 // creates the vessel + engines with vessel_type='sail' (cruising sail is
-// the ICP majority) so the user is never stuck. `userPlan` is kept in
-// the prop signature for back-compat but is unused.
+// the ICP majority) so the user is never stuck.
+//
+// `userPlan` is used to cap AI-generated equipment for Free users:
+// Free is limited to 2 equipment cards (engine + 1 other). Standard/Pro
+// receive the full AI output. The cap fires silently — additional gear
+// the AI identified is dropped, and the upgrade prompt appears later
+// when the user tries to add more equipment manually.
 //
 // As of Apr 2026 the engine make/model are free-text inputs, not catalog
 // dropdowns — catalog curation at year-variant precision proved
@@ -468,8 +474,17 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
 
       const enrichedEquipment = engineCards.concat(nonEngineAi);
 
+      // Plan cap: Free users get 2 equipment cards total (engine + 1 other).
+      // Engine cards come first in `enrichedEquipment`, so slicing here
+      // preserves the engine and trims the long tail. Standard/Pro pass
+      // through unchanged (limit = -1).
+      const planEquipLimit = getEquipmentLimit(userPlan);
+      const cappedEquipment = planEquipLimit === -1
+        ? enrichedEquipment
+        : enrichedEquipment.slice(0, planEquipLimit);
+
       // ── Persist AI-generated equipment + tasks ─────────
-      for (const item of enrichedEquipment) {
+      for (const item of cappedEquipment) {
         // Parts — AI returns specific parts/fluids per equipment; we stash
         // them in custom_parts as ai_suggested so the UI can prompt the
         // user to confirm. Users may correct part numbers the AI got wrong.
