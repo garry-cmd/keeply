@@ -3447,9 +3447,7 @@ export default function LandingPage() {
           lineHeight: 1.5,
         }}
       >
-        Keeply is in <strong style={{ color: ACCENT, fontWeight: 700 }}>early access</strong>
-        <span style={{ margin: '0 8px', opacity: 0.35 }}>·</span>
-        Use code <strong style={{ color: GOLD }}>BETA2026</strong> for 2 months free
+        14-day free trial on Standard and Pro
         <span style={{ margin: '0 8px', opacity: 0.35 }}>·</span>
         No credit card needed
         <span style={{ margin: '0 8px', opacity: 0.35 }}>·</span>
@@ -3728,19 +3726,7 @@ export default function LandingPage() {
             gap: isMobile ? 12 : 0,
             justifyContent: 'space-between',
           }}
-        >
-          <div
-            style={{
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.3)',
-              fontWeight: 600,
-              letterSpacing: '0.4px',
-              flexShrink: 0,
-            }}
-          >
-            IN EARLY ACCESS
-          </div>
-          <div
+        >          <div
             style={{
               display: 'flex',
               gap: isMobile ? 16 : 32,
@@ -4041,7 +4027,7 @@ export default function LandingPage() {
             >
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>
-                Early access · Use code BETA2026 for 2 months free
+                14-day free trial · No credit card needed
               </span>
             </div>
             <h2
@@ -4054,11 +4040,10 @@ export default function LandingPage() {
                 fontFamily: "'Satoshi','DM Sans',sans-serif",
               }}
             >
-              Join the beta. Help build the best boat maintenance app afloat.
+              Choose the plan that fits your boat.
             </h2>
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', margin: '0 0 32px' }}>
-              Keeply is in early access. Your feedback shapes what we build next. Start free — no
-              credit card needed.
+              Start free. Upgrade when you're ready. Cancel any time.
             </p>
             <div
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}
@@ -4375,7 +4360,6 @@ export default function LandingPage() {
                     ['AI vessel setup', '\u2713', '\u2713', '\u2713'],
                     ['Passage export (CSV)', '\u2014', '\u2014', '\u2713'],
                     ['Watch entries logbook', '\u2014', '\u2014', '\u2713'],
-                    ['Discount code', '\u2014', 'BETA2026', 'BETA2026'],
                     [
                       'Price',
                       'Free',
@@ -4441,7 +4425,7 @@ export default function LandingPage() {
               color: 'rgba(255,255,255,0.45)',
             }}
           >
-            Use discount code BETA2026 at checkout for 2 months free. Cancel any time.
+            14-day free trial on Standard and Pro. Cancel any time.
           </p>
 
           {/* Trust signals */}
@@ -4614,65 +4598,6 @@ export default function LandingPage() {
               </div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>
                 No credit card required
-              </div>
-              {/* ── BETA2026 early-access promo (remove when code ends) ── */}
-              <div
-                style={{
-                  background: 'rgba(245,166,35,0.08)',
-                  border: '1px solid rgba(245,166,35,0.35)',
-                  borderRadius: 10,
-                  padding: '10px 14px',
-                  marginBottom: 16,
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                }}
-              >
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    flexShrink: 0,
-                    borderRadius: 8,
-                    background: 'rgba(245,166,35,0.15)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#f5a623"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      color: '#f5a623',
-                      letterSpacing: '1px',
-                      textTransform: 'uppercase',
-                      marginBottom: 3,
-                    }}
-                  >
-                    Early access
-                  </div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.4 }}>
-                    Use code <strong style={{ color: '#fff', fontWeight: 700 }}>BETA2026</strong> at
-                    checkout for 2 months free on Standard &amp; Pro.
-                  </div>
-                </div>
               </div>
               {/* Monthly / Annual toggle */}
               <div
@@ -5502,15 +5427,7 @@ export default function LandingPage() {
                             </div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 500,
-                                color: 'rgba(255,255,255,0.45)',
-                                textDecoration: 'line-through',
-                                lineHeight: 1.2,
-                              }}
-                            >
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
                               $
                               {annual
                                 ? PRICING_CONFIG[pendingPlan].effectiveMonthly
@@ -5520,12 +5437,13 @@ export default function LandingPage() {
                             <div
                               style={{
                                 fontSize: 11,
-                                fontWeight: 700,
-                                color: GOLD,
+                                fontWeight: 600,
+                                color: 'rgba(255,255,255,0.5)',
                                 letterSpacing: '0.2px',
+                                marginTop: 2,
                               }}
                             >
-                              2 months free with BETA2026
+                              14-day free trial
                             </div>
                           </div>
                         </div>
