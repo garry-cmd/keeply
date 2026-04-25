@@ -1,6 +1,7 @@
 ﻿import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { PostHogProvider } from '@/components/PostHogProvider';
+import SiteHeader from '@/components/SiteHeader';
 
 export const metadata: Metadata = {
   title: 'Keeply — Boat Maintenance App & Vessel Tracker',
@@ -134,7 +135,10 @@ gtag('config', 'G-FZWNP48NHN');`,
         <meta name="color-scheme" content="dark" />
       </head>
       <body className="dark-mode">
-        <PostHogProvider>{children}</PostHogProvider>
+        <PostHogProvider>
+          <SiteHeader />
+          {children}
+        </PostHogProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if ('serviceWorker' in navigator) {
