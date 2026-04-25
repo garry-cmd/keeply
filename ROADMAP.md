@@ -1,5 +1,5 @@
 # Keeply Roadmap
-_Last updated: April 23, 2026_
+_Last updated: April 24, 2026_
 
 > **Granular tracking lives at [`/admin/okr`](https://keeply.boats/admin/okr).**
 > This document is the strategic frame — swim lanes, sequencing, and decisions.
@@ -23,7 +23,7 @@ The OKR page visualises these as a 6-month timeline. Summary here:
 
 | # | Swim lane              | When       | Owner   | State          |
 |---|------------------------|------------|---------|----------------|
-| 1 | Close beta             | Apr–May 1  | Garry   | At risk (0/5)  |
+| 1 | Close beta             | Apr–May 1  | Garry   | In flight (0/5)|
 | 2 | Deliver final features | Apr–May 31 | Garry   | In progress    |
 | 3 | Code hygiene           | Apr–May    | Garry   | On track (3/7) |
 | 4 | Community & social     | May–Sep    | Marty   | Not started    |

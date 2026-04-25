@@ -1,6 +1,6 @@
 # Keeply — Context
 
-**Updated:** April 23, 2026  
+**Updated:** April 24, 2026  
 **Phase:** Beta → Pre-Launch (GoLive imminent)  
 **Founder:** Garry Hoffman (solo) · Co-owner: Marty (20%, community/social OKR)  
 **Target:** $5K MRR to quit day job
@@ -18,7 +18,7 @@ Copy rule: never use "sailors" — always "boaters."
 ## Current state (Apr 23, 2026)
 
 - **5 active beta testers** (3 Active Cruisers, 2 Liveaboards, 0 Upgraders). +2 imminent (1 Cruiser, 1 Liveaboard) → 4/3/0 split.
-- **Beta close deadline: May 1.** Structured task plan still 0/5 — KR moved from on-track → at-risk.
+- **Beta close deadline: May 1.** 5 testers actively working through the structured task plan; 0/5 fully complete. KR in flight.
 - **Active KR: "Deliver final features" (due May 31):** Logbook Custom Checklists (Pro), First Mate Conversation History (all tiers), Multi-engine tracking. See `/admin/okr`.
 - **1/3 personas validated** (Upgrader still unvalidated — gap in cohort)
 - **iOS/Android:** DUNS in hand, Google Play account in flight, iOS build pending
