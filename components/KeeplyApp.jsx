@@ -460,6 +460,32 @@ const EQ_CATEGORIES = ALL_SECTIONS.filter(function (s) {
   return s !== 'Paperwork' && s !== 'Dinghy' && s !== 'Vessel';
 });
 
+// Group vessel equipment by category for grouped <optgroup> rendering in
+// equipment-picker dropdowns (Add Repair, Edit Repair, etc.). Excludes the
+// Vessel category — the boat itself shouldn't appear as a piece of equipment
+// to link a repair to. Categories follow EQ_CATEGORIES order; items within
+// each group are sorted alphabetically.
+function groupedEquipmentForVessel(equipmentList, vesselId) {
+  const byCategory = {};
+  equipmentList.forEach(function (eq) {
+    if (eq._vesselId !== vesselId) return;
+    if (eq.category === 'Vessel') return;
+    const cat = eq.category || 'General';
+    if (!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push(eq);
+  });
+  return EQ_CATEGORIES.filter(function (cat) {
+    return byCategory[cat] && byCategory[cat].length > 0;
+  }).map(function (cat) {
+    return {
+      category: cat,
+      items: byCategory[cat].slice().sort(function (a, b) {
+        return a.name.localeCompare(b.name);
+      }),
+    };
+  });
+}
+
 // ─── CATEGORY ICONS ──────────────────────────────────────────────────────────
 function getCategoryIcon(category, size) {
   size = size || 18;
@@ -12419,17 +12445,19 @@ export default function App() {
                                 }}
                               >
                                 <option value="">— No equipment linked —</option>
-                                {equipment
-                                  .filter(function (e) {
-                                    return e._vesselId === activeVesselId;
-                                  })
-                                  .map(function (e) {
-                                    return (
-                                      <option key={e.id} value={e.id}>
-                                        {e.name}
-                                      </option>
-                                    );
-                                  })}
+                                {groupedEquipmentForVessel(equipment, activeVesselId).map(function (group) {
+                                  return (
+                                    <optgroup key={group.category} label={group.category}>
+                                      {group.items.map(function (eq) {
+                                        return (
+                                          <option key={eq.id} value={eq.id}>
+                                            {eq.name}
+                                          </option>
+                                        );
+                                      })}
+                                    </optgroup>
+                                  );
+                                })}
                               </select>
                               <div style={{ display: 'flex', gap: 6 }}>
                                 <button
@@ -17875,17 +17903,19 @@ export default function App() {
                 style={s.sel}
               >
                 <option value="">— Not linked to equipment —</option>
-                {equipment
-                  .filter(function (eq) {
-                    return eq._vesselId === activeVesselId;
-                  })
-                  .map(function (eq) {
-                    return (
-                      <option key={eq.id} value={eq.id}>
-                        {eq.name}
-                      </option>
-                    );
-                  })}
+                {groupedEquipmentForVessel(equipment, activeVesselId).map(function (group) {
+                  return (
+                    <optgroup key={group.category} label={group.category}>
+                      {group.items.map(function (eq) {
+                        return (
+                          <option key={eq.id} value={eq.id}>
+                            {eq.name}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  );
+                })}
               </select>
               <input
                 placeholder="Maintenance description"
@@ -18117,17 +18147,19 @@ export default function App() {
                 style={s.sel}
               >
                 <option value="">— Not linked to equipment —</option>
-                {equipment
-                  .filter(function (eq) {
-                    return eq._vesselId === activeVesselId;
-                  })
-                  .map(function (eq) {
-                    return (
-                      <option key={eq.id} value={eq.id}>
-                        {eq.name}
-                      </option>
-                    );
-                  })}
+                {groupedEquipmentForVessel(equipment, activeVesselId).map(function (group) {
+                  return (
+                    <optgroup key={group.category} label={group.category}>
+                      {group.items.map(function (eq) {
+                        return (
+                          <option key={eq.id} value={eq.id}>
+                            {eq.name}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  );
+                })}
               </select>
               <textarea
                 placeholder="Describe the repair…"
@@ -19378,17 +19410,19 @@ export default function App() {
                               }}
                             >
                               <option value="">— No equipment linked —</option>
-                              {equipment
-                                .filter(function (e) {
-                                  return e._vesselId === activeVesselId;
-                                })
-                                .map(function (e) {
-                                  return (
-                                    <option key={e.id} value={e.id}>
-                                      {e.name}
-                                    </option>
-                                  );
-                                })}
+                              {groupedEquipmentForVessel(equipment, activeVesselId).map(function (group) {
+                                return (
+                                  <optgroup key={group.category} label={group.category}>
+                                    {group.items.map(function (eq) {
+                                      return (
+                                        <option key={eq.id} value={eq.id}>
+                                          {eq.name}
+                                        </option>
+                                      );
+                                    })}
+                                  </optgroup>
+                                );
+                              })}
                             </select>
                             <div style={{ display: 'flex', gap: 6 }}>
                               <button
@@ -26430,17 +26464,19 @@ export default function App() {
               style={s.sel}
             >
               <option value="">— Not linked to equipment —</option>
-              {equipment
-                .filter(function (eq) {
-                  return eq._vesselId === activeVesselId;
-                })
-                .map(function (eq) {
-                  return (
-                    <option key={eq.id} value={eq.id}>
-                      {eq.name}
-                    </option>
-                  );
-                })}
+              {groupedEquipmentForVessel(equipment, activeVesselId).map(function (group) {
+                return (
+                  <optgroup key={group.category} label={group.category}>
+                    {group.items.map(function (eq) {
+                      return (
+                        <option key={eq.id} value={eq.id}>
+                          {eq.name}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                );
+              })}
             </select>
             <textarea
               placeholder="Describe the repair…"
