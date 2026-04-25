@@ -48,6 +48,10 @@ interface AdminStats {
     icpCoverage: number;
     dataQuality: { withHomePort: number; total: number };
   };
+  orphans: {
+    count: number;
+    list: { email: string; wantedPlan: string; createdAt: string; daysAgo: number }[];
+  };
   fetchedAt: string;
 }
 
@@ -344,6 +348,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [signupsOpen, setSignupsOpen] = useState(false);
+  const [orphansOpen, setOrphansOpen] = useState(false);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -413,7 +418,7 @@ export default function AdminPage() {
     );
   if (!stats) return null;
 
-  const { users, product, revenue, engagement, appStore, geography } = stats;
+  const { users, product, revenue, engagement, appStore, geography, orphans } = stats;
   const freeUsers = Math.max(0, users.total - revenue.activeSubscriptions - revenue.trialing);
   const convRate = pct(revenue.activeSubscriptions, users.total);
   const mrrPct = pct(revenue.mrr, GOALS.mrr);
@@ -1101,6 +1106,88 @@ export default function AdminPage() {
                     <tr>
                       <td colSpan={3} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
                         No signups yet
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div style={{ ...s.card, marginTop: 10, padding: 0, overflow: 'hidden' }}>
+            <button
+              onClick={() => setOrphansOpen((o) => !o)}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '12px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span
+                style={{ fontSize: 11, color: muted, letterSpacing: '0.1em', fontFamily: sans }}
+              >
+                PAID INTENT ORPHANS{' '}
+                <span style={{ color: orphans.count > 0 ? '#fb923c' : muted, fontWeight: 700 }}>
+                  ({orphans.count})
+                </span>
+                <span
+                  style={{
+                    color: muted,
+                    fontWeight: 400,
+                    marginLeft: 8,
+                    textTransform: 'none',
+                    letterSpacing: 0,
+                  }}
+                >
+                  — started Standard/Pro signup, never completed payment
+                </span>
+              </span>
+              <span style={{ fontSize: 11, color: muted, fontFamily: sans }}>
+                {orphansOpen ? '▲ collapse' : `▼ show ${orphans.list.length}`}
+              </span>
+            </button>
+            {orphansOpen && (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={s.th}>Email</th>
+                    <th style={s.th}>Wanted</th>
+                    <th style={s.th}>Joined</th>
+                    <th style={s.th}>Age</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orphans.list.map((o, i) => (
+                    <tr key={i}>
+                      <td style={{ ...s.td, color: '#cbd5e1' }}>{o.email}</td>
+                      <td style={s.td}>
+                        <span
+                          style={s.pill(
+                            o.wantedPlan === 'pro' ? '#a78bfa' : '#4da6ff',
+                            o.wantedPlan === 'pro' ? '#1c1138' : '#062138'
+                          )}
+                        >
+                          {o.wantedPlan === 'pro' ? 'Pro' : 'Standard'}
+                        </span>
+                      </td>
+                      <td style={s.td}>{fmtDate(o.createdAt)}</td>
+                      <td style={s.td}>
+                        {o.daysAgo === 0
+                          ? 'today'
+                          : o.daysAgo === 1
+                            ? '1 day ago'
+                            : `${o.daysAgo} days ago`}
+                      </td>
+                    </tr>
+                  ))}
+                  {orphans.list.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
+                        No paid intent orphans — every paid-intent signup converted ✓
                       </td>
                     </tr>
                   )}

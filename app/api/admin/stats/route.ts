@@ -88,6 +88,7 @@ export async function GET(req: NextRequest) {
     vesselAllResult, // user_id + created_at + home_port — used for activation, WoW, geo, time-to-activation
     repairCreatedResult,
     firstMateResult,
+    userProfilesResult, // id + plan — used for orphan detection
   ] = await Promise.allSettled([
     supabase.auth.admin.listUsers({ perPage: 1000 }),
     supabase.from('vessels').select('*', { count: 'exact', head: true }),
@@ -100,6 +101,7 @@ export async function GET(req: NextRequest) {
     supabase.from('vessels').select('user_id, created_at, home_port'),
     supabase.from('repairs').select('created_at').gte('created_at', twoWeeksAgo.toISOString()),
     supabase.from('firstmate_usage').select('count').eq('month_key', currentMonth),
+    supabase.from('user_profiles').select('id, plan'),
   ]);
 
   // ── Users ─────────────────────────────────────────────────────────────────────
@@ -221,6 +223,38 @@ export async function GET(req: NextRequest) {
     (r) => new Date(r.created_at) > twoWeeksAgo && new Date(r.created_at) <= oneWeekAgo
   ).length;
 
+  // ── Paid intent orphans ──────────────────────────────────────────────────────
+  // Users who set pending_plan=standard|pro at signup (Stripe Checkout was started)
+  // but never made it back to a paid plan. Source of truth for plan: user_profiles.
+  // Webhook-set plan='standard'|'pro' means they completed; anything else (free/null)
+  // with a non-null pending_plan = orphan.
+  const profileRows: { id: string; plan: string | null }[] =
+    userProfilesResult.status === 'fulfilled' ? (userProfilesResult.value.data ?? []) : [];
+  const planByUserId = new Map<string, string | null>(profileRows.map((p) => [p.id, p.plan]));
+
+  type Orphan = {
+    email: string;
+    wantedPlan: string;
+    createdAt: string;
+    daysAgo: number;
+  };
+  const orphans: Orphan[] = allUsers
+    .map((u) => {
+      const wanted = (u.user_metadata as Record<string, unknown> | undefined)?.pending_plan;
+      if (typeof wanted !== 'string') return null;
+      if (wanted !== 'standard' && wanted !== 'pro') return null;
+      const currentPlan = planByUserId.get(u.id) ?? 'free';
+      if (currentPlan === 'standard' || currentPlan === 'pro') return null; // they completed
+      return {
+        email: u.email ?? '—',
+        wantedPlan: wanted,
+        createdAt: u.created_at,
+        daysAgo: Math.floor((now - new Date(u.created_at).getTime()) / MS),
+      } as Orphan;
+    })
+    .filter((x): x is Orphan => x !== null)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
   // ── App Store ratings (stubbed — wire up once credentials available) ──────────
   // iOS:     Use App Store Connect API → GET /v1/apps/{id}/customerReviews
   // Android: Use Google Play Developer API → reviews.list
@@ -271,6 +305,7 @@ export async function GET(req: NextRequest) {
     },
     appStore,
     geography: { regions, icpCoverage, dataQuality: { withHomePort, total: vesselData.length } },
+    orphans: { count: orphans.length, list: orphans.slice(0, 25) },
     fetchedAt: new Date().toISOString(),
   });
 }
