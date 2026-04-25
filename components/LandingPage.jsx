@@ -3,6 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase-client';
 import { PLANS as PRICING_CONFIG } from '../lib/pricing.js';
 import posthog from 'posthog-js';
+import {
+  trackSignupStarted,
+  trackPlanSelected,
+  trackSignupCompleted,
+} from '../lib/analytics';
 
 const BRAND = '#0f4c8a';
 const NAVY = '#071e3d';
@@ -3338,11 +3343,7 @@ export default function LandingPage() {
               console.error('Stripe checkout error:', stripeErr);
             }
           }
-          posthog.capture('signup_completed', {
-            plan: effectivePlan || 'free',
-            email_confirmed_immediately: false,
-          });
-          window.gtag?.('event', 'signup_completed', { plan: effectivePlan || 'free' });
+          trackSignupCompleted(effectivePlan || 'free', false);
           setSignupEmail(email);
         }
       } else {
@@ -3417,7 +3418,7 @@ export default function LandingPage() {
     var resolvedMode = m || 'signup';
     setMode(resolvedMode);
     setShowAuth(true);
-    if (resolvedMode === 'signup') posthog.capture('signup_started');
+    if (resolvedMode === 'signup') trackSignupStarted();
   }
   function scrollToPricing() {
     var el = document.getElementById('pricing');
@@ -4257,6 +4258,7 @@ export default function LandingPage() {
                         } catch (e) {}
                       }
                       setPendingPlan(plan.planId);
+                      trackPlanSelected(plan.planId, pid);
                       openAuth('signup');
                     }}
                     style={{
@@ -4681,6 +4683,7 @@ export default function LandingPage() {
                     localStorage.setItem('keeply_pending_plan', 'free');
                   } catch (e) {}
                   setPendingPlan('free');
+                  trackPlanSelected('free');
                   setShowPlanPicker(false);
                   openAuth('signup');
                 }}
@@ -4776,6 +4779,7 @@ export default function LandingPage() {
                     localStorage.setItem('keeply_pending_price_id', pid);
                   } catch (e) {}
                   setPendingPlan('standard');
+                  trackPlanSelected('standard', pid);
                   setShowPlanPicker(false);
                   openAuth('signup');
                 }}
@@ -4900,6 +4904,7 @@ export default function LandingPage() {
                     localStorage.setItem('keeply_pending_price_id', pid);
                   } catch (e) {}
                   setPendingPlan('pro');
+                  trackPlanSelected('pro', pid);
                   setShowPlanPicker(false);
                   openAuth('signup');
                 }}
