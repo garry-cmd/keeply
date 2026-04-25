@@ -18541,13 +18541,10 @@ export default function App() {
                 <>
                   <div
                     style={{
-                      background: 'var(--brand-deep)',
-                      border: '1px solid #bfdbfe',
-                      borderRadius: 8,
-                      padding: '10px 12px',
-                      marginBottom: 12,
+                      padding: '0 2px 8px',
                       fontSize: 12,
-                      color: 'var(--brand)',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.5,
                     }}
                   >
                     Describe the equipment and we'll create the card with maintenance tasks
@@ -18559,10 +18556,18 @@ export default function App() {
                     onChange={function (e) {
                       setEquipAiDesc(e.target.value);
                     }}
+                    onFocus={function (e) {
+                      e.target.style.borderColor = 'var(--brand)';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(77,166,255,0.15)';
+                    }}
+                    onBlur={function (e) {
+                      e.target.style.borderColor = 'var(--brand)';
+                      e.target.style.boxShadow = 'none';
+                    }}
                     rows={3}
                     style={{
                       width: '100%',
-                      border: '1px solid var(--border)',
+                      border: '2px solid var(--brand)',
                       borderRadius: 10,
                       padding: '10px 12px',
                       fontSize: 13,
@@ -18572,6 +18577,8 @@ export default function App() {
                       resize: 'none',
                       lineHeight: 1.6,
                       fontFamily: 'inherit',
+                      background: 'var(--bg-elevated)',
+                      transition: 'box-shadow 0.15s',
                     }}
                   />
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
