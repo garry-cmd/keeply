@@ -26,7 +26,7 @@ The OKR page visualises these as a 6-month timeline. Summary here:
 | 1 | Close beta             | Apr–May 1  | Garry   | At risk (0/5)  |
 | 2 | Deliver final features | Apr–May 31 | Garry   | In progress    |
 | 3 | Code hygiene           | Apr–May    | Garry   | On track (3/7) |
-| 4 | Community & social     | May–Sep    | Marty   | Not started    |
+| 4 | Community & social     | May–Sep    | TBD     | Not started    |
 | 5 | PWA foundation         | May        | Garry   | Not started    |
 | 6 | Capacitor integration  | May–Jun    | Garry   | Not started    |
 | 7 | Android launch         | Jun–Jul    | Garry   | Not started    |
@@ -59,7 +59,7 @@ Two KRs run in parallel pre-GoLive:
 Stabilise and validate before any infrastructure or store work.
 
 - 5 beta testers complete structured task plan
-- All 3 personas validated (Active Cruiser ✓, Liveaboard ✓, Upgrader ✗)
+- All 3 personas validated (Active Cruiser ✓, Liveaboard ✓, Upgrader ✓)
 - Structured feedback received from all testers
 - First Mate query limits unified — all three sites (API route, FirstMate.jsx, FirstMateScreen.jsx) import from `lib/pricing.js`
 - Push notifications validated end-to-end on real device
@@ -90,7 +90,7 @@ Pre-launch baseline to prevent scaling pain.
 
 ---
 
-## Community & Social (May–September 2026) — Marty's OKR
+## Community & Social (May–September 2026)
 
 Organic community is the primary acquisition channel. Paid ads only make sense once conversion is validated.
 

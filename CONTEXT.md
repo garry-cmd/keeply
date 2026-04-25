@@ -2,7 +2,7 @@
 
 **Updated:** April 24, 2026  
 **Phase:** Beta → Pre-Launch (GoLive imminent)  
-**Founder:** Garry Hoffman (solo) · Co-owner: Marty (20%, community/social OKR)  
+**Founder:** Garry Hoffman (solo)  
 **Target:** $5K MRR to quit day job
 
 ---
@@ -17,10 +17,10 @@ Copy rule: never use "sailors" — always "boaters."
 
 ## Current state (Apr 23, 2026)
 
-- **5 active beta testers** (3 Active Cruisers, 2 Liveaboards, 0 Upgraders). +2 imminent (1 Cruiser, 1 Liveaboard) → 4/3/0 split.
+- **5 active beta testers** (2 Active Cruisers, 2 Liveaboards, 1 Upgrader). +2 imminent (1 Cruiser, 1 Liveaboard) → 3/3/1 split.
 - **Beta close deadline: May 1.** 5 testers actively working through the structured task plan; 0/5 fully complete. KR in flight.
 - **Active KR: "Deliver final features" (due May 31):** Logbook Custom Checklists (Pro), First Mate Conversation History (all tiers), Multi-engine tracking. See `/admin/okr`.
-- **1/3 personas validated** (Upgrader still unvalidated — gap in cohort)
+- **3/3 personas validated** (all three personas represented in beta cohort)
 - **iOS/Android:** DUNS in hand, Google Play account in flight, iOS build pending
 - **Apr 23 session win:** Doc attach bug fixed — regular-equipment Docs tab file picker now auto-fills the label from the filename, matching the vessel-scoped tab. Closes the bug that blocked attaching files to the Jabsco bilge pump on SV Irene (and every other regular equipment card since commit `a166837`).
 - **Apr 22 audit finding (still open):**
@@ -365,4 +365,4 @@ Running git commands from `C:\Users\garry` instead of `C:\Users\garry\keeply` pr
 
 - **Active Cruiser** — validated. 42–65, $150K–$400K HHI, 35–65ft vessel, 20–60 days/year on water, $8K–$40K/yr spend.
 - **Liveaboard** — validated. Brand loyalist, word-of-mouth engine.
-- **Upgrader** — unvalidated in beta. Gap in current cohort.
+- **Upgrader** — validated. Tester engaged in beta for weeks; demographics to be filled in post-debrief.
