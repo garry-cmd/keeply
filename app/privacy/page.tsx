@@ -3,7 +3,7 @@ export const metadata = {
   description: 'How Keeply collects, uses, and protects your data.',
 };
 
-const EFFECTIVE = 'April 4, 2026';
+const EFFECTIVE = 'April 24, 2026';
 const CONTACT = 'support@keeply.boats';
 
 export default function PrivacyPage() {
@@ -108,6 +108,14 @@ export default function PrivacyPage() {
               </li>
               <li>To comply with legal obligations</li>
             </ul>
+            <p>
+              We may publish aggregated and de-identified statistics derived from platform data
+              (such as common equipment makes, average maintenance intervals across the user base,
+              or industry benchmarks) in marketing materials, blog posts, and research. Aggregated
+              statistics never identify individual users or vessels. Use of identifying content
+              (vessel names, photos, testimonials) for marketing requires your separate, explicit
+              consent.
+            </p>
             <p>
               We do not sell, rent, or trade your personal information to third parties for their
               marketing purposes.

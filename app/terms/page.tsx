@@ -3,7 +3,7 @@ export const metadata = {
   description: 'Terms and conditions for using the Keeply vessel intelligence platform.',
 };
 
-const EFFECTIVE = 'April 4, 2026';
+const EFFECTIVE = 'April 24, 2026';
 const CONTACT = 'support@keeply.boats';
 
 export default function TermsPage() {
@@ -113,6 +113,14 @@ export default function TermsPage() {
               photos, documents, and logbook entries. By uploading content to Keeply, you grant us a
               limited licence to store, process, and display it solely for the purpose of providing
               the Service to you.
+            </p>
+            <p>
+              We may use aggregated, de-identified data derived from vessels and equipment in the
+              platform — such as makes, models, maintenance patterns, and usage statistics — for
+              marketing materials, case studies, industry research, benchmarking, and to improve the
+              Service. This data does not identify you, your vessel, or any individual user. Any use
+              of identifying content (vessel names, photos, testimonials) for marketing requires
+              your separate, explicit consent.
             </p>
             <p>
               You are responsible for the accuracy of the information you enter. Keeply does not
