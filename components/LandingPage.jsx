@@ -3170,6 +3170,7 @@ export default function LandingPage() {
   }, []);
 
   var [stripeSuccess, setStripeSuccess] = useState(false);
+  var [verifiedBanner, setVerifiedBanner] = useState(null); // { type: 'success'|'error', text: string }
   useEffect(function () {
     var p = new URLSearchParams(window.location.search);
     if (p.get('signup') === '1') {
@@ -3185,8 +3186,43 @@ export default function LandingPage() {
       setShowAuth(true);
       setSignupEmail('your account');
     }
+    if (p.get('verified') === '1') {
+      // User clicked verify link — may or may not be logged in on this device.
+      // Show a brief success banner. Auto-dismisses after 6s.
+      var alreadyVerified = p.get('already') === '1';
+      setVerifiedBanner({
+        type: 'success',
+        text: alreadyVerified
+          ? 'Already verified ✓'
+          : 'Email verified ✓ You can now sign in if needed.',
+      });
+      setTimeout(function () {
+        setVerifiedBanner(null);
+      }, 6000);
+    }
+    if (p.get('verified') === '0') {
+      var reason = p.get('reason') || '';
+      var reasonText =
+        reason === 'expired'
+          ? 'That link expired. Sign in and request a new one.'
+          : reason === 'mismatch'
+            ? 'That link is no longer valid. Sign in and request a new one.'
+            : reason === 'notoken'
+              ? 'No verification was pending. Sign in to continue.'
+              : 'Verification failed. Sign in and request a new link.';
+      setVerifiedBanner({ type: 'error', text: reasonText });
+      setTimeout(function () {
+        setVerifiedBanner(null);
+      }, 8000);
+    }
     // Clean consumed params so refresh/bookmark/browser-restored tab doesn't re-fire modals
-    if (p.get('signup') === '1' || p.get('login') === '1' || p.get('upgraded') === '1') {
+    if (
+      p.get('signup') === '1' ||
+      p.get('login') === '1' ||
+      p.get('upgraded') === '1' ||
+      p.get('verified') === '1' ||
+      p.get('verified') === '0'
+    ) {
       try {
         window.history.replaceState({}, '', window.location.pathname);
       } catch (e) {}
@@ -3345,26 +3381,30 @@ export default function LandingPage() {
           }
           trackSignupCompleted(effectivePlan || 'free', false);
 
-          // Fire-and-forget: trigger custom email verification via app_metadata flag.
-          // Uses our own /api/send-verification — not Supabase's built-in email confirm —
-          // so the user can stay in the app while we collect a verification.
-          (function fireVerificationEmail() {
-            try {
-              var accessToken = result.data?.session?.access_token;
-              if (!accessToken) return; // No session (e.g. confirm-email is on); skip
-              fetch('/api/send-verification', {
+          // Trigger custom email verification: server endpoint sets
+          // app_metadata.email_self_verified=false and emails the verify link.
+          // We MUST await + refresh so the local JWT picks up the new app_metadata
+          // before KeeplyApp mounts — otherwise the banner won't show.
+          try {
+            var verifyAccessToken = result.data?.session?.access_token;
+            if (verifyAccessToken) {
+              var verifyRes = await fetch('/api/send-verification', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  Authorization: 'Bearer ' + accessToken,
+                  Authorization: 'Bearer ' + verifyAccessToken,
                 },
-              }).catch(function () {
-                // Silent failure — user can hit Resend in the banner
               });
-            } catch (e) {
-              // Silent failure
+              // Refresh local session so app_metadata.email_self_verified=false
+              // is reflected in session.user, which makes the banner trigger.
+              if (verifyRes.ok) {
+                await supabase.auth.refreshSession();
+              }
             }
-          })();
+          } catch (verifyErr) {
+            // Silent — user can hit Resend in the banner once they're in the app
+            console.error('Verification email setup failed:', verifyErr);
+          }
 
           setSignupEmail(email);
         }
@@ -3456,6 +3496,46 @@ export default function LandingPage() {
         overflowX: 'hidden',
       }}
     >
+      {verifiedBanner && (
+        <div
+          style={{
+            background: verifiedBanner.type === 'success' ? '#052e16' : '#2c1006',
+            borderBottom:
+              '1px solid ' + (verifiedBanner.type === 'success' ? '#22c55e' : '#fb923c'),
+            padding: '12px 16px',
+            textAlign: 'center',
+            fontSize: 14,
+            color: verifiedBanner.type === 'success' ? '#86efac' : '#fed7aa',
+            fontWeight: 600,
+            position: 'relative',
+            zIndex: 400,
+          }}
+        >
+          {verifiedBanner.text}
+          <button
+            onClick={function () {
+              setVerifiedBanner(null);
+            }}
+            aria-label="Dismiss"
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'transparent',
+              border: 'none',
+              color: 'inherit',
+              fontSize: 20,
+              lineHeight: 1,
+              padding: '0 6px',
+              cursor: 'pointer',
+              opacity: 0.7,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       {/* Single merged banner */}
       <div
         style={{
