@@ -1,0 +1,84 @@
+'use client';
+
+// SiteFooter — global footer for all public marketing & legal pages.
+//
+// Rendered once from app/layout.tsx, after children. Same suppression rules
+// as SiteHeader: returns null on "/" (LandingPage has its own footer) and
+// on /admin/* (private workspace).
+//
+// To add or reorder links, edit the LINKS array below.
+
+import { usePathname } from 'next/navigation';
+
+const FONT = "'Satoshi','DM Sans','Helvetica Neue',sans-serif";
+
+const HIDE_ON = (pathname: string): boolean => {
+  if (pathname === '/') return true;
+  if (pathname.startsWith('/admin')) return true;
+  return false;
+};
+
+// Order intentional: product/help links first, brand context next, legal at the end.
+const LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/support', label: 'Support' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/about', label: 'About' },
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms' },
+];
+
+export default function SiteFooter() {
+  const pathname = usePathname() || '/';
+  if (HIDE_ON(pathname)) return null;
+
+  const year = new Date().getFullYear();
+
+  return (
+    <footer
+      style={{
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        padding: '24px 20px 28px',
+        textAlign: 'center',
+        background: 'rgba(7,30,61,0.5)',
+        fontFamily: FONT,
+        marginTop: 'auto',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          gap: 20,
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          marginBottom: 14,
+        }}
+      >
+        {LINKS.map(function (link) {
+          return (
+            <a
+              key={link.href}
+              href={link.href}
+              style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.45)',
+                textDecoration: 'none',
+              }}
+            >
+              {link.label}
+            </a>
+          );
+        })}
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.3)',
+        }}
+      >
+        © {year} Keeply
+      </div>
+    </footer>
+  );
+}

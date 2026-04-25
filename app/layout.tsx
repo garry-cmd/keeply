@@ -2,6 +2,7 @@
 import './globals.css';
 import { PostHogProvider } from '@/components/PostHogProvider';
 import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Keeply — Boat Maintenance App & Vessel Tracker',
@@ -138,6 +139,7 @@ gtag('config', 'G-FZWNP48NHN');`,
         <PostHogProvider>
           <SiteHeader />
           {children}
+          <SiteFooter />
         </PostHogProvider>
         <script
           dangerouslySetInnerHTML={{

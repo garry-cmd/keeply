@@ -419,42 +419,6 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            padding: '24px',
-            textAlign: 'center',
-            background: 'rgba(7,30,61,0.5)',
-          }}
-        >
-          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a
-              href="/"
-              style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}
-            >
-              Home
-            </a>
-            <a
-              href="/contact"
-              style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}
-            >
-              Contact
-            </a>
-            <a
-              href="/privacy"
-              style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}
-            >
-              Privacy
-            </a>
-            <a
-              href="/terms"
-              style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}
-            >
-              Terms
-            </a>
-          </div>
-        </div>
       </div>
     </div>
   );

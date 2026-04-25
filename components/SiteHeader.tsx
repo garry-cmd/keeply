@@ -23,10 +23,10 @@ const HIDE_ON = (pathname: string): boolean => {
   return false;
 };
 
-// Public navigation links — order intentional (commerce → brand → help → conversion).
+// Public navigation links — order intentional (commerce → help → conversion).
+// About lives in the footer rather than the header (brand context, not action).
 const LINKS = [
   { href: '/#pricing', label: 'Pricing' },
-  { href: '/about', label: 'About' },
   { href: '/faq', label: 'FAQ' },
   { href: '/support', label: 'Support' },
   { href: '/contact', label: 'Contact' },
