@@ -3137,6 +3137,7 @@ export default function LandingPage() {
   var [signupEmail, setSignupEmail] = useState(null);
   var [scrolled, setScrolled] = useState(false);
   var [isMobile, setIsMobile] = useState(false);
+  var [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   var [annual, setAnnual] = useState(false);
   var [isRecovery, setIsRecovery] = useState(false);
   var [showPlanPicker, setShowPlanPicker] = useState(false);
@@ -3664,41 +3665,170 @@ export default function LandingPage() {
               Contact
             </a>
           )}
-          <button
-            onClick={function () {
-              openAuth('login');
-            }}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.25)',
-              color: 'rgba(255,255,255,0.8)',
-              padding: '7px 18px',
-              borderRadius: 8,
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
-          >
-            Log in
-          </button>
-          <button
-            onClick={function () {
-              setShowPlanPicker(true);
-            }}
-            style={{
-              background: GOLD,
-              border: 'none',
-              color: '#1a1200',
-              padding: '8px 20px',
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            Get started {'\u2192'}
-          </button>
+          {!isMobile && (
+            <button
+              onClick={function () {
+                openAuth('login');
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.25)',
+                color: 'rgba(255,255,255,0.8)',
+                padding: '7px 18px',
+                borderRadius: 8,
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              Log in
+            </button>
+          )}
+          {!isMobile && (
+            <button
+              onClick={function () {
+                setShowPlanPicker(true);
+              }}
+              style={{
+                background: GOLD,
+                border: 'none',
+                color: '#1a1200',
+                padding: '8px 20px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Get started {'\u2192'}
+            </button>
+          )}
+          {isMobile && (
+            <button
+              onClick={function () {
+                setMobileMenuOpen(function (v) {
+                  return !v;
+                });
+              }}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff',
+                borderRadius: 8,
+                padding: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 36,
+              }}
+            >
+              <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden>
+                {mobileMenuOpen ? (
+                  <path d="M2 2 L16 12 M2 12 L16 2" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                ) : (
+                  <>
+                    <line x1="0" y1="2" x2="18" y2="2" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="0" y1="7" x2="18" y2="7" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="0" y1="12" x2="18" y2="12" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  </>
+                )}
+              </svg>
+            </button>
+          )}
         </div>
       </nav>
+
+      {/* Mobile menu drawer — matches SiteHeader pattern */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 93,
+            left: 0,
+            right: 0,
+            zIndex: 199,
+            background: 'rgba(7,30,61,0.97)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            padding: '12px 16px 20px',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {[
+              { href: '/about', label: 'About' },
+              { href: '/pricing', label: 'Pricing' },
+              { href: '/faq', label: 'FAQ' },
+              { href: '/support', label: 'Support' },
+              { href: '/contact', label: 'Contact' },
+            ].map(function (link) {
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={function () {
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{
+                    fontSize: 16,
+                    color: 'rgba(255,255,255,0.85)',
+                    textDecoration: 'none',
+                    padding: '14px 4px',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button
+              onClick={function () {
+                setMobileMenuOpen(false);
+                openAuth('login');
+              }}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.25)',
+                color: '#fff',
+                padding: '12px 0',
+                borderRadius: 8,
+                fontSize: 14,
+                textAlign: 'center',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Log in
+            </button>
+            <button
+              onClick={function () {
+                setMobileMenuOpen(false);
+                setShowPlanPicker(true);
+              }}
+              style={{
+                flex: 1,
+                background: GOLD,
+                border: 'none',
+                color: '#1a1200',
+                padding: '12px 0',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                textAlign: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              Get started {'\u2192'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <section
