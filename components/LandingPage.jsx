@@ -986,12 +986,13 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Hero #2: real app screenshot in a phone frame ─────────────────
-          Static product shot of the My Boat tab on a real device — actual
-          Keeply data, real S/V Irene. Earlier we tried an animated stylized
-          version (HeroAppLoop) — abandoned in favor of showing the real app
-          because authenticity beats cleverness. When the SV IRENE walkthrough
-          video is recorded later, swap PhoneScreenshot for a <video> element. */}
+      {/* ── Hero #2: real app screenshots in phone frames ─────────────────
+          Desktop: three phones side-by-side (My Boat / First Mate / Logbook),
+          center phone slightly elevated, outer two tilted inward. All real
+          screenshots, real S/V Irene data.
+          Mobile: just My Boat — three phones is too cramped on narrow screens.
+          When the walkthrough video is recorded, swap PhoneScreenshot src
+          for <video> elements. */}
       <section
         style={{
           padding: isMobile ? '40px 16px 56px' : '72px 24px 96px',
@@ -1003,7 +1004,112 @@ export default function LandingPage() {
           overflow: 'hidden',
         }}
       >
-        <PhoneScreenshot size={isMobile ? 'mobile' : 'desktop'} />
+        {isMobile ? (
+          <PhoneScreenshot size="mobile" />
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              gap: 32,
+              maxWidth: 1100,
+              width: '100%',
+            }}
+          >
+            {/* Left phone — First Mate, tilted right toward center, slightly lower */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 18,
+                marginTop: 32,
+                transform: 'rotate(-4deg)',
+                transformOrigin: 'top center',
+              }}
+            >
+              <PhoneScreenshot
+                size="mobile"
+                src="/images/hero-firstmate.jpg"
+                alt="Keeply First Mate — AI co-captain answering vessel-specific questions"
+              />
+              <div
+                style={{
+                  textAlign: 'center',
+                  transform: 'rotate(4deg)',
+                  maxWidth: 240,
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, marginBottom: 4 }}>
+                  First Mate
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
+                  Talk to your boat.
+                </div>
+              </div>
+            </div>
+
+            {/* Center phone — My Boat, hero shot, sits forward and elevated */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 18,
+                position: 'relative',
+                zIndex: 2,
+              }}
+            >
+              <PhoneScreenshot
+                size="mobile"
+                src="/images/hero-my-boat.jpg"
+                alt="Keeply on a phone — My Boat tab showing S/V Irene maintenance overview"
+              />
+              <div style={{ textAlign: 'center', maxWidth: 240 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, marginBottom: 4 }}>
+                  My Boat
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
+                  Always keep you informed.
+                </div>
+              </div>
+            </div>
+
+            {/* Right phone — Logbook, tilted left toward center, slightly lower */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 18,
+                marginTop: 32,
+                transform: 'rotate(4deg)',
+                transformOrigin: 'top center',
+              }}
+            >
+              <PhoneScreenshot
+                size="mobile"
+                src="/images/hero-logbook.jpg"
+                alt="Keeply Logbook — active passage with watch entries"
+              />
+              <div
+                style={{
+                  textAlign: 'center',
+                  transform: 'rotate(-4deg)',
+                  maxWidth: 240,
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, marginBottom: 4 }}>
+                  Logbook
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
+                  Collect the information you want.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ── Social proof strip ── */}
