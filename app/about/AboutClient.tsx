@@ -581,7 +581,7 @@ export default function AboutClient() {
               boat and we'll show you what we've built.
             </p>
             <a
-              href="/?auth=signup"
+              href="/?plans=1"
               style={{
                 display: 'inline-block',
                 background: GOLD,
