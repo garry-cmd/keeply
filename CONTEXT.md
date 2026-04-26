@@ -1,7 +1,7 @@
 # Keeply — Context
 
-**Updated:** April 24, 2026  
-**Phase:** Beta → Pre-Launch (GoLive imminent)  
+**Updated:** April 25–26, 2026  
+**Phase:** GoLive Ready (both pre-launch blockers closed)  
 **Founder:** Garry Hoffman (solo)  
 **Target:** $5K MRR to quit day job
 
@@ -17,6 +17,7 @@ Copy rule: never use "sailors" — always "boaters."
 
 ## Current state (Apr 23, 2026)
 
+- **Apr 25–26 session — GoLive blockers closed.** Both pre-launch blockers identified and shipped: (a) document-scan partial-fields data-loss bug — scanning a second document (e.g., insurance) was wiping fields saved by the first (e.g., registration); (b) `/api/delete-account` had no auth check AND scoped its cascading deletes to `vessel_members`, meaning a crew member deleting their account would wipe the OWNER's vessel data. With 3 active member relationships in production, that risk was live, not theoretical. Both fixed. Self-delete verified end-to-end with `garry+test@keeply.boats`. **Real signups can now turn on whenever Garry is ready to triage Day-1 issues.**
 - **5 active beta testers** (2 Active Cruisers, 2 Liveaboards, 1 Upgrader). +2 imminent (1 Cruiser, 1 Liveaboard) → 3/3/1 split.
 - **Beta close deadline: May 1.** 5 testers actively working through the structured task plan; 0/5 fully complete. KR in flight.
 - **Active KR: "Deliver final features" (due May 31):** Logbook Custom Checklists (Pro), First Mate Conversation History (all tiers), Multi-engine tracking. See `/admin/okr`.
@@ -81,6 +82,16 @@ Copy rule: never use "sailors" — always "boaters."
 - **Stripe price-level trials are NOT touched here.** The four Stripe price IDs may still have a `trial_period_days` configured at the Stripe dashboard. Our `app/api/stripe/checkout/route.js` doesn't pass trial params, so subs created after this change won't trial — but if a price-level trial is configured, it'll still apply. Verify in Stripe dashboard if any subs are created with `status: 'trialing'`.
 - **Admin "Trialing" stat left in place** at `app/admin/page.tsx:894` — it reads from Stripe's `subscriptions.list({ status: 'trialing' })` and is now a passive diagnostic. Should always be 0 going forward; if non-zero, something is configured at the Stripe price level.
 
+**Pre-launch hardening (Apr 25–26)**
+- **Custom email verification system** — runs alongside Supabase autoconfirm (autoconfirm stays ON, no signup gate). Three new endpoints: `app/api/send-verification/route.ts` (generates 32-char hex token, stores in `app_metadata`, emails via Resend), `app/api/verify-email/route.ts` (validates token, flips `app_metadata.email_self_verified=true`, redirects to `/?verified=1` or `/?verified=0&reason=...`), `app/api/change-email/route.ts` (admin API updates email + triggers fresh verification). UI: dismissable banner in `KeeplyApp.jsx` (trigger: `app_metadata.email_self_verified !== false`); existing users + Google OAuth exempt because their flag is undefined. `LandingPage.jsx` AWAITs send-verification then `refreshSession()` so JWT picks up app_metadata before user enters app; also handles `?verified=1`/`?verified=0&reason=...` URL params with success/error banner.
+- **Admin email verification observability card** — collapsible card on `/admin` next to Orphans card. Shows `pending`, `expired`, `verified`, and `legacy/OAuth (exempt)` counts. Expanded view lists pending users with token-sent date + signup age, sorted with expired tokens first. Reuses existing delete-test-user modal for cleanup actions. Same pattern as the orphans card.
+- **Admin orphan visibility** — collapsible card on `/admin` showing users with `pending_plan=standard|pro` who never completed payment. Expanded view shows email, intended plan, joined date, age. Delete action wired to the new test-user endpoint.
+- **`/api/admin/delete-test-user`** — atomic Stripe + Supabase cleanup endpoint, auth-gated by `ADMIN_USER_ID` env. Used by all admin-side delete actions (orphans card, verification card). Tested end-to-end during the session.
+- **Free→Standard charging bug fix** — clicking Free button left stale `localStorage.keeply_pending_price_id` from a prior Standard/Pro click, causing the Free user to hit Stripe Checkout. Fix: clear localStorage in Free button click handler.
+- **Google Ads conversion tracking** — gtag added to `app/layout.tsx`, `lib/analytics.ts` (~79 lines) created with three conversions: Signup Started ($0), Plan Selected ($5), Sign Up Completed ($15, Primary). Conversion ID `AW-18080905583`; labels `a5AJCPXAv6IcEO_y0q1D`, `jsS9CPLAv6IcEO_y0q1D`, `1wl0CO_Av6IcEO_y0q1D`. Stripe purchase as 4th conversion is on the post-launch backlog. Discovered an existing GTM container `GT-NNMKZQC5` of unknown origin during this work; investigation deferred. PostHog events appearing empty in dashboard is likely the local ad blocker; not confirmed.
+- **Document scan partial-fields data-loss bug fix** — scanning a registration doc then an insurance doc was wiping the registration's `hin`/`uscg_doc`/`state_reg`/`home_port`. Root cause: `scanCommitPayload` called `vesselInfoPayload(fields)` which builds the FULL passport shape with explicit nulls for absent keys — correct for the manual edit form (empty input = clear), wrong for partial scans (absent = "this doc didn't have it"). Fix: inlined passport-building logic in `scanCommitPayload` to include only keys actually present in the response. `vesselInfoPayload` itself unchanged (still correct for form-edit save path; the second scan-document caller uses `setInfoForm` to merge into form state first, which already worked).
+- **`/api/delete-account` auth + scope hardening** — endpoint accepted `userId` from request body with no Bearer token verification, so anyone with a userId (which leaks via vessel_members invites, share links, etc.) could delete that account. ALSO: `vesselIds` was sourced from `vessel_members?user_id=eq.X`, which includes vessels the user is just CREW on. Cascading deletes then wiped child data for those shared vessels — destroying the OWNER's data. Both fixed: Bearer token verified via `/auth/v1/user`, rejected with 401/403 on missing/mismatched. `vesselIds` now sourced from `vessels.user_id` (owned only). `vessel_members?user_id=eq.X` DELETE moved outside the if-owned-vessels block so crew-only users still get removed from shared vessels they're on. Client (`KeeplyApp.jsx`) now reads access token from `supabase.auth.getSession()` and sends `Authorization: Bearer <token>`.
+
 **Bug fixes & polish (Apr 23)**
 - **FM_LIMITS single source of truth** — `app/api/firstmate/route.js`, `components/FirstMate.jsx`, and `components/FirstMateScreen.jsx` now all import `PLANS` from `lib/pricing.js`. The three hardcoded constants (each with different values, none matching the DB) are deleted. Standard users now see 30 in both UI surfaces and get 30 from the server, not 10. Stale 403 message ("First Mate is not available on the Free plan…") reworded to plan-agnostic and hardened with a `console.error` log so the now-unreachable branch becomes observable if it ever fires.
 - **Orphan pricing schema cleanup** — dropped five unreferenced tables: `plan_limits`, `plan_marketing_features`, `pricing_plans`, `pricing_experiments`, `user_experiment_assignments`. Zero code references existed; they were seed data / A/B testing scaffolding from prior sessions that never got consumers. `lib/pricing.js` is now the unambiguous single source of truth with no parallel DB system creating drift.
@@ -127,7 +138,19 @@ Queued but NOT urgent. Order by discretion:
 - **VS Code format-on-save** — install `esbenp.prettier-vscode` + add `.vscode/settings.json` with `formatOnSave: true`. 30 seconds.
 - **Tier 2 code hygiene** — Husky pre-commit hook (~30 min), Playwright smoke tests for 5 critical paths (~3–4 hrs), `/api/invite` rate limit (~30 min), `/api/stripe/checkout` JWT verification (~30 min). ~5 hrs total, spread across sessions.
 
-**Moved to icebox (Apr 22):** Unverified-email banner + three soft gates. The `.resend({type:'signup'})` path that Apr 21's plan relied on turns out to be a no-op on auto-confirmed users — blocked by Supabase's toggle-off behavior. At 14 users the underlying risks (chargeback fraud, invite spam, digest cost) are theoretical; revisit pre-scale or couple with a broader OAuth-primary auth decision. See ROADMAP icebox for detail.
+### Post-session pending (Apr 25–26)
+
+All low-priority cleanup; nothing here blocks GoLive.
+
+- **Token cleanup bug in `/api/verify-email`** — `delete newAppMeta.verify_token` doesn't actually clear the key when sent through `updateUserById` (Supabase merges, doesn't replace). Cosmetic only — `email_self_verified=true` short-circuits everything else. 2-line fix: change `delete newAppMeta.verify_token` and `delete newAppMeta.verify_token_expires` to assignment-to-null instead.
+- **Stale verification email UX** — clicking a verify link from a deleted/expired test account redirects to `/?verified=0&reason=notfound`. The LandingPage banner explains the failure but the copy could be friendlier ("This link is from a deleted or expired test account").
+- **Orphan-row cleanup on user delete** — `firstmate_usage`, `push_subscriptions`, `affiliate_clicks` rows aren't cleaned up when a user is deleted. Harmless (no foreign-key constraints on `auth.users` so nothing breaks); accumulates as cleanup debt over time.
+- **Stripe purchase as 4th Google Ads conversion** — currently the Sign Up Completed event fires for ALL signups including Free. A separate Purchase event for paid checkouts would tighten conversion attribution.
+- **PostHog silent issue investigation** — events appear empty in dashboard. Likely Garry's own ad blocker (never confirmed). Worth checking from an unblocked browser session.
+- **Existing GTM container `GT-NNMKZQC5`** — discovered during ads tracking work; source unknown. Audit and decide whether to keep or remove.
+- **"Check your inbox" modal copy on LandingPage** — copy says "click to activate" but autoconfirm is ON now, so users land in the app immediately. Modal copy is misleading; minor update needed.
+
+**~~Moved to icebox (Apr 22)~~ — superseded Apr 25–26.** Original Apr 22 decision was to ice the unverified-email banner because `.resend({type:'signup'})` is a no-op on auto-confirmed users. That decision was reversed Apr 25–26 by building a custom verification system that runs alongside autoconfirm: `app_metadata.email_self_verified` flag, custom token in `app_metadata`, banner trigger reads the flag, three new endpoints, all detailed in the "Pre-launch hardening" block above. Autoconfirm stays ON (no signup gate); the custom system layered on top is what delivers the safety property without the friction.
 
 ---
 
@@ -247,11 +270,11 @@ Ordered by strategic value:
 - **Local path:** `C:\Users\garry\keeply`
 - **Repo:** `github.com/garry-cmd/keeply` (toggles public/private)
 
-### Pricing (Apr 17 2026)
+### Pricing (Apr 25 2026)
 
 | Tier | Monthly | Annual | Limits |
 |---|---|---|---|
-| Free | $0 | — | 1 vessel, 10 equipment, 3 repairs, 5 First Mate queries |
+| Free | $0 | — | 1 vessel, 2 equipment, 3 repairs, 5 First Mate queries |
 | Standard | $15 | $144 | unlimited equipment, 30 AI queries |
 | Pro | $25 | $240 | + voice + weather + departure checks |
 | Fleet | $49.99+ | — | multi-vessel |
@@ -310,6 +333,16 @@ Claude's connectors split into two layers — knowing which is which prevents wa
 Running git commands from `C:\Users\garry` instead of `C:\Users\garry\keeply` produces fatal "not a git repository" errors. Catch early.
 
 ---
+
+## Key learnings (Apr 25–26 session)
+
+- **Two functions, two write paths, two different rules.** `vesselInfoPayload` builds a FULL-shape vessel passport object with explicit nulls for absent keys — correct for the manual edit form, where an empty input means "clear this field." `scanCommitPayload` was calling it for partial scan results, where an absent key means "this document didn't contain that field." Same data shape, opposite semantics. The fix wasn't to change `vesselInfoPayload` (it's right for the form path); it was to inline a partial-builder in `scanCommitPayload`. Lesson: when two callers want different null-handling behavior, they need different builders. Don't refactor toward a "general" helper unless its callers actually want the same semantics.
+- **"15-minute auth fix" was actually a 45-minute auth + scope fix once you read the file.** `/api/delete-account` had two distinct vulnerabilities: missing Bearer token verification (the security issue Garry asked about) AND over-broad cascading deletes scoped to `vessel_members` instead of `vessels.user_id` (a data-loss issue I'd noted earlier in the session but hadn't tracked). With 3 active member relationships in production, the data-loss path was a live risk, not theoretical. Lesson: when you're already inside a security-critical file, audit the WHOLE flow, not just the field the user pointed at. Bundling both fixes into one commit also ensured the new auth check actually protected against a meaningful attack — without the scope fix, the auth check would let a properly-authenticated crew member still wipe an owner's data via self-delete.
+- **CASCADE relationships eliminate manual delete chains.** Schema audit showed most vessel-scoped tables (`engines`, `equipment`, `logbook`, `maintenance_tasks`, `repairs`, `vessel_admin_tasks`, `vessel_checklist_items`, `vessel_members`, `watch_entries`) have `ON DELETE CASCADE` on `vessel_id`. The existing manual deletes in `/api/delete-account` are belt-and-suspenders against the cascade, not strictly required. `service_logs` doesn't even exist anymore — the DELETE on it has been a no-op for unknown duration. Kept the manual deletes in place this pass (low risk, idempotent) but a future cleanup pass can lean entirely on cascades. Schema-first thinking beats endpoint-by-endpoint cleanup discipline.
+- **Custom verification on top of autoconfirm beats flipping autoconfirm.** Apr 22 ran into Supabase's "Confirm email" toggle disabling both the gate AND the email send. Apr 25–26 went a different direction: keep autoconfirm ON (no signup friction, no `.resend({type:'signup'})` dependency), add an `app_metadata.email_self_verified` flag set by our own endpoint, banner triggers off the flag. Autoconfirm + custom flag = best of both: zero signup friction, full observability, no Supabase dashboard couples. Trade-off: two systems to reason about (a "verified" auth user can have `email_self_verified: false`); the comment in `KeeplyApp.jsx` makes this explicit. **Not** a long-term sustainable pattern if more verification dimensions appear (phone, identity), but right-sized for the actual need.
+- **`app_metadata` vs `user_metadata` — clients can write to user_metadata.** `app_metadata` is server-controlled (only writable via service role / admin API); `user_metadata` is editable by the authenticated user. Verification flag MUST live in `app_metadata`, otherwise a malicious user could flip their own flag from the client. Subtle Supabase distinction worth keeping in mind for any future trust-bearing flag.
+- **`updateUserById` merges metadata, doesn't replace.** When clearing a token via `delete newAppMeta.verify_token`, the property doesn't actually disappear from the row because Supabase merges the partial object instead of replacing. To clear, set the value to `null` instead. Functionally harmless in this case (`email_self_verified=true` short-circuits any verify-token check), but a 2-line follow-up fix to clean up cosmetically. Same gotcha applies to any future metadata-clearing logic.
+- **Aspirational copy is technical debt.** April had two cases where copy promised features that weren't shipped: parts catalog (Apr 25, removed across 5 sites) and DOC_LIBRARY (Apr 23, removed). Today's add was the inverse direction — `keeply-ai-usage.docx` reference document. The act of writing it surfaced an honest accounting of where AI works (First Mate, identify-vessel, scan-document) and where it's weak (older/foreign equipment, glare on phone-camera scans, multi-page PDFs). Documents written for INTERNAL reference can be more honest than copy written for external readers; they should be — that's their job.
 
 ## Key learnings (Apr 24 session)
 
