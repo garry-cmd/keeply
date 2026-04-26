@@ -226,7 +226,9 @@ function EmptyState({ filter }) {
         border: '1px dashed var(--border)',
       }}
     >
-      <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+        <ChecklistIcon />
+      </div>
       <div
         style={{
           fontSize: 14,
@@ -241,6 +243,26 @@ function EmptyState({ filter }) {
         {m.body}
       </div>
     </div>
+  );
+}
+
+function ChecklistIcon() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <rect x="9" y="6" width="22" height="28" rx="2" stroke="var(--text-muted)" strokeWidth="1.6" />
+      <path
+        d="M14 14h12M14 20h12M14 26h8"
+        stroke="var(--text-muted)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M14 6v3M26 6v3"
+        stroke="var(--text-muted)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
