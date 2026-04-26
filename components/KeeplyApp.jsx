@@ -2536,6 +2536,10 @@ export default function App() {
   const [resetPasswordMsg, setResetPasswordMsg] = useState(null);
   const [dismissedEngineTasksBanner, setDismissedEngineTasksBanner] = useState(false);
   const [showPartsNeeded, setShowPartsNeeded] = useState(false);
+  // Lists Session 2 — local cache of saved_parts URLs we've inserted this session.
+  // Used to flip the bookmark icon to "saved" state on parts surfaces.
+  // Doesn't survive reload (cheap for v1); the saved_parts rows themselves persist.
+  const [savedPartKeys, setSavedPartKeys] = useState(new Set());
   const [showEnginePickerModal, setShowEnginePickerModal] = useState(false);
   const [docSuggestFor, setDocSuggestFor] = useState(null);
 
@@ -5076,8 +5080,54 @@ export default function App() {
     }
   };
 
+  // ── Lists Session 2 — bookmark a part to Need to buy ──
+  const savePartToList = async function (part, source) {
+    if (!activeVesselId) return;
+    const displayName = part.name || part.partName || '';
+    const url =
+      part.url ||
+      (part.westmarine && part.westmarine.url) ||
+      (part.fisheries && part.fisheries.url) ||
+      (part.defender && part.defender.url) ||
+      null;
+    if (!displayName) return;
+    const key = (url || displayName).toString();
+    // Optimistic — flip icon immediately, undo on error
+    setSavedPartKeys(function (prev) {
+      const n = new Set(prev);
+      n.add(key);
+      return n;
+    });
+    try {
+      await supa('saved_parts', {
+        method: 'POST',
+        body: {
+          vessel_id: activeVesselId,
+          source_type: (source && source.type) || 'manual',
+          source_id: (source && source.id) || null,
+          source_label: (source && source.label) || null,
+          name: displayName,
+          vendor: part.vendor || part.retailer || null,
+          price: part.price ? part.price.toString() : null,
+          url: url,
+          sku: part.sku || null,
+        },
+        prefer: 'return=minimal',
+      });
+    } catch (err) {
+      console.error('savePartToList:', err);
+      // Roll back the optimistic icon flip
+      setSavedPartKeys(function (prev) {
+        const n = new Set(prev);
+        n.delete(key);
+        return n;
+      });
+      setDbError("Couldn't save: " + (err && err.message ? err.message : 'unknown'));
+    }
+  };
+
   // ── Retailer grid renderer — shared by repair + maintenance part results ──
-  const renderPartResults = function (pr, refreshFn) {
+  const renderPartResults = function (pr, refreshFn, source) {
     return (
       <>
         <div
@@ -5190,6 +5240,42 @@ export default function App() {
                     ) : (
                       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>See site</span>
                     )}
+                    {(function () {
+                      const partKey = (url || displayName).toString();
+                      const saved = savedPartKeys.has(partKey);
+                      return (
+                        <button
+                          onClick={function () {
+                            if (saved) return;
+                            savePartToList(part, source);
+                          }}
+                          aria-label={saved ? 'Saved to Need to buy' : 'Save to Need to buy'}
+                          title={saved ? 'Saved to Need to buy' : 'Save to Need to buy'}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 8,
+                            background: saved ? 'var(--brand)' : 'transparent',
+                            border: saved ? 'none' : '1px solid var(--border)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: saved ? 'default' : 'pointer',
+                            flexShrink: 0,
+                            padding: 0,
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill={saved ? '#fff' : 'none'}>
+                            <path
+                              d="M4 2h8a1 1 0 0 1 1 1v11l-5-3-5 3V3a1 1 0 0 1 1-1z"
+                              stroke={saved ? '#fff' : 'var(--text-muted)'}
+                              strokeWidth="1.5"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      );
+                    })()}
                     <a
                       href={url}
                       target="_blank"
@@ -8502,7 +8588,7 @@ export default function App() {
                                       );
                                     return renderPartResults(pr, function () {
                                       findPartsInline(t.id, t.task, t.equipment_id, t.section);
-                                    });
+                                    }, { type: 'task', id: t.id, label: t.task });
                                   })()}
                                 </div>
                               </div>
@@ -8686,7 +8772,7 @@ export default function App() {
                                         r.equipment_id,
                                         r.section
                                       );
-                                    });
+                                    }, { type: 'repair', id: r.id, label: r.description });
                                   })()}
                                 </div>
                               </div>
@@ -13241,7 +13327,7 @@ export default function App() {
                               return renderPartResults(pr, function (e) {
                                 e && e.stopPropagation();
                                 findPartsInline(r.id, r.description, r.equipment_id, r.section);
-                              });
+                              }, { type: 'repair', id: r.id, label: r.description });
                             })()}
                           </div>
                         )}
@@ -13997,7 +14083,7 @@ export default function App() {
                                   >
                                     {renderPartResults(pr, function () {
                                       findPartsInline(t.id, t.task, t.equipment_id, t.section);
-                                    })}
+                                    }, { type: 'task', id: t.id, label: t.task })}
                                   </div>
                                 );
                               })()}
@@ -15879,7 +15965,7 @@ export default function App() {
                                                         t.equipment_id,
                                                         t.section
                                                       );
-                                                    });
+                                                    }, { type: 'task', id: t.id, label: t.task });
                                                   })()}
                                                 </div>
                                               </div>
@@ -16517,7 +16603,7 @@ export default function App() {
                                                       r.equipment_id,
                                                       r.section
                                                     );
-                                                  });
+                                                  }, { type: 'repair', id: r.id, label: r.description });
                                                 })()}
                                               </div>
                                             )}
@@ -19601,8 +19687,10 @@ export default function App() {
           />
         )}
 
-        {/* ── LISTS standalone — Session 1: shows LandHoShell to everyone (kill-switch via beta_features) ── */}
-        {view === 'customer' && tab === 'lists-standalone' && <ListsTab />}
+        {/* ── LISTS standalone — Session 2: NeedToBuy live behind 'lists' beta gate; LandHoShell for everyone else ── */}
+        {view === 'customer' && tab === 'lists-standalone' && (
+          <ListsTab activeVesselId={activeVesselId} />
+        )}
 
         {/* ── FIRST MATE inline panel overlay ── */}
         {view === 'customer' && (
@@ -20181,7 +20269,7 @@ export default function App() {
                               return renderPartResults(pr, function (e) {
                                 e && e.stopPropagation();
                                 findPartsInline(r.id, r.description, r.equipment_id, r.section);
-                              });
+                              }, { type: 'repair', id: r.id, label: r.description });
                             })()}
                           </div>
                         )}
@@ -20971,7 +21059,7 @@ export default function App() {
                                         );
                                       return renderPartResults(pr, function () {
                                         findPartsInline(t.id, t.task, t.equipment_id, t.section);
-                                      });
+                                      }, { type: 'task', id: t.id, label: t.task });
                                     })()}
                                   </div>
                                 </div>
@@ -21358,7 +21446,7 @@ export default function App() {
                                         r.equipment_id,
                                         r.section
                                       );
-                                    });
+                                    }, { type: 'repair', id: r.id, label: r.description });
                                   })()}
                                 </div>
                               )}
