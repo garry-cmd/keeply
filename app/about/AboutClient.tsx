@@ -116,8 +116,8 @@ export default function AboutClient() {
             margin: '0 auto',
           }}
         >
-          Keeply is a vessel intelligence platform for owner-operators who manage their own
-          maintenance. Here's why I built it.
+          Keeply is where your boat's whole record lives — every system, every part, every
+          passage. Here's why I built it.
         </p>
       </section>
 
@@ -171,14 +171,13 @@ export default function AboutClient() {
 
             <p style={{ marginBottom: 22 }}>
               So I started Keeply. Not a maintenance app — there are plenty of those and most of
-              them are dreadful. A{' '}
+              them are dreadful. A place where the boat's whole story lives:{' '}
               <strong style={{ color: WHITE, fontWeight: 700 }}>
-                vessel intelligence platform
+                every system, every part, every passage, every photo
               </strong>
-              : a place where the boat's whole story lives, where the next thing that needs doing
-              surfaces before you have to remember it, and where you can ask a question — out
-              loud, at the helm — and get an answer that knows your specific engine, your specific
-              rigging, your specific home port.
+              . Where the next thing that needs doing surfaces before you have to remember it. And
+              when you want help finding something fast, First Mate is right there — it knows your
+              specific engine, your specific rigging, your specific home port.
             </p>
 
             <p style={{ marginBottom: 0 }}>
@@ -258,8 +257,8 @@ export default function AboutClient() {
               textAlign: 'center',
             }}
           >
-            Not a maintenance app. Not a checklist tool. A vessel intelligence platform built
-            around three ideas — each one a thing every cruiser knows is true.
+            Not a maintenance app. Not a checklist tool. A connected record of your boat — built
+            around three ideas, each one a thing every cruiser knows is true.
           </p>
 
           <div
@@ -278,13 +277,13 @@ export default function AboutClient() {
               },
               {
                 num: '02',
-                title: 'Ask out loud, get a real answer.',
-                body: 'First Mate is built into every screen. Ask when you last serviced the watermaker. Ask what oil the engine takes. Ask what to check before you leave the dock. You get an answer that knows your specific boat — not a generic web result.',
+                title: 'Every system, in one record.',
+                body: 'Engines, rigging, plumbing, electrical, watermakers, anchors, electronics — every system on your boat with its own card. Make, model, year, photos, manuals, service log, parts. The full record lives in one place, not three apps that don\u2019t talk to each other.',
               },
               {
                 num: '03',
-                title: 'Built around your boat, not a category.',
-                body: 'When you add equipment, the AI identifies the make, model, and year-variant. The maintenance schedule that gets built isn\u2019t generic — it\u2019s the real interval for the actual impeller in your actual engine.',
+                title: 'Setup that knows your boat.',
+                body: 'When you add equipment, Keeply identifies the make, model, and year-variant. The maintenance schedule that gets built isn\u2019t generic — it\u2019s the real interval for the actual impeller in your actual engine. And when you want help finding something fast, First Mate is right there.',
               },
             ].map((item) => (
               <div

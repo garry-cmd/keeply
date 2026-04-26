@@ -8,7 +8,7 @@ import {
   trackPlanSelected,
   trackSignupCompleted,
 } from '../lib/analytics';
-import HeroAppLoop from './marketing/HeroAppLoop';
+import PhoneScreenshot from './marketing/PhoneScreenshot';
 
 const BRAND = '#0f4c8a';
 const NAVY = '#071e3d';
@@ -986,11 +986,12 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Hero #2: animated phone-mockup loop ──────────────────────────────
-          Stylized representation of Keeply running on a phone, cycling through
-          5 scenes (~35s loop). Lives in components/marketing/HeroAppLoop.jsx.
-          Future: swap for real <video> element once the SV IRENE walkthrough
-          is recorded — same hero slot, one-line component change. */}
+      {/* ── Hero #2: real app screenshot in a phone frame ─────────────────
+          Static product shot of the My Boat tab on a real device — actual
+          Keeply data, real S/V Irene. Earlier we tried an animated stylized
+          version (HeroAppLoop) — abandoned in favor of showing the real app
+          because authenticity beats cleverness. When the SV IRENE walkthrough
+          video is recorded later, swap PhoneScreenshot for a <video> element. */}
       <section
         style={{
           padding: isMobile ? '40px 16px 56px' : '72px 24px 96px',
@@ -1002,7 +1003,7 @@ export default function LandingPage() {
           overflow: 'hidden',
         }}
       >
-        <HeroAppLoop size={isMobile ? 'mobile' : 'desktop'} />
+        <PhoneScreenshot size={isMobile ? 'mobile' : 'desktop'} />
       </section>
 
       {/* ── Social proof strip ── */}
