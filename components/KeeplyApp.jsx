@@ -5112,7 +5112,6 @@ export default function App() {
           url: url,
           sku: part.sku || null,
         },
-        prefer: 'return=minimal',
       });
     } catch (err) {
       console.error('savePartToList:', err);
