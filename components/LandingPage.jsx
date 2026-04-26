@@ -3615,6 +3615,19 @@ export default function LandingPage() {
           )}
           {!isMobile && (
             <a
+              href="/features"
+              style={{
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.6)',
+                textDecoration: 'none',
+                padding: '6px 14px',
+              }}
+            >
+              Features
+            </a>
+          )}
+          {!isMobile && (
+            <a
               href="/pricing"
               style={{
                 fontSize: 13,
@@ -3760,6 +3773,7 @@ export default function LandingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[
               { href: '/about', label: 'About' },
+              { href: '/features', label: 'Features' },
               { href: '/pricing', label: 'Pricing' },
               { href: '/faq', label: 'FAQ' },
               { href: '/support', label: 'Support' },
@@ -3890,8 +3904,8 @@ export default function LandingPage() {
               fontFamily: "'Clash Display','Inter',sans-serif",
             }}
           >
-            Your vessel{"'"}s <span style={{ color: GOLD }}>First Mate</span>,<br />
-            always ready.
+            Always know your boat is{' '}
+            <span style={{ color: GOLD }}>ready.</span>
           </h1>
 
           <p
@@ -3903,8 +3917,8 @@ export default function LandingPage() {
               maxWidth: 540,
             }}
           >
-            AI-powered vessel management — maintenance, logbook, and an AI crew member that knows
-            your boat inside out.
+            Vessel intelligence for serious owners. Every system, part, and passage in one
+            connected record — so nothing falls through the cracks.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -4031,226 +4045,173 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <section id="features" style={{ padding: isMobile ? '48px 16px' : '80px 24px' }}>
-        {FEATURES.map(function (f, i) {
-          var isEven = i % 2 === 0;
-          var V = f.Visual;
-          return (
-            <React.Fragment key={i}>
-              <div
-                style={{
-                  maxWidth: 1300,
-                  margin: '0 auto',
-                  paddingBottom: 48,
-                  marginBottom: 48,
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                  gap: isMobile ? 40 : 64,
-                  alignItems: 'start',
-                }}
-              >
-                <div style={{ order: isMobile ? 0 : isEven ? 0 : 1 }}>
-                  <div
+      {/* Coverage strip + value props — lean home-page section.
+          Five-card animated feature showcase moved to /features for depth.
+          Mobile-first: 6 chips wrap to 2 rows of 3, value cards stack. */}
+      <section id="features" style={{ padding: isMobile ? '40px 16px' : '80px 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+
+          {/* Coverage strip */}
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}>
+            <h2
+              style={{
+                fontSize: 'clamp(24px,3.2vw,40px)',
+                fontWeight: 700,
+                color: WHITE,
+                letterSpacing: '-0.5px',
+                lineHeight: 1.2,
+                margin: '0 0 14px',
+                fontFamily: "'Satoshi','DM Sans',sans-serif",
+              }}
+            >
+              Everything your boat needs, in one place.
+            </h2>
+            <p
+              style={{
+                fontSize: isMobile ? 14 : 16,
+                color: 'rgba(255,255,255,0.55)',
+                lineHeight: 1.6,
+                margin: '0 auto 24px',
+                maxWidth: 560,
+              }}
+            >
+              Coverage first. AI assistance second. Built for boaters who want to know nothing
+              falls through the cracks.
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                justifyContent: 'center',
+                maxWidth: 640,
+                margin: '0 auto',
+              }}
+            >
+              {[
+                { label: 'Maintenance', href: '/features#maintenance' },
+                { label: 'Repairs', href: '/features#repairs' },
+                { label: 'Parts', href: '/features#parts' },
+                { label: 'Logbook', href: '/features#logbook' },
+                { label: 'Documents', href: '/features#documents' },
+                { label: 'Equipment', href: '/features#equipment' },
+              ].map(function (chip) {
+                return (
+                  <a
+                    key={chip.label}
+                    href={chip.href}
                     style={{
-                      display: 'inline-block',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: ACCENT,
-                      letterSpacing: '1.2px',
-                      textTransform: 'uppercase',
-                      marginBottom: 16,
-                      background: 'rgba(77,166,255,0.1)',
-                      border: '1px solid rgba(77,166,255,0.2)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: 'rgba(255,255,255,0.78)',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: 20,
-                      padding: '4px 14px',
+                      padding: '7px 16px',
+                      textDecoration: 'none',
                     }}
                   >
-                    {f.tag}
-                  </div>
-                  <h2
+                    {chip.label}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Three value-prop cards — coverage > AI framing */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+              gap: isMobile ? 16 : 20,
+            }}
+          >
+            {[
+              {
+                eyebrow: 'Stay on top of every system',
+                body: 'Engines, rigging, plumbing, electrical, safety. Keeply ships with maintenance schedules for every system on your boat. Service it, log it, photograph it.',
+                href: '/features#maintenance',
+              },
+              {
+                eyebrow: 'Capture every passage and detail',
+                body: 'Live passage logging. Watch entries. Conditions. Engine hours. Service photos that stay with the record forever — for insurance, resale, and your next yard haul.',
+                href: '/features#logbook',
+              },
+              {
+                eyebrow: 'Help when you want it',
+                body: 'Ask First Mate anything about your boat — what is overdue, what to buy, what is queued for haulout. It has read your entire history. You stay in charge.',
+                href: '/features#first-mate',
+              },
+            ].map(function (card, idx) {
+              return (
+                <a
+                  key={idx}
+                  href={card.href}
+                  style={{
+                    display: 'block',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 14,
+                    padding: isMobile ? '20px 18px' : '28px 24px',
+                    textDecoration: 'none',
+                    color: WHITE,
+                  }}
+                >
+                  <div
                     style={{
-                      fontSize: 'clamp(22px,2.8vw,34px)',
-                      fontWeight: 600,
+                      fontSize: isMobile ? 17 : 19,
+                      fontWeight: 700,
                       color: WHITE,
-                      lineHeight: 1.2,
+                      lineHeight: 1.3,
                       letterSpacing: '-0.3px',
-                      margin: '0 0 20px',
+                      marginBottom: 10,
                       fontFamily: "'Satoshi','DM Sans',sans-serif",
                     }}
                   >
-                    {f.title}
-                  </h2>
+                    {card.eyebrow}
+                  </div>
                   <p
                     style={{
-                      fontSize: 16,
-                      color: 'rgba(255,255,255,0.55)',
-                      lineHeight: 1.8,
-                      margin: '0 0 32px',
+                      fontSize: isMobile ? 14 : 14.5,
+                      color: 'rgba(255,255,255,0.62)',
+                      lineHeight: 1.65,
+                      margin: '0 0 14px',
                     }}
                   >
-                    {f.body}
+                    {card.body}
                   </p>
-                  <button
-                    onClick={function () {
-                      setShowPlanPicker(true);
-                    }}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: WHITE,
-                      padding: '10px 24px',
-                      borderRadius: 8,
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Get started {'\u2192'}
-                  </button>
-                </div>
-                <div
-                  style={{
-                    order: isMobile ? 1 : isEven ? 1 : 0,
-                    minHeight: 760,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <V />
-                </div>
-              </div>
-              {i === 1 && (
-                <div
-                  style={{
-                    maxWidth: 1100,
-                    margin: '0 auto',
-                    paddingBottom: 48,
-                    marginBottom: 48,
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                    gap: isMobile ? 48 : 80,
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        display: 'inline-block',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: ACCENT,
-                        letterSpacing: '1.2px',
-                        textTransform: 'uppercase',
-                        marginBottom: 16,
-                        background: 'rgba(77,166,255,0.1)',
-                        border: '1px solid rgba(77,166,255,0.2)',
-                        borderRadius: 20,
-                        padding: '4px 14px',
-                      }}
-                    >
-                      Intelligence
-                    </div>
-                    <h2
-                      style={{
-                        fontSize: 'clamp(26px,3.2vw,42px)',
-                        fontWeight: 700,
-                        color: WHITE,
-                        lineHeight: 1.15,
-                        letterSpacing: '-0.5px',
-                        margin: '0 0 20px',
-                        fontFamily: "'Satoshi','DM Sans',sans-serif",
-                      }}
-                    >
-                      First Mate knows your boat.
-                      <br />
-                      And keeps learning.
-                    </h2>
-                    <p
-                      style={{
-                        fontSize: 16,
-                        color: 'rgba(255,255,255,0.55)',
-                        lineHeight: 1.8,
-                        margin: '0 0 28px',
-                        maxWidth: 460,
-                      }}
-                    >
-                      Every service you log, every repair you close, every passage you record gives
-                      First Mate more context. Ask anything about your vessel — the more history you
-                      build, the sharper the answers get.
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {[
-                        {
-                          color: '#4ade80',
-                          label: 'Logbook entries',
-                          desc: 'Passages, watch notes, conditions',
-                        },
-                        {
-                          color: '#4da6ff',
-                          label: 'Repair history',
-                          desc: 'Every fix, when and what was done',
-                        },
-                        {
-                          color: '#f5a623',
-                          label: 'Maintenance records',
-                          desc: 'Service dates, notes, intervals',
-                        },
-                        {
-                          color: '#9ca3af',
-                          label: 'Engine hours',
-                          desc: 'Hour-based service triggers',
-                        },
-                      ].map(function (item) {
-                        return (
-                          <div
-                            key={item.label}
-                            style={{ display: 'flex', alignItems: 'center', gap: 12 }}
-                          >
-                            <div
-                              style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                background: item.color,
-                                flexShrink: 0,
-                              }}
-                            />
-                            <span
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 700,
-                                color: 'rgba(255,255,255,0.8)',
-                              }}
-                            >
-                              {item.label}
-                            </span>
-                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-                              {item.desc}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
                   <div
                     style={{
-                      order: isMobile ? -1 : 0,
-                      minHeight: 760,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: GOLD,
+                      letterSpacing: '0.02em',
                     }}
                   >
-                    <FirstMateLearnVisual />
+                    See more {'→'}
                   </div>
-                </div>
-              )}
-            </React.Fragment>
-          );
-        })}
+                </a>
+              );
+            })}
+          </div>
+
+          {/* Single deeper-link line */}
+          <div style={{ textAlign: 'center', marginTop: isMobile ? 28 : 40 }}>
+            <a
+              href="/features"
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.2)',
+                paddingBottom: 2,
+              }}
+            >
+              See all features {'→'}
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* Pricing */}
@@ -4768,6 +4729,12 @@ export default function LandingPage() {
               style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}
             >
               About
+            </a>
+            <a
+              href="/features"
+              style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}
+            >
+              Features
             </a>
             <a
               href="/faq"

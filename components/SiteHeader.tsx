@@ -23,13 +23,15 @@ const HIDE_ON = (pathname: string): boolean => {
   return false;
 };
 
-// Public navigation links — order intentional (trust → commerce → help → action).
+// Public navigation links — order intentional (trust → product → commerce → help → action).
 // About first because a first-time visitor's mental sequence is "what is this and
-// who's behind it" before "how much does it cost." Matches the trust-driven funnel
-// our Upgrader persona follows: lands skeptical, clicks About to verify we're real,
-// then Pricing to decide if it's worth it.
+// who's behind it" before "how much does it cost." Features second so curious
+// visitors can dig into the product before pricing. Matches the trust-driven
+// funnel our Upgrader persona follows: lands skeptical, clicks About to verify
+// we're real, Features to see what's actually there, Pricing to decide.
 const LINKS = [
   { href: '/about', label: 'About' },
+  { href: '/features', label: 'Features' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/faq', label: 'FAQ' },
   { href: '/support', label: 'Support' },
