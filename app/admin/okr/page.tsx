@@ -24,7 +24,7 @@ const PURPLE    = "#a78bfa";
 const ORANGE    = "#fb923c"; // rebrand phase — flag as blocker
 
 // ─── DATA — updated each session by Claude ───────────────────────────────────
-// Last updated: April 26, 2026 (PM)
+// Last updated: April 26, 2026 (PM, post-Session-5)
 
 const MONTHS = ["Apr","May","Jun","Jul","Aug","Sep","Oct"];
 
@@ -141,9 +141,11 @@ const OKRS = [
       { text: "Session 3: Supplies inventory view + supplies schema; ListsTab pill router; vessel_locations managed table with manage sheet + ON DELETE RESTRICT", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Session 3.2: Mark received → Supplies handoff (saved_parts.supply_id link, ReceiveModal, skip path)", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Session 4: Haulout queue (requires_haul_out boolean on maintenance_tasks + repairs; reverse-direction picker)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Session 5: FM context aware of saved_parts/supplies/haulout queue; Need to buy sectioned R&M vs General; Supplies auto-pull to Need to buy on out-of-stock or below-threshold; CHECK constraint extended to allow source_type='supply'", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Haulout exclusions wired into First Mate (active maintenance + open repairs filter out requires_haul_out items)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Haulout exclusions wired into urgency counts + health score (in-app surfaces still count haulout-flagged items; FM and in-app will disagree until this closes)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Decrement-on-completion: maintenance task done → matching supply qty -1 (highest-leverage Lists v2; deferred from Apr 26 PM due to toggleTask change density)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Equipment grouping in Supplies (currently flat alphabetical)", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Haulout exclusions wired into urgency / health score / First Mate (per principle: not actionable in water)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Grocery v1 — fourth pill (mirrors Supplies mechanic)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Public flip — beta_features default on, all 7 testers notified", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],
