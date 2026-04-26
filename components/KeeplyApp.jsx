@@ -13494,7 +13494,6 @@ export default function App() {
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  capture="environment"
                                   style={{ display: 'none' }}
                                   onChange={async function (e) {
                                     var file = e.target.files && e.target.files[0];
@@ -14094,13 +14093,8 @@ export default function App() {
                                       style={{ display: 'none' }}
                                       onChange={async function (e) {
                                         var file = e.target.files && e.target.files[0];
-                                        if (!file) {
-                                          setDbError('PHOTO DEBUG: no file selected');
-                                          return;
-                                        }
-                                        // PHOTO DEBUG — remove after diagnosis
+                                        if (!file) return;
                                         var dbg = '1.picked ' + (file.type || 'unknown') + ' ' + Math.round(file.size / 1024) + 'KB';
-                                        setDbError('PHOTO DEBUG: ' + dbg);
                                         setUploadingRepairPhoto(function (prev) {
                                           var n = Object.assign({}, prev);
                                           n[t.id] = true;
@@ -14109,13 +14103,11 @@ export default function App() {
                                         try {
                                           var compressed = await compressImage(file, 1200, 0.78);
                                           dbg += ' | 2.compressed ' + (compressed.type || '?') + ' ' + Math.round(compressed.size / 1024) + 'KB';
-                                          setDbError('PHOTO DEBUG: ' + dbg);
                                           var url = await uploadToStorage(
                                             compressed,
                                             'task-photos/' + t.id
                                           );
                                           dbg += ' | 3.uploaded';
-                                          setDbError('PHOTO DEBUG: ' + dbg);
                                           var newPhoto = { url: url, date: today(), caption: '' };
                                           var updatedPhotos = [...(t.photos || []), newPhoto];
                                           await supa('maintenance_tasks', {
@@ -14125,7 +14117,6 @@ export default function App() {
                                             prefer: 'return=minimal',
                                           });
                                           dbg += ' | 4.db ok';
-                                          setDbError('PHOTO DEBUG: ' + dbg);
                                           setTasks(function (prev) {
                                             return prev.map(function (tt) {
                                               return tt.id === t.id
@@ -14134,10 +14125,11 @@ export default function App() {
                                             });
                                           });
                                         } catch (err) {
-                                          console.error('Task photo upload failed:', err);
+                                          console.error('Task photo upload failed:', err, dbg);
                                           setDbError(
-                                            'PHOTO DEBUG: ' + dbg + ' | FAILED: ' +
-                                              (err && err.message ? err.message : 'Unknown error')
+                                            "Couldn't upload photo: " +
+                                              (err && err.message ? err.message : 'Unknown error') +
+                                              ' [' + dbg + ']'
                                           );
                                         } finally {
                                           setUploadingRepairPhoto(function (prev) {
@@ -15004,7 +14996,6 @@ export default function App() {
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  capture="environment"
                                   style={{ display: 'none' }}
                                   onChange={async function (e) {
                                     var file = e.target.files && e.target.files[0];
@@ -20294,7 +20285,6 @@ export default function App() {
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  capture="environment"
                                   style={{ display: 'none' }}
                                   onChange={async function (e) {
                                     var file = e.target.files && e.target.files[0];
