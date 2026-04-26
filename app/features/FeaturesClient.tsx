@@ -20,6 +20,20 @@
 // so this component contains ONLY the body content for the route.
 
 import { useState, useEffect } from 'react';
+import {
+  MaintenanceVisual,
+  PartsVisual,
+  LogbookVisual,
+  MyBoatVisual,
+  FirstMateVisual,
+} from '../../components/marketing/FeatureVisuals';
+
+// Visual is optional: Repairs and Documents have no animated counterpart in
+// the existing visual library, so they keep the static SVG icon and stand on
+// copy alone. Acceptable: most users will scroll past 1-2 visual-less sections
+// without it feeling broken; replacing those with real screen captures is a
+// future content pass once the founder walkthrough is recorded.
+type SectionVisual = React.ComponentType;
 
 const NAVY = '#071e3d';
 const NAVY_MID = '#0d2d5e';
@@ -161,13 +175,21 @@ function FeatureIcon({ name }: { name: string }) {
   return null;
 }
 
-const SECTIONS = [
+const SECTIONS: Array<{
+  id: string;
+  icon: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  Visual?: SectionVisual;
+}> = [
   {
     id: 'maintenance',
     icon: 'maintenance',
     eyebrow: 'Maintenance',
     title: 'Every interval. Every system. Tracked properly.',
     body: 'When a service is due, when it was last done, what notes you took at the time, what photos you captured. Keeply ships with maintenance schedules for the systems most boats actually have, then adapts to yours — adjust intervals, add custom items, or remove what does not apply. Tasks roll forward when you mark them done. Photos stay attached forever.',
+    Visual: MaintenanceVisual,
   },
   {
     id: 'repairs',
@@ -175,6 +197,7 @@ const SECTIONS = [
     eyebrow: 'Repairs',
     title: 'From open to closed, with photos and history.',
     body: 'A repair tracker that does not pretend to be a maintenance task. Open a repair when something breaks, attach photos, link the affected equipment, log notes as you work it. Close it when fixed. Every closed repair stays in the history of that equipment — for you, your insurance, or the next owner.',
+    // No animated visual — copy alone. Future: screen capture of repair flow.
   },
   {
     id: 'parts',
@@ -182,6 +205,7 @@ const SECTIONS = [
     eyebrow: 'Parts',
     title: 'Find the right part. Order it without the hunt.',
     body: 'Open any maintenance item or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. AI suggests the part. You verify and order.',
+    Visual: PartsVisual,
   },
   {
     id: 'logbook',
@@ -189,6 +213,7 @@ const SECTIONS = [
     eyebrow: 'Logbook',
     title: 'Live passages. Watches. Conditions. Engine hours.',
     body: 'Start a passage when you cast off and tap your way through. Watch changes, position, course over ground, wind and sea state, engine hours — all logged in seconds. Pre-departure and arrival checklists you can edit (Pro). The full history feeds back into First Mate so it knows where the boat has been and how it has been used.',
+    Visual: LogbookVisual,
   },
   {
     id: 'documents',
@@ -196,6 +221,7 @@ const SECTIONS = [
     eyebrow: 'Documents',
     title: 'Registration, insurance, USCG. Snap and store.',
     body: 'Take a photo of your vessel registration and Keeply auto-extracts HIN, USCG number, state reg, and home port. Same for insurance — carrier, policy number, expiration. Renewals get tracked, photos get stored, everything is one tap away when you need it dockside.',
+    // No animated visual — copy alone. Future: screen capture of scan flow.
   },
   {
     id: 'equipment',
@@ -203,15 +229,24 @@ const SECTIONS = [
     eyebrow: 'Equipment',
     title: 'Every system on your boat, by make and model.',
     body: 'Engines, watermakers, autopilots, batteries, anchors, electronics — every system on your boat with its own card. Make, model, year, photos, manuals, service log. The equipment library is what makes everything else possible: Keeply knows your gear, so the maintenance schedule fits, the parts are right, and First Mate answers are specific.',
+    Visual: MyBoatVisual,
   },
 ];
 
-const FIRST_MATE_SECTION = {
+const FIRST_MATE_SECTION: {
+  id: string;
+  icon: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  Visual?: SectionVisual;
+} = {
   id: 'first-mate',
   icon: 'firstmate',
   eyebrow: 'First Mate AI',
   title: 'Help when you want it.',
   body: 'First Mate has read your entire vessel history — every system, every service, every repair, every passage, every photo. Ask anything: "When was the impeller last changed?" "What is overdue?" "Is the boat ready?" It answers from your data, not from training. You stay in charge of what gets recorded; First Mate just helps you find it again.',
+  Visual: FirstMateVisual,
 };
 
 export default function FeaturesClient() {
@@ -367,6 +402,17 @@ export default function FeaturesClient() {
               >
                 {s.body}
               </p>
+              {s.Visual && (
+                <div
+                  style={{
+                    marginTop: isMobile ? 28 : 36,
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <s.Visual />
+                </div>
+              )}
             </article>
           ))}
         </div>
@@ -422,6 +468,17 @@ export default function FeaturesClient() {
           >
             {FIRST_MATE_SECTION.body}
           </p>
+          {FIRST_MATE_SECTION.Visual && (
+            <div
+              style={{
+                marginTop: isMobile ? 32 : 44,
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
+              <FIRST_MATE_SECTION.Visual />
+            </div>
+          )}
         </div>
       </section>
 
