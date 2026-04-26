@@ -208,6 +208,17 @@ export default function AboutClient() {
             >
               Founder, Keeply
             </div>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.4)',
+                marginTop: 6,
+              }}
+            >
+              S/V Irene
+            </div>
           </div>
         </div>
       </section>

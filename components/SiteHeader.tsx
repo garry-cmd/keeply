@@ -23,12 +23,14 @@ const HIDE_ON = (pathname: string): boolean => {
   return false;
 };
 
-// Public navigation links — order intentional (commerce → trust → help → action).
-// Pricing first because it's the highest-intent click; About second because it's
-// where a prospective subscriber decides whether to trust us before they buy.
+// Public navigation links — order intentional (trust → commerce → help → action).
+// About first because a first-time visitor's mental sequence is "what is this and
+// who's behind it" before "how much does it cost." Matches the trust-driven funnel
+// our Upgrader persona follows: lands skeptical, clicks About to verify we're real,
+// then Pricing to decide if it's worth it.
 const LINKS = [
-  { href: '/pricing', label: 'Pricing' },
   { href: '/about', label: 'About' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/faq', label: 'FAQ' },
   { href: '/support', label: 'Support' },
   { href: '/contact', label: 'Contact' },

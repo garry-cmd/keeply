@@ -3601,19 +3601,6 @@ export default function LandingPage() {
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {!isMobile && (
             <a
-              href="/pricing"
-              style={{
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.6)',
-                textDecoration: 'none',
-                padding: '6px 14px',
-              }}
-            >
-              Pricing
-            </a>
-          )}
-          {!isMobile && (
-            <a
               href="/about"
               style={{
                 fontSize: 13,
@@ -3623,6 +3610,19 @@ export default function LandingPage() {
               }}
             >
               About
+            </a>
+          )}
+          {!isMobile && (
+            <a
+              href="/pricing"
+              style={{
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.6)',
+                textDecoration: 'none',
+                padding: '6px 14px',
+              }}
+            >
+              Pricing
             </a>
           )}
           {!isMobile && (
