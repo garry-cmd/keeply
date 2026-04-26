@@ -24861,9 +24861,18 @@ export default function App() {
                     )
                       return;
                     try {
+                      const sess = await supabase.auth.getSession();
+                      const accessToken = sess?.data?.session?.access_token;
+                      if (!accessToken) {
+                        alert('Session expired. Please sign in again.');
+                        return;
+                      }
                       const res = await fetch('/api/delete-account', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: 'Bearer ' + accessToken,
+                        },
                         body: JSON.stringify({ userId: session?.user?.id }),
                       });
                       const d = await res.json();

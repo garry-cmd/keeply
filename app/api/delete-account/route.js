@@ -20,6 +20,29 @@ export async function POST(request) {
     if (!userId) return Response.json({ error: 'Missing userId' }, { status: 400 });
     if (!SERVICE_KEY) return Response.json({ error: 'Not configured' }, { status: 500 });
 
+    // ── Verify caller is the user being deleted ─────────────────────────────────
+    // The endpoint accepts userId from the body; without this check anyone with
+    // a userId (which leaks via vessel_members invites, share links, etc.) could
+    // delete that account.
+    const authHeader =
+      request.headers.get('authorization') || request.headers.get('Authorization') || '';
+    const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!jwt) {
+      return Response.json({ error: 'Missing auth token' }, { status: 401 });
+    }
+    const verifyRes = await fetch(SUPABASE_URL + '/auth/v1/user', {
+      headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + jwt },
+    });
+    if (!verifyRes.ok) {
+      return Response.json({ error: 'Invalid auth token' }, { status: 401 });
+    }
+    const authedUser = await verifyRes.json().catch(function () {
+      return null;
+    });
+    if (!authedUser?.id || authedUser.id !== userId) {
+      return Response.json({ error: 'Auth token does not match userId' }, { status: 403 });
+    }
+
     // 1. Get Stripe subscription to cancel
     const profileRes = await supa(
       'user_profiles?id=eq.' + userId + '&select=stripe_subscription_id,stripe_customer_id'
@@ -40,14 +63,19 @@ export async function POST(request) {
       }
     }
 
-    // 3. Get all vessel IDs for this user
-    const membersRes = await supa('vessel_members?user_id=eq.' + userId + '&select=vessel_id');
-    const members = await membersRes.json();
-    const vesselIds = (members || []).map(function (m) {
-      return m.vessel_id;
+    // 3. Get vessel IDs OWNED by this user. CRITICAL: scope to vessels.user_id,
+    //    NOT vessel_members. The previous logic used vessel_members which
+    //    includes vessels the user is crew on — deleting cascade data for
+    //    those shared vessels would wipe the actual owner's data.
+    const ownedRes = await supa('vessels?user_id=eq.' + userId + '&select=id');
+    const owned = await ownedRes.json();
+    const vesselIds = (owned || []).map(function (v) {
+      return v.id;
     });
 
-    // 4. Delete all vessel data if user has vessels
+    // 4. Delete all vessel data if user owns vessels
+    //    (Most child tables also CASCADE on vessel_id deletion at the FK level —
+    //    these explicit deletes are belt-and-suspenders.)
     if (vesselIds.length > 0) {
       const vesselFilter = 'vessel_id=in.(' + vesselIds.join(',') + ')';
 
@@ -57,16 +85,23 @@ export async function POST(request) {
       await supa('repairs?' + vesselFilter, { method: 'DELETE' });
       await supa('logbook?' + vesselFilter, { method: 'DELETE' });
       await supa('equipment?' + vesselFilter, { method: 'DELETE' });
-      await supa('vessel_members?user_id=eq.' + userId, { method: 'DELETE' });
+    }
 
-      // Delete vessels owned by this user
+    // 5. Remove user from ALL vessel_members rows. For OWNED vessels this is
+    //    cleanup before deleting the vessel; for SHARED vessels (where the
+    //    user is just crew) this removes them as crew without touching the
+    //    vessel itself. Runs even for crew-only users with no owned vessels.
+    await supa('vessel_members?user_id=eq.' + userId, { method: 'DELETE' });
+
+    // 6. Delete vessels owned by this user (cascades child tables not handled above)
+    if (vesselIds.length > 0) {
       await supa('vessels?user_id=eq.' + userId, { method: 'DELETE' });
     }
 
-    // 5. Delete user profile
+    // 7. Delete user profile
     await supa('user_profiles?id=eq.' + userId, { method: 'DELETE' });
 
-    // 6. Delete auth user (requires service role)
+    // 8. Delete auth user (requires service role)
     const deleteAuthRes = await fetch(SUPABASE_URL + '/auth/v1/admin/users/' + userId, {
       method: 'DELETE',
       headers: {
