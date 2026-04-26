@@ -64,17 +64,24 @@ export default function Supplies({ activeVesselId }) {
   }, [load]);
 
   // ── Auto-pull to Need to buy ────────────────────────────────────────────────
-  // When a supply's quantity drops to or below its min_stock threshold, create
-  // a saved_parts row in 'needed' state — but only if no open saved_part already
-  // exists for this supply (dedup via supply_id + state lookup). Receiving a
-  // saved_part naturally restocks via the existing Mark-received handoff, which
-  // pushes inStock back above threshold and silences future triggers.
+  // When a supply hits a "I need more" state, create a saved_parts row in
+  // 'needed' state — but only if no open saved_part already exists for this
+  // supply (dedup via supply_id + state lookup). Receiving a saved_part
+  // naturally restocks via the existing Mark-received handoff (Session 3.2),
+  // pushing in_stock back above threshold and silencing future triggers.
+  //
+  // Trigger rule:
+  //  - in_stock = 0 → always trigger (universal "out of stock = need more"),
+  //                   even if the user hasn't set a min_stock threshold.
+  //  - min_stock > 0 AND in_stock <= min_stock → trigger (below threshold).
+  //  - otherwise → no-op.
   async function maybeQueueRestock(supply) {
     if (!supply || !supply.id) return;
     const minStock = supply.min_stock || 0;
     const inStock = supply.in_stock || 0;
-    if (minStock <= 0) return; // no threshold set, nothing to trigger
-    if (inStock > minStock) return; // above threshold, nothing to do
+    const isOutOfStock = inStock === 0;
+    const isBelowThreshold = minStock > 0 && inStock <= minStock;
+    if (!isOutOfStock && !isBelowThreshold) return;
     // Check if an open saved_part already exists for this supply
     const { data: existing, error: selErr } = await supabase
       .from('saved_parts')
