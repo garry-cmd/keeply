@@ -24,7 +24,7 @@ const PURPLE    = "#a78bfa";
 const ORANGE    = "#fb923c"; // rebrand phase — flag as blocker
 
 // ─── DATA — updated each session by Claude ───────────────────────────────────
-// Last updated: April 26, 2026
+// Last updated: April 26, 2026 (PM)
 
 const MONTHS = ["Apr","May","Jun","Jul","Aug","Sep","Oct"];
 
@@ -48,7 +48,7 @@ const PHASES = [
     label: "Lists",
     color: "#f5a623", // gold — strategic founder-driven feature
     months: [0, 1],
-    description: "Supplies + Grocery + Haulout — closes the additive-product gap surfaced by founder dogfooding. See lists-build-plan.md.",
+    description: "Need to buy + Supplies + Haulout (+ Grocery) — closes the additive-product gap surfaced by founder dogfooding (Garry kept 4 Todoist lists after a month using Keeply). Beta-gated; flip via user_profiles.beta_features text[].",
   },
   {
     id: "hygiene",
@@ -135,13 +135,17 @@ const OKRS = [
     phase: "lists",
     objective: "Ship Lists — close the additive-product gap",
     krs: [
-      { text: "Session 1: beta_features gate + lists_waitlist schema; Land ho shell live; FM tab swapped for Lists tab", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Session 2: FM persistent top bar (already shipped) + Profile to header avatar", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Session 3: Supplies — Need to buy + In stock + Catalog views shipped behind beta gate", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Session 4: Need to buy unified inbox wired to need_to_buy VIEW", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Session 5: Haulout queue shipped behind beta gate", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Session 6: Grocery (Shopping v1) shipped behind beta gate", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Session 7: Public flip — beta_features default to on, all 7 testers notified", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Session 1: Land ho shell + lists_waitlist schema + user_profiles.beta_features text[] kill switch; FM tab swapped for Lists tab", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Nav rework: FM restored to bottom-nav slot 4 with prefab chips; Lists in slot 5; Profile moved to header avatar", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Session 2: Need to buy view + saved_parts schema (needed/ordered/received state machine); bookmark icon wired into all 9 AI parts result surfaces", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Session 3: Supplies inventory view + supplies schema; ListsTab pill router; vessel_locations managed table with manage sheet + ON DELETE RESTRICT", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Session 3.2: Mark received → Supplies handoff (saved_parts.supply_id link, ReceiveModal, skip path)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Session 4: Haulout queue (requires_haul_out boolean on maintenance_tasks + repairs; reverse-direction picker)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Decrement-on-completion: maintenance task done → matching supply qty -1 (highest-leverage Lists v2; deferred from Apr 26 PM due to toggleTask change density)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Equipment grouping in Supplies (currently flat alphabetical)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Haulout exclusions wired into urgency / health score / First Mate (per principle: not actionable in water)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Grocery v1 — fourth pill (mirrors Supplies mechanic)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Public flip — beta_features default on, all 7 testers notified", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],
   },
   {
@@ -243,7 +247,7 @@ const BACKLOG_STATUS: Record<string, { label: string; color: string; bg: string 
 
 const BACKLOG = [
   { name: "Text First Mate",     status: "planned",     effort: "S", notes: "Post-GoLive. Chat with full vessel context." },
-  { name: "Consumables tracker", status: "in-progress", effort: "L", notes: "SUPERSEDED — folded into Lists work as the Supplies sub-surface. See lists-build-plan.md. Pre-GoLive." },
+  { name: "Consumables tracker", status: "done",         effort: "L", notes: "SUPERSEDED — folded into Lists Session 3 Supplies as the inventory sub-surface (Apr 26). Originally scoped as a separate consumables-on-equipment-cards build; the Supplies pill in Lists now owns this surface area, with location tracking + +/− steppers + Mark received handoff from Need to buy." },
   { name: "Weather (NOAA)",      status: "planned",     effort: "M", notes: "Post-GoLive. Pro tier. Windy co-marketing in Phase 2." },
   { name: "Context-aware FAB",   status: "done",        effort: "S", notes: "Shipped. FAB action changes by active tab." },
   { name: "Departure Check",     status: "planned",     effort: "L", notes: "North star feature. Requires Logbook + Weather + Consumables first." },
