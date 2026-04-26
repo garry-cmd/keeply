@@ -135,7 +135,7 @@ export default function SiteHeader() {
               );
             })}
             <a
-              href="/?auth=login"
+              href="/?login=1"
               style={{
                 background: 'transparent',
                 border: '1px solid rgba(255,255,255,0.25)',
@@ -150,7 +150,7 @@ export default function SiteHeader() {
               Log in
             </a>
             <a
-              href="/?auth=signup"
+              href="/?plans=1"
               style={{
                 background: GOLD,
                 border: 'none',
@@ -245,7 +245,7 @@ export default function SiteHeader() {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <a
-              href="/?auth=login"
+              href="/?login=1"
               style={{
                 flex: 1,
                 background: 'transparent',
@@ -262,7 +262,7 @@ export default function SiteHeader() {
               Log in
             </a>
             <a
-              href="/?auth=signup"
+              href="/?plans=1"
               style={{
                 flex: 1,
                 background: GOLD,

@@ -462,7 +462,7 @@ export default function FeaturesClient() {
           }}
         >
           <a
-            href="/?signup=1"
+            href="/?plans=1"
             style={{
               background: GOLD,
               color: '#1a1200',
