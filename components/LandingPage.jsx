@@ -3182,6 +3182,13 @@ export default function LandingPage() {
       setMode('login');
       setShowAuth(true);
     }
+    // Deep-link to the plan picker — used by external pages (/features CTA,
+    // future /about and /pricing CTAs) so cross-route Get Started buttons
+    // route through plan selection rather than skipping straight to auth
+    // (which would default the user to free since pendingPlan is null).
+    if (p.get('plans') === '1') {
+      setShowPlanPicker(true);
+    }
     if (p.get('upgraded') === '1') {
       setStripeSuccess(true);
       setShowAuth(true);
@@ -3912,13 +3919,13 @@ export default function LandingPage() {
             style={{
               fontSize: 'clamp(16px,2vw,20px)',
               color: 'rgba(255,255,255,0.6)',
-              margin: '0 0 40px',
+              margin: '0 auto 40px',
               lineHeight: 1.6,
               maxWidth: 540,
             }}
           >
-            Vessel intelligence for serious owners. Every system, part, and passage in one
-            connected record — so nothing falls through the cracks.
+            Every system, part, and passage in one connected record — so nothing falls through the
+            cracks.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
