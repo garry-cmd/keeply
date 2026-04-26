@@ -7,6 +7,7 @@ import LogbookPage from './LogbookPage';
 import PartsPage from './PartsPage';
 import FirstMate from './FirstMate';
 import FirstMateScreen from './FirstMateScreen';
+import ListsTab from './Lists/ListsTab';
 import { formatPlanSummary, hasCapability, canAddRepair, canAddEquipment, getEquipmentLimit } from '../lib/pricing';
 
 // ── Part search helpers ──────────────────────────────────────────────────────
@@ -7522,14 +7523,14 @@ export default function App() {
               </div>
             );
           })()}
-          {/* First Mate */}
+          {/* Lists — Session 1: routes to ListsTab which renders LandHoShell until beta_features includes 'lists' */}
           {(function () {
-            const active = view === 'customer' && tab === 'firstmate-standalone';
+            const active = view === 'customer' && tab === 'lists-standalone';
             return (
               <button
                 onClick={function () {
                   setView('customer');
-                  setTab('firstmate-standalone');
+                  setTab('lists-standalone');
                 }}
                 style={{
                   flex: 1,
@@ -7556,12 +7557,12 @@ export default function App() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <circle cx="12" cy="12" r="3" />
-                  <line x1="12" y1="2" x2="12" y2="6" />
-                  <line x1="12" y1="18" x2="12" y2="22" />
-                  <line x1="2" y1="12" x2="6" y2="12" />
-                  <line x1="18" y1="12" x2="22" y2="12" />
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <circle cx="3.5" cy="6" r="1.2" fill="currentColor" />
+                  <circle cx="3.5" cy="12" r="1.2" fill="currentColor" />
+                  <circle cx="3.5" cy="18" r="1.2" fill="currentColor" />
                 </svg>
                 <span
                   style={{
@@ -7571,7 +7572,7 @@ export default function App() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  First Mate
+                  Lists
                 </span>
               </button>
             );
@@ -19507,6 +19508,9 @@ export default function App() {
             }}
           />
         )}
+
+        {/* ── LISTS standalone — Session 1: shows LandHoShell to everyone (kill-switch via beta_features) ── */}
+        {view === 'customer' && tab === 'lists-standalone' && <ListsTab />}
 
         {/* ── FIRST MATE inline panel overlay ── */}
         {view === 'customer' && (

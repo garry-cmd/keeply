@@ -44,6 +44,13 @@ const PHASES = [
     description: "Custom checklists, First Mate history, multi-engine tracking — due May 31",
   },
   {
+    id: "lists",
+    label: "Lists",
+    color: "#f5a623", // gold — strategic founder-driven feature
+    months: [0, 1],
+    description: "Supplies + Grocery + Haulout — closes the additive-product gap surfaced by founder dogfooding. See lists-build-plan.md.",
+  },
+  {
     id: "hygiene",
     label: "Code hygiene",
     color: "#94a3b8", // slate — foundational/infrastructure
@@ -122,6 +129,19 @@ const OKRS = [
       { text: "Logbook — Custom Checklists (Pro tier)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "First Mate — Conversation history (all tiers)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Multi-engine tracking", cur: 0, target: 1, unit: "complete", status: "not-started" },
+    ],
+  },
+  {
+    phase: "lists",
+    objective: "Ship Lists — close the additive-product gap",
+    krs: [
+      { text: "Session 1: beta_features gate + lists_waitlist schema; Land ho shell live; FM tab swapped for Lists tab", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Session 2: FM persistent top bar (already shipped) + Profile to header avatar", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Session 3: Supplies — Need to buy + In stock + Catalog views shipped behind beta gate", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Session 4: Need to buy unified inbox wired to need_to_buy VIEW", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Session 5: Haulout queue shipped behind beta gate", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Session 6: Grocery (Shopping v1) shipped behind beta gate", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Session 7: Public flip — beta_features default to on, all 7 testers notified", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],
   },
   {
@@ -223,7 +243,7 @@ const BACKLOG_STATUS: Record<string, { label: string; color: string; bg: string 
 
 const BACKLOG = [
   { name: "Text First Mate",     status: "planned",     effort: "S", notes: "Post-GoLive. Chat with full vessel context." },
-  { name: "Consumables tracker", status: "planned",     effort: "S", notes: "Post-GoLive. Fluids, filters, spare parts — shown on equipment cards." },
+  { name: "Consumables tracker", status: "in-progress", effort: "L", notes: "SUPERSEDED — folded into Lists work as the Supplies sub-surface. See lists-build-plan.md. Pre-GoLive." },
   { name: "Weather (NOAA)",      status: "planned",     effort: "M", notes: "Post-GoLive. Pro tier. Windy co-marketing in Phase 2." },
   { name: "Context-aware FAB",   status: "done",        effort: "S", notes: "Shipped. FAB action changes by active tab." },
   { name: "Departure Check",     status: "planned",     effort: "L", notes: "North star feature. Requires Logbook + Weather + Consumables first." },
