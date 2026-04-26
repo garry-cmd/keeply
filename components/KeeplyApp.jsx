@@ -4115,7 +4115,8 @@ export default function App() {
     const newDue = addDays(serviceDate, effectiveDays);
     const commentText =
       noteOverride !== undefined ? noteOverride.trim() : (t.pendingComment || '').trim();
-    const log = { date: serviceDate, comment: commentText || null };
+    const photoSnapshot = t.photos || [];
+    const log = { date: serviceDate, comment: commentText || null, photos: photoSnapshot };
     const updatedLogs = [...(t.serviceLogs || []), log];
     // Optimistic update — update UI immediately, sync DB in background
     setTasks(function (prev) {
@@ -4126,6 +4127,7 @@ export default function App() {
               lastService: serviceDate,
               dueDate: newDue,
               serviceLogs: updatedLogs,
+              photos: [],
               pendingComment: '',
             }
           : tk;
@@ -4142,6 +4144,7 @@ export default function App() {
             date: serviceDate,
             text: 'Service: ' + t.task + (commentText ? ' — ' + commentText : ''),
             type: 'service',
+            photos: photoSnapshot,
           };
           const updatedEqLogs = [...(eq.logs || []), eqLogEntry];
           await supa('equipment', {
@@ -4176,7 +4179,7 @@ export default function App() {
         method: 'PATCH',
         query: 'id=eq.' + id,
         body: Object.assign(
-          { last_service: serviceDate, due_date: newDue, service_logs: updatedLogs },
+          { last_service: serviceDate, due_date: newDue, service_logs: updatedLogs, photos: [] },
           hoursPatch
         ),
         prefer: 'return=minimal',
@@ -15746,6 +15749,51 @@ export default function App() {
                                                                 {log.comment}
                                                               </div>
                                                             )}
+                                                            {log.photos && log.photos.length > 0 && (
+                                                              <div
+                                                                style={{
+                                                                  display: 'flex',
+                                                                  gap: 4,
+                                                                  marginTop: 4,
+                                                                  flexWrap: 'wrap',
+                                                                }}
+                                                              >
+                                                                {log.photos.map(function (ph, pi) {
+                                                                  return (
+                                                                    <div
+                                                                      key={pi}
+                                                                      onClick={function () {
+                                                                        setLightboxPhoto(
+                                                                          Object.assign({}, ph, {
+                                                                            _readonly: true,
+                                                                          })
+                                                                        );
+                                                                        setLightboxCaptionEdit(ph.caption || '');
+                                                                      }}
+                                                                      style={{
+                                                                        width: 36,
+                                                                        height: 36,
+                                                                        borderRadius: 6,
+                                                                        overflow: 'hidden',
+                                                                        cursor: 'pointer',
+                                                                        border: '1px solid var(--border)',
+                                                                        flexShrink: 0,
+                                                                      }}
+                                                                    >
+                                                                      <img
+                                                                        src={ph.url}
+                                                                        alt={ph.caption || 'Service photo'}
+                                                                        style={{
+                                                                          width: '100%',
+                                                                          height: '100%',
+                                                                          objectFit: 'cover',
+                                                                        }}
+                                                                      />
+                                                                    </div>
+                                                                  );
+                                                                })}
+                                                              </div>
+                                                            )}
                                                           </div>
                                                         );
                                                       })}
@@ -20801,6 +20849,51 @@ export default function App() {
                                                   {log.comment}
                                                 </div>
                                               )}
+                                              {log.photos && log.photos.length > 0 && (
+                                                <div
+                                                  style={{
+                                                    display: 'flex',
+                                                    gap: 4,
+                                                    marginTop: 4,
+                                                    flexWrap: 'wrap',
+                                                  }}
+                                                >
+                                                  {log.photos.map(function (ph, pi) {
+                                                    return (
+                                                      <div
+                                                        key={pi}
+                                                        onClick={function () {
+                                                          setLightboxPhoto(
+                                                            Object.assign({}, ph, {
+                                                              _readonly: true,
+                                                            })
+                                                          );
+                                                          setLightboxCaptionEdit(ph.caption || '');
+                                                        }}
+                                                        style={{
+                                                          width: 36,
+                                                          height: 36,
+                                                          borderRadius: 6,
+                                                          overflow: 'hidden',
+                                                          cursor: 'pointer',
+                                                          border: '1px solid var(--border)',
+                                                          flexShrink: 0,
+                                                        }}
+                                                      >
+                                                        <img
+                                                          src={ph.url}
+                                                          alt={ph.caption || 'Service photo'}
+                                                          style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            objectFit: 'cover',
+                                                          }}
+                                                        />
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              )}
                                             </div>
                                           );
                                         })}
@@ -25680,6 +25773,7 @@ export default function App() {
           >
             {lightboxPhoto.date}
           </div>
+          {!lightboxPhoto._readonly && (
           <div
             style={{ marginTop: 10, width: '100%', maxWidth: 400 }}
             onClick={function (e) {
@@ -25800,6 +25894,7 @@ export default function App() {
               </button>
             )}
           </div>
+          )}
           <div
             style={{ display: 'flex', gap: 10, marginTop: 14 }}
             onClick={function (e) {
@@ -25823,6 +25918,7 @@ export default function App() {
             >
               Close
             </button>
+            {!lightboxPhoto._readonly && (
             <button
               onClick={async function () {
                 const photoIdx = lightboxPhoto._photoIndex;
@@ -25908,6 +26004,7 @@ export default function App() {
             >
               Delete
             </button>
+            )}
           </div>
         </div>
       )}
