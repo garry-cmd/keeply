@@ -1,0 +1,470 @@
+/* ──────────────────────────────────────────────────────────────────
+   /app/about/about.css
+   ──────────────────────────────────────────────────────────────────
+   Styles for the About page. Scoped via .about-page wrapper so they
+   don't leak into other routes. All design tokens defined locally
+   here rather than relying on the global stylesheet — the warm
+   brand language is About-page specific until/unless we roll it out
+   site-wide.
+   ──────────────────────────────────────────────────────────────────  */
+
+.about-page {
+  --blue:        #0F4C8A;
+  --blue-deep:   #072548;
+  --blue-light:  #3D8FCB;
+  --blue-tint:   #E8F1F9;
+  --blue-wash:   #F4F8FC;
+  --navy:        #0B2545;
+  --midnight:    #050d1f;
+  --dusk:        #1a2942;
+  --cream:       #F6F1E7;
+  --cream-warm:  #EFE7D6;
+  --star:        #F4E9C9;
+  --star-warm:   #FFD89C;
+  --warm-glow:   #FFAB6B;
+  --rose:        #DCA89E;
+  --ink:         #0F172A;
+  --slate:       #334155;
+  --muted:       #64748B;
+  --line:        #E2E8F0;
+  --line-soft:   #EDF2F7;
+  --surface:     #F8FAFC;
+
+  background: #fff;
+  color: var(--ink);
+  font-family: 'Manrope', system-ui, sans-serif;
+  line-height: 1.6;
+  scroll-behavior: smooth;
+}
+.about-page * { box-sizing: border-box; }
+
+/* ──────────── NAV ──────────── */
+.about-page .page-nav {
+  position: relative; z-index: 10;
+  padding: 20px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--midnight);
+  color: #fff;
+}
+.about-page .page-nav .brand { display: flex; align-items: center; gap: 12px; }
+.about-page .page-nav .brand svg.dipper {
+  color: var(--star-warm);
+  filter: drop-shadow(0 0 6px rgba(255, 216, 156, 0.4));
+}
+.about-page .page-nav .brand .word {
+  font-family: 'Fraunces', serif; font-weight: 400;
+  font-size: 26px; letter-spacing: -0.02em; color: #fff;
+}
+.about-page .page-nav .links {
+  display: flex; gap: 32px; list-style: none;
+  margin: 0; padding: 0;
+}
+.about-page .page-nav .links a {
+  font-size: 13px; font-weight: 500;
+  color: rgba(255, 255, 255, 0.75); text-decoration: none;
+}
+.about-page .page-nav .links a.active { color: var(--star-warm); }
+.about-page .page-nav .actions { display: flex; align-items: center; gap: 16px; }
+.about-page .page-nav .signin {
+  font-size: 13px; font-weight: 500;
+  color: rgba(255, 255, 255, 0.75); text-decoration: none;
+}
+.about-page .page-nav .cta {
+  background: var(--star-warm); color: var(--midnight);
+  padding: 9px 18px; font-size: 13px; font-weight: 600;
+  border: none; border-radius: 6px; cursor: pointer;
+  letter-spacing: -0.005em; text-decoration: none;
+  display: inline-block;
+}
+
+/* ──────────── HERO ──────────── */
+.about-page .hero {
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(255, 171, 107, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 20% 70%, rgba(220, 168, 158, 0.10) 0%, transparent 50%),
+    linear-gradient(170deg, #1a2942 0%, #0B2545 50%, #050d1f 100%);
+  position: relative;
+  overflow: hidden;
+  padding: 110px 40px 130px;
+  text-align: center;
+}
+.about-page .hero .ambient { position: absolute; inset: 0; opacity: 0.55; pointer-events: none; }
+.about-page .hero .horizon-glow {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 30%;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(255, 171, 107, 0.05) 30%,
+    rgba(220, 168, 158, 0.10) 70%,
+    rgba(11, 37, 69, 0.4) 100%);
+  pointer-events: none;
+}
+.about-page .hero .inner { position: relative; z-index: 2; max-width: 720px; margin: 0 auto; }
+.about-page .hero .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(244, 233, 201, 0.6);
+  margin-bottom: 28px;
+}
+.about-page .hero h1 {
+  font-family: 'Fraunces', serif; font-weight: 300;
+  font-size: clamp(40px, 6vw, 64px); line-height: 1.05;
+  letter-spacing: -0.025em; color: #fff;
+  margin-bottom: 32px;
+}
+.about-page .hero h1 em { font-style: italic; color: var(--star-warm); }
+.about-page .hero .mark-stage {
+  display: flex; justify-content: center;
+  margin-top: 18px; position: relative;
+}
+.about-page .hero .mark-stage::before {
+  content: "";
+  position: absolute;
+  width: 380px; height: 240px;
+  background: radial-gradient(ellipse at center, rgba(255, 216, 156, 0.18) 0%, transparent 65%);
+  pointer-events: none;
+}
+.about-page .hero .mark-stage svg {
+  position: relative;
+  color: var(--star-warm);
+  filter: drop-shadow(0 0 18px rgba(255, 216, 156, 0.3));
+}
+
+/* ──────────── FOUNDER'S NOTE ──────────── */
+.about-page .founder-section {
+  background: var(--midnight);
+  padding: 72px 40px 100px;
+  position: relative;
+  overflow: hidden;
+}
+.about-page .founder-section .ambient { position: absolute; inset: 0; opacity: 0.3; pointer-events: none; }
+.about-page .founder-note {
+  position: relative;
+  max-width: 620px;
+  margin: 0 auto;
+  color: #fff;
+}
+.about-page .founder-note .eyebrow {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(244, 233, 201, 0.55);
+  margin-bottom: 24px;
+}
+.about-page .founder-note p {
+  font-family: 'Fraunces', serif; font-weight: 300;
+  font-size: clamp(17px, 2vw, 19px); line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 22px;
+}
+.about-page .founder-note p em { font-style: italic; color: var(--star-warm); }
+.about-page .founder-note p strong { font-weight: 500; color: #fff; }
+.about-page .founder-note .pullquote {
+  font-family: 'Fraunces', serif; font-style: italic; font-weight: 300;
+  font-size: clamp(22px, 3vw, 28px); line-height: 1.4;
+  color: var(--star-warm);
+  text-align: center;
+  margin: 36px 0;
+  padding: 0 20px;
+}
+.about-page .founder-note .signature {
+  text-align: center; margin-top: 36px;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.about-page .founder-note .signature .name {
+  font-family: 'Fraunces', serif; font-style: italic; font-weight: 400;
+  font-size: 20px; color: var(--star-warm);
+  letter-spacing: -0.005em;
+  display: block; margin-bottom: 4px;
+}
+.about-page .founder-note .signature .role {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(244, 233, 201, 0.55);
+}
+
+/* ──────────── WHAT KEEPLY IS ──────────── */
+.about-page .what-section { background: #fff; padding: 96px 40px; }
+.about-page .what-inner { max-width: 920px; margin: 0 auto; }
+.about-page .what-eyebrow {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+.about-page .what-section h2 {
+  text-align: center;
+  font-family: 'Fraunces', serif; font-weight: 300;
+  font-size: clamp(32px, 4.5vw, 44px); line-height: 1.15;
+  letter-spacing: -0.025em; color: var(--ink);
+  margin-bottom: 28px;
+  max-width: 780px; margin-left: auto; margin-right: auto;
+}
+.about-page .what-section h2 em { font-style: italic; color: var(--blue); }
+.about-page .what-section .lede {
+  text-align: center;
+  font-size: 17px; line-height: 1.65;
+  color: var(--slate);
+  max-width: 620px; margin: 0 auto 56px;
+}
+.about-page .what-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 56px;
+}
+@media (min-width: 720px) {
+  .about-page .what-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+.about-page .what-cell { background: #fff; padding: 32px 28px; }
+.about-page .what-cell .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--blue);
+  font-weight: 600; letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+.about-page .what-cell h3 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 19px; line-height: 1.25;
+  letter-spacing: -0.015em; color: var(--ink);
+  margin-bottom: 12px;
+}
+.about-page .what-cell h3 em { font-style: italic; color: var(--blue); }
+.about-page .what-cell p { font-size: 14px; color: var(--slate); line-height: 1.6; }
+
+.about-page .isnt-block {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 36px 40px;
+  margin-top: 8px;
+}
+.about-page .isnt-block h3 {
+  font-family: 'Fraunces', serif; font-weight: 400;
+  font-style: italic;
+  font-size: 22px; letter-spacing: -0.015em;
+  color: var(--ink); margin-bottom: 10px;
+}
+.about-page .isnt-block .lede {
+  font-size: 14.5px; color: var(--slate);
+  margin-bottom: 22px;
+  line-height: 1.65;
+}
+.about-page .isnt-block ul { list-style: none; display: grid; gap: 12px; margin: 0; padding: 0; }
+.about-page .isnt-block li {
+  font-size: 14px; color: var(--slate);
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 28px 1fr; gap: 14px;
+  line-height: 1.55;
+}
+.about-page .isnt-block li:first-child { border-top: none; padding-top: 0; }
+.about-page .isnt-block li .x {
+  color: var(--muted);
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-size: 18px; line-height: 1;
+  padding-top: 1px;
+}
+.about-page .isnt-block li strong {
+  color: var(--ink); font-weight: 700;
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-weight: 500; font-size: 15px;
+  display: block; margin-bottom: 2px;
+}
+
+/* ──────────── WHO IT'S FOR ──────────── */
+.about-page .who-section {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 216, 156, 0.04) 0%, transparent 40%),
+    var(--cream);
+  padding: 96px 40px;
+}
+.about-page .who-inner { max-width: 980px; margin: 0 auto; }
+.about-page .who-eyebrow {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+.about-page .who-section h2 {
+  text-align: center;
+  font-family: 'Fraunces', serif; font-weight: 300;
+  font-size: clamp(32px, 4.5vw, 44px); line-height: 1.15;
+  letter-spacing: -0.025em; color: var(--ink);
+  margin-bottom: 28px;
+  max-width: 760px; margin-left: auto; margin-right: auto;
+}
+.about-page .who-section h2 em { font-style: italic; color: var(--blue); }
+.about-page .who-section .lede {
+  text-align: center;
+  font-size: 17px; line-height: 1.65;
+  color: var(--slate);
+  max-width: 620px; margin: 0 auto 56px;
+}
+.about-page .persona-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 720px) { .about-page .persona-grid { grid-template-columns: repeat(3, 1fr); } }
+.about-page .persona {
+  background: #fff;
+  border: 1px solid var(--cream-warm);
+  border-radius: 14px;
+  padding: 32px 28px;
+  position: relative;
+}
+.about-page .persona .num {
+  position: absolute;
+  top: 24px; right: 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--blue);
+  font-weight: 600;
+}
+.about-page .persona .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.about-page .persona h3 {
+  font-family: 'Fraunces', serif; font-weight: 400;
+  font-size: 24px; line-height: 1.15;
+  letter-spacing: -0.02em; color: var(--ink);
+  margin-bottom: 16px;
+}
+.about-page .persona h3 em { font-style: italic; color: var(--blue); }
+.about-page .persona .quote {
+  font-family: 'Fraunces', serif; font-style: italic; font-weight: 300;
+  font-size: 15px; line-height: 1.5;
+  color: var(--slate);
+  padding: 16px 0;
+  margin-bottom: 16px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.about-page .persona p { font-size: 14px; color: var(--slate); line-height: 1.6; }
+.about-page .persona p strong { color: var(--ink); font-weight: 700; }
+
+.about-page .you-callout {
+  margin-top: 56px;
+  background: var(--blue);
+  border-radius: 12px;
+  padding: 36px 40px;
+  color: #fff;
+  text-align: center;
+}
+.about-page .you-callout h3 {
+  font-family: 'Fraunces', serif; font-weight: 300;
+  font-size: clamp(22px, 3vw, 28px);
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+  line-height: 1.25;
+}
+.about-page .you-callout h3 em { font-style: italic; color: var(--star-warm); }
+.about-page .you-callout p {
+  font-size: 15px; color: rgba(255, 255, 255, 0.85);
+  max-width: 480px; margin: 0 auto 20px;
+  line-height: 1.6;
+}
+.about-page .you-callout .cta {
+  display: inline-block;
+  background: var(--star-warm); color: var(--midnight);
+  padding: 12px 26px; font-size: 14px; font-weight: 600;
+  text-decoration: none; border-radius: 8px;
+  letter-spacing: -0.005em;
+}
+
+/* ──────────── TECHNICAL ADDENDUM ──────────── */
+.about-page .technical-addendum {
+  background: var(--midnight);
+  padding: 56px 40px;
+  position: relative;
+  overflow: hidden;
+}
+.about-page .technical-addendum .ambient { position: absolute; inset: 0; opacity: 0.3; pointer-events: none; }
+.about-page .technical-addendum .inner {
+  position: relative;
+  max-width: 580px; margin: 0 auto;
+  color: rgba(255, 255, 255, 0.8);
+}
+.about-page .technical-addendum .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--star-warm);
+  text-align: center;
+  margin-bottom: 18px;
+}
+.about-page .technical-addendum h3 {
+  font-family: 'Fraunces', serif; font-weight: 300;
+  font-size: 22px; letter-spacing: -0.015em;
+  color: #fff; text-align: center;
+  margin-bottom: 22px;
+}
+.about-page .technical-addendum h3 em { font-style: italic; color: var(--star-warm); }
+.about-page .technical-addendum p {
+  font-family: 'Fraunces', serif; font-weight: 300;
+  font-size: 16px; line-height: 1.65;
+  margin-bottom: 14px;
+}
+.about-page .technical-addendum p em { font-style: italic; color: var(--star-warm); }
+
+/* ──────────── FOOTER ──────────── */
+.about-page .page-foot {
+  background: var(--midnight);
+  padding: 48px 40px 36px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+}
+.about-page .page-foot .top {
+  max-width: 980px; margin: 0 auto 32px;
+  display: grid; grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 720px) { .about-page .page-foot .top { grid-template-columns: 1.5fr 1fr 1fr 1fr; } }
+.about-page .page-foot .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.about-page .page-foot .brand svg {
+  color: var(--star-warm);
+  filter: drop-shadow(0 0 4px rgba(255, 216, 156, 0.4));
+}
+.about-page .page-foot .brand .word {
+  font-family: 'Fraunces', serif; font-weight: 400;
+  font-size: 22px; letter-spacing: -0.02em; color: #fff;
+}
+.about-page .page-foot .tagline {
+  font-family: 'Fraunces', serif; font-style: italic; font-weight: 300;
+  font-size: 14px; color: rgba(255, 255, 255, 0.55);
+}
+.about-page .page-foot .col h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--star-warm);
+  font-weight: 600; margin-bottom: 14px;
+}
+.about-page .page-foot .col ul { list-style: none; margin: 0; padding: 0; }
+.about-page .page-foot .col li { margin-bottom: 8px; }
+.about-page .page-foot .col a {
+  color: rgba(255, 255, 255, 0.6); text-decoration: none;
+  font-size: 13px;
+}
+.about-page .page-foot .bottom {
+  max-width: 980px; margin: 0 auto;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+  flex-wrap: wrap; gap: 12px;
+}
