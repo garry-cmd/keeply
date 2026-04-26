@@ -7314,6 +7314,52 @@ export default function App() {
               Ask First Mate…
             </div>
           </div>
+          {/* Prefab quick-question chips — tap to send straight to FM */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              marginTop: 7,
+              overflowX: 'auto',
+              paddingBottom: 2,
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {[
+              { label: "What's overdue?", q: "What's overdue on the boat?" },
+              { label: 'Parts I need', q: 'What parts do I need to order?' },
+              { label: 'Ready to sail?', q: 'Is the boat ready for a passage?' },
+              { label: 'Before haul-out?', q: 'What should I do before haul-out?' },
+            ].map(function (chip) {
+              return (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={function (e) {
+                    e.stopPropagation();
+                    setFmPending(chip.q);
+                    setShowFirstMatePanel(true);
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    background: 'rgba(77,166,255,0.08)',
+                    border: '1px solid rgba(77,166,255,0.22)',
+                    color: 'rgba(255,255,255,0.75)',
+                    padding: '5px 11px',
+                    borderRadius: 14,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -9430,8 +9476,9 @@ export default function App() {
                       );
                     })()}
                   </div>
-                  {/* Vessel card action footer — Option B */}
-                  {(function () {
+                  {/* Vessel card action footer — Option B (hidden until expanded; tap header to reveal) */}
+                  {isExpanded &&
+                    (function () {
                     const activeTab = equipTab[vesselEq.id] || 'info';
                     const tapTab = function (t) {
                       if (isExpanded && activeTab === t) {
