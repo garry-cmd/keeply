@@ -24314,15 +24314,9 @@ export default function App() {
               >
                 {[
                   {
-                    key: 'alertInApp',
-                    label: 'In-app alerts',
-                    sub: 'Bell icon in header',
-                    enabled: true,
-                  },
-                  {
                     key: 'alertEmail',
                     label: 'Email digest',
-                    sub: 'Daily summary to ' + (profilePrefs.emailAddress || 'your email'),
+                    sub: 'Weekly summary to ' + (profilePrefs.emailAddress || 'your email'),
                     enabled: true,
                   },
                 ].map(function (item, i) {
