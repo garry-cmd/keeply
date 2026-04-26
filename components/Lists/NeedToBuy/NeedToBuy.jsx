@@ -17,6 +17,7 @@ export default function NeedToBuy({ activeVesselId }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('needed');
   const [busyId, setBusyId] = useState(null);
+  const [receivingItem, setReceivingItem] = useState(null);
 
   const load = useCallback(async () => {
     if (!activeVesselId) {
@@ -59,6 +60,57 @@ export default function NeedToBuy({ activeVesselId }) {
       console.error('updateState:', error);
     }
     setBusyId(null);
+  }
+
+  // Receive flow — create a supply from the saved_part and link them.
+  async function receiveAndCreateSupply(savedPart, supplyData) {
+    setBusyId(savedPart.id);
+    const { data: created, error: insertErr } = await supabase
+      .from('supplies')
+      .insert({
+        vessel_id: activeVesselId,
+        equipment_id: supplyData.equipment_id || null,
+        location_id: supplyData.location_id || null,
+        name: savedPart.name,
+        notes: savedPart.notes || (savedPart.vendor ? 'Bought from ' + savedPart.vendor : null),
+        in_stock: supplyData.quantity || 1,
+        min_stock: 0,
+        unit: supplyData.unit || null,
+      })
+      .select()
+      .single();
+    if (insertErr) {
+      console.error('receive — supply insert:', insertErr);
+      setBusyId(null);
+      return false;
+    }
+    const patch = {
+      state: 'received',
+      received_at: new Date().toISOString(),
+      supply_id: created.id,
+    };
+    const { error: updateErr } = await supabase
+      .from('saved_parts')
+      .update(patch)
+      .eq('id', savedPart.id);
+    if (updateErr) {
+      console.error('receive — saved_part update:', updateErr);
+      // The supply was already created — leave it. Don't try to roll back.
+      setBusyId(null);
+      return false;
+    }
+    setItems(function (prev) {
+      return prev.map(function (it) {
+        return it.id === savedPart.id ? Object.assign({}, it, patch) : it;
+      });
+    });
+    setBusyId(null);
+    return true;
+  }
+
+  // Receive without creating a supply — just advance state to 'received'.
+  async function receiveSkipSupply(savedPart) {
+    await updateState(savedPart.id, 'received');
   }
 
   async function removeItem(id) {
@@ -184,7 +236,7 @@ export default function NeedToBuy({ activeVesselId }) {
                 busy={busyId === item.id}
                 onAdvance={function () {
                   if (item.state === 'needed') updateState(item.id, 'ordered');
-                  else if (item.state === 'ordered') updateState(item.id, 'received');
+                  else if (item.state === 'ordered') setReceivingItem(item);
                 }}
                 onRevert={function () {
                   if (item.state === 'ordered') updateState(item.id, 'needed');
@@ -195,6 +247,22 @@ export default function NeedToBuy({ activeVesselId }) {
             );
           })}
         </div>
+      )}
+
+      {receivingItem && (
+        <ReceiveModal
+          savedPart={receivingItem}
+          activeVesselId={activeVesselId}
+          onClose={function () { setReceivingItem(null); }}
+          onAddToInventory={async function (supplyData) {
+            const ok = await receiveAndCreateSupply(receivingItem, supplyData);
+            if (ok) setReceivingItem(null);
+          }}
+          onSkip={async function () {
+            await receiveSkipSupply(receivingItem);
+            setReceivingItem(null);
+          }}
+        />
       )}
     </div>
   );
@@ -421,3 +489,341 @@ function PartRow({ item, busy, onAdvance, onRevert, onRemove }) {
     </div>
   );
 }
+
+// ReceiveModal — opens when user taps "Mark received" on an ordered saved_part.
+// Two paths out:
+//   1. Add to inventory → creates a supply row (with qty/equipment/location), advances state to 'received', links via supply_id
+//   2. Skip — just mark received → advances state only, no supply row
+// Loads its own equipment + locations on mount (lazy — no eager fetch in NeedToBuy).
+function ReceiveModal({ savedPart, activeVesselId, onClose, onAddToInventory, onSkip }) {
+  const [equipment, setEquipment] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
+  const [equipmentId, setEquipmentId] = useState('');
+  const [locationId, setLocationId] = useState('');
+  const [unit, setUnit] = useState('');
+  const [showNewLoc, setShowNewLoc] = useState(false);
+  const [newLocName, setNewLocName] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(function () {
+    if (!activeVesselId) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    Promise.all([
+      supabase.from('equipment').select('id, name').eq('vessel_id', activeVesselId).order('name'),
+      supabase.from('vessel_locations').select('id, name').eq('vessel_id', activeVesselId).order('name'),
+    ]).then(function (results) {
+      if (cancelled) return;
+      const eqRes = results[0];
+      const locRes = results[1];
+      if (eqRes.error) console.error('ReceiveModal equipment:', eqRes.error);
+      if (locRes.error) console.error('ReceiveModal locations:', locRes.error);
+      setEquipment(eqRes.data || []);
+      setLocations(locRes.data || []);
+      setLoading(false);
+    });
+    return function () { cancelled = true; };
+  }, [activeVesselId]);
+
+  async function handleAddNewLocation() {
+    const trimmed = (newLocName || '').trim();
+    if (!trimmed) return;
+    const { data, error } = await supabase
+      .from('vessel_locations')
+      .insert({ vessel_id: activeVesselId, name: trimmed })
+      .select()
+      .single();
+    if (error) {
+      if (error.code === '23505') alert('That location already exists.');
+      else console.error('ReceiveModal addLocation:', error);
+      return;
+    }
+    setLocations(function (prev) {
+      return [...prev, data].sort(function (a, b) {
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    });
+    setLocationId(data.id);
+    setNewLocName('');
+    setShowNewLoc(false);
+  }
+
+  async function handleAdd() {
+    if (busy) return;
+    setBusy(true);
+    await onAddToInventory({
+      quantity: parseInt(quantity, 10) || 1,
+      equipment_id: equipmentId || null,
+      location_id: locationId || null,
+      unit: unit.trim() || null,
+    });
+    setBusy(false);
+  }
+
+  async function handleSkip() {
+    if (busy) return;
+    setBusy(true);
+    await onSkip();
+    setBusy(false);
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'var(--bg-overlay)',
+        zIndex: 460,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 480,
+          background: 'var(--bg-card)',
+          borderRadius: '16px 16px 0 0',
+          padding: '20px 20px 32px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+        }}
+        onClick={function (e) { e.stopPropagation(); }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            background: 'var(--border)',
+            margin: '0 auto 16px',
+          }}
+        />
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: 'var(--text-muted)',
+            letterSpacing: '0.6px',
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}
+        >
+          Receive
+        </div>
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            marginBottom: 4,
+            lineHeight: 1.3,
+          }}
+        >
+          {savedPart.name}
+        </div>
+        {savedPart.source_label && (
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
+            For: {savedPart.source_label}
+          </div>
+        )}
+        {!savedPart.source_label && <div style={{ marginBottom: 16 }} />}
+
+        {loading && (
+          <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+            Loading…
+          </div>
+        )}
+
+        {!loading && (
+          <>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <Label>Quantity received</Label>
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={function (e) { setQuantity(e.target.value); }}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <Label>Unit</Label>
+                <input
+                  value={unit}
+                  onChange={function (e) { setUnit(e.target.value); }}
+                  placeholder="ea, gal, ft"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <Label>Linked equipment (optional)</Label>
+              <select
+                value={equipmentId}
+                onChange={function (e) { setEquipmentId(e.target.value); }}
+                style={inputStyle}
+              >
+                <option value="">— None —</option>
+                {equipment.map(function (e) {
+                  return (<option key={e.id} value={e.id}>{e.name}</option>);
+                })}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <Label>Storage location (optional)</Label>
+              {!showNewLoc && (
+                <>
+                  <select
+                    value={locationId}
+                    onChange={function (e) { setLocationId(e.target.value); }}
+                    style={inputStyle}
+                  >
+                    <option value="">— None —</option>
+                    {locations.map(function (l) {
+                      return (<option key={l.id} value={l.id}>{l.name}</option>);
+                    })}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={function () { setShowNewLoc(true); }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      marginTop: 6,
+                      color: 'var(--brand)',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + New location
+                  </button>
+                </>
+              )}
+              {showNewLoc && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    autoFocus
+                    value={newLocName}
+                    onChange={function (e) { setNewLocName(e.target.value); }}
+                    onKeyDown={function (e) {
+                      if (e.key === 'Enter') { e.preventDefault(); handleAddNewLocation(); }
+                      if (e.key === 'Escape') { setShowNewLoc(false); setNewLocName(''); }
+                    }}
+                    placeholder="e.g. Engine room shelf"
+                    style={Object.assign({}, inputStyle, { flex: 1 })}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddNewLocation}
+                    disabled={!newLocName.trim()}
+                    style={{
+                      padding: '0 14px',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'var(--brand)',
+                      color: '#fff',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: newLocName.trim() ? 'pointer' : 'default',
+                      opacity: newLocName.trim() ? 1 : 0.5,
+                    }}
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={function () { setShowNewLoc(false); setNewLocName(''); }}
+                    style={{
+                      padding: '0 12px',
+                      borderRadius: 10,
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                      color: 'var(--text-muted)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleSkip}
+                disabled={busy}
+                style={{
+                  flex: 1,
+                  padding: '11px 0',
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-subtle)',
+                  color: 'var(--text-secondary)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: busy ? 'default' : 'pointer',
+                  opacity: busy ? 0.5 : 1,
+                }}
+              >
+                Skip — just mark received
+              </button>
+              <button
+                onClick={handleAdd}
+                disabled={busy}
+                style={{
+                  flex: 1,
+                  padding: '11px 0',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: 'var(--brand)',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: busy ? 'default' : 'pointer',
+                  opacity: busy ? 0.5 : 1,
+                }}
+              >
+                Add to inventory
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Label({ children }) {
+  return (
+    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  border: '1px solid var(--border)',
+  borderRadius: 10,
+  padding: '10px 14px',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  outline: 'none',
+  background: 'var(--bg-subtle)',
+  color: 'var(--text-primary)',
+};
