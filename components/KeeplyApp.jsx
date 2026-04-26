@@ -114,7 +114,23 @@ function classifyScannedDoc(fields) {
 // owner_name, vessel_name) fill in only when currently empty — we don't want
 // a user's "Frodo" nickname replaced by the registration's full legal name.
 function scanCommitPayload(fields, existingVessel) {
-  const passport = vesselInfoPayload(fields || {});
+  // Build passport partial. CRITICAL: include only keys actually present in
+  // the scan. Absent keys must NOT be set to null — doing so would wipe data
+  // saved from a previous scan. (vesselInfoPayload's full-shape behavior is
+  // correct for the manual edit form, where empty input means "clear" — but
+  // wrong for partial scans, where empty means "this doc didn't have it".)
+  const passport = {};
+  for (let i = 0; i < VESSEL_INFO_KEYS.length; i++) {
+    const k = VESSEL_INFO_KEYS[i];
+    const raw = fields ? fields[k] : undefined;
+    if (raw === undefined || raw === null || String(raw).trim() === '') continue;
+    if (VESSEL_INFO_NUMERIC_KEYS.indexOf(k) >= 0) {
+      const n = parseFloat(raw);
+      if (isFinite(n)) passport[k] = n;
+    } else {
+      passport[k] = String(raw).trim();
+    }
+  }
   const topLevel = {};
   const topLevelMap = [
     ['vessel_name', 'vesselName'],
