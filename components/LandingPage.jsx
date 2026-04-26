@@ -3614,6 +3614,19 @@ export default function LandingPage() {
           )}
           {!isMobile && (
             <a
+              href="/about"
+              style={{
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.6)',
+                textDecoration: 'none',
+                padding: '6px 14px',
+              }}
+            >
+              About
+            </a>
+          )}
+          {!isMobile && (
+            <a
               href="/faq"
               style={{
                 fontSize: 13,
@@ -4620,6 +4633,12 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            <a
+              href="/about"
+              style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}
+            >
+              About
+            </a>
             <a
               href="/faq"
               style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}
