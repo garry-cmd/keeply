@@ -8,6 +8,7 @@ import {
   trackPlanSelected,
   trackSignupCompleted,
 } from '../lib/analytics';
+import HeroAppLoop from './marketing/HeroAppLoop';
 
 const BRAND = '#0f4c8a';
 const NAVY = '#071e3d';
@@ -956,6 +957,52 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ── Banner separator: signals "next is also a hero" ───────────────── */}
+      <div
+        style={{
+          padding: isMobile ? '24px 16px' : '32px 24px',
+          textAlign: 'center',
+          background: '#040f1f',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: GOLD,
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          See Keeply in action
+          <span style={{ fontSize: 14, lineHeight: 1 }}>↓</span>
+        </div>
+      </div>
+
+      {/* ── Hero #2: animated phone-mockup loop ──────────────────────────────
+          Stylized representation of Keeply running on a phone, cycling through
+          5 scenes (~35s loop). Lives in components/marketing/HeroAppLoop.jsx.
+          Future: swap for real <video> element once the SV IRENE walkthrough
+          is recorded — same hero slot, one-line component change. */}
+      <section
+        style={{
+          padding: isMobile ? '40px 16px 56px' : '72px 24px 96px',
+          background: `radial-gradient(ellipse at 50% 30%, ${NAVY_MID} 0%, ${NAVY} 65%)`,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <HeroAppLoop size={isMobile ? 'mobile' : 'desktop'} />
       </section>
 
       {/* ── Social proof strip ── */}
