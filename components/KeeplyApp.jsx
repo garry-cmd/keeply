@@ -7267,8 +7267,43 @@ export default function App() {
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {saving && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Saving…</span>}
+          <button
+            type="button"
+            onClick={function () {
+              setShowProfilePanel(true);
+            }}
+            aria-label="Open profile"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.10)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+              color: 'rgba(255,255,255,0.85)',
+              fontFamily: 'inherit',
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
         </div>
       </div>
       {/* ── First Mate input bar — sparkle icon, always sticky ── */}
@@ -7313,52 +7348,6 @@ export default function App() {
             >
               Ask First Mate…
             </div>
-          </div>
-          {/* Prefab quick-question chips — tap to send straight to FM */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 6,
-              marginTop: 7,
-              overflowX: 'auto',
-              paddingBottom: 2,
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-            }}
-          >
-            {[
-              { label: "What's overdue?", q: "What's overdue on the boat?" },
-              { label: 'Parts I need', q: 'What parts do I need to order?' },
-              { label: 'Ready to sail?', q: 'Is the boat ready for a passage?' },
-              { label: 'Before haul-out?', q: 'What should I do before haul-out?' },
-            ].map(function (chip) {
-              return (
-                <button
-                  key={chip.label}
-                  type="button"
-                  onClick={function (e) {
-                    e.stopPropagation();
-                    setFmPending(chip.q);
-                    setShowFirstMatePanel(true);
-                  }}
-                  style={{
-                    flexShrink: 0,
-                    background: 'rgba(77,166,255,0.08)',
-                    border: '1px solid rgba(77,166,255,0.22)',
-                    color: 'rgba(255,255,255,0.75)',
-                    padding: '5px 11px',
-                    borderRadius: 14,
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {chip.label}
-                </button>
-              );
-            })}
           </div>
         </div>
       )}
@@ -7569,6 +7558,60 @@ export default function App() {
               </div>
             );
           })()}
+          {/* First Mate */}
+          {(function () {
+            const active = view === 'customer' && tab === 'firstmate-standalone';
+            return (
+              <button
+                onClick={function () {
+                  setView('customer');
+                  setTab('firstmate-standalone');
+                }}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: 3,
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  padding: '0 0 10px',
+                  color: active ? '#f5a623' : 'rgba(255,255,255,0.28)',
+                  fontFamily: 'inherit',
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="3" />
+                  <line x1="12" y1="2" x2="12" y2="6" />
+                  <line x1="12" y1="18" x2="12" y2="22" />
+                  <line x1="2" y1="12" x2="6" y2="12" />
+                  <line x1="18" y1="12" x2="22" y2="12" />
+                </svg>
+                <span
+                  style={{
+                    fontSize: 7.5,
+                    fontWeight: 700,
+                    letterSpacing: '0.3px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  First Mate
+                </span>
+              </button>
+            );
+          })()}
           {/* Lists — Session 1: routes to ListsTab which renders LandHoShell until beta_features includes 'lists' */}
           {(function () {
             const active = view === 'customer' && tab === 'lists-standalone';
@@ -7619,54 +7662,6 @@ export default function App() {
                   }}
                 >
                   Lists
-                </span>
-              </button>
-            );
-          })()}
-          {/* Profile */}
-          {(function () {
-            return (
-              <button
-                onClick={function () {
-                  setShowProfilePanel(true);
-                }}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  gap: 3,
-                  border: 'none',
-                  background: 'none',
-                  cursor: 'pointer',
-                  padding: '0 0 10px',
-                  color: 'rgba(255,255,255,0.28)',
-                  fontFamily: 'inherit',
-                }}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span
-                  style={{
-                    fontSize: 7.5,
-                    fontWeight: 700,
-                    letterSpacing: '0.3px',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Profile
                 </span>
               </button>
             );
