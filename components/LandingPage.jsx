@@ -3601,7 +3601,7 @@ export default function LandingPage() {
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {!isMobile && (
             <a
-              href="#pricing"
+              href="/pricing"
               style={{
                 fontSize: 13,
                 color: 'rgba(255,255,255,0.6)',
