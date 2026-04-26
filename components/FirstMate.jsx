@@ -161,7 +161,7 @@ async function fetchVesselContext(vesselId) {
   const sess = await supabase.auth.getSession();
   const token = sess?.data?.session?.access_token || SUPA_KEY;
   const h = { apikey: SUPA_KEY, Authorization: 'Bearer ' + token };
-  const [vR, tR, rR, lR, eR] = await Promise.all([
+  const [vR, tR, rR, lR, eR, spR, suR] = await Promise.all([
     fetch(`${SUPA_URL}/rest/v1/vessels?id=eq.${vesselId}&select=*`, { headers: h }),
     fetch(`${SUPA_URL}/rest/v1/maintenance_tasks?vessel_id=eq.${vesselId}&select=*`, {
       headers: h,
@@ -177,13 +177,23 @@ async function fetchVesselContext(vesselId) {
       `${SUPA_URL}/rest/v1/equipment?vessel_id=eq.${vesselId}&select=id,name,category,status,notes,logs`,
       { headers: h }
     ),
+    fetch(
+      `${SUPA_URL}/rest/v1/saved_parts?vessel_id=eq.${vesselId}&order=created_at.desc&select=*`,
+      { headers: h }
+    ),
+    fetch(
+      `${SUPA_URL}/rest/v1/supplies?vessel_id=eq.${vesselId}&order=name.asc&select=*,vessel_locations(name)`,
+      { headers: h }
+    ),
   ]);
-  const [vessels, tasks, repairs, logbook, equipment] = await Promise.all([
+  const [vessels, tasks, repairs, logbook, equipment, savedParts, supplies] = await Promise.all([
     vR.json(),
     tR.json(),
     rR.json(),
     lR.json(),
     eR.json(),
+    spR.json(),
+    suR.json(),
   ]);
   const v = vessels[0] || {};
   const prefix = v.vessel_type === 'motor' ? 'M/V' : 'S/V';
@@ -218,6 +228,7 @@ async function fetchVesselContext(vesselId) {
         lastService: t.last_service,
         dueDate: t.due_date,
         urgency: getTaskUrgency(t),
+        requiresHaulOut: t.requires_haul_out === true,
         recentNotes: recentLogs.length > 0 ? recentLogs : undefined,
       };
     }),
@@ -244,6 +255,26 @@ async function fetchVesselContext(vesselId) {
         status: e.status,
         notes: e.notes || null,
         recentLogs: recentLogs.length > 0 ? recentLogs : undefined,
+      };
+    }),
+    savedParts: (savedParts || []).map(function (s) {
+      return {
+        name: s.name,
+        state: s.state,
+        sourceType: s.source_type,
+        sourceLabel: s.source_label,
+        vendor: s.vendor,
+        price: s.price,
+      };
+    }),
+    supplies: (supplies || []).map(function (s) {
+      return {
+        name: s.name,
+        inStock: s.in_stock || 0,
+        minStock: s.min_stock || 0,
+        unit: s.unit,
+        location: s.vessel_locations ? s.vessel_locations.name : null,
+        notes: s.notes,
       };
     }),
   };

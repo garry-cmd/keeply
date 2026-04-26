@@ -136,6 +136,16 @@ export default function NeedToBuy({ activeVesselId }) {
 
   const filtered = items.filter(function (i) { return i.state === filter; });
 
+  // Section by source: R&M (task/repair) vs General (supply, manual, anything else).
+  // The pill (Needed/Ordered/Received) is the procurement-state filter; the
+  // sectioning is the kind-of-thing filter — orthogonal axes, both useful.
+  const rmItems = filtered.filter(function (i) {
+    return i.source_type === 'task' || i.source_type === 'repair';
+  });
+  const generalItems = filtered.filter(function (i) {
+    return i.source_type !== 'task' && i.source_type !== 'repair';
+  });
+
   return (
     <div style={{ padding: '14px 14px 80px' }}>
       <div
@@ -227,25 +237,41 @@ export default function NeedToBuy({ activeVesselId }) {
       )}
 
       {!loading && filtered.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map(function (item) {
-            return (
-              <PartRow
-                key={item.id}
-                item={item}
-                busy={busyId === item.id}
-                onAdvance={function () {
-                  if (item.state === 'needed') updateState(item.id, 'ordered');
-                  else if (item.state === 'ordered') setReceivingItem(item);
-                }}
-                onRevert={function () {
-                  if (item.state === 'ordered') updateState(item.id, 'needed');
-                  else if (item.state === 'received') updateState(item.id, 'ordered');
-                }}
-                onRemove={function () { removeItem(item.id); }}
-              />
-            );
-          })}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {rmItems.length > 0 && (
+            <SectionGroup
+              label="Repairs & Maintenance"
+              count={rmItems.length}
+              items={rmItems}
+              busyId={busyId}
+              onAdvance={function (item) {
+                if (item.state === 'needed') updateState(item.id, 'ordered');
+                else if (item.state === 'ordered') setReceivingItem(item);
+              }}
+              onRevert={function (item) {
+                if (item.state === 'ordered') updateState(item.id, 'needed');
+                else if (item.state === 'received') updateState(item.id, 'ordered');
+              }}
+              onRemove={removeItem}
+            />
+          )}
+          {generalItems.length > 0 && (
+            <SectionGroup
+              label="General"
+              count={generalItems.length}
+              items={generalItems}
+              busyId={busyId}
+              onAdvance={function (item) {
+                if (item.state === 'needed') updateState(item.id, 'ordered');
+                else if (item.state === 'ordered') setReceivingItem(item);
+              }}
+              onRevert={function (item) {
+                if (item.state === 'ordered') updateState(item.id, 'needed');
+                else if (item.state === 'received') updateState(item.id, 'ordered');
+              }}
+              onRemove={removeItem}
+            />
+          )}
         </div>
       )}
 
@@ -334,6 +360,51 @@ function ChecklistIcon() {
   );
 }
 
+function SectionGroup({ label, count, items, busyId, onAdvance, onRevert, onRemove }) {
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          padding: '0 4px 6px',
+          marginBottom: 4,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.6px',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+          }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>
+          {count}
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map(function (item) {
+          return (
+            <PartRow
+              key={item.id}
+              item={item}
+              busy={busyId === item.id}
+              onAdvance={function () { onAdvance(item); }}
+              onRevert={function () { onRevert(item); }}
+              onRemove={function () { onRemove(item.id); }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function PartRow({ item, busy, onAdvance, onRevert, onRemove }) {
   const advanceLabels = {
     needed: 'Mark ordered',
@@ -347,6 +418,7 @@ function PartRow({ item, busy, onAdvance, onRevert, onRemove }) {
   const sourceTypeLabels = {
     repair: 'For repair',
     task: 'For task',
+    supply: 'Restock',
     equipment: 'On equipment',
     manual: 'Manual entry',
   };

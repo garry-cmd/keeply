@@ -395,19 +395,25 @@ Preventing Collisions at Sea), Chapman Piloting & Seamanship.`;
 
 // ── Vessel-specific prompt (dynamic, not cached) ──────────────────────────────
 function buildVesselPrompt(ctx) {
-  const { vessel, tasks, repairs, logbook, equipment } = ctx;
+  const { vessel, tasks, repairs, logbook, equipment, savedParts, supplies } = ctx;
   const today = new Date().toISOString().split('T')[0];
 
-  const overdue = tasks.filter(function (t) {
+  // Haulout-flagged items are tracked separately — they're queued for the next
+  // time the boat is out of the water and aren't actionable in-water. Exclude
+  // them from active urgency buckets and surface them in their own section.
+  const activeTasks = tasks.filter(function (t) { return !t.requiresHaulOut; });
+  const haulTasks = tasks.filter(function (t) { return t.requiresHaulOut; });
+
+  const overdue = activeTasks.filter(function (t) {
     return t.urgency === 'critical' || t.urgency === 'overdue';
   });
-  const dueSoon = tasks.filter(function (t) {
+  const dueSoon = activeTasks.filter(function (t) {
     return t.urgency === 'due-soon';
   });
-  const ok = tasks.filter(function (t) {
+  const ok = activeTasks.filter(function (t) {
     return t.urgency === 'ok';
   });
-  const withNotes = tasks.filter(function (t) {
+  const withNotes = activeTasks.filter(function (t) {
     return t.recentNotes && t.recentNotes.length > 0;
   });
 
@@ -439,8 +445,14 @@ function buildVesselPrompt(ctx) {
   }, 0);
   const lastPassage = passages[0];
   const recentLog = (logbook || []).slice(0, 20);
-  const openRepairs = (repairs || []).filter(function (r) {
+  const allOpenRepairs = (repairs || []).filter(function (r) {
     return r.status !== 'closed';
+  });
+  const openRepairs = allOpenRepairs.filter(function (r) {
+    return r.requires_haul_out !== true;
+  });
+  const haulRepairs = allOpenRepairs.filter(function (r) {
+    return r.requires_haul_out === true;
   });
   const equipIssues = (equipment || []).filter(function (e) {
     return e.status === 'needs-service' || e.status === 'watch';
@@ -479,6 +491,7 @@ function buildVesselPrompt(ctx) {
 
   p +=
     '== MAINTENANCE ==\n' +
+    'Active maintenance only — items queued for the next haulout are listed separately under HAULOUT QUEUE.\n' +
     (overdue.length > 0
       ? 'OVERDUE (' + overdue.length + '):\n' + overdue.map(fmt).join('\n') + '\n\n'
       : 'No overdue tasks.\n\n') +
@@ -505,6 +518,7 @@ function buildVesselPrompt(ctx) {
     '== OPEN REPAIRS (' +
     openRepairs.length +
     ') ==\n' +
+    'Active repairs only — repairs queued for the next haulout are listed separately under HAULOUT QUEUE.\n' +
     (openRepairs.length > 0
       ? openRepairs
           .map(function (r) {
@@ -513,7 +527,7 @@ function buildVesselPrompt(ctx) {
             return line;
           })
           .join('\n')
-      : 'No open repairs.') +
+      : 'No open active repairs.') +
     '\n\n';
 
   p +=
@@ -594,6 +608,95 @@ function buildVesselPrompt(ctx) {
       );
     })();
 
+  // ── SAVED PARTS (procurement queue) ────────────────────────────────────────
+  // saved_parts is "what to buy" — bookmarks from AI parts suggestions on tasks
+  // and repairs, plus auto-pulled rows when a supply drops below min_stock.
+  // States: needed → ordered → received. Received rows still show here briefly
+  // so FM can answer "did I buy that yet?" — they're cleared by the user.
+  const sp = (savedParts || []);
+  const spNeeded = sp.filter(function (s) { return s.state === 'needed'; });
+  const spOrdered = sp.filter(function (s) { return s.state === 'ordered'; });
+  const spReceived = sp.filter(function (s) { return s.state === 'received'; });
+  p +=
+    '== SAVED PARTS (need to buy) ==\n' +
+    'Lifecycle: needed → ordered → received. "Restock" entries come from supplies that hit the min-stock threshold.\n' +
+    'Counts: ' + spNeeded.length + ' needed, ' + spOrdered.length + ' ordered, ' + spReceived.length + ' received.\n' +
+    (spNeeded.length > 0
+      ? '\nNEEDED:\n' +
+        spNeeded
+          .map(function (s) {
+            const sourceMap = {
+              repair: 'for repair',
+              task: 'for task',
+              supply: 'restock',
+              equipment: 'on equipment',
+              manual: 'manual entry',
+            };
+            const src = (s.sourceType ? (sourceMap[s.sourceType] || s.sourceType) : 'general');
+            const ctx = s.sourceLabel ? ' — ' + s.sourceLabel : '';
+            const vp = [s.vendor, s.price].filter(Boolean).join(' · ');
+            return '- ' + s.name + ' [' + src + ctx + ']' + (vp ? ' (' + vp + ')' : '');
+          })
+          .join('\n')
+      : '') +
+    (spOrdered.length > 0
+      ? '\n\nORDERED (awaiting arrival):\n' +
+        spOrdered
+          .map(function (s) {
+            return '- ' + s.name + (s.vendor ? ' from ' + s.vendor : '');
+          })
+          .join('\n')
+      : '') +
+    '\n\n';
+
+  // ── SUPPLIES ON BOARD (inventory) ──────────────────────────────────────────
+  // supplies is "what I already have" — qty + min_stock + location.
+  // The full list can be long; we summarise and surface low/out-of-stock items
+  // explicitly so FM can answer "do I have an X?" and "what am I running low on?"
+  const su = (supplies || []);
+  const lowStock = su.filter(function (s) {
+    return s.minStock > 0 && s.inStock <= s.minStock;
+  });
+  const fmtSupply = function (s) {
+    const qty = s.inStock + (s.unit ? ' ' + s.unit : '') +
+      (s.minStock > 0 ? ' (min ' + s.minStock + ')' : '');
+    const loc = s.location ? ' @ ' + s.location : '';
+    return '- ' + s.name + ': ' + qty + loc;
+  };
+  p +=
+    '== SUPPLIES ON BOARD ==\n' +
+    'Total tracked: ' + su.length + (lowStock.length > 0 ? ' (' + lowStock.length + ' at or below min stock)' : '') + '.\n' +
+    (lowStock.length > 0
+      ? '\nLOW / OUT OF STOCK:\n' + lowStock.map(fmtSupply).join('\n') + '\n'
+      : '') +
+    (su.length > 0
+      ? '\nFULL INVENTORY:\n' + su.slice(0, 40).map(fmtSupply).join('\n') +
+        (su.length > 40 ? '\n  …and ' + (su.length - 40) + ' more (truncated to keep context manageable)' : '')
+      : 'No supplies tracked yet.') +
+    '\n\n';
+
+  // ── HAULOUT QUEUE (deferred work) ──────────────────────────────────────────
+  // Items flagged as not actionable while the boat is in the water. Excluded
+  // from MAINTENANCE and OPEN REPAIRS counts above. Surface here so FM can
+  // answer "what's queued for the next haulout?" without polluting active work.
+  const haulCount = haulTasks.length + haulRepairs.length;
+  p +=
+    '== HAULOUT QUEUE (' + haulCount + ') ==\n' +
+    'Work deferred to the next time the boat is out of the water. Do not include these when answering "what\'s overdue" or "is the boat ready" — they are intentionally excluded from active maintenance and repair lists.\n' +
+    (haulCount > 0
+      ? (haulTasks.length > 0
+          ? '\nMaintenance:\n' + haulTasks.map(fmt).join('\n')
+          : '') +
+        (haulRepairs.length > 0
+          ? '\n\nRepairs:\n' + haulRepairs
+              .map(function (r) {
+                return '- ' + r.section + ': ' + r.description + ' (opened ' + r.date + ')';
+              })
+              .join('\n')
+          : '')
+      : 'Nothing queued.') +
+    '\n\n';
+
   p +=
     '== BEHAVIOUR ==\n' +
     'Blend vessel intelligence with app support naturally. If asked about the vessel, use the data above. ' +
@@ -601,7 +704,10 @@ function buildVesselPrompt(ctx) {
     'If asked about both in one message, answer both. ' +
     'CRITICAL: Never tell a user they cannot share a vessel or invite crew — Share Vessel is ungated and available to everyone. ' +
     'Actively scan logbook notes and completion notes for anomalies — flag any concerning patterns. ' +
-    'When asked if the boat is ready: check overdue tasks, open repairs, and equipment issues. ' +
+    'When asked if the boat is ready: check overdue tasks, open active repairs, and equipment issues — ignore the HAULOUT QUEUE for readiness questions, those are deferred work. ' +
+    'When asked "what do I need to buy" or similar: pull from SAVED PARTS NEEDED. ' +
+    'When asked "do I have an X" or "what am I low on": pull from SUPPLIES ON BOARD. Mention location when relevant. ' +
+    'When asked "what\'s queued for haulout": pull from HAULOUT QUEUE. ' +
     'Never invent vessel data. Speak directly and casually to the owner.\n\n' +
     '== FORMATTING ==\n' +
     'Your response is rendered as plain text on a mobile screen. Do NOT use markdown — no **bold**, no ## headers, no *italics*, no backticks, no tables. These show up as literal characters on screen and look broken.\n' +

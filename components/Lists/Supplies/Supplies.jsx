@@ -63,6 +63,42 @@ export default function Supplies({ activeVesselId }) {
     load();
   }, [load]);
 
+  // ── Auto-pull to Need to buy ────────────────────────────────────────────────
+  // When a supply's quantity drops to or below its min_stock threshold, create
+  // a saved_parts row in 'needed' state — but only if no open saved_part already
+  // exists for this supply (dedup via supply_id + state lookup). Receiving a
+  // saved_part naturally restocks via the existing Mark-received handoff, which
+  // pushes inStock back above threshold and silences future triggers.
+  async function maybeQueueRestock(supply) {
+    if (!supply || !supply.id) return;
+    const minStock = supply.min_stock || 0;
+    const inStock = supply.in_stock || 0;
+    if (minStock <= 0) return; // no threshold set, nothing to trigger
+    if (inStock > minStock) return; // above threshold, nothing to do
+    // Check if an open saved_part already exists for this supply
+    const { data: existing, error: selErr } = await supabase
+      .from('saved_parts')
+      .select('id, state')
+      .eq('supply_id', supply.id)
+      .in('state', ['needed', 'ordered'])
+      .limit(1);
+    if (selErr) {
+      console.error('maybeQueueRestock select:', selErr);
+      return;
+    }
+    if (existing && existing.length > 0) return; // already queued
+    const { error: insErr } = await supabase.from('saved_parts').insert({
+      vessel_id: supply.vessel_id,
+      source_type: 'supply',
+      source_id: supply.id,
+      source_label: supply.name,
+      supply_id: supply.id,
+      name: supply.name,
+      state: 'needed',
+    });
+    if (insErr) console.error('maybeQueueRestock insert:', insErr);
+  }
+
   async function adjustQuantity(id, delta) {
     const item = items.find(function (i) { return i.id === id; });
     if (!item) return;
@@ -85,6 +121,9 @@ export default function Supplies({ activeVesselId }) {
           return i.id === id ? Object.assign({}, i, { in_stock: item.in_stock }) : i;
         });
       });
+    } else {
+      // Fire-and-forget; do not block UI on the dedup query
+      maybeQueueRestock(Object.assign({}, item, { in_stock: newQty }));
     }
     setBusyId(null);
   }
@@ -116,6 +155,7 @@ export default function Supplies({ activeVesselId }) {
           return (a.name || '').localeCompare(b.name || '');
         });
       });
+      maybeQueueRestock(data);
     } else {
       const { error } = await supabase
         .from('supplies')
@@ -143,6 +183,12 @@ export default function Supplies({ activeVesselId }) {
             return (a.name || '').localeCompare(b.name || '');
           });
       });
+      // Synthesize the full row for the threshold check (payload only has
+      // edit-form fields, not vessel_id which the helper needs)
+      const existing = items.find(function (i) { return i.id === payload.id; });
+      if (existing) {
+        maybeQueueRestock(Object.assign({}, existing, payload));
+      }
     }
     setEditingItem(null);
   }
