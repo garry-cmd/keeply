@@ -25693,51 +25693,160 @@ export default function App() {
                 marginBottom: 14,
               }}
             />
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={function () {
-                  var tid = noteSheetTask.id;
-                  setNoteSheetTask(null);
-                  setNoteSheetVal('');
-                  toggleTask(tid, '');
-                }}
-                style={{
-                  flex: 1,
-                  padding: '11px 0',
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-subtle)',
-                  color: 'var(--text-secondary)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Skip note
-              </button>
-              <button
-                onClick={function () {
-                  var tid = noteSheetTask.id;
-                  var note = noteSheetVal;
-                  setNoteSheetTask(null);
-                  setNoteSheetVal('');
-                  toggleTask(tid, note);
-                }}
-                style={{
-                  flex: 2,
-                  padding: '11px 0',
-                  borderRadius: 10,
-                  border: 'none',
-                  background: 'var(--brand)',
-                  color: '#fff',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Mark Done
-              </button>
-            </div>
+            {(function () {
+              const currentTask =
+                tasks.find(function (tk) {
+                  return tk.id === noteSheetTask.id;
+                }) || noteSheetTask;
+              const currentPhotos = currentTask.photos || [];
+              const isUploading = !!uploadingRepairPhoto[noteSheetTask.id];
+              return (
+                <>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    Photos <span style={{ fontWeight: 400 }}>(optional)</span>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 6,
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      marginBottom: 16,
+                    }}
+                  >
+                    {currentPhotos.map(function (ph, i) {
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            border: '1px solid var(--border)',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <img
+                            src={ph.url}
+                            alt={ph.caption || 'Photo'}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                    <label
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 8,
+                        border: '1.5px dashed var(--border)',
+                        background: 'var(--bg-subtle)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: isUploading ? 'default' : 'pointer',
+                        color: 'var(--text-muted)',
+                        fontSize: 22,
+                        fontWeight: 300,
+                        flexShrink: 0,
+                        opacity: isUploading ? 0.5 : 1,
+                      }}
+                    >
+                      {isUploading ? '…' : '+'}
+                      {!isUploading && (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={async function (e) {
+                            var file = e.target.files && e.target.files[0];
+                            if (!file) return;
+                            var taskId = noteSheetTask.id;
+                            setUploadingRepairPhoto(function (prev) {
+                              var n = Object.assign({}, prev);
+                              n[taskId] = true;
+                              return n;
+                            });
+                            try {
+                              var compressed = await compressImage(file, 1200, 0.78);
+                              var url = await uploadToStorage(
+                                compressed,
+                                'task-photos/' + taskId
+                              );
+                              var newPhoto = { url: url, date: today(), caption: '' };
+                              var t = tasks.find(function (tk) {
+                                return tk.id === taskId;
+                              });
+                              var updatedPhotos = [...((t && t.photos) || []), newPhoto];
+                              await supa('maintenance_tasks', {
+                                method: 'PATCH',
+                                query: 'id=eq.' + taskId,
+                                body: { photos: updatedPhotos },
+                                prefer: 'return=minimal',
+                              });
+                              setTasks(function (prev) {
+                                return prev.map(function (tt) {
+                                  return tt.id === taskId
+                                    ? Object.assign({}, tt, { photos: updatedPhotos })
+                                    : tt;
+                                });
+                              });
+                            } catch (err) {
+                              console.error('Sheet photo upload failed:', err);
+                              setDbError(
+                                "Couldn't upload photo: " +
+                                  (err && err.message ? err.message : 'Unknown error')
+                              );
+                            } finally {
+                              setUploadingRepairPhoto(function (prev) {
+                                var n = Object.assign({}, prev);
+                                delete n[taskId];
+                                return n;
+                              });
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      )}
+                    </label>
+                  </div>
+                  <button
+                    onClick={function () {
+                      var tid = noteSheetTask.id;
+                      var note = noteSheetVal;
+                      setNoteSheetTask(null);
+                      setNoteSheetVal('');
+                      toggleTask(tid, note);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '13px 0',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'var(--brand)',
+                      color: '#fff',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Mark Done
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
