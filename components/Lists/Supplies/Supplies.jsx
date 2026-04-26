@@ -328,6 +328,7 @@ export default function Supplies({ activeVesselId }) {
             return (
               <div
                 key={item.id}
+                onClick={function () { setEditingItem(item); }}
                 style={{
                   background: 'var(--bg-card)',
                   border: '0.5px solid var(--border)',
@@ -337,6 +338,7 @@ export default function Supplies({ activeVesselId }) {
                   alignItems: 'center',
                   gap: 10,
                   opacity: busyId === item.id ? 0.5 : 1,
+                  cursor: 'pointer',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -407,9 +409,12 @@ export default function Supplies({ activeVesselId }) {
                     {item.notes && <span>{item.notes}</span>}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
+                  onClick={function (e) { e.stopPropagation(); }}
+                >
                   <button
-                    onClick={function () { adjustQuantity(item.id, -1); }}
+                    onClick={function (e) { e.stopPropagation(); adjustQuantity(item.id, -1); }}
                     disabled={busyId === item.id || item.in_stock === 0}
                     aria-label="Decrease quantity"
                     style={{
@@ -447,7 +452,7 @@ export default function Supplies({ activeVesselId }) {
                     )}
                   </div>
                   <button
-                    onClick={function () { adjustQuantity(item.id, 1); }}
+                    onClick={function (e) { e.stopPropagation(); adjustQuantity(item.id, 1); }}
                     disabled={busyId === item.id}
                     aria-label="Increase quantity"
                     style={{
@@ -465,24 +470,6 @@ export default function Supplies({ activeVesselId }) {
                     }}
                   >
                     +
-                  </button>
-                  <button
-                    onClick={function () { setEditingItem(item); }}
-                    aria-label="Edit"
-                    style={{
-                      marginLeft: 4,
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--text-muted)',
-                      fontSize: 16,
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                  >
-                    ⋯
                   </button>
                 </div>
               </div>
