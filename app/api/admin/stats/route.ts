@@ -258,6 +258,54 @@ export async function GET(req: NextRequest) {
     .filter((x): x is Orphan => x !== null)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  // ── Email verification status ─────────────────────────────────────────────────
+  // app_metadata.email_self_verified is set by /api/send-verification (false on
+  // signup) and flipped to true by /api/verify-email. Users with the key absent
+  // are legacy/OAuth — exempt from verification.
+  type PendingUser = {
+    id: string;
+    email: string;
+    sentAt: string | null; // when current token was generated (verify_token_expires - 24h)
+    expiresAt: string | null;
+    expired: boolean;
+    daysSinceSignup: number;
+  };
+  let verifiedCount = 0;
+  let legacyCount = 0;
+  const pendingUsers: PendingUser[] = [];
+
+  for (const u of allUsers) {
+    const appMeta = (u.app_metadata as Record<string, unknown> | undefined) || {};
+    const flag = appMeta.email_self_verified;
+    if (flag === true) {
+      verifiedCount++;
+    } else if (flag === false) {
+      const expiresAt =
+        typeof appMeta.verify_token_expires === 'string' ? appMeta.verify_token_expires : null;
+      const sentAt = expiresAt
+        ? new Date(new Date(expiresAt).getTime() - 24 * 60 * 60 * 1000).toISOString()
+        : null;
+      const expired = expiresAt ? new Date(expiresAt).getTime() < now : false;
+      pendingUsers.push({
+        id: u.id,
+        email: u.email ?? '—',
+        sentAt,
+        expiresAt,
+        expired,
+        daysSinceSignup: Math.floor((now - new Date(u.created_at).getTime()) / MS),
+      });
+    } else {
+      // undefined — legacy user from autoconfirm era, or OAuth (no need to verify)
+      legacyCount++;
+    }
+  }
+  // Sort: expired first (action items), then by oldest signup
+  pendingUsers.sort((a, b) => {
+    if (a.expired !== b.expired) return a.expired ? -1 : 1;
+    return b.daysSinceSignup - a.daysSinceSignup;
+  });
+  const expiredCount = pendingUsers.filter((p) => p.expired).length;
+
   // ── App Store ratings (stubbed — wire up once credentials available) ──────────
   // iOS:     Use App Store Connect API → GET /v1/apps/{id}/customerReviews
   // Android: Use Google Play Developer API → reviews.list
@@ -309,6 +357,13 @@ export async function GET(req: NextRequest) {
     appStore,
     geography: { regions, icpCoverage, dataQuality: { withHomePort, total: vesselData.length } },
     orphans: { count: orphans.length, list: orphans.slice(0, 25) },
+    verification: {
+      verified: verifiedCount,
+      pending: pendingUsers.length,
+      expired: expiredCount,
+      legacy: legacyCount,
+      list: pendingUsers.slice(0, 50),
+    },
     fetchedAt: new Date().toISOString(),
   });
 }

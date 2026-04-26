@@ -58,6 +58,20 @@ interface AdminStats {
       daysAgo: number;
     }[];
   };
+  verification: {
+    verified: number;
+    pending: number;
+    expired: number;
+    legacy: number;
+    list: {
+      id: string;
+      email: string;
+      sentAt: string | null;
+      expiresAt: string | null;
+      expired: boolean;
+      daysSinceSignup: number;
+    }[];
+  };
   fetchedAt: string;
 }
 
@@ -355,6 +369,7 @@ export default function AdminPage() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [signupsOpen, setSignupsOpen] = useState(false);
   const [orphansOpen, setOrphansOpen] = useState(false);
+  const [verificationOpen, setVerificationOpen] = useState(false);
 
   // Delete-test-user modal state
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -473,7 +488,8 @@ export default function AdminPage() {
     );
   if (!stats) return null;
 
-  const { users, product, revenue, engagement, appStore, geography, orphans } = stats;
+  const { users, product, revenue, engagement, appStore, geography, orphans, verification } =
+    stats;
   const freeUsers = Math.max(0, users.total - revenue.activeSubscriptions - revenue.trialing);
   const convRate = pct(revenue.activeSubscriptions, users.total);
   const mrrPct = pct(revenue.mrr, GOALS.mrr);
@@ -1291,6 +1307,115 @@ export default function AdminPage() {
                     <tr>
                       <td colSpan={5} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
                         No paid intent orphans — every paid-intent signup converted ✓
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div style={{ ...s.card, marginTop: 10, padding: 0, overflow: 'hidden' }}>
+            <button
+              onClick={() => setVerificationOpen((o) => !o)}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '12px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span
+                style={{ fontSize: 11, color: muted, letterSpacing: '0.1em', fontFamily: sans }}
+              >
+                EMAIL VERIFICATION{' '}
+                <span
+                  style={{
+                    color: verification.expired > 0 ? '#fb923c' : muted,
+                    fontWeight: 700,
+                  }}
+                >
+                  ({verification.pending} pending
+                  {verification.expired > 0 ? `, ${verification.expired} expired` : ''})
+                </span>
+                <span
+                  style={{
+                    color: muted,
+                    fontWeight: 400,
+                    marginLeft: 8,
+                    textTransform: 'none',
+                    letterSpacing: 0,
+                  }}
+                >
+                  — {verification.verified} verified, {verification.legacy} legacy/OAuth (exempt)
+                </span>
+              </span>
+              <span style={{ fontSize: 11, color: muted, fontFamily: sans }}>
+                {verificationOpen ? '▲ collapse' : `▼ show ${verification.list.length}`}
+              </span>
+            </button>
+            {verificationOpen && (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={s.th}>Email</th>
+                    <th style={s.th}>Status</th>
+                    <th style={s.th}>Token Sent</th>
+                    <th style={s.th}>Signup Age</th>
+                    <th style={s.th}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {verification.list.map((v, i) => (
+                    <tr key={i}>
+                      <td style={{ ...s.td, color: '#cbd5e1' }}>{v.email}</td>
+                      <td style={s.td}>
+                        {v.expired ? (
+                          <span style={s.pill('#fb923c', '#2c1006')}>Expired</span>
+                        ) : (
+                          <span style={s.pill('#facc15', '#2a1f04')}>Pending</span>
+                        )}
+                      </td>
+                      <td style={s.td}>{v.sentAt ? fmtDate(v.sentAt) : '—'}</td>
+                      <td style={s.td}>
+                        {v.daysSinceSignup === 0
+                          ? 'today'
+                          : v.daysSinceSignup === 1
+                            ? '1 day ago'
+                            : `${v.daysSinceSignup} days ago`}
+                      </td>
+                      <td style={s.td}>
+                        <button
+                          onClick={() =>
+                            setDeleteTarget({
+                              id: v.id,
+                              email: v.email,
+                              context: 'Email Verification',
+                            })
+                          }
+                          style={{
+                            background: 'none',
+                            border: '1px solid #3f1d22',
+                            color: '#f87171',
+                            fontSize: 11,
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            cursor: 'pointer',
+                            fontFamily: sans,
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {verification.list.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ ...s.td, textAlign: 'center', padding: 20 }}>
+                        No pending verifications — everyone is verified or exempt ✓
                       </td>
                     </tr>
                   )}
