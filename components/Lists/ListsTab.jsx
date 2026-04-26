@@ -5,14 +5,16 @@ import { useBetaFeature } from './hooks/useBetaFeature';
 import LandHoShell from './LandHoShell';
 import NeedToBuy from './NeedToBuy/NeedToBuy';
 import Supplies from './Supplies/Supplies';
+import Haulout from './Haulout/Haulout';
 
 // ListsTab — entry point for the Lists bottom-nav tab.
 //
 // Session 1: schema + LandHoShell shipped behind 'lists' beta gate.
 // Session 2: Need to buy view live (saved_parts procurement queue).
 // Session 3: Supplies inventory view added; pill router introduced.
+// Session 4: Haulout queue added; lens over flagged maintenance_tasks + repairs.
 //
-// Sessions 4+: add Grocery + Haulout as additional sub-views.
+// Sessions 5+ will add Grocery as a fourth sub-view.
 // Kill switch: array_remove(beta_features, 'lists') reverts everyone to LandHoShell instantly.
 export default function ListsTab({ activeVesselId }) {
   const hasLists = useBetaFeature('lists');
@@ -30,6 +32,7 @@ export default function ListsTab({ activeVesselId }) {
           display: 'flex',
           gap: 6,
           padding: '12px 14px 0',
+          overflowX: 'auto',
         }}
       >
         <PillButton active={view === 'need-to-buy'} onClick={function () { setView('need-to-buy'); }}>
@@ -38,10 +41,14 @@ export default function ListsTab({ activeVesselId }) {
         <PillButton active={view === 'supplies'} onClick={function () { setView('supplies'); }}>
           Supplies
         </PillButton>
+        <PillButton active={view === 'haulout'} onClick={function () { setView('haulout'); }}>
+          Haulout
+        </PillButton>
       </div>
 
       {view === 'need-to-buy' && <NeedToBuy activeVesselId={activeVesselId} />}
       {view === 'supplies' && <Supplies activeVesselId={activeVesselId} />}
+      {view === 'haulout' && <Haulout activeVesselId={activeVesselId} />}
     </div>
   );
 }
@@ -59,6 +66,8 @@ function PillButton({ active, onClick, children }) {
         fontSize: 12,
         fontWeight: 700,
         cursor: 'pointer',
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
       }}
     >
       {children}
