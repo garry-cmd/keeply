@@ -21,9 +21,10 @@ const RED       = "#f87171";
 const AMBER     = "#fbbf24";
 const BLUE      = "#7eb3f0";
 const PURPLE    = "#a78bfa";
+const ORANGE    = "#fb923c"; // rebrand phase — flag as blocker
 
 // ─── DATA — updated each session by Claude ───────────────────────────────────
-// Last updated: April 22, 2026
+// Last updated: April 26, 2026
 
 const MONTHS = ["Apr","May","Jun","Jul","Aug","Sep","Oct"];
 
@@ -48,6 +49,13 @@ const PHASES = [
     color: "#94a3b8", // slate — foundational/infrastructure
     months: [0, 1],
     description: "Error boundary, PostHog, Prettier, pre-commit, smoke tests, API hardening",
+  },
+  {
+    id: "rebrand",
+    label: "Finalize rebrand",
+    color: ORANGE,
+    months: [0, 1],
+    description: "Brand audit + asset generation — BLOCKS iOS/Android submission",
   },
   {
     id: "social",
@@ -75,14 +83,15 @@ const PHASES = [
     label: "Android launch",
     color: GREEN,
     months: [2, 3],
-    description: "Google Play — assetlinks + Capacitor APK",
+    description: "Google Play — blocked on rebrand",
+    blocked: true,
   },
   {
     id: "ios",
     label: "iOS launch",
     color: GREEN,
     months: [3, 4],
-    description: "App Store — blocked on DUNS",
+    description: "App Store — blocked on rebrand",
     blocked: true,
   },
   {
@@ -129,6 +138,18 @@ const OKRS = [
     ],
   },
   {
+    phase: "rebrand",
+    objective: "Finalize rebrand (blocks iOS/Android)",
+    krs: [
+      { text: "Brand audit complete — every web/in-app/email surface uses Satoshi + navy + gold + shield", cur: 4, target: 12, unit: "surfaces", status: "on-track" },
+      { text: "Mobile app icons generated (iOS 1024×1024 set + Android adaptive icon)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "iOS launch screen + Android splash screen finalized", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "App Store screenshots + Play Store screenshots + feature graphic", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "OG / social share assets refreshed (og-image.jpg, twitter card, apple-touch-icon)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Email template chrome aligned with site brand (Resend confirmation, welcome, weekly digest)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+    ],
+  },
+  {
     phase: "social",
     objective: "Build community acquisition engine",
     krs: [
@@ -161,20 +182,21 @@ const OKRS = [
   },
   {
     phase: "android",
-    objective: "Android live on Google Play",
+    objective: "Android live on Google Play (blocked on rebrand)",
     krs: [
       { text: "assetlinks.json deployed to keeply.boats", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Play Store listing complete with screenshots", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "App passes review and is live", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Play Store listing complete with brand-consistent screenshots", cur: 0, target: 1, unit: "complete", status: "blocked" },
+      { text: "App passes review and is live", cur: 0, target: 1, unit: "complete", status: "blocked" },
     ],
   },
   {
     phase: "ios",
-    objective: "iOS live on App Store",
+    objective: "iOS live on App Store (blocked on rebrand)",
     krs: [
       { text: "DUNS number received", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Apple Developer account approved", cur: 0, target: 1, unit: "complete", status: "on-track" },
-      { text: "App passes App Store review", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "App Store listing complete with brand-consistent screenshots", cur: 0, target: 1, unit: "complete", status: "blocked" },
+      { text: "App passes App Store review", cur: 0, target: 1, unit: "complete", status: "blocked" },
     ],
   },
   {
@@ -213,8 +235,9 @@ const BACKLOG = [
   { name: "Camera equipment ID",status: "icebox",      effort: "M", notes: "Take a photo of an engine plate/equipment label → AI identifies make/model. Net-new feature (not a prompt tweak — requires new API route or extension of scan-document). Genuinely differentiated; no competitor does this. Post-launch." },
   { name: "AI Coins / Credits",  status: "icebox",      effort: "L", notes: "Replace per-month query limits with rollover coin balance. Revisit at 500+ users with real usage data." },
   { name: "Theme audit — restore light mode toggle", status: "icebox", effort: "L", notes: "Current state is dark-only. Full restoration requires auditing ~40% of KeeplyApp.jsx still using hardcoded colors and converting to CSS variables. Only do this if light mode is a real product requirement." },
-  { name: "Email verification + soft gates", status: "icebox", effort: "M", notes: "Banner + gates on /api/stripe/checkout, /api/invite, /api/cron/weekly-digest. Blocked by Supabase auto-confirm behavior: with \"Confirm email\" toggle OFF, email_confirmed_at is populated at signup and supabase.auth.resend({type:'signup'}) is a silent no-op for already-confirmed users (verified empirically Apr 22). Implementation requires either un-confirming users post-signup with service role (hack), rolling our own verification column, or moving to OAuth-primary auth (Google/Apple first, email second). At 14 users the fraud/spam/digest-cost risk is theoretical; revisit at 500+ users or earlier if invite abuse surfaces." },
+  { name: "Email verification + soft gates", status: "done", effort: "M", notes: "Shipped Apr 25-26 as custom verification flag (app_metadata.email_self_verified) layered on Supabase autoconfirm. Keeps zero-friction signup; users can self-verify on demand." },
   { name: "Finalize Share Vessel Permissions", status: "planned", effort: "M", notes: "Audit + tighten the member/owner model surfaced during Apr 22 doc-attach debugging. Today: members can update equipment and upload docs (works, via get_my_vessel_ids() RLS function); the equipment table has two overlapping RLS policies (one owner-only, one owner-or-member) that should be consolidated; no UI indicator of who owns the vessel vs who's a member; no role hierarchy beyond owner/member. Scope to define: what can members do (delete vessel? invite/remove other members? change billing? delete docs uploaded by others?), whether to add a viewer/read-only role, RLS cleanup (single policy per table), and UI affordances showing role + attribution (who attached this doc, who closed this repair)." },
+  { name: "Extract brand constants → lib/brand.ts", status: "icebox", effort: "S", notes: "Post-launch tech debt. Currently navy/gold/Satoshi constants are inlined in 4 files (SiteHeader, LandingPage, AboutClient, PricingClient). Extract to single source of truth so brand updates touch one file." },
 ];
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -407,7 +430,7 @@ export default function OKRPage() {
       </div>
 
       <div style={{ marginTop:32, paddingTop:14, borderTop:`1px solid ${BDR}`, fontSize:11, color:MUTED }}>
-        Updated by Claude · April 22, 2026 · Source of truth: <code style={{ color:TEXT }}>ROADMAP.md</code> in the repo.
+        Updated by Claude · April 26, 2026 · Source of truth: <code style={{ color:TEXT }}>ROADMAP.md</code> in the repo.
       </div>
     </div>
     </div>
