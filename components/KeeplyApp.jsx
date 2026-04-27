@@ -12810,7 +12810,7 @@ export default function App() {
                     }}
                   >
                     <div style={{ width: 3, background: repairUrgencyColor, flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
                           padding: '10px 14px',
