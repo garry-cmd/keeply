@@ -88,6 +88,23 @@ function FeatureIcon({ name }: { name: string }) {
     fill: 'none' as const,
     'aria-hidden': true as const,
   };
+  if (name === 'setup')
+    return (
+      <svg {...common}>
+        <path
+          d="M18 12L24 18L18 24L12 18Z"
+          stroke={stroke}
+          strokeWidth={sw}
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 9l3 3M27 9l-3 3M9 27l3-3M27 27l-3-3"
+          stroke={stroke}
+          strokeWidth={sw}
+          strokeLinecap="round"
+        />
+      </svg>
+    );
   if (name === 'maintenance')
     return (
       <svg {...common}>
@@ -184,6 +201,13 @@ const SECTIONS: Array<{
   Visual?: SectionVisual;
 }> = [
   {
+    id: 'setup',
+    icon: 'setup',
+    eyebrow: 'Setup',
+    title: 'Three minutes to start. Thirty to ninety percent.',
+    body: 'Tell Keeply what boat you have and the AI seeds your vessel — equipment list, maintenance schedules, common parts, the things most boats this size actually need. Three minutes gets you a real working system. Thirty more gets you to about ninety percent of where you want to be. Engines are the trickiest part — AI gets close on the major makes, but variant-specific intervals are worth confirming yourself. Upload your registration, insurance, or USCG document and Keeply scans it and fills in the passport fields for you.',
+  },
+  {
     id: 'maintenance',
     icon: 'maintenance',
     eyebrow: 'Maintenance',
@@ -244,8 +268,8 @@ const FIRST_MATE_SECTION: {
   id: 'first-mate',
   icon: 'firstmate',
   eyebrow: 'First Mate AI',
-  title: 'Help when you want it.',
-  body: 'First Mate has read your entire vessel history — every system, every service, every repair, every passage, every photo. Ask anything: "When was the impeller last changed?" "What is overdue?" "Is the boat ready?" It answers from your data, not from training. You stay in charge of what gets recorded; First Mate just helps you find it again.',
+  title: 'Your vessel knowledge, in one conversation.',
+  body: 'First Mate has read everything you put into Keeply — equipment, maintenance log, parts, repair notes, photos, passage entries — and turns it into something you can actually ask. "When did I last change the impeller?" "What is overdue?" "What part fits this engine?" It answers from your data, not from training. We keep the limits visible: First Mate is at its best when the answer is in your records, helpful when it can pattern-match across your gear, and honest when it cannot.',
   Visual: FirstMateVisual,
 };
 

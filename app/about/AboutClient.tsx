@@ -135,10 +135,11 @@ export default function AboutClient() {
       </section>
 
       {/* ──────────── FOUNDER'S NOTE ────────────
-          Verified true by Garry, April 2026:
-          — Port Ludlow departure
-          — August passage
-          — Three apps: Google Sheets, Evernote, Todoist
+          Verified true by Garry, April 2026 (sourced from About.docx):
+          — Pacific Northwest → Mexico, August 2025
+          — Ten years preparing the boat
+          — Excel sheet + to-do list (two tools, not three)
+          — S/V Irene, 35-foot cruising sailboat
           Do NOT edit these details without confirming with Garry. */}
       <section
         style={{
@@ -163,17 +164,17 @@ export default function AboutClient() {
 
           <div style={{ fontSize: isMobile ? 17 : 19, lineHeight: 1.7, color: 'rgba(255,255,255,0.88)' }}>
             <p style={{ marginBottom: 22 }}>
-              The first time I realized my maintenance system wasn't going to keep up was on an
-              August passage out of Port Ludlow. We'd been heading south long enough that Polaris
-              had dropped halfway down the sky — and I was thinking about the boat, about how much
-              I trusted her, and about how much that trust depended on me remembering things I
-              wasn't sure I was remembering.
+              In August of 2025 I finally made the big left turn out of the Pacific Northwest and
+              pointed the bow toward Mexico. It had taken me ten years to get the boat ready —
+              countless trips back and forth, parts ordered and re-ordered, a thousand small
+              decisions about systems I would later have to remember.
             </p>
 
             <p style={{ marginBottom: 22 }}>
-              I'd been keeping the boat's records across Google Sheets, Evernote, and Todoist.
-              Three apps, none of which talked to each other, none of them ever quite up to date.
-              When something needed servicing, I'd find out the next time I needed it.
+              My main tools for tracking all of it were an Excel sheet and a to-do list. My phone's
+              camera roll became nothing but photos of broken bolts and engine part numbers. I
+              tried apps on the market and found they took longer to set up than they were worth —
+              just a pretty version of the Excel sheet.
             </p>
 
             <blockquote
@@ -189,25 +190,35 @@ export default function AboutClient() {
                 letterSpacing: '-0.01em',
               }}
             >
-              "The boat that got me to that horizon deserved better than the patchwork I was
-              keeping for it."
+              "If not, then we just made another app that we will discard."
             </blockquote>
 
             <p style={{ marginBottom: 22 }}>
-              So I started Keeply. Not a maintenance app — there are plenty of those and most of
-              them are dreadful. A place where the boat's whole story lives:{' '}
+              So I built Keeply. The aim is simple —{' '}
               <strong style={{ color: WHITE, fontWeight: 700 }}>
-                every system, every part, every passage, every photo
+                every system, every part, every passage
               </strong>
-              . Where the next thing that needs doing surfaces before you have to remember it. And
-              when you want help finding something fast, First Mate is right there — it knows your
-              specific engine, your specific rigging, your specific home port.
+              , in one place. A real source of truth, not another silo. Easy enough that we
+              actually use it.
             </p>
 
             <p style={{ marginBottom: 0 }}>
-              I built it for myself first. Then for the boaters using it now — people who
-              actually keep boats, who know what a forgotten impeller costs, who have stood on a
-              deck at dusk and thought <em>there has to be a better way to do this</em>.
+              We make jokes about cruising being fixing things in exotic locations. The weekend
+              trip cancelled because of a simple breakdown. The mechanics laughing because it's
+              the height of the season. It's part of boating — boats are complicated systems and
+              they need attention. The hope with Keeply is to give you back a little of the time
+              you'd otherwise spend remembering what you forgot.
+            </p>
+
+            <p
+              style={{
+                marginTop: 28,
+                marginBottom: 0,
+                fontStyle: 'italic',
+                color: 'rgba(255,255,255,0.78)',
+              }}
+            >
+              Fairwinds and a following sea,
             </p>
           </div>
 
