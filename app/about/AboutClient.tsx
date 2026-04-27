@@ -561,8 +561,7 @@ export default function AboutClient() {
                 lineHeight: 1.6,
               }}
             >
-              Free for as long as you want. No credit card. No setup call. Just tell us about
-              your boat and we'll have you setup in minutes.
+              Free for as long as you want. No credit card. Sign up now and be onboard in 3 minutes.
             </p>
             <a
               href="/?plans=1"
