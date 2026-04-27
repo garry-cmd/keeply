@@ -20,19 +20,16 @@
 // so this component contains ONLY the body content for the route.
 
 import { useState, useEffect } from 'react';
-import {
-  MaintenanceVisual,
-  PartsVisual,
-  LogbookVisual,
-  MyBoatVisual,
-  FirstMateVisual,
-} from '../../components/marketing/FeatureVisuals';
 
-// Visual is optional: Repairs and Documents have no animated counterpart in
-// the existing visual library, so they keep the static SVG icon and stand on
-// copy alone. Acceptable: most users will scroll past 1-2 visual-less sections
-// without it feeling broken; replacing those with real screen captures is a
-// future content pass once the founder walkthrough is recorded.
+// Visuals on this page are now real product screenshots wrapped in a phone
+// bezel mockup (see PhoneScreenshot component below) — replacing the animated
+// SVG components from FeatureVisuals.jsx. Animated visuals are kept in the
+// codebase for any future use but are no longer referenced here.
+
+// Each section gets a real product screenshot wrapped in a phone bezel mockup.
+// Screenshots live in /public/images/features/{section-id}.{jpg|png}. If a file
+// is missing, PhoneScreenshot renders a neutral placeholder so the layout
+// never breaks during the content rollout.
 type SectionVisual = React.ComponentType;
 
 const NAVY = '#071e3d';
@@ -192,6 +189,111 @@ function FeatureIcon({ name }: { name: string }) {
   return null;
 }
 
+// ──────────── Phone bezel mockup ────────────
+// Wraps a product screenshot in a tasteful iPhone-style frame with a soft
+// drop shadow and a navy backdrop. Sized to feel the same scale as the
+// previous animated visuals on this page, so swapping in/out reads as a
+// content change, not a layout change.
+//
+// Two failure modes both look acceptable rather than broken:
+// 1. Image file missing → onError swaps to a placeholder gradient
+// 2. Image still loading → shows the placeholder until paint
+//
+// Screenshots should be exported at 1080×2340px ideally (modern iPhone
+// portrait), JPEG q72-78 progressive. Anything close to that aspect ratio
+// renders fine — object-fit: cover handles the crop.
+function PhoneFrame({ src, alt }: { src: string; alt: string }) {
+  const [errored, setErrored] = useState(false);
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: 280,
+        margin: '0 auto',
+        aspectRatio: '9 / 19.5',
+        background: '#0a0a0a',
+        borderRadius: 38,
+        padding: 8,
+        boxShadow:
+          '0 30px 60px -20px rgba(0,0,0,0.55), 0 18px 30px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset',
+      }}
+    >
+      {/* Notch */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 14,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 90,
+          height: 22,
+          background: '#0a0a0a',
+          borderRadius: 12,
+          zIndex: 2,
+        }}
+      />
+      {/* Inner screen */}
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          borderRadius: 30,
+          overflow: 'hidden',
+          background: errored
+            ? `linear-gradient(135deg, ${BRAND}, ${NAVY_MID})`
+            : NAVY,
+        }}
+      >
+        {!errored && (
+          <img
+            src={src}
+            alt={alt}
+            onError={() => setErrored(true)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'top center',
+              display: 'block',
+            }}
+          />
+        )}
+        {errored && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: 12,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+              padding: 24,
+              textAlign: 'center',
+            }}
+          >
+            Screenshot coming soon
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Factory — produces a zero-prop component bound to a specific image path,
+// matching the SectionVisual type so it slots into SECTIONS the same way the
+// animated visuals did.
+function makeShot(src: string, alt: string): SectionVisual {
+  const Shot = () => <PhoneFrame src={src} alt={alt} />;
+  Shot.displayName = `Shot(${src})`;
+  return Shot;
+}
+
 const SECTIONS: Array<{
   id: string;
   icon: string;
@@ -204,16 +306,33 @@ const SECTIONS: Array<{
     id: 'setup',
     icon: 'setup',
     eyebrow: 'Setup',
-    title: 'Three minutes to start. Thirty to ninety percent.',
-    body: 'Tell Keeply what boat you have and the AI seeds your vessel — equipment list, maintenance schedules, common parts, the things most boats this size actually need. Three minutes gets you a real working system. Thirty more gets you to about ninety percent of where you want to be. Engines are the trickiest part — AI gets close on the major makes, but variant-specific intervals are worth confirming yourself. Upload your registration, insurance, or USCG document and Keeply scans it and fills in the passport fields for you.',
+    title: 'Three minutes to start. Thirty to set up properly.',
+    body: 'Tell Keeply what boat you have and the AI seeds your vessel — the equipment, the maintenance items, and the things that make boats run. Three minutes gets you a real working system. A thirty-minute session of curating the details gets you completely set up. Automation makes this fast, and you stay in control of what gets recorded.',
+    Visual: makeShot('/images/features/setup.jpg', 'Onboarding screen'),
+  },
+  {
+    id: 'documents',
+    icon: 'documents',
+    eyebrow: 'Documents',
+    title: 'Registration, insurance, USCG. Snap and store.',
+    body: 'Take a photo or upload your registration, insurance, or USCG document — Keeply scans it and fills in the passport fields for you. HIN, USCG number, state reg, home port, carrier, policy number, expiration. Renewals get tracked, photos stay attached, everything is one tap away when you need it dockside.',
+    Visual: makeShot('/images/features/documents.jpg', 'Vessel card with documents'),
+  },
+  {
+    id: 'equipment',
+    icon: 'equipment',
+    eyebrow: 'Equipment',
+    title: 'Every piece of equipment on your boat with its own card.',
+    body: 'Make, model, year, photos, manuals, service log, parts. When you create a new equipment card, First Mate identifies the gear and builds the maintenance schedule for it — or enter it manually if you prefer. Either way, the equipment library is what makes everything else possible: Keeply knows your gear, so the maintenance schedule fits, the parts are right, and the answers are specific.',
+    Visual: makeShot('/images/features/equipment.jpg', 'Equipment card'),
   },
   {
     id: 'maintenance',
     icon: 'maintenance',
     eyebrow: 'Maintenance',
-    title: 'Every interval. Every system. Tracked properly.',
-    body: 'When a service is due, when it was last done, what notes you took at the time, what photos you captured. Keeply ships with maintenance schedules for the systems most boats actually have, then adapts to yours — adjust intervals, add custom items, or remove what does not apply. Tasks roll forward when you mark them done. Photos stay attached forever.',
-    Visual: MaintenanceVisual,
+    title: 'Every system. Every interval. Nothing missed.',
+    body: 'When a service is due, when it was last done, what notes you took at the time, what photos you captured. Every completed task adds to a permanent log on the equipment card — so the history of that engine, watermaker, or windlass lives with the gear, not in a separate notebook. Tasks roll forward when you mark them done. Photos stay attached forever.',
+    Visual: makeShot('/images/features/maintenance.jpg', 'Maintenance dashboard'),
   },
   {
     id: 'repairs',
@@ -221,15 +340,15 @@ const SECTIONS: Array<{
     eyebrow: 'Repairs',
     title: 'From open to closed, with photos and history.',
     body: 'A repair tracker that does not pretend to be a maintenance task. Open a repair when something breaks, attach photos, link the affected equipment, log notes as you work it. Close it when fixed. Every closed repair stays in the history of that equipment — for you, your insurance, or the next owner.',
-    // No animated visual — copy alone. Future: screen capture of repair flow.
+    Visual: makeShot('/images/features/repairs.jpg', 'Repair detail view'),
   },
   {
     id: 'parts',
     icon: 'parts',
     eyebrow: 'Parts',
     title: 'Find the right part. Order it without the hunt.',
-    body: 'Open any maintenance item or repair — Keeply already knows your equipment make and model. One tap searches Fisheries Supply, West Marine, Defender, and more for the exact part. No part numbers. No browsing. AI suggests the part. You verify and order.',
-    Visual: PartsVisual,
+    body: 'Open any maintenance item or repair — Keeply already knows your equipment make and model. One tap searches major marine retailers for the exact part. Save parts to a shopping list and add to it as you go, so the next time you place an order, everything you need is in one cart.',
+    Visual: makeShot('/images/features/parts.jpg', 'Find parts results'),
   },
   {
     id: 'logbook',
@@ -237,23 +356,7 @@ const SECTIONS: Array<{
     eyebrow: 'Logbook',
     title: 'Live passages. Watches. Conditions. Engine hours.',
     body: 'Start a passage when you cast off and tap your way through. Watch changes, position, course over ground, wind and sea state, engine hours — all logged in seconds. Pre-departure and arrival checklists you can edit (Pro). The full history feeds back into First Mate so it knows where the boat has been and how it has been used.',
-    Visual: LogbookVisual,
-  },
-  {
-    id: 'documents',
-    icon: 'documents',
-    eyebrow: 'Documents',
-    title: 'Registration, insurance, USCG. Snap and store.',
-    body: 'Take a photo of your vessel registration and Keeply auto-extracts HIN, USCG number, state reg, and home port. Same for insurance — carrier, policy number, expiration. Renewals get tracked, photos get stored, everything is one tap away when you need it dockside.',
-    // No animated visual — copy alone. Future: screen capture of scan flow.
-  },
-  {
-    id: 'equipment',
-    icon: 'equipment',
-    eyebrow: 'Equipment',
-    title: 'Every system on your boat, by make and model.',
-    body: 'Engines, watermakers, autopilots, batteries, anchors, electronics — every system on your boat with its own card. Make, model, year, photos, manuals, service log. The equipment library is what makes everything else possible: Keeply knows your gear, so the maintenance schedule fits, the parts are right, and First Mate answers are specific.',
-    Visual: MyBoatVisual,
+    Visual: makeShot('/images/features/logbook.jpg', 'Active passage logbook'),
   },
 ];
 
@@ -270,7 +373,7 @@ const FIRST_MATE_SECTION: {
   eyebrow: 'First Mate AI',
   title: 'Your vessel knowledge, in one conversation.',
   body: 'First Mate has read everything you put into Keeply — equipment, maintenance log, parts, repair notes, photos, passage entries — and turns it into something you can actually ask. "When did I last change the impeller?" "What is overdue?" "What part fits this engine?" It answers from your data, not from training. We keep the limits visible: First Mate is at its best when the answer is in your records, helpful when it can pattern-match across your gear, and honest when it cannot.',
-  Visual: FirstMateVisual,
+  Visual: makeShot('/images/features/first-mate.jpg', 'First Mate conversation'),
 };
 
 export default function FeaturesClient() {
@@ -320,7 +423,7 @@ export default function FeaturesClient() {
             maxWidth: 720,
           }}
         >
-          Everything your boat needs,{' '}
+          Everything to manage your boat,{' '}
           <span style={{ color: GOLD, whiteSpace: 'nowrap' }}>in one place.</span>
         </h1>
         <p
