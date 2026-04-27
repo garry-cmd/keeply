@@ -86,10 +86,22 @@ export default function AboutClient() {
           paddingTop: isMobile ? 80 : 120,
           paddingBottom: isMobile ? 56 : 88,
           textAlign: 'center',
-          background: `radial-gradient(ellipse at 50% 0%, ${NAVY_MID} 0%, ${NAVY} 60%)`,
           borderBottom: '1px solid rgba(255,255,255,0.06)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* Background photo + dark navy overlay */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+          <img
+            src="/images/about/pacific-bay.jpg"
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 40%' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(7,30,61,0.7)' }} />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
           <HeroLogo size={isMobile ? 72 : 96} />
         </div>
@@ -119,6 +131,7 @@ export default function AboutClient() {
           Keeply is where your boat's whole record lives — every system, every part, every
           passage. Here's why I built it.
         </p>
+        </div>
       </section>
 
       {/* ──────────── FOUNDER'S NOTE ────────────
@@ -130,10 +143,21 @@ export default function AboutClient() {
       <section
         style={{
           ...sectionPad,
-          background: NAVY,
           borderBottom: '1px solid rgba(255,255,255,0.06)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* Background photo + dark navy overlay */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+          <img
+            src="/images/about/cockpit-selfie.jpg"
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(7,30,61,0.85)' }} />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <div style={{ ...eyebrow, color: ACCENT }}>A note from the founder</div>
 
@@ -220,6 +244,7 @@ export default function AboutClient() {
             </div>
           </div>
         </div>
+        </div>
       </section>
 
       {/* ──────────── WHAT KEEPLY IS ──────────── */}
@@ -228,8 +253,20 @@ export default function AboutClient() {
           ...sectionPad,
           background: NAVY_MID,
           borderBottom: '1px solid rgba(255,255,255,0.06)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* Background photo + dark navy overlay */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+          <img
+            src="/images/about/engine-room.jpg"
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(7,30,61,0.88)' }} />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={eyebrow}>What we're building</div>
           <h2
@@ -406,10 +443,21 @@ export default function AboutClient() {
             </ul>
           </div>
         </div>
+        </div>
       </section>
 
       {/* ──────────── WHO IT'S FOR ──────────── */}
-      <section style={{ ...sectionPad, background: NAVY }}>
+      <section style={{ ...sectionPad, background: NAVY, position: 'relative', overflow: 'hidden' }}>
+        {/* Background photo + dark navy overlay */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+          <img
+            src="/images/about/spinnaker.jpg"
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 40%' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(7,30,61,0.85)' }} />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={eyebrow}>Who Keeply is for</div>
           <h2
@@ -596,6 +644,7 @@ export default function AboutClient() {
               Get started {'\u2192'}
             </a>
           </div>
+        </div>
         </div>
       </section>
     </main>
