@@ -13100,7 +13100,6 @@ export default function App() {
                           </span>
                         </div>
                       </div>
-                    </div>
                     {isExpanded && (
                       <div
                         style={{
@@ -13634,6 +13633,7 @@ export default function App() {
                         )}
                       </div>
                     )}
+                    </div>
                   </div>
                 );
               })}
