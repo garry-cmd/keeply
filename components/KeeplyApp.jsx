@@ -7478,7 +7478,7 @@ export default function App() {
                   background: 'none',
                   cursor: 'pointer',
                   padding: '0 0 10px',
-                  color: active ? '#f5a623' : 'rgba(255,255,255,0.28)',
+                  color: active ? '#f5a623' : 'rgba(255,255,255,0.55)',
                   fontFamily: 'inherit',
                 }}
               >
@@ -7497,7 +7497,7 @@ export default function App() {
                 </svg>
                 <span
                   style={{
-                    fontSize: 7.5,
+                    fontSize: 9.5,
                     fontWeight: 700,
                     letterSpacing: '0.3px',
                     textTransform: 'uppercase',
@@ -7528,7 +7528,7 @@ export default function App() {
                   background: 'none',
                   cursor: 'pointer',
                   padding: '0 0 10px',
-                  color: active ? '#f5a623' : 'rgba(255,255,255,0.28)',
+                  color: active ? '#f5a623' : 'rgba(255,255,255,0.55)',
                   fontFamily: 'inherit',
                 }}
               >
@@ -7547,7 +7547,7 @@ export default function App() {
                 </svg>
                 <span
                   style={{
-                    fontSize: 7.5,
+                    fontSize: 9.5,
                     fontWeight: 700,
                     letterSpacing: '0.3px',
                     textTransform: 'uppercase',
@@ -7634,11 +7634,11 @@ export default function App() {
                 </div>
                 <span
                   style={{
-                    fontSize: 7.5,
+                    fontSize: 9.5,
                     fontWeight: 700,
                     letterSpacing: '0.3px',
                     textTransform: 'uppercase',
-                    color: active ? '#f5a623' : 'rgba(255,255,255,0.5)',
+                    color: active ? '#f5a623' : 'rgba(255,255,255,0.75)',
                   }}
                 >
                   My Boat
@@ -7666,7 +7666,7 @@ export default function App() {
                   background: 'none',
                   cursor: 'pointer',
                   padding: '0 0 10px',
-                  color: active ? '#f5a623' : 'rgba(255,255,255,0.28)',
+                  color: active ? '#f5a623' : 'rgba(255,255,255,0.55)',
                   fontFamily: 'inherit',
                 }}
               >
@@ -7689,7 +7689,7 @@ export default function App() {
                 </svg>
                 <span
                   style={{
-                    fontSize: 7.5,
+                    fontSize: 9.5,
                     fontWeight: 700,
                     letterSpacing: '0.3px',
                     textTransform: 'uppercase',
@@ -7720,7 +7720,7 @@ export default function App() {
                   background: 'none',
                   cursor: 'pointer',
                   padding: '0 0 10px',
-                  color: active ? '#f5a623' : 'rgba(255,255,255,0.28)',
+                  color: active ? '#f5a623' : 'rgba(255,255,255,0.55)',
                   fontFamily: 'inherit',
                 }}
               >
@@ -7743,7 +7743,7 @@ export default function App() {
                 </svg>
                 <span
                   style={{
-                    fontSize: 7.5,
+                    fontSize: 9.5,
                     fontWeight: 700,
                     letterSpacing: '0.3px',
                     textTransform: 'uppercase',
