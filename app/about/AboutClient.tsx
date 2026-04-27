@@ -152,9 +152,9 @@ export default function AboutClient() {
         {/* Background photo + dark navy overlay */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
           <img
-            src="/images/about/cockpit-selfie.jpg"
+            src="/images/about/founder-portrait.jpg"
             alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 35%' }}
           />
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(7,30,61,0.85)' }} />
         </div>
@@ -331,7 +331,7 @@ export default function AboutClient() {
               {
                 num: '03',
                 title: 'Setup that knows your boat.',
-                body: 'When you add equipment, Keeply identifies the make, model, and year-variant. The maintenance schedule that gets built isn\u2019t generic — it\u2019s the real interval for the actual impeller in your actual engine. And when you want help finding something fast, First Mate is right there.',
+                body: 'When you add equipment, Keeply identifies the make, model, and year-variant. The maintenance schedule that gets built isn\u2019t generic — it\u2019s the real pre-filter and pickling intervals for the actual watermaker on your boat. And when you want help finding something fast, First Mate is right there.',
               },
             ].map((item) => (
               <div
@@ -379,80 +379,6 @@ export default function AboutClient() {
             ))}
           </div>
 
-          {/* Counter-positioning. Sharpens what we ARE by naming what we aren't. */}
-          <div
-            style={{
-              background: NAVY,
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: isMobile ? '28px 22px' : '36px 40px',
-            }}
-          >
-            <h3
-              style={{
-                fontSize: isMobile ? 19 : 22,
-                lineHeight: 1.3,
-                letterSpacing: '-0.01em',
-                fontWeight: 700,
-                color: WHITE,
-                marginBottom: 10,
-              }}
-            >
-              And, honestly — what Keeply isn't.
-            </h3>
-            <p
-              style={{
-                fontSize: 14,
-                lineHeight: 1.6,
-                color: 'rgba(255,255,255,0.72)',
-                marginBottom: 22,
-              }}
-            >
-              We chose what to build by being clear about what we wouldn't. If you're looking for
-              any of these things, you should know up front.
-            </p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 0 }}>
-              {[
-                {
-                  title: 'A racing tactician.',
-                  body: ' Performance instruments and start-line strategy live in apps built for that. Keeply is for the boat between races.',
-                },
-                {
-                  title: 'A charter management platform.',
-                  body: ' Booking calendars, guest comms, fleet utilization — all important work, all someone else\u2019s product. We\u2019re built for the owner-operator.',
-                },
-                {
-                  title: 'A chartplotter or nav app.',
-                  body: ' Use Navionics, Aqua Map, or whatever you trust at the chart table. Keeply lives in the equipment locker, not at the helm seat.',
-                },
-                {
-                  title: 'A community forum.',
-                  body: ' The Cruisers Forum exists. So does Sailing Anarchy. We\u2019re not trying to be a place you talk about boats — we\u2019re a place where your boat is taken care of.',
-                },
-              ].map((item, i) => (
-                <li
-                  key={i}
-                  style={{
-                    padding: '14px 0',
-                    borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                    display: 'grid',
-                    gridTemplateColumns: '24px 1fr',
-                    gap: 14,
-                    alignItems: 'baseline',
-                    fontSize: 14,
-                    lineHeight: 1.55,
-                    color: 'rgba(255,255,255,0.78)',
-                  }}
-                >
-                  <span style={{ color: GOLD, fontSize: 18, lineHeight: 1, fontWeight: 700 }}>×</span>
-                  <span>
-                    <strong style={{ color: WHITE, fontWeight: 700 }}>{item.title}</strong>
-                    {item.body}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
         </div>
       </section>
@@ -529,7 +455,7 @@ export default function AboutClient() {
                 title: 'Just bought their serious boat.',
                 quote:
                   '"I found old service records in a bag in the bilge. I don\u2019t know where to start."',
-                body: 'Stepped up from a daysailer or a smaller powerboat to something real — a Jeanneau 44, a Beneteau 50, a serious motor yacht. Overwhelmed by systems they\u2019ve never managed before. Actively Googling "boat maintenance tracker" right now. The AI equipment setup is the moment they realise Keeply is built for them.',
+                body: 'Stepped up from a daysailer or a smaller powerboat to something real — a Jeanneau 44, a Nordhavn 63. Overwhelmed by systems they\u2019ve never managed before. Actively Googling "boat maintenance tracker" right now. The AI equipment setup is the moment they realise Keeply is built for them.',
               },
             ].map((p) => (
               <article
@@ -635,8 +561,8 @@ export default function AboutClient() {
                 lineHeight: 1.6,
               }}
             >
-              Free for as long as you want. No credit card. No setup call. Just tell us about the
-              boat and we'll show you what we've built.
+              Free for as long as you want. No credit card. No setup call. Just tell us about
+              your boat and we'll have you setup in minutes.
             </p>
             <a
               href="/?plans=1"
