@@ -9,6 +9,7 @@ import {
   trackSignupCompleted,
 } from '../lib/analytics';
 import PhoneScreenshot from './marketing/PhoneScreenshot';
+import AvailabilityStrip from './marketing/AvailabilityStrip';
 
 const BRAND = '#0f4c8a';
 const NAVY = '#071e3d';
@@ -1369,6 +1370,9 @@ export default function LandingPage() {
           background: '#040f1f',
         }}
       >
+        <div style={{ maxWidth: 1100, margin: '0 auto 32px' }}>
+          <AvailabilityStrip />
+        </div>
         <div
           style={{
             maxWidth: 1100,
