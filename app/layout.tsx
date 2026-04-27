@@ -75,7 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               operatingSystem: 'Web, iOS, Android',
               url: 'https://www.keeply.boats',
               description:
-                'AI-powered boat maintenance app for serious vessel owners. Track maintenance schedules, equipment, repairs, and logbook entries with First Mate AI.',
+                'Boat maintenance, repairs, parts, passages, documents, and equipment — all in one connected record. With First Mate AI to help when you want it.',
               offers: [
                 {
                   '@type': 'Offer',
