@@ -126,19 +126,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
-        {/* ── Google Analytics 4 + Google Ads conversion tracking ── */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-FZWNP48NHN" />
+        {/* ── Google Analytics 4 + Google Ads conversion tracking ──
+            The GTM library is deferred until requestIdleCallback so it
+            doesn't compete with hydration on the critical path. The inline
+            queue + config calls run immediately so any gtag('event', ...)
+            calls queue cleanly and fire when GTM library loads. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-FZWNP48NHN');
-gtag('config', 'AW-18080905583');`,
+gtag('config', 'AW-18080905583');
+function _ldGtag(){
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-FZWNP48NHN';
+  document.head.appendChild(s);
+}
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(_ldGtag, { timeout: 4000 });
+} else {
+  setTimeout(_ldGtag, 2000);
+}`,
           }}
         />
-        {/* ── Fonts ── */}
+        {/* ── Fonts ──
+            Preconnect to BOTH fontshare hosts: api.fontshare.com serves the
+            CSS, cdn.fontshare.com serves the actual font files. Without the
+            cdn preconnect Lighthouse estimates ~300ms LCP penalty from the
+            handshake on the font-file request. */}
         <link rel="preconnect" href="https://api.fontshare.com" />
+        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="" />
         <link
           rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap"
