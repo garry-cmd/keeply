@@ -126,7 +126,6 @@ export default function LandingPage() {
   var [scrolled, setScrolled] = useState(false);
   var [isMobile, setIsMobile] = useState(false);
   var [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  var [showHeroVideo, setShowHeroVideo] = useState(false);
   var [annual, setAnnual] = useState(false);
   var [isRecovery, setIsRecovery] = useState(false);
   var [showPlanPicker, setShowPlanPicker] = useState(false);
@@ -156,28 +155,6 @@ export default function LandingPage() {
     window.addEventListener('resize', check);
     return function () {
       window.removeEventListener('resize', check);
-    };
-  }, []);
-
-  // Hero video is 6.2 MB. SSR + initial paint render the poster <img> only,
-  // so mobile devices never trigger a video download. On desktop, after the
-  // poster has painted, swap the video in via requestIdleCallback so the LCP
-  // is the static image, not the video.
-  useEffect(function () {
-    if (typeof window === 'undefined') return;
-    if (window.innerWidth < 768) return;
-    var swap = function () {
-      setShowHeroVideo(true);
-    };
-    if (typeof window.requestIdleCallback === 'function') {
-      var idleId = window.requestIdleCallback(swap, { timeout: 1500 });
-      return function () {
-        window.cancelIdleCallback && window.cancelIdleCallback(idleId);
-      };
-    }
-    var t = setTimeout(swap, 200);
-    return function () {
-      clearTimeout(t);
     };
   }, []);
 
@@ -876,7 +853,7 @@ export default function LandingPage() {
           overflow: 'hidden',
         }}
       >
-        {/* ── Hero background: poster image always (LCP target); video overlays on desktop only ── */}
+        {/* ── Hero background: portrait poster on mobile, landscape on desktop ── */}
         <div
           style={{
             position: 'absolute',
@@ -886,8 +863,7 @@ export default function LandingPage() {
             background: '#071e3d',
           }}
         >
-          {/* Poster — portrait crop on mobile, landscape on desktop. <picture> ensures only
-              one image is fetched per device. This is the LCP element. */}
+          {/* <picture> serves the right aspect for the device. This is the LCP element. */}
           <picture>
             <source media="(max-width: 767px)" srcSet="/images/hero-poster-mobile.jpg" />
             <img
@@ -905,34 +881,6 @@ export default function LandingPage() {
               }}
             />
           </picture>
-          {/* Video — only mounted on desktop after hydration + idle. Starts at opacity 0
-              and fades in once the browser fires onCanPlay, so the poster <img> stays
-              visible through the load and there's no black flash or stutter. */}
-          {showHeroVideo && (
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              poster="/images/hero-poster.jpg"
-              onCanPlay={function (e) {
-                e.currentTarget.style.opacity = '1';
-              }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center 38%',
-                opacity: 0,
-                transition: 'opacity 600ms ease-out',
-              }}
-            >
-              <source src="/videos/sailing-hero-web.mp4" type="video/mp4" />
-            </video>
-          )}
           <div
             style={{
               position: 'absolute',
