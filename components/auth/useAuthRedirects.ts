@@ -22,6 +22,7 @@ export interface VerifiedBanner {
 export interface AuthRedirectsResult {
   // Initial trigger state from URL params (consumed once on mount)
   initialAuthMode: AuthMode | null;     // 'signup' | 'login' | null
+  initialRecovery: boolean;             // true if ?keeply_recovery=1 (PKCE password reset return)
   showPlanPickerOnMount: boolean;       // true if ?plans=1
   stripeUpgraded: boolean;              // true if ?upgraded=1
   verifiedBanner: VerifiedBanner | null;
@@ -30,12 +31,22 @@ export interface AuthRedirectsResult {
 
 export function useAuthRedirects(): AuthRedirectsResult {
   const [initialAuthMode, setInitialAuthMode] = useState<AuthMode | null>(null);
+  const [initialRecovery, setInitialRecovery] = useState(false);
   const [showPlanPickerOnMount, setShowPlanPickerOnMount] = useState(false);
   const [stripeUpgraded, setStripeUpgraded] = useState(false);
   const [verifiedBanner, setVerifiedBanner] = useState<VerifiedBanner | null>(null);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
+
+    // Recovery-flow marker — set by AuthModal.resetPassword's redirectTo.
+    // PKCE recovery returns as `/?keeply_recovery=1&code=XXX`. supabase-js
+    // consumes `?code=` to create the session; we consume our marker to
+    // tell HomeClient to open the modal in recovery mode. This sidesteps
+    // PASSWORD_RECOVERY-event timing (which is unreliable under PKCE).
+    if (p.get('keeply_recovery') === '1') {
+      setInitialRecovery(true);
+    }
 
     if (p.get('signup') === '1') {
       setInitialAuthMode('signup');
@@ -85,20 +96,23 @@ export function useAuthRedirects(): AuthRedirectsResult {
     // Clean consumed query params so refresh / bookmark / browser-restored
     // tab doesn't re-fire modals.
     //
-    // CRITICAL: preserve window.location.hash. Supabase delivers password
-    // recovery tokens as a URL fragment (e.g. `#access_token=...&type=recovery`)
-    // and processes them asynchronously after this effect runs. If we wiped
-    // the hash here, supabase would never see the token and PASSWORD_RECOVERY
-    // would never fire — leaving the user on the login form trying to "set
-    // their new password" by typing it into the password field, which fails
-    // with an "invalid credentials" error. Same applies to any future hash-
-    // delivered auth artifacts.
-    if (
+    // CRITICAL: skip cleanup entirely if `?code=` is present in the URL.
+    // PKCE recovery (and other PKCE callbacks) deliver an auth code in the
+    // query string; supabase-js asynchronously consumes it and removes it
+    // itself. If we wiped the URL first, the code would be lost and the
+    // session would never get created. So when `?code=` is present, we
+    // leave the URL alone — supabase handles cleanup. When `?code=` is
+    // absent, we clean our consumed markers (including hash preservation,
+    // since pre-PKCE recovery / OAuth implicit flow puts tokens in the hash).
+    if (p.get('code')) {
+      // do nothing — supabase-js owns the cleanup
+    } else if (
       p.get('signup') === '1' ||
       p.get('login') === '1' ||
       p.get('upgraded') === '1' ||
       p.get('verified') === '1' ||
-      p.get('verified') === '0'
+      p.get('verified') === '0' ||
+      p.get('keeply_recovery') === '1'
     ) {
       try {
         const cleanUrl = window.location.pathname + (window.location.hash || '');
@@ -109,6 +123,7 @@ export function useAuthRedirects(): AuthRedirectsResult {
 
   return {
     initialAuthMode,
+    initialRecovery,
     showPlanPickerOnMount,
     stripeUpgraded,
     verifiedBanner,

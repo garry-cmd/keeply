@@ -263,13 +263,17 @@ export default function AuthModal({
     setMessage(null);
     try {
       const result = await supabase.auth.resetPasswordForEmail(email, {
-        // Land on `/` and let supabase's URL-fragment parser fire the
-        // PASSWORD_RECOVERY event. HomeClient catches that event and opens
-        // the modal in `isRecovery` mode (set new password). Adding
-        // `?login=1` here was the old mistake — it routed the user through
-        // the login form on return, with the recovery token in the hash
-        // potentially getting wiped before supabase processed it.
-        redirectTo: window.location.origin + '/',
+        // Marker `keeply_recovery=1` survives the Supabase round-trip and
+        // tells useAuthRedirects on return: this is a recovery flow,
+        // open the modal in `isRecovery` mode regardless of which auth
+        // events fire. We don't rely on the PASSWORD_RECOVERY event
+        // because it doesn't fire reliably under PKCE flow — supabase
+        // delivers PKCE recovery as `?code=XXX` (handled the same as a
+        // normal sign-in) and only sometimes emits PASSWORD_RECOVERY
+        // afterwards. With PKCE, supabase appends `&code=XXX` to this
+        // redirect, so the user lands on `/?keeply_recovery=1&code=XXX`.
+        // supabase-js consumes `?code=` itself; we consume the marker.
+        redirectTo: window.location.origin + '/?keeply_recovery=1',
       });
       if (result.error) throw result.error;
       setMessage('Check your inbox — we sent a password reset link to ' + email + '.');

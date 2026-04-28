@@ -128,7 +128,12 @@ export default function HomeClient() {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
 
   // URL param effects (runs once on mount) — drives initial modal state
-  const { initialAuthMode, showPlanPickerOnMount, verifiedBanner } = useAuthRedirects();
+  const {
+    initialAuthMode,
+    initialRecovery,
+    showPlanPickerOnMount,
+    verifiedBanner,
+  } = useAuthRedirects();
 
   // Apply URL param results on first render
   useEffect(() => {
@@ -139,12 +144,22 @@ export default function HomeClient() {
     if (showPlanPickerOnMount) {
       setShowPlanPicker(true);
     }
+    // PKCE password-recovery: marker set by AuthModal.resetPassword's
+    // redirectTo (`/?keeply_recovery=1`) survives the round-trip and
+    // tells us this session was created from a recovery code. We set
+    // isRecovery=true so HomeClient's render shadow opens the modal in
+    // recovery mode — independent of whether PASSWORD_RECOVERY event
+    // fires (it doesn't reliably under PKCE).
+    if (initialRecovery) {
+      setIsRecovery(true);
+      setShowAuth(true);
+    }
     // Hydrate pendingPlan from localStorage (set by /pricing CTA or PlanPickerModal)
     try {
       const stored = localStorage.getItem('keeply_pending_plan');
       if (stored) setPendingPlan(stored);
     } catch (e) {}
-  }, [initialAuthMode, showPlanPickerOnMount]);
+  }, [initialAuthMode, initialRecovery, showPlanPickerOnMount]);
 
   // Auth state machine — runs once on mount
   useEffect(function () {
