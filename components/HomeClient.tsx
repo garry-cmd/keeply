@@ -13,14 +13,14 @@
 // browser bundle when the user clicks Get Started / Log In, or when an
 // OAuth code / password recovery URL is detected.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { supabase } from './supabase-client';
 import LandingPage from './marketing/LandingPage';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import { useAuthRedirects } from './auth/useAuthRedirects';
 import type { AuthMode } from './auth/AuthModal';
+import type { Subscription } from '@supabase/supabase-js';
 
 // KeeplyApp only loads after the user is authenticated.
 // Keeps the landing page bundle small.
@@ -161,51 +161,161 @@ export default function HomeClient() {
     } catch (e) {}
   }, [initialAuthMode, initialRecovery, showPlanPickerOnMount]);
 
-  // Auth state machine — runs once on mount
+  // Lazy supabase reference — populated on demand via ensureSupabaseLoaded().
+  // Held in a ref (not state) so reading it doesn't trigger re-renders, and
+  // so we can guard against double-loading. Type from @supabase/supabase-js.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabaseRef = useRef<any>(null);
+  const subscriptionRef = useRef<Subscription | null>(null);
+  const supabaseLoadingRef = useRef<Promise<unknown> | null>(null);
+
+  // Auth state machine — runs once on mount.
+  //
+  // Critical to PageSpeed: do NOT load Supabase eagerly. The Supabase auth
+  // chunk weighs ~205KB decoded; for a fresh guest visit (no session, no
+  // OAuth callback in URL), we never need it on the marketing path. Mobile
+  // Lighthouse scores torpedo on the parse cost. So we conditionally load
+  // it only when there's actual signal:
+  //   1) `hasAuthHint()` — localStorage has an sb-* token (returning user)
+  //   2) `?code=` in URL — PKCE OAuth/recovery callback needs to be
+  //      consumed by supabase to create the session
+  //   3) `?keeply_recovery=1` — our marker for password reset (always
+  //      paired with ?code=, but checking both is defensive)
+  // Otherwise → set guest state immediately, skip the import.
   useEffect(function () {
-    // Fast path: returning users get hidden immediately to avoid marketing flash.
-    // This runs after hydration so it's safe to read localStorage.
+    let mounted = true;
+
+    function needsSupabaseOnMount(): boolean {
+      if (typeof window === 'undefined') return false;
+      if (hasAuthHint()) return true;
+      const search = window.location.search;
+      if (search.includes('code=')) return true;
+      if (search.includes('keeply_recovery=1')) return true;
+      return false;
+    }
+
+    // Lazy loader: returns the supabase client. Sets up the auth state
+    // change listener exactly once (idempotent — repeated calls return
+    // the cached promise / instance).
+    async function ensureSupabaseLoaded() {
+      if (supabaseRef.current) return supabaseRef.current;
+      if (supabaseLoadingRef.current) return supabaseLoadingRef.current;
+
+      supabaseLoadingRef.current = (async () => {
+        const mod = await import('./supabase-client');
+        if (!mounted) return mod.supabase;
+        supabaseRef.current = mod.supabase;
+
+        const sub = mod.supabase.auth.onAuthStateChange(
+          async function (event: string, session: { user?: { id: string; email?: string } } | null) {
+            if (event === 'PASSWORD_RECOVERY') {
+              setIsRecovery(true);
+              setShowAuth(true);
+              return;
+            }
+            if (event === 'SIGNED_IN' && session?.user) {
+              const redirecting = await firePendingStripe(
+                session.user.id,
+                session.user.email ?? ''
+              );
+              if (!mounted) return;
+              if (!redirecting) setState(session ? 'authed' : 'guest');
+            } else if (event === 'SIGNED_OUT') {
+              setState('guest');
+            } else {
+              if (session) setState('authed');
+            }
+          }
+        );
+        subscriptionRef.current = sub.data.subscription;
+        return mod.supabase;
+      })();
+
+      return supabaseLoadingRef.current;
+    }
+
+    // Initial mount path
+    if (!needsSupabaseOnMount()) {
+      // Fresh guest — Supabase stays off the marketing critical path.
+      setState('guest');
+      return function () {
+        mounted = false;
+      };
+    }
+
+    // Returning user OR PKCE callback in URL — load supabase, validate session
     if (hasAuthHint()) {
       setState('pending');
     }
 
-    supabase.auth.getSession().then(async function ({ data }) {
+    (async () => {
+      const supabase = await ensureSupabaseLoaded();
+      if (!mounted) return;
+
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+
       if (data.session?.user) {
         const redirecting = await firePendingStripe(
           data.session.user.id,
           data.session.user.email ?? ''
         );
+        if (!mounted) return;
         if (!redirecting) setState('authed');
       } else {
         setState('guest');
       }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async function (event, session) {
-      if (event === 'PASSWORD_RECOVERY') {
-        // User clicked the reset password email link — open AuthModal
-        // in recovery mode so they can set a new password.
-        setIsRecovery(true);
-        setShowAuth(true);
-        return;
-      }
-      if (event === 'SIGNED_IN' && session?.user) {
-        const redirecting = await firePendingStripe(session.user.id, session.user.email ?? '');
-        if (!redirecting) setState(session ? 'authed' : 'guest');
-      } else if (event === 'SIGNED_OUT') {
-        setState('guest');
-      } else {
-        // For other events (TOKEN_REFRESHED, USER_UPDATED) preserve current state
-        if (session) setState('authed');
-      }
-    });
+    })();
 
     return function () {
-      subscription.unsubscribe();
+      mounted = false;
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   }, []);
+
+  // When the user opens AuthModal, eagerly load supabase if it isn't
+  // already loaded. AuthModal itself imports supabase synchronously, so
+  // showing the modal triggers the chunk download — we just need the
+  // listener wired up here so SIGNED_IN / SIGNED_OUT events from the
+  // modal propagate back to HomeClient state.
+  useEffect(() => {
+    if (!showAuth || supabaseRef.current) return;
+
+    let mounted = true;
+    (async () => {
+      const mod = await import('./supabase-client');
+      if (!mounted || supabaseRef.current) return;
+      supabaseRef.current = mod.supabase;
+
+      const sub = mod.supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsRecovery(true);
+          setShowAuth(true);
+          return;
+        }
+        if (event === 'SIGNED_IN' && session?.user) {
+          const redirecting = await firePendingStripe(
+            session.user.id,
+            session.user.email ?? ''
+          );
+          if (!mounted) return;
+          if (!redirecting) setState(session ? 'authed' : 'guest');
+        } else if (event === 'SIGNED_OUT') {
+          setState('guest');
+        } else {
+          if (session) setState('authed');
+        }
+      });
+      subscriptionRef.current = sub.data.subscription;
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [showAuth]);
 
   // Modal callbacks — passed down to LandingPage as props
   function handleOpenPlanPicker() {
