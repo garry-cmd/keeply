@@ -63,6 +63,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        {/* ── Hero LCP image preload ──
+            Without this, the hero <img> isn't discoverable until React renders
+            <LandingPage />, which is gated on a client-side auth check. The
+            preload hint lets the browser start fetching the image during the
+            initial HTML parse, in parallel with downloading the JS bundle. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/images/hero-poster-mobile.jpg"
+          media="(max-width: 767px)"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/images/hero-poster.jpg"
+          media="(min-width: 768px)"
+          fetchPriority="high"
+        />
         {/* ── Structured Data (JSON-LD) ── */}
         <script
           type="application/ld+json"
