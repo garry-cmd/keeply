@@ -216,7 +216,40 @@ export default function HomeClient() {
     setIsRecovery(false);
   }
 
-  // Render
+  // Render — order matters
+  //
+  // Recovery flow shadows `state === 'authed'`: when the user clicks the
+  // password reset email link, supabase exchanges the URL fragment for a
+  // valid session AND fires PASSWORD_RECOVERY. Without this branch, the
+  // SIGNED_IN handler flips state to 'authed' and KeeplyApp renders before
+  // the recovery modal ever gets a chance — taking the user "directly into
+  // the app" instead of into "set a new password." So while isRecovery is
+  // true, render the marketing shell + recovery modal regardless of state.
+  // handleCloseAuth() clears isRecovery, after which state === 'authed'
+  // wins and KeeplyApp renders normally (user is now logged in with their
+  // new password).
+  if (isRecovery) {
+    return (
+      <>
+        <SiteHeader force />
+        <LandingPage
+          onOpenPlanPicker={handleOpenPlanPicker}
+          onOpenLogin={handleOpenLogin}
+          verifiedBanner={verifiedBanner}
+        />
+        <SiteFooter force />
+        <AuthModal
+          open
+          mode={authMode}
+          isRecovery
+          pendingPlan={pendingPlan}
+          onClose={handleCloseAuth}
+          onModeChange={setAuthMode}
+        />
+      </>
+    );
+  }
+
   if (state === 'authed') return <KeeplyApp />;
   if (state === 'pending') return null;
 
