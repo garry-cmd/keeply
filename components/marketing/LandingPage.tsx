@@ -16,7 +16,6 @@
 // justify a separate component.
 
 import React, { useState, useEffect } from 'react';
-import AvailabilityStrip from './AvailabilityStrip';
 import Hero from './sections/Hero';
 import VideoShowcase from './sections/VideoShowcase';
 import SocialProofMarquee from './sections/SocialProofMarquee';
@@ -70,7 +69,8 @@ export default function LandingPage({
         fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif",
       }}
     >
-      <AvailabilityStrip />
+      {/* AvailabilityStrip is rendered by SiteFooter on every public page
+          (including this one). Don't render it here. */}
 
       {/* Verified banner (shown after ?verified=1 / ?verified=0 redirect) */}
       {verifiedBanner && (

@@ -14,7 +14,9 @@ import AvailabilityStrip from './marketing/AvailabilityStrip';
 const FONT = "'Satoshi','DM Sans','Helvetica Neue',sans-serif";
 
 const HIDE_ON = (pathname: string): boolean => {
-  if (pathname === '/') return true;
+  // /admin gets its own gated layout. SiteFooter renders on / now that
+  // LandingPage no longer has its own inline footer (removed in the
+  // rewrite — AvailabilityStrip lives inside this footer).
   if (pathname.startsWith('/admin')) return true;
   return false;
 };

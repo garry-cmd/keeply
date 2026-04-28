@@ -18,7 +18,10 @@ const FONT = "'Satoshi','DM Sans','Helvetica Neue',sans-serif";
 
 // Routes where this header should NOT render.
 const HIDE_ON = (pathname: string): boolean => {
-  if (pathname === '/') return true;
+  // /admin gets its own gated layout. SiteHeader/SiteFooter render
+  // on / now that LandingPage no longer has its own inline nav/footer
+  // (post-rewrite, that lived in components/marketing/LandingPage.tsx
+  // and was removed in favor of these shared components).
   if (pathname.startsWith('/admin')) return true;
   return false;
 };
