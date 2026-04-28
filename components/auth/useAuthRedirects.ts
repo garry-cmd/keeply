@@ -82,8 +82,17 @@ export function useAuthRedirects(): AuthRedirectsResult {
       }, 8000);
     }
 
-    // Clean consumed params so refresh / bookmark / browser-restored tab
-    // doesn't re-fire modals.
+    // Clean consumed query params so refresh / bookmark / browser-restored
+    // tab doesn't re-fire modals.
+    //
+    // CRITICAL: preserve window.location.hash. Supabase delivers password
+    // recovery tokens as a URL fragment (e.g. `#access_token=...&type=recovery`)
+    // and processes them asynchronously after this effect runs. If we wiped
+    // the hash here, supabase would never see the token and PASSWORD_RECOVERY
+    // would never fire — leaving the user on the login form trying to "set
+    // their new password" by typing it into the password field, which fails
+    // with an "invalid credentials" error. Same applies to any future hash-
+    // delivered auth artifacts.
     if (
       p.get('signup') === '1' ||
       p.get('login') === '1' ||
@@ -92,7 +101,8 @@ export function useAuthRedirects(): AuthRedirectsResult {
       p.get('verified') === '0'
     ) {
       try {
-        window.history.replaceState({}, '', window.location.pathname);
+        const cleanUrl = window.location.pathname + (window.location.hash || '');
+        window.history.replaceState({}, '', cleanUrl);
       } catch (e) {}
     }
   }, []);

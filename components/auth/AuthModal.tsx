@@ -99,6 +99,10 @@ export default function AuthModal({
   const [message, setMessage] = useState<string | null>(null);
   const [signupEmail, setSignupEmail] = useState('');
   const [stripeSuccess, setStripeSuccess] = useState(false);
+  // Dedicated "send reset link" UI state. Toggled by the "Forgot password?"
+  // link from the login form. Separate from `isRecovery` (which is the
+  // post-link "set new password" state, triggered by PASSWORD_RECOVERY event).
+  const [forgotMode, setForgotMode] = useState(false);
 
   // Fire trackSignupStarted when the modal opens in signup mode
   // (matches the original openAuth() behavior).
@@ -251,7 +255,7 @@ export default function AuthModal({
   async function resetPassword(e: FormEvent) {
     e.preventDefault();
     if (!email) {
-      setError('Enter your email address above first.');
+      setError('Enter your email address.');
       return;
     }
     setLoading(true);
@@ -259,7 +263,13 @@ export default function AuthModal({
     setMessage(null);
     try {
       const result = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/?login=1',
+        // Land on `/` and let supabase's URL-fragment parser fire the
+        // PASSWORD_RECOVERY event. HomeClient catches that event and opens
+        // the modal in `isRecovery` mode (set new password). Adding
+        // `?login=1` here was the old mistake — it routed the user through
+        // the login form on return, with the recovery token in the hash
+        // potentially getting wiped before supabase processed it.
+        redirectTo: window.location.origin + '/',
       });
       if (result.error) throw result.error;
       setMessage('Check your inbox — we sent a password reset link to ' + email + '.');
@@ -421,6 +431,127 @@ export default function AuthModal({
               )}
             </div>
           </div>
+        ) : forgotMode ? (
+          /* "Send reset link" — dedicated UI so users don't have to interpret
+             the login form. Email field + send button + back-to-login link.
+             On success → "Check your inbox" message via `message` state. */
+          <>
+            <div style={{ textAlign: 'center', marginBottom: 20, paddingTop: 4 }}>
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  margin: '0 auto 14px',
+                  borderRadius: 12,
+                  background: 'rgba(245,166,35,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={GOLD}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 800,
+                  color: '#fff',
+                  marginBottom: 6,
+                  letterSpacing: '-0.3px',
+                }}
+              >
+                Reset your password
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>
+                Enter your email and we{"\u2019"}ll send a link to set a new password.
+              </div>
+            </div>
+            <form onSubmit={resetPassword}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={authLabel}>Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  autoFocus
+                  style={authInput}
+                />
+              </div>
+              {error && (
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#f87171',
+                    marginBottom: 12,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+              {message && (
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#4ade80',
+                    marginBottom: 12,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {message}
+                </div>
+              )}
+              <button type="submit" disabled={loading} style={primaryBtn(loading)}>
+                {loading ? 'Sending\u2026' : 'Send reset link \u2192'}
+              </button>
+            </form>
+            <div
+              style={{
+                textAlign: 'center',
+                marginTop: 16,
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.5)',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotMode(false);
+                  setError(null);
+                  setMessage(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontFamily: 'inherit',
+                  fontSize: 13,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 3,
+                }}
+              >
+                {'\u2190'} Back to log in
+              </button>
+            </div>
+          </>
         ) : isRecovery ? (
           /* Password reset state */
           <>
@@ -746,7 +877,14 @@ export default function AuthModal({
                   {mode === 'login' && (
                     <button
                       type="button"
-                      onClick={resetPassword}
+                      onClick={() => {
+                        // Switch to dedicated forgot-password UI rather than
+                        // trying to reset inline from the login form.
+                        // Carry over whatever they typed for email.
+                        setForgotMode(true);
+                        setError(null);
+                        setMessage(null);
+                      }}
                       disabled={loading}
                       style={{
                         fontSize: 12,
