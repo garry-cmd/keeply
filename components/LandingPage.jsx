@@ -839,7 +839,21 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Hero */}
+      {/* ── Marquee + reduced-motion keyframes ───────────────────────────
+          Single keyframe loop: -50% because we duplicate the track twice. */}
+      <style>{`
+        @keyframes kp-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .kp-marquee-track { animation: kp-marquee 38s linear infinite; }
+        .kp-marquee-track:hover { animation-play-state: paused; }
+        @media (prefers-reduced-motion: reduce) {
+          .kp-marquee-track { animation: none; }
+        }
+      `}</style>
+
+      {/* ── Hero — text-only, gradient only, no photo.
+          Photo was suppressed by the heavy gradient overlay anyway and cost
+          ~187 KB of LCP weight. Removing it makes the hero faster AND
+          stronger: text + gradient is the Linear/Vercel/Stripe pattern. */}
       <section
         style={{
           position: 'relative',
@@ -851,46 +865,9 @@ export default function LandingPage() {
           textAlign: 'center',
           padding: '130px 24px 80px',
           overflow: 'hidden',
+          background: `radial-gradient(ellipse at 50% 30%, ${NAVY_MID} 0%, ${NAVY} 70%)`,
         }}
       >
-        {/* ── Hero background: portrait poster on mobile, landscape on desktop ── */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            overflow: 'hidden',
-            zIndex: 1,
-            background: '#071e3d',
-          }}
-        >
-          {/* <picture> serves the right aspect for the device. This is the LCP element. */}
-          <picture>
-            <source media="(max-width: 767px)" srcSet="/images/hero-poster-mobile.jpg" />
-            <img
-              src="/images/hero-poster.jpg"
-              alt=""
-              aria-hidden="true"
-              decoding="async"
-              fetchPriority="high"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center 38%',
-                display: 'block',
-              }}
-            />
-          </picture>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background:
-                'linear-gradient(180deg, rgba(7,30,61,0.55) 0%, rgba(7,30,61,0.2) 40%, rgba(7,30,61,0.7) 80%, rgba(7,30,61,0.97) 100%)',
-            }}
-          />
-        </div>
-
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 780 }}>
           <h1
             style={{
@@ -903,21 +880,20 @@ export default function LandingPage() {
               fontFamily: "'Clash Display','Inter',sans-serif",
             }}
           >
-            Always know your boat is{' '}
-            <span style={{ color: GOLD }}>ready.</span>
+            Always ready <span style={{ color: GOLD }}>to go.</span>
           </h1>
 
           <p
             style={{
               fontSize: 'clamp(16px,2vw,20px)',
-              color: 'rgba(255,255,255,0.6)',
+              color: 'rgba(255,255,255,0.65)',
               margin: '0 auto 40px',
               lineHeight: 1.6,
-              maxWidth: 540,
+              maxWidth: 620,
             }}
           >
-            Every system, part, and passage in one connected record — so nothing falls through the
-            cracks.
+            From the bilge pump to the next haul-out — every system tracked,
+            every part remembered, every passage logged.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -991,220 +967,354 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Hero #2: real app screenshots in phone frames ─────────────────
-          Desktop: three phones side-by-side (My Boat / First Mate / Logbook),
-          center phone slightly elevated, outer two tilted inward. All real
-          screenshots, real S/V Irene data.
-          Mobile: just My Boat — three phones is too cramped on narrow screens.
-          When the walkthrough video is recorded, swap PhoneScreenshot src
-          for <video> elements. */}
+      {/* ── Hero #2: single phone, ready to swap for video ─────────────────
+          Today: PhoneScreenshot wraps a static My Boat screenshot. When
+          Garry hands over the recorded walkthrough, swap the <img> inside
+          PhoneScreenshot for a <video autoPlay loop muted playsInline
+          poster="/images/hero-my-boat.jpg" preload="none">. Single-line
+          change. Until then, this is the same My Boat hero shot we used
+          before, presented full-size instead of cramped between two
+          tilted siblings. */}
       <section
         style={{
           padding: isMobile ? '40px 16px 56px' : '72px 24px 96px',
           background: `radial-gradient(ellipse at 50% 30%, ${NAVY_MID} 0%, ${NAVY} 65%)`,
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
+          gap: 24,
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {isMobile ? (
-          <PhoneScreenshot size="mobile" />
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'center',
-              gap: 32,
-              maxWidth: 1100,
-              width: '100%',
-            }}
-          >
-            {/* Left phone — First Mate, tilted right toward center, slightly lower */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 18,
-                marginTop: 32,
-                transform: 'rotate(-4deg)',
-                transformOrigin: 'top center',
-              }}
-            >
-              <PhoneScreenshot
-                size="mobile"
-                src="/images/hero-firstmate.jpg"
-                alt="Keeply First Mate — AI co-captain answering vessel-specific questions"
-              />
-              <div
-                style={{
-                  textAlign: 'center',
-                  transform: 'rotate(4deg)',
-                  maxWidth: 240,
-                }}
-              >
-                <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, marginBottom: 4 }}>
-                  First Mate
-                </div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
-                  Talk to your boat.
-                </div>
-              </div>
-            </div>
-
-            {/* Center phone — My Boat, hero shot, sits forward and elevated */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 18,
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              <PhoneScreenshot
-                size="mobile"
-                src="/images/hero-my-boat.jpg"
-                alt="Keeply on a phone — My Boat tab showing S/V Irene maintenance overview"
-              />
-              <div style={{ textAlign: 'center', maxWidth: 240 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, marginBottom: 4 }}>
-                  My Boat
-                </div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
-                  Always keep you informed.
-                </div>
-              </div>
-            </div>
-
-            {/* Right phone — Logbook, tilted left toward center, slightly lower */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 18,
-                marginTop: 32,
-                transform: 'rotate(4deg)',
-                transformOrigin: 'top center',
-              }}
-            >
-              <PhoneScreenshot
-                size="mobile"
-                src="/images/hero-logbook.jpg"
-                alt="Keeply Logbook — active passage with watch entries"
-              />
-              <div
-                style={{
-                  textAlign: 'center',
-                  transform: 'rotate(-4deg)',
-                  maxWidth: 240,
-                }}
-              >
-                <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, marginBottom: 4 }}>
-                  Logbook
-                </div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
-                  Collect the information you want.
-                </div>
-              </div>
-            </div>
+        <PhoneScreenshot
+          size={isMobile ? 'mobile' : 'desktop'}
+          src="/images/hero-my-boat.jpg"
+          alt="Keeply on a phone — My Boat tab showing S/V Irene maintenance overview"
+        />
+        <div style={{ textAlign: 'center', maxWidth: 360 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: WHITE, marginBottom: 6 }}>
+            Your boat. In your pocket.
           </div>
-        )}
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+            Real Keeply, real boat. Walk through the app the way you'd actually use it.
+          </div>
+        </div>
       </section>
 
-      {/* ── Social proof strip ── */}
+      {/* ── Social proof — looping ticker mixing boats and platform stats.
+          Edge-faded marquee, pauses on hover, respects prefers-reduced-motion.
+          Numbers are hardcoded at deploy time. Update manually when we hit
+          nicer round milestones (2,000 nm, 1,000 maintenance items, etc.). */}
       <div
         style={{
           borderTop: '1px solid rgba(255,255,255,0.06)',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           background: 'rgba(255,255,255,0.02)',
-          padding: isMobile ? '20px 16px' : '20px 24px',
+          padding: '24px 0',
+          overflow: 'hidden',
+          position: 'relative',
         }}
       >
+        {/* Edge fades — mask in/out so items don't pop at the boundaries */}
         <div
+          aria-hidden="true"
           style={{
-            maxWidth: 1100,
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            alignItems: 'center',
-            gap: isMobile ? 12 : 0,
-            justifyContent: 'space-between',
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: 80,
+            background: `linear-gradient(90deg, ${NAVY} 0%, rgba(7,30,61,0) 100%)`,
+            zIndex: 2,
+            pointerEvents: 'none',
           }}
-        >          <div
+        />
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            right: 0,
+            width: 80,
+            background: `linear-gradient(270deg, ${NAVY} 0%, rgba(7,30,61,0) 100%)`,
+            zIndex: 2,
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div className="kp-marquee-track" style={{ display: 'flex', gap: 32, width: 'max-content' }}>
+          {(function () {
+            const items = [
+              { kind: 'boat', name: 'Irene', type: '1980 Ta Shing Baba 35', boatType: 'sail' },
+              { kind: 'stat', value: '1,287', label: 'nautical miles tracked' },
+              { kind: 'boat', name: 'Rounder', type: '1984 Passport 40', boatType: 'sail' },
+              { kind: 'stat', value: '691', label: 'maintenance items' },
+              { kind: 'boat', name: 'Amanzi', type: '2023 Lagoon 42 Catamaran', boatType: 'sail' },
+              { kind: 'stat', value: '190', label: 'pieces of equipment' },
+              { kind: 'boat', name: 'Sue Anne', type: '1997 Ranger Tug R-27', boatType: 'motor' },
+              { kind: 'boat', name: 'Jaws', type: '2017 Grady-White Freedom 307', boatType: 'motor' },
+            ];
+            // Duplicate the track so when the first copy scrolls -50%, the
+            // second copy is already in view at the right. Seamless loop.
+            return [...items, ...items].map(function (item, i) {
+              if (item.kind === 'boat') {
+                return (
+                  <div
+                    key={'b' + i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="rgba(77,166,255,0.55)"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {item.boatType === 'sail' ? (
+                        <>
+                          <path d="M12 2L2 20h20z" />
+                          <line x1="12" y1="2" x2="12" y2="20" />
+                        </>
+                      ) : (
+                        <>
+                          <path d="M3 17l4-8 4 4 3-6 4 4" />
+                          <path d="M2 20h20" />
+                        </>
+                      )}
+                    </svg>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+                      {item.name}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{item.type}</span>
+                  </div>
+                );
+              }
+              return (
+                <div
+                  key={'s' + i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 14,
+                      color: GOLD,
+                      fontWeight: 700,
+                      letterSpacing: '-0.2px',
+                    }}
+                  >
+                    {item.value}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
+                    {item.label}
+                  </span>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      </div>
+
+      {/* ── How it works — 3-step. Restored as middle-of-page substance.
+          This is the "oh wow" the ICP describes: vessel set up via AI in
+          15 minutes, real maintenance schedule appears. Tells the
+          conversion story without requiring a /features detour. */}
+      <section style={{ padding: isMobile ? '64px 20px' : '96px 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 56 }}>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: GOLD,
+                fontWeight: 700,
+                marginBottom: 12,
+              }}
+            >
+              How it works
+            </div>
+            <h2
+              style={{
+                fontSize: 'clamp(26px,3.4vw,42px)',
+                fontWeight: 700,
+                color: WHITE,
+                letterSpacing: '-0.5px',
+                lineHeight: 1.15,
+                margin: '0 0 16px',
+                fontFamily: "'Satoshi','DM Sans',sans-serif",
+              }}
+            >
+              Onboard in 3 minutes.
+            </h2>
+            <p
+              style={{
+                fontSize: isMobile ? 14 : 16,
+                color: 'rgba(255,255,255,0.55)',
+                lineHeight: 1.6,
+                margin: '0 auto',
+                maxWidth: 560,
+              }}
+            >
+              Tell Keeply about your boat. We do the rest.
+            </p>
+          </div>
+
+          <div
             style={{
-              display: 'flex',
-              gap: isMobile ? 16 : 32,
-              flexWrap: 'wrap',
-              justifyContent: 'center',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+              gap: isMobile ? 20 : 28,
             }}
           >
             {[
-              { name: 'Irene', type: '1980 Ta Shing Baba 35', kind: 'sail' },
-              { name: 'Rounder', type: '1984 Passport 40', kind: 'sail' },
-              { name: 'Amanzi', type: '2023 Lagoon 42 Catamaran', kind: 'sail' },
-              { name: 'Sue Anne', type: '1997 Ranger Tug R-27', kind: 'motor' },
-              { name: 'Jaws', type: '2017 Grady-White Freedom 307', kind: 'motor' },
-            ].map(function (b) {
+              {
+                n: '01',
+                title: 'Add your boat',
+                body: '30 seconds. Make, model, year. We handle the rest of the setup so you can keep going.',
+              },
+              {
+                n: '02',
+                title: 'AI builds your equipment list',
+                body: 'Keeply auto-generates a real maintenance schedule with intervals and parts for every system on your boat. You confirm.',
+              },
+              {
+                n: '03',
+                title: 'Always ready to go',
+                body: 'Your dashboard tells you what is overdue, what is due soon, and what to fix at next haul-out. Nothing falls through.',
+              },
+            ].map(function (step) {
               return (
-                <div key={b.name} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="rgba(77,166,255,0.5)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                <div
+                  key={step.n}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 14,
+                    padding: isMobile ? '22px 22px' : '28px 26px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: GOLD,
+                      letterSpacing: '0.5px',
+                      marginBottom: 10,
+                    }}
                   >
-                    {b.kind === 'sail' ? (
-                      <>
-                        <path d="M12 2L2 20h20z" />
-                        <line x1="12" y1="2" x2="12" y2="20" />
-                      </>
-                    ) : (
-                      <>
-                        <path d="M3 17l4-8 4 4 3-6 4 4" />
-                        <path d="M2 20h20" />
-                      </>
-                    )}
-                  </svg>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-                    {b.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{b.type}</span>
+                    {step.n}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: isMobile ? 17 : 19,
+                      fontWeight: 700,
+                      color: WHITE,
+                      marginBottom: 8,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {step.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      color: 'rgba(255,255,255,0.55)',
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {step.body}
+                  </div>
                 </div>
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ── Testimonial — single quote from a real beta tester. Trust signal
+          the chip strip can't carry. Update as more attributed quotes come
+          in; rotate at deploy time or stay with the strongest. */}
+      <section
+        style={{
+          padding: isMobile ? '56px 20px' : '88px 24px',
+          background: 'rgba(255,255,255,0.025)',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div style={{ maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>
           <div
             style={{
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.3)',
+              fontSize: isMobile ? 22 : 30,
+              lineHeight: 1.35,
               fontWeight: 600,
-              letterSpacing: '0.4px',
-              flexShrink: 0,
+              color: WHITE,
+              letterSpacing: '-0.3px',
+              fontFamily: "'Satoshi','DM Sans',sans-serif",
+              margin: '0 0 28px',
             }}
           >
-            500+ TASKS TRACKED
+            <span style={{ color: GOLD, fontSize: '1.2em', fontWeight: 700, marginRight: 4 }}>
+              &ldquo;
+            </span>
+            Finally, an easy way to get my maintenance tasks into an app. I love the photo
+            history.
+            <span style={{ color: GOLD, fontSize: '1.2em', fontWeight: 700, marginLeft: 4 }}>
+              &rdquo;
+            </span>
+          </div>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 14,
+              color: 'rgba(255,255,255,0.6)',
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(77,166,255,0.6)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M12 2L2 20h20z" />
+              <line x1="12" y1="2" x2="12" y2="20" />
+            </svg>
+            <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Marty</span>
+            <span style={{ color: 'rgba(255,255,255,0.4)' }}>·</span>
+            <span>S/V Rounder</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Coverage strip — chips link to /features for depth.
-          Mobile-first: 6 chips wrap to 2 rows of 3. Value cards removed
-          to drop home-page word count; depth lives at /features. */}
-      <section id="features" style={{ padding: isMobile ? '40px 16px' : '80px 24px' }}>
+      {/* ── Coverage chips — preserved. Depth lives at /features. */}
+      <section id="features" style={{ padding: isMobile ? '56px 16px' : '88px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-
-          {/* Coverage strip */}
-          <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}>
+          <div style={{ textAlign: 'center' }}>
             <h2
               style={{
                 fontSize: 'clamp(24px,3.2vw,40px)',
@@ -1268,12 +1378,211 @@ export default function LandingPage() {
                 );
               })}
             </div>
+            <div style={{ marginTop: isMobile ? 28 : 36 }}>
+              <a
+                href="/features"
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.7)',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.2)',
+                  paddingBottom: 2,
+                }}
+              >
+                See all features {'→'}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing teaser — 3 cards, depth at /pricing. Keeps shoppers on
+          the home page through the funnel without burying the CTA. */}
+      <section
+        style={{
+          padding: isMobile ? '56px 16px' : '88px 24px',
+          background: 'rgba(255,255,255,0.025)',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? 32 : 48 }}>
+            <h2
+              style={{
+                fontSize: 'clamp(24px,3.2vw,40px)',
+                fontWeight: 700,
+                color: WHITE,
+                letterSpacing: '-0.5px',
+                lineHeight: 1.2,
+                margin: '0 0 14px',
+                fontFamily: "'Satoshi','DM Sans',sans-serif",
+              }}
+            >
+              Simple pricing.
+            </h2>
+            <p
+              style={{
+                fontSize: isMobile ? 14 : 16,
+                color: 'rgba(255,255,255,0.55)',
+                lineHeight: 1.6,
+                margin: '0 auto',
+                maxWidth: 540,
+              }}
+            >
+              Free to start. Upgrade only when your boat needs more.
+            </p>
           </div>
 
-          {/* Single deeper-link line */}
-          <div style={{ textAlign: 'center', marginTop: isMobile ? 28 : 40 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+              gap: isMobile ? 14 : 18,
+              maxWidth: 920,
+              margin: '0 auto',
+            }}
+          >
+            {[
+              {
+                name: 'Free',
+                price: '$0',
+                priceSuffix: '',
+                tag: '',
+                bullets: [
+                  '1 vessel',
+                  '2 equipment cards',
+                  '5 First Mate AI queries / month',
+                ],
+                highlight: false,
+              },
+              {
+                name: 'Standard',
+                price: '$15',
+                priceSuffix: '/mo',
+                tag: '',
+                bullets: [
+                  'Unlimited equipment',
+                  'Unlimited repairs',
+                  '30 First Mate AI queries / month',
+                ],
+                highlight: false,
+              },
+              {
+                name: 'Pro',
+                price: '$25',
+                priceSuffix: '/mo',
+                tag: 'Most popular',
+                bullets: [
+                  'Everything in Standard',
+                  '50 First Mate queries · voice · weather',
+                  'Departure checks',
+                ],
+                highlight: true,
+              },
+            ].map(function (plan) {
+              return (
+                <div
+                  key={plan.name}
+                  style={{
+                    background: plan.highlight ? 'rgba(245,166,35,0.06)' : 'rgba(255,255,255,0.03)',
+                    border: plan.highlight
+                      ? '1px solid rgba(245,166,35,0.35)'
+                      : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 14,
+                    padding: isMobile ? '22px 22px' : '28px 24px',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  {plan.tag ? (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: -10,
+                        left: 22,
+                        background: GOLD,
+                        color: '#1a1200',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                        padding: '3px 9px',
+                        borderRadius: 999,
+                      }}
+                    >
+                      {plan.tag}
+                    </div>
+                  ) : null}
+
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: 'rgba(255,255,255,0.6)',
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase',
+                      marginBottom: 10,
+                    }}
+                  >
+                    {plan.name}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 18 }}>
+                    <span
+                      style={{
+                        fontSize: 36,
+                        fontWeight: 800,
+                        color: WHITE,
+                        letterSpacing: '-1px',
+                        fontFamily: "'Satoshi','DM Sans',sans-serif",
+                      }}
+                    >
+                      {plan.price}
+                    </span>
+                    <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+                      {plan.priceSuffix}
+                    </span>
+                  </div>
+
+                  <ul
+                    style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: '0 0 0 0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                    }}
+                  >
+                    {plan.bullets.map(function (b, i) {
+                      return (
+                        <li
+                          key={i}
+                          style={{
+                            fontSize: 13.5,
+                            color: 'rgba(255,255,255,0.7)',
+                            lineHeight: 1.45,
+                            display: 'flex',
+                            gap: 8,
+                          }}
+                        >
+                          <span style={{ color: ACCENT, marginTop: 1 }}>·</span>
+                          <span>{b}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: isMobile ? 28 : 36 }}>
             <a
-              href="/features"
+              href="/pricing"
               style={{
                 fontSize: 14,
                 fontWeight: 600,
@@ -1283,20 +1592,20 @@ export default function LandingPage() {
                 paddingBottom: 2,
               }}
             >
-              See all features {'→'}
+              See full pricing {'→'}
             </a>
           </div>
         </div>
       </section>
 
-      {/* Bottom CTA — pricing comparison lives at /pricing */}
+      {/* ── Bottom CTA — closes the page with action language, not a brand
+          repeat. Hero already says "Always ready to go." */}
       <section
         id="get-started"
         style={{
           padding: isMobile ? '64px 20px' : '96px 24px',
           textAlign: 'center',
           background: `radial-gradient(ellipse at 50% 100%, ${NAVY_MID} 0%, ${NAVY} 70%)`,
-          borderTop: '1px solid rgba(255,255,255,0.06)',
         }}
       >
         <h2
@@ -1310,7 +1619,7 @@ export default function LandingPage() {
             fontFamily: "'Satoshi','DM Sans',sans-serif",
           }}
         >
-          Always ready to go.
+          Get started in 3 minutes.
         </h2>
         <p
           style={{
@@ -1319,7 +1628,7 @@ export default function LandingPage() {
             margin: '0 0 32px',
           }}
         >
-          Free to start. No credit card. Cancel any time.
+          Free to start · No credit card · Cancel any time
         </p>
         <div
           style={{
