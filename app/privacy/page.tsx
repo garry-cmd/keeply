@@ -3,7 +3,7 @@ export const metadata = {
   description: 'How Keeply collects, uses, and protects your data.',
 };
 
-const EFFECTIVE = 'April 24, 2026';
+const EFFECTIVE = 'April 27, 2026';
 const CONTACT = 'support@keeply.boats';
 
 export default function PrivacyPage() {
@@ -158,7 +158,8 @@ export default function PrivacyPage() {
                   ['Stripe', 'Subscription billing and payment processing'],
                   ['Resend', 'Transactional email delivery'],
                   ['Vercel', 'Application hosting and deployment'],
-                  ['Google', 'OAuth sign-in'],
+                  ['Google', 'OAuth sign-in, advertising performance measurement'],
+                  ['PostHog', 'Product analytics and session recording (see Section 7)'],
                 ].map(([svc, purpose], i) => (
                   <tr
                     key={svc}
@@ -221,12 +222,70 @@ export default function PrivacyPage() {
           <Section title="6. Cookies">
             <p>
               Keeply uses essential cookies and local storage to maintain your session and
-              preferences (such as dark mode). We do not use advertising or tracking cookies. We do
-              not use third-party analytics cookies.
+              preferences (such as dark mode). We use a small number of analytics cookies set by
+              PostHog to measure how the site is used (see Section 7). We do not use advertising
+              cookies, and we do not sell or share your data with advertising networks.
             </p>
           </Section>
 
-          <Section title="7. Children's Privacy">
+          <Section title="7. Analytics and Session Recording">
+            <p>
+              Keeply uses PostHog, a product-analytics service, to understand how the site is
+              used and to find bugs in the product. This is the only analytics tool we run.
+            </p>
+            <p style={{ marginTop: 12 }}>
+              PostHog collects:
+            </p>
+            <ul style={{ paddingLeft: 20, margin: '8px 0' }}>
+              <li>
+                <strong>Pageviews</strong> — which pages you visit and in what order
+              </li>
+              <li>
+                <strong>Events</strong> — actions like signing up, completing onboarding, and
+                upgrading
+              </li>
+              <li>
+                <strong>Session recordings</strong> — anonymised replays of your interactions with
+                the site (mouse movement, clicks, scrolling). Password fields and credit card
+                fields are masked and never recorded. We use these recordings to find usability
+                issues and bugs.
+              </li>
+              <li>
+                <strong>Approximate location</strong> — derived from your IP address (city or
+                region level, not precise location)
+              </li>
+              <li>
+                <strong>Device and browser type</strong> — to ensure the app works across phones,
+                tablets, and desktops
+              </li>
+            </ul>
+            <p style={{ marginTop: 12 }}>
+              When you create an account, we link your PostHog profile to your Keeply user ID and
+              email so we can support you and identify trends across your usage. Before you sign
+              up, the analytics data is associated only with an anonymous device identifier.
+            </p>
+            <p style={{ marginTop: 12 }}>
+              You can opt out of PostHog tracking by emailing us at{' '}
+              <a href={`mailto:${CONTACT}`} style={{ color: '#0f4c8a' }}>
+                {CONTACT}
+              </a>
+              . Browser-level "Do Not Track" signals are honoured.
+            </p>
+            <p style={{ marginTop: 12 }}>
+              PostHog is hosted in the United States. Their privacy policy is available at{' '}
+              <a
+                href="https://posthog.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#0f4c8a' }}
+              >
+                posthog.com/privacy
+              </a>
+              .
+            </p>
+          </Section>
+
+          <Section title="8. Children's Privacy">
             <p>
               Keeply is not directed at children under 13 (or under 16 in the EU). We do not
               knowingly collect personal information from children. If you believe a child has
@@ -238,7 +297,7 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="8. Data Security">
+          <Section title="9. Data Security">
             <p>
               We use industry-standard safeguards including encrypted connections (HTTPS/TLS),
               secure database access controls, and row-level security policies in our database. No
@@ -247,7 +306,7 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="9. International Transfers">
+          <Section title="10. International Transfers">
             <p>
               Keeply is operated from the United States. If you are located outside the US, your
               information may be transferred to and processed in the US. By using Keeply, you
@@ -255,7 +314,7 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="10. Changes to This Policy">
+          <Section title="11. Changes to This Policy">
             <p>
               We may update this policy from time to time. We will notify you of material changes by
               email or by posting a notice in the app. Continued use of Keeply after changes
@@ -263,7 +322,7 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="11. Contact">
+          <Section title="12. Contact">
             <p>
               Questions about this policy? Email us at{' '}
               <a href={`mailto:${CONTACT}`} style={{ color: '#0f4c8a', fontWeight: 600 }}>

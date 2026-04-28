@@ -11,7 +11,7 @@ export function initPostHog() {
     api_host: POSTHOG_HOST,
     capture_pageview: true, // auto page views
     capture_pageleave: true,
-    autocapture: false, // we'll fire explicit events only
+    autocapture: true, // capture clicks/forms/inputs across the site (Apr 27 — flipped on for ad-traffic learning phase; revisit in 90d)
     person_profiles: 'identified_only',
     capture_exceptions: true, // auto-catch uncaught JS errors globally
   });
