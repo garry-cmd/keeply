@@ -2,19 +2,20 @@
 
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import posthog from 'posthog-js';
-import { initPostHog } from '@/lib/posthog';
+import { initPostHog, capture } from '@/lib/posthog';
 
-// Inner component uses useSearchParams — must live inside <Suspense>
+// Inner component uses useSearchParams — must live inside <Suspense>.
+// PostHog autocapture's pageview detection misses Next.js client-side route
+// changes (push-state, not full reload), so we manually fire pageview when
+// pathname/searchParams change. The capture queues if PostHog hasn't loaded
+// yet; flushes in order on init.
 function PostHogPageTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     if (pathname) {
-      posthog.capture('$pageview', {
-        $current_url: window.location.href,
-      });
+      capture('$pageview', { $current_url: window.location.href });
     }
   }, [pathname, searchParams]);
 

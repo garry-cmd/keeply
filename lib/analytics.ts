@@ -5,9 +5,14 @@
  *
  * Existing in-app event tracking (KeeplyApp.jsx etc.) can keep using
  * lib/posthog.ts helpers directly — those don't need Ads conversions.
+ *
+ * NOTE: We intentionally do NOT import posthog-js here. All PostHog calls go
+ * through lib/posthog.ts which dynamic-imports the library on idle. A static
+ * `import posthog from 'posthog-js'` here would bundle the 171 KB library
+ * into the marketing critical path and undo the deferral.
  */
 
-import posthog from 'posthog-js';
+import { capture as phCapture } from './posthog';
 
 // ── Google Ads conversion config ─────────────────────────────────────────────
 // Conversion ID is the same for all three conversions on this Ads account.
@@ -42,7 +47,7 @@ function fireAdsConversion(conversion: AdsConversion) {
  */
 export function trackSignupStarted() {
   if (typeof window === 'undefined') return;
-  posthog.capture('signup_started');
+  phCapture('signup_started');
   (window as any).gtag?.('event', 'signup_started');
   fireAdsConversion('signup_started');
 }
@@ -54,7 +59,7 @@ export function trackSignupStarted() {
 export function trackPlanSelected(plan: string, priceId?: string) {
   if (typeof window === 'undefined') return;
   const props = priceId ? { plan, price_id: priceId } : { plan };
-  posthog.capture('plan_selected', props);
+  phCapture('plan_selected', props);
   (window as any).gtag?.('event', 'plan_selected', props);
   fireAdsConversion('plan_selected');
 }
@@ -66,7 +71,7 @@ export function trackPlanSelected(plan: string, priceId?: string) {
 export function trackSignupCompleted(plan: string, emailConfirmedImmediately: boolean) {
   if (typeof window === 'undefined') return;
   const props = { plan, email_confirmed_immediately: emailConfirmedImmediately };
-  posthog.capture('signup_completed', props);
+  phCapture('signup_completed', props);
   (window as any).gtag?.('event', 'signup_completed', { plan });
   fireAdsConversion('signup_completed');
 }
