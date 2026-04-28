@@ -8,15 +8,30 @@
 //
 // To add or reorder links, edit the LINKS array below.
 
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import AvailabilityStrip from './marketing/AvailabilityStrip';
 
 const FONT = "'Satoshi','DM Sans','Helvetica Neue',sans-serif";
 
+// hasAuthHint — synchronous check for any Supabase auth token in localStorage.
+// Mirrors the helper in SiteHeader.tsx and HomeClient.tsx. Returns false
+// during SSR; effect re-checks on the client.
+function hasAuthHint(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+
 const HIDE_ON = (pathname: string): boolean => {
-  // /admin gets its own gated layout. SiteFooter renders on / now that
-  // LandingPage no longer has its own inline footer (removed in the
-  // rewrite — AvailabilityStrip lives inside this footer).
+  // /admin gets its own gated layout.
   if (pathname.startsWith('/admin')) return true;
   return false;
 };
@@ -34,7 +49,16 @@ const LINKS = [
 
 export default function SiteFooter() {
   const pathname = usePathname() || '/';
+  // True when on `/` AND a Supabase auth token is in localStorage — KeeplyApp
+  // will render via HomeClient and we don't want SiteFooter at the bottom of it.
+  const [hideForAuthedHome, setHideForAuthedHome] = useState(false);
+
+  useEffect(() => {
+    setHideForAuthedHome(pathname === '/' && hasAuthHint());
+  }, [pathname]);
+
   if (HIDE_ON(pathname)) return null;
+  if (hideForAuthedHome) return null;
 
   const year = new Date().getFullYear();
 
