@@ -886,22 +886,28 @@ export default function LandingPage() {
             background: '#071e3d',
           }}
         >
-          {/* Poster image — renders on every visit. On desktop the video covers it after idle. */}
-          <img
-            src="/images/hero-poster.jpg"
-            alt=""
-            aria-hidden="true"
-            decoding="async"
-            fetchPriority="high"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center 38%',
-              display: 'block',
-            }}
-          />
-          {/* Video — only mounted on desktop after hydration + idle, so mobile never fetches it. */}
+          {/* Poster — portrait crop on mobile, landscape on desktop. <picture> ensures only
+              one image is fetched per device. This is the LCP element. */}
+          <picture>
+            <source media="(max-width: 767px)" srcSet="/images/hero-poster-mobile.jpg" />
+            <img
+              src="/images/hero-poster.jpg"
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              fetchPriority="high"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center 38%',
+                display: 'block',
+              }}
+            />
+          </picture>
+          {/* Video — only mounted on desktop after hydration + idle. Starts at opacity 0
+              and fades in once the browser fires onCanPlay, so the poster <img> stays
+              visible through the load and there's no black flash or stutter. */}
           {showHeroVideo && (
             <video
               autoPlay
@@ -910,6 +916,9 @@ export default function LandingPage() {
               playsInline
               preload="metadata"
               poster="/images/hero-poster.jpg"
+              onCanPlay={function (e) {
+                e.currentTarget.style.opacity = '1';
+              }}
               style={{
                 position: 'absolute',
                 inset: 0,
@@ -917,6 +926,8 @@ export default function LandingPage() {
                 height: '100%',
                 objectFit: 'cover',
                 objectPosition: 'center 38%',
+                opacity: 0,
+                transition: 'opacity 600ms ease-out',
               }}
             >
               <source src="/videos/sailing-hero-web.mp4" type="video/mp4" />
