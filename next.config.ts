@@ -46,6 +46,25 @@ const nextConfig: NextConfig = {
         source: '/icons/(.*)',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
       },
+      // ─── Static media — long cache (filenames change when content changes) ─
+      {
+        source: '/videos/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/images/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/fonts/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
       {
         source: '/.well-known/assetlinks.json',
         headers: [

@@ -146,7 +146,7 @@ gtag('config', 'AW-18080905583');`,
           dangerouslySetInnerHTML={{
             __html: `if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(function(){});
   });
 }`,
           }}

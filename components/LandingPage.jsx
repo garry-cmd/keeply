@@ -126,6 +126,7 @@ export default function LandingPage() {
   var [scrolled, setScrolled] = useState(false);
   var [isMobile, setIsMobile] = useState(false);
   var [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  var [showHeroVideo, setShowHeroVideo] = useState(false);
   var [annual, setAnnual] = useState(false);
   var [isRecovery, setIsRecovery] = useState(false);
   var [showPlanPicker, setShowPlanPicker] = useState(false);
@@ -155,6 +156,28 @@ export default function LandingPage() {
     window.addEventListener('resize', check);
     return function () {
       window.removeEventListener('resize', check);
+    };
+  }, []);
+
+  // Hero video is 6.2 MB. SSR + initial paint render the poster <img> only,
+  // so mobile devices never trigger a video download. On desktop, after the
+  // poster has painted, swap the video in via requestIdleCallback so the LCP
+  // is the static image, not the video.
+  useEffect(function () {
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth < 768) return;
+    var swap = function () {
+      setShowHeroVideo(true);
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      var idleId = window.requestIdleCallback(swap, { timeout: 1500 });
+      return function () {
+        window.cancelIdleCallback && window.cancelIdleCallback(idleId);
+      };
+    }
+    var t = setTimeout(swap, 200);
+    return function () {
+      clearTimeout(t);
     };
   }, []);
 
@@ -853,7 +876,7 @@ export default function LandingPage() {
           overflow: 'hidden',
         }}
       >
-        {/* ── Hero background: sailing video with dark overlay ── */}
+        {/* ── Hero background: poster image always (LCP target); video overlays on desktop only ── */}
         <div
           style={{
             position: 'absolute',
@@ -863,20 +886,42 @@ export default function LandingPage() {
             background: '#071e3d',
           }}
         >
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
+          {/* Poster image — renders on every visit. On desktop the video covers it after idle. */}
+          <img
+            src="/images/hero-poster.jpg"
+            alt=""
+            aria-hidden="true"
+            decoding="async"
+            fetchPriority="high"
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover',
               objectPosition: 'center 38%',
+              display: 'block',
             }}
-          >
-            <source src="/videos/sailing-hero-web.mp4" type="video/mp4" />
-          </video>
+          />
+          {/* Video — only mounted on desktop after hydration + idle, so mobile never fetches it. */}
+          {showHeroVideo && (
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              poster="/images/hero-poster.jpg"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center 38%',
+              }}
+            >
+              <source src="/videos/sailing-hero-web.mp4" type="video/mp4" />
+            </video>
+          )}
           <div
             style={{
               position: 'absolute',
