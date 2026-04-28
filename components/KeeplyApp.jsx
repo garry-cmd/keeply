@@ -1,7 +1,6 @@
-﻿'use client';
+'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase-client';
-import AuthScreen from './AuthScreen';
 import VesselSetup from './VesselSetup';
 import LogbookPage from './LogbookPage';
 import PartsPage from './PartsPage';

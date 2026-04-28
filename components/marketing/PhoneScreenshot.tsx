@@ -1,4 +1,4 @@
-// PhoneScreenshot.jsx — dark phone frame that wraps a real app screenshot
+// PhoneScreenshot.tsx — dark phone frame that wraps a real app screenshot
 // or looped walkthrough video.
 //
 // API:
@@ -103,12 +103,19 @@ function HomeIndicator() {
   );
 }
 
+interface PhoneScreenshotProps {
+  size?: 'mobile' | 'desktop';
+  src?: string;
+  videoSrc?: string | null;
+  alt?: string;
+}
+
 export default function PhoneScreenshot({
   size = 'desktop',
   src = '/images/hero-my-boat.jpg',
   videoSrc = null,
   alt = 'Keeply on a phone — My Boat tab showing S/V Irene maintenance overview',
-}) {
+}: PhoneScreenshotProps) {
   // Phone dimensions chosen to match the screenshot aspect ratio (399×860 ≈ 0.464)
   // closely enough that the inner screen image fills naturally without crop bars.
   const phoneW = size === 'mobile' ? 270 : 330;
