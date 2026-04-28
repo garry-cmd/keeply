@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase-client';
 import { PLANS as PRICING_CONFIG } from '../lib/pricing.js';
-import { capture, identify } from '../lib/posthog';
+import posthog from 'posthog-js';
 import {
   trackSignupStarted,
   trackPlanSelected,
@@ -410,8 +410,8 @@ export default function LandingPage() {
           password: password,
         });
         if (loginResult.error) throw loginResult.error;
-        identify(loginResult.data.user.id, { email: email });
-        capture('login_completed');
+        posthog.identify(loginResult.data.user.id, { email: email });
+        posthog.capture('login_completed');
       }
     } catch (err) {
       setError(err.message);
