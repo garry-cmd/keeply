@@ -44,8 +44,24 @@ export function useAuthRedirects(): AuthRedirectsResult {
     // consumes `?code=` to create the session; we consume our marker to
     // tell HomeClient to open the modal in recovery mode. This sidesteps
     // PASSWORD_RECOVERY-event timing (which is unreliable under PKCE).
+    //
+    // We clean the marker IMMEDIATELY on read, even when `?code=` is still
+    // present, by selectively deleting only this one key from the search
+    // params (not the whole search string). Without this, the marker
+    // would survive supabase's own cleanup and re-fire the recovery modal
+    // on every page refresh — even after the user has already reset
+    // their password and signed out.
     if (p.get('keeply_recovery') === '1') {
       setInitialRecovery(true);
+      try {
+        p.delete('keeply_recovery');
+        const remainingQuery = p.toString();
+        const cleanUrl =
+          window.location.pathname +
+          (remainingQuery ? '?' + remainingQuery : '') +
+          (window.location.hash || '');
+        window.history.replaceState({}, '', cleanUrl);
+      } catch (e) {}
     }
 
     if (p.get('signup') === '1') {
@@ -104,6 +120,9 @@ export function useAuthRedirects(): AuthRedirectsResult {
     // leave the URL alone — supabase handles cleanup. When `?code=` is
     // absent, we clean our consumed markers (including hash preservation,
     // since pre-PKCE recovery / OAuth implicit flow puts tokens in the hash).
+    //
+    // Note: `keeply_recovery=1` is cleaned earlier in this effect (selective
+    // delete) and isn't listed here.
     if (p.get('code')) {
       // do nothing — supabase-js owns the cleanup
     } else if (
@@ -111,8 +130,7 @@ export function useAuthRedirects(): AuthRedirectsResult {
       p.get('login') === '1' ||
       p.get('upgraded') === '1' ||
       p.get('verified') === '1' ||
-      p.get('verified') === '0' ||
-      p.get('keeply_recovery') === '1'
+      p.get('verified') === '0'
     ) {
       try {
         const cleanUrl = window.location.pathname + (window.location.hash || '');
