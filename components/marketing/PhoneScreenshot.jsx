@@ -1,14 +1,20 @@
-// PhoneScreenshot.jsx — dark phone frame that wraps a real app screenshot.
+// PhoneScreenshot.jsx — dark phone frame that wraps a real app screenshot
+// or looped walkthrough video.
 //
-// Replaces the earlier HeroAppLoop animated mockup. We tried building a
-// stylized scene-cycling phone in code; Garry preferred showing the real app.
-// This is the simpler answer: a single static screenshot, framed in a dark
-// phone bezel for product-shot polish (drop shadow, dynamic island, status
-// bar with mock 9:41, home indicator). The image itself does the heavy
-// lifting — actual Keeply UI with real S/V Irene data.
+// API:
+//   <PhoneScreenshot src="/images/hero-my-boat.jpg" />            → static image
+//   <PhoneScreenshot
+//     src="/images/walkthrough-poster.jpg"  // poster while loading
+//     videoSrc="/videos/walkthrough.mp4"    // looped video, autoplays in view
+//   />
 //
-// When the SV IRENE walkthrough video is recorded, swap this entire
-// component for a <video> element. Same hero slot, one-line change.
+// When `videoSrc` is provided, renders a <video> element with `src` as the
+// poster. Otherwise renders <img>. Existing call sites that only pass `src`
+// keep working unchanged.
+//
+// Video defaults: autoPlay loop muted playsInline preload="metadata".
+// `metadata` (not `none`) so the poster can paint immediately while the
+// video data fetches in the background — feels faster on landing.
 
 import React from 'react';
 
@@ -100,6 +106,7 @@ function HomeIndicator() {
 export default function PhoneScreenshot({
   size = 'desktop',
   src = '/images/hero-my-boat.jpg',
+  videoSrc = null,
   alt = 'Keeply on a phone — My Boat tab showing S/V Irene maintenance overview',
 }) {
   // Phone dimensions chosen to match the screenshot aspect ratio (399×860 ≈ 0.464)
@@ -164,7 +171,7 @@ export default function PhoneScreenshot({
 
         <StatusBar />
 
-        {/* Screenshot fills the rest of the screen area */}
+        {/* Screenshot or looped video fills the rest of the screen area */}
         <div
           style={{
             flex: 1,
@@ -172,17 +179,37 @@ export default function PhoneScreenshot({
             overflow: 'hidden',
           }}
         >
-          <img
-            src={src}
-            alt={alt}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'top center',
-              display: 'block',
-            }}
-          />
+          {videoSrc ? (
+            <video
+              src={videoSrc}
+              poster={src}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              aria-label={alt}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'top center',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <img
+              src={src}
+              alt={alt}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'top center',
+                display: 'block',
+              }}
+            />
+          )}
         </div>
 
         <HomeIndicator />

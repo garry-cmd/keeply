@@ -967,14 +967,14 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Hero #2: single phone, ready to swap for video ─────────────────
-          Today: PhoneScreenshot wraps a static My Boat screenshot. When
-          Garry hands over the recorded walkthrough, swap the <img> inside
-          PhoneScreenshot for a <video autoPlay loop muted playsInline
-          poster="/images/hero-my-boat.jpg" preload="none">. Single-line
-          change. Until then, this is the same My Boat hero shot we used
-          before, presented full-size instead of cramped between two
-          tilted siblings. */}
+      {/* ── Hero #2: looped walkthrough video in a phone frame ─────────────
+          Real screen recording from S/V Irene, edited down to a ~15s loop:
+          My Boat hero → Due Soon expanded → Equipment / Beta Marine →
+          First Mate haul-out advice → Lists Need to buy → My Boat (loop seam).
+          366×720 H.264, ~165 KB, no audio. Loads with preload="metadata"
+          so the poster paints immediately while video data fetches.
+          PhoneScreenshot renders <video> when given videoSrc; src is the
+          poster (same My Boat hero frame as the loop's first frame). */}
       <section
         style={{
           padding: isMobile ? '40px 16px 56px' : '72px 24px 96px',
@@ -990,8 +990,9 @@ export default function LandingPage() {
       >
         <PhoneScreenshot
           size={isMobile ? 'mobile' : 'desktop'}
-          src="/images/hero-my-boat.jpg"
-          alt="Keeply on a phone — My Boat tab showing S/V Irene maintenance overview"
+          src="/images/walkthrough-poster.jpg"
+          videoSrc="/videos/walkthrough.mp4"
+          alt="Keeply walkthrough — S/V Irene: My Boat dashboard, Due Soon maintenance, Equipment, First Mate haul-out advice, and Lists"
         />
         <div style={{ textAlign: 'center', maxWidth: 360 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: WHITE, marginBottom: 6 }}>
