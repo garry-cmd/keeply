@@ -2,9 +2,11 @@
 
 // SiteHeader — global navigation for all public marketing & legal pages.
 //
-// Rendered once from app/layout.tsx. Returns null on:
-//   - "/"          (homepage uses its own hero-aware nav inside LandingPage)
-//   - "/admin/*"   (private workspace; marketing CTAs would be incoherent)
+// Rendered from app/layout.tsx for every page EXCEPT "/" and "/admin/*".
+// On "/", HomeClient mounts this directly with `force` so it can also
+// unmount when the user becomes authed (KeeplyApp takes over). This avoids
+// a race condition where the header would otherwise stay rendered above
+// KeeplyApp until something triggered a pathname change.
 //
 // To add a route to the suppression list, edit HIDE_ON below.
 // To add or reorder a public link, edit LINKS below.
@@ -16,28 +18,12 @@ const NAVY = '#071e3d';
 const GOLD = '#f5a623';
 const FONT = "'Satoshi','DM Sans','Helvetica Neue',sans-serif";
 
-// hasAuthHint — synchronous check for any Supabase auth token in localStorage.
-// Mirrors the same helper in HomeClient.tsx. Returns false during SSR (where
-// localStorage doesn't exist) and on initial client render before the effect
-// runs — both cases are fine because they fall through to "render normally,"
-// which is correct for guest visitors and creates a brief flash for authed
-// users (same flash that HomeClient already has during state hydration).
-function hasAuthHint(): boolean {
-  if (typeof localStorage === 'undefined') return false;
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-        return true;
-      }
-    }
-  } catch (e) {}
-  return false;
-}
-
-// Routes where this header should NOT render.
+// Routes where this header should NOT render unless `force` is true.
+// `/` is in this list because HomeClient owns SiteHeader on home —
+// it renders the header in the guest branch and unmounts it the moment
+// auth state flips to authed (so KeeplyApp can render alone).
 const HIDE_ON = (pathname: string): boolean => {
-  // /admin gets its own gated layout.
+  if (pathname === '/') return true;
   if (pathname.startsWith('/admin')) return true;
   return false;
 };
@@ -59,15 +45,16 @@ const LINKS = [
 
 const HEADER_HEIGHT = 60;
 
-export default function SiteHeader() {
+interface SiteHeaderProps {
+  // Bypass the HIDE_ON check. Used by HomeClient on `/` so the header
+  // renders for guests and unmounts cleanly when state flips to authed.
+  force?: boolean;
+}
+
+export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
   const pathname = usePathname() || '/';
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  // True when on `/` AND a Supabase auth token is in localStorage — KeeplyApp
-  // will render via HomeClient and we don't want SiteHeader on top of it.
-  // Initial value false on SSR + first client render → header renders for
-  // guests; effect fires post-hydration and hides for authed users.
-  const [hideForAuthedHome, setHideForAuthedHome] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -81,13 +68,7 @@ export default function SiteHeader() {
     setMenuOpen(false);
   }, [pathname]);
 
-  // Re-evaluate auth hint whenever pathname changes (e.g., on first mount).
-  useEffect(() => {
-    setHideForAuthedHome(pathname === '/' && hasAuthHint());
-  }, [pathname]);
-
-  if (HIDE_ON(pathname)) return null;
-  if (hideForAuthedHome) return null;
+  if (!force && HIDE_ON(pathname)) return null;
 
   const linkStyle: React.CSSProperties = {
     fontSize: 13,

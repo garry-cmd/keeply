@@ -2,36 +2,21 @@
 
 // SiteFooter — global footer for all public marketing & legal pages.
 //
-// Rendered once from app/layout.tsx, after children. Same suppression rules
-// as SiteHeader: returns null on "/" (LandingPage has its own footer) and
-// on /admin/* (private workspace).
+// Rendered from app/layout.tsx for every page EXCEPT "/" and "/admin/*".
+// On "/", HomeClient mounts this directly with `force` so it can also
+// unmount when the user becomes authed (KeeplyApp takes over). Same
+// pattern as SiteHeader — see comment there for the reasoning.
 //
 // To add or reorder links, edit the LINKS array below.
 
-import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import AvailabilityStrip from './marketing/AvailabilityStrip';
 
 const FONT = "'Satoshi','DM Sans','Helvetica Neue',sans-serif";
 
-// hasAuthHint — synchronous check for any Supabase auth token in localStorage.
-// Mirrors the helper in SiteHeader.tsx and HomeClient.tsx. Returns false
-// during SSR; effect re-checks on the client.
-function hasAuthHint(): boolean {
-  if (typeof localStorage === 'undefined') return false;
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-        return true;
-      }
-    }
-  } catch (e) {}
-  return false;
-}
-
+// Routes where this footer should NOT render unless `force` is true.
 const HIDE_ON = (pathname: string): boolean => {
-  // /admin gets its own gated layout.
+  if (pathname === '/') return true;
   if (pathname.startsWith('/admin')) return true;
   return false;
 };
@@ -47,18 +32,14 @@ const LINKS = [
   { href: '/terms', label: 'Terms' },
 ];
 
-export default function SiteFooter() {
+interface SiteFooterProps {
+  // Bypass HIDE_ON. HomeClient sets this on `/`.
+  force?: boolean;
+}
+
+export default function SiteFooter({ force = false }: SiteFooterProps = {}) {
   const pathname = usePathname() || '/';
-  // True when on `/` AND a Supabase auth token is in localStorage — KeeplyApp
-  // will render via HomeClient and we don't want SiteFooter at the bottom of it.
-  const [hideForAuthedHome, setHideForAuthedHome] = useState(false);
-
-  useEffect(() => {
-    setHideForAuthedHome(pathname === '/' && hasAuthHint());
-  }, [pathname]);
-
-  if (HIDE_ON(pathname)) return null;
-  if (hideForAuthedHome) return null;
+  if (!force && HIDE_ON(pathname)) return null;
 
   const year = new Date().getFullYear();
 

@@ -17,6 +17,8 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from './supabase-client';
 import LandingPage from './marketing/LandingPage';
+import SiteHeader from './SiteHeader';
+import SiteFooter from './SiteFooter';
 import { useAuthRedirects } from './auth/useAuthRedirects';
 import type { AuthMode } from './auth/AuthModal';
 
@@ -218,13 +220,20 @@ export default function HomeClient() {
   if (state === 'authed') return <KeeplyApp />;
   if (state === 'pending') return null;
 
+  // Guest branch — own SiteHeader/SiteFooter so they unmount cleanly the
+  // moment auth flips to 'authed'. Without this, layout.tsx's globally-mounted
+  // header would stay visible on top of KeeplyApp until pathname changes
+  // (which it doesn't on login). `force` bypasses HIDE_ON since both
+  // components hide themselves on `/` by default — see SiteHeader.tsx.
   return (
     <>
+      <SiteHeader force />
       <LandingPage
         onOpenPlanPicker={handleOpenPlanPicker}
         onOpenLogin={handleOpenLogin}
         verifiedBanner={verifiedBanner}
       />
+      <SiteFooter force />
       {showPlanPicker && (
         <PlanPickerModal
           open={showPlanPicker}
