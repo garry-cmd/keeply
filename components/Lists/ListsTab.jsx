@@ -29,7 +29,7 @@ export default function ListsTab({ activeVesselId }) {
       <div
         style={{
           display: 'flex',
-          gap: 6,
+          gap: 8,
           padding: '12px 14px 0',
           overflowX: 'auto',
         }}
@@ -91,17 +91,19 @@ function PillButton({ active, onClick, children }) {
     <button
       onClick={onClick}
       style={{
-        padding: '8px 14px',
-        borderRadius: 8,
+        padding: '9px 16px',
+        borderRadius: 10,
         border: active ? '1px solid var(--brand)' : '1px solid var(--border)',
-        background: active ? 'var(--brand-deep)' : 'transparent',
-        color: active ? 'var(--brand)' : 'var(--text-muted)',
-        fontSize: 12,
+        background: active ? 'var(--brand)' : 'transparent',
+        color: active ? 'var(--text-on-brand)' : 'var(--text-secondary)',
+        fontSize: 13,
         fontWeight: 700,
         cursor: 'pointer',
         flexShrink: 0,
         whiteSpace: 'nowrap',
         fontFamily: 'inherit',
+        boxShadow: active ? '0 2px 10px rgba(0,0,0,0.18)' : 'none',
+        transition: 'all 0.15s',
       }}
     >
       {children}

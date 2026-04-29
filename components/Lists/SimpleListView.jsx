@@ -144,28 +144,51 @@ export default function SimpleListView({
     await undoFn();
   }
 
-  // ── Add (inline) ──
-  // Returns true on success so the AddRow can clear and refocus, false on error.
-  async function addItem(name) {
+  // ── Add (inline, optimistic) ──
+  // Synchronous: optimistic temp row appears immediately, DB write fires in
+  // background and reconciles when it returns. Returns true on validated input
+  // so the AddRow can clear and refocus instantly.
+  function addItem(name) {
     if (!activeVesselId) return false;
     const trimmed = (name || '').trim();
     if (!trimmed) return false;
-    const insertRow = {
-      vessel_id: activeVesselId,
+    const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    const tempRow = {
+      id: tempId,
       name: trimmed,
+      notes: null,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      _isTemp: true,
     };
-    const { data, error } = await supabase
-      .from(tableName)
-      .insert(insertRow)
-      .select('id, name, notes, completed_at, created_at')
-      .single();
-    if (error) {
-      console.error('addItem:', error);
-      return false;
-    }
+    // Optimistic: row appears immediately
     setItems(function (prev) {
-      return [data, ...prev];
+      return [tempRow, ...prev];
     });
+    // Fire-and-forget DB write
+    supabase
+      .from(tableName)
+      .insert({ vessel_id: activeVesselId, name: trimmed })
+      .select('id, name, notes, completed_at, created_at')
+      .single()
+      .then(function (result) {
+        if (result.error) {
+          console.error('addItem:', result.error);
+          // Roll back the optimistic row
+          setItems(function (prev) {
+            return prev.filter(function (r) {
+              return r.id !== tempId;
+            });
+          });
+          return;
+        }
+        // Replace temp row with real one (preserves position in list)
+        setItems(function (prev) {
+          return prev.map(function (r) {
+            return r.id === tempId ? result.data : r;
+          });
+        });
+      });
     return true;
   }
 
@@ -272,7 +295,7 @@ export default function SimpleListView({
               isLast={false /* always followed by AddRow */}
               onComplete={markComplete}
               onMenu={setActionSheet}
-              busy={busyId === item.id}
+              busy={busyId === item.id || item._isTemp}
             />
           );
         })}
@@ -420,7 +443,6 @@ function Row({ item, isLast, onComplete, onMenu, busy }) {
 function AddRow({ onAdd, placeholder }) {
   const [active, setActive] = useState(false);
   const [value, setValue] = useState('');
-  const [busy, setBusy] = useState(false);
   const inputRef = useRef(null);
 
   function activate() {
@@ -436,12 +458,10 @@ function AddRow({ onAdd, placeholder }) {
     setValue('');
   }
 
-  async function submit() {
+  function submit() {
     const trimmed = value.trim();
-    if (!trimmed || busy) return;
-    setBusy(true);
-    const ok = await onAdd(trimmed);
-    setBusy(false);
+    if (!trimmed) return;
+    const ok = onAdd(trimmed);
     if (ok) {
       setValue('');
       // Stay focused for rapid entry
@@ -513,8 +533,6 @@ function AddRow({ onAdd, placeholder }) {
         alignItems: 'center',
         gap: 12,
         padding: '11px 14px',
-        opacity: busy ? 0.6 : 1,
-        transition: 'opacity 0.15s',
       }}
     >
       <div
@@ -545,7 +563,6 @@ function AddRow({ onAdd, placeholder }) {
         onChange={function (e) { setValue(e.target.value); }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={busy}
         style={{
           flex: 1,
           minWidth: 0,
@@ -561,7 +578,6 @@ function AddRow({ onAdd, placeholder }) {
       />
       <button
         onClick={deactivate}
-        disabled={busy}
         aria-label="Cancel"
         style={{
           width: 32,
