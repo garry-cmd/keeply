@@ -16,6 +16,7 @@ import {
   getPositionLabel,
   getShortPositionLabel,
   hasMissingEngineInfo,
+  isAutoBackfilled,
   getEngineHoursForTask,
   DISCREPANCY_HOURS_ABS,
 } from '../lib/engines';
@@ -2544,6 +2545,15 @@ export default function App() {
   // engine.id; values are strings (input value pattern). Pre-populated when
   // the modal opens via openUpdateEngineHoursModal() below.
   const [engineHoursInputs, setEngineHoursInputs] = useState({});
+  // Phase 2G: backfill banner + modal for engines created by the Phase 1
+  // auto-backfill (empty make/model on vessels that had legacy engine_hours
+  // before the engines table existed). Modal lets the user fill in identity
+  // so AI features (First Mate, identify-vessel) get proper engine context.
+  const [showEngineIdentityModal, setShowEngineIdentityModal] = useState(false);
+  // Per-engine identity inputs. Keyed by engine.id; values are
+  // { make, model, year, horsepower, fuel_type } — all strings or empty.
+  const [engineIdentityInputs, setEngineIdentityInputs] = useState({});
+  const [savingEngineIdentity, setSavingEngineIdentity] = useState(false);
   const [showEquipNote, setShowEquipNote] = useState(false);
   const [haulPlanLoading, setHaulPlanLoading] = useState(false);
   const [haulPlanMsg, setHaulPlanMsg] = useState(null);
@@ -3026,6 +3036,100 @@ export default function App() {
       setShowUpdateHoursModal(true);
     },
     [engines]
+  );
+
+  // Phase 2G — opens the Engine Identity modal pre-populated with current
+  // (likely-empty) values. Only includes engines flagged as auto-backfilled,
+  // so the user sees focused per-engine fields to fill in.
+  const openEngineIdentityModal = useCallback(
+    function () {
+      const initial = {};
+      getOrderedEngines(engines)
+        .filter(isAutoBackfilled)
+        .forEach(function (e) {
+          initial[e.id] = {
+            make: e.make || '',
+            model: e.model || '',
+            year: e.year != null ? String(e.year) : '',
+            horsepower: e.horsepower != null ? String(e.horsepower) : '',
+            fuel_type: e.fuel_type || '',
+          };
+        });
+      setEngineIdentityInputs(initial);
+      setShowEngineIdentityModal(true);
+    },
+    [engines]
+  );
+
+  // Phase 2G — writes filled-in engine identity values to the engines table
+  // and clears the auto-backfill notes string so isAutoBackfilled() returns
+  // false on future renders (banner disappears, no longer flagged as
+  // missing info). Validates make + model are present on every engine in
+  // the modal — those are the bare minimum for AI accuracy.
+  const saveEngineIdentities = useCallback(
+    async function () {
+      const ids = Object.keys(engineIdentityInputs);
+      if (ids.length === 0) {
+        setShowEngineIdentityModal(false);
+        return;
+      }
+      // Validate: make and model required on every engine being edited
+      for (const id of ids) {
+        const v = engineIdentityInputs[id];
+        if (!v.make || !v.make.trim()) {
+          alert('Please enter a make for every engine.');
+          return;
+        }
+        if (!v.model || !v.model.trim()) {
+          alert('Please enter a model for every engine.');
+          return;
+        }
+      }
+      setSavingEngineIdentity(true);
+      try {
+        // Parallel updates — one per engine
+        await Promise.all(
+          ids.map(function (id) {
+            const v = engineIdentityInputs[id];
+            const patch = {
+              make: v.make.trim(),
+              model: v.model.trim(),
+              year: v.year && v.year.trim() ? parseInt(v.year, 10) : null,
+              horsepower:
+                v.horsepower && v.horsepower.trim() ? parseInt(v.horsepower, 10) : null,
+              fuel_type: v.fuel_type || null,
+              // Clear the auto-backfill notes so isAutoBackfilled() returns
+              // false next render (banner disappears).
+              notes: null,
+            };
+            return supabase.from('engines').update(patch).eq('id', id);
+          })
+        );
+        // Refresh local state so UI reflects without a page reload
+        setEngines(function (prev) {
+          return prev.map(function (e) {
+            const v = engineIdentityInputs[e.id];
+            if (!v) return e;
+            return Object.assign({}, e, {
+              make: v.make.trim(),
+              model: v.model.trim(),
+              year: v.year && v.year.trim() ? parseInt(v.year, 10) : null,
+              horsepower:
+                v.horsepower && v.horsepower.trim() ? parseInt(v.horsepower, 10) : null,
+              fuel_type: v.fuel_type || null,
+              notes: null,
+            });
+          });
+        });
+        setShowEngineIdentityModal(false);
+      } catch (err) {
+        console.error('saveEngineIdentities failed:', err);
+        alert('Could not save engine details: ' + (err.message || err));
+      } finally {
+        setSavingEngineIdentity(false);
+      }
+    },
+    [engineIdentityInputs]
   );
 
   // ─── SWITCH VESSEL — reload equipment + tasks ────────────────────────────────
@@ -12499,6 +12603,66 @@ export default function App() {
                 </div>
               );
             })()}
+
+            {/* ── Phase 2G: backfill banner ──────────────────────────────
+                Shows when any engine on the active vessel was created by
+                the Phase 1 auto-backfill (empty make/model). CTA opens a
+                modal to fill in identity. Banner disappears automatically
+                once isAutoBackfilled() returns false for all engines. */}
+            {hasMissingEngineInfo(engines) && (
+              <div
+                style={{
+                  marginBottom: 16,
+                  padding: '14px 16px',
+                  borderRadius: 12,
+                  background: 'rgba(77,166,255,0.08)',
+                  border: '1px solid rgba(77,166,255,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#4da6ff',
+                      marginBottom: 2,
+                    }}
+                  >
+                    Add engine details
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    First Mate and maintenance recommendations work best when
+                    we know your engine make and model.
+                  </div>
+                </div>
+                <button
+                  onClick={openEngineIdentityModal}
+                  style={{
+                    background: '#4da6ff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '8px 14px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  Add details
+                </button>
+              </div>
+            )}
 
             {/* Urgency summary cards */}
             {(function () {
@@ -26790,6 +26954,347 @@ export default function App() {
               Shared members can view and edit vessel data. Only the owner can delete the vessel or
               remove members.
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PHASE 2G: ENGINE IDENTITY MODAL ──
+          Triggered by the My Boat banner when any engine on the active
+          vessel was created by the Phase 1 auto-backfill (no make/model).
+          Shows ONLY backfilled engines — pre-populated with whatever
+          partial data exists. Save UPDATEs each engine row and clears the
+          auto-backfill notes string so the banner disappears. */}
+      {showEngineIdentityModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'var(--bg-overlay)',
+            zIndex: 600,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={function () {
+            if (!savingEngineIdentity) setShowEngineIdentityModal(false);
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: '20px 20px 0 0',
+              width: '100%',
+              maxWidth: 480,
+              padding: '24px 24px 36px',
+              boxShadow: '0 -8px 40px rgba(0,0,0,0.2)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+            onClick={function (e) {
+              e.stopPropagation();
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 4,
+                background: 'var(--border)',
+                borderRadius: 2,
+                margin: '0 auto 20px',
+              }}
+            />
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>
+              Add Engine Details
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
+              Helps First Mate suggest accurate service intervals and parts.
+            </div>
+
+            {(function () {
+              // Re-compute on every render so removed engines disappear
+              // mid-edit (rare, but safe).
+              const orderedBackfilled = getOrderedEngines(engines).filter(isAutoBackfilled);
+              if (orderedBackfilled.length === 0) {
+                return (
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '24px 8px',
+                      color: 'var(--text-muted)',
+                      fontSize: 13,
+                    }}
+                  >
+                    All engines have details on file.
+                  </div>
+                );
+              }
+              return (
+                <>
+                  {orderedBackfilled.map(function (e, idx) {
+                    const id = e.id;
+                    const inputs = engineIdentityInputs[id] || {
+                      make: '',
+                      model: '',
+                      year: '',
+                      horsepower: '',
+                      fuel_type: '',
+                    };
+                    // Long-form position label for clarity in the modal
+                    let posHeader = null;
+                    if (orderedBackfilled.length > 1) {
+                      const p = e.position;
+                      if (p === 'port') posHeader = 'Port engine';
+                      else if (p === 'starboard') posHeader = 'Starboard engine';
+                      else if (p === 'center') posHeader = 'Center engine';
+                      else posHeader = 'Engine ' + (idx + 1);
+                    }
+
+                    function setField(field, val) {
+                      setEngineIdentityInputs(function (prev) {
+                        return Object.assign({}, prev, {
+                          [id]: Object.assign({}, prev[id] || inputs, { [field]: val }),
+                        });
+                      });
+                    }
+
+                    return (
+                      <div
+                        key={id}
+                        style={{
+                          marginBottom: 18,
+                          paddingBottom: 16,
+                          borderBottom:
+                            idx < orderedBackfilled.length - 1
+                              ? '1px solid var(--border)'
+                              : 'none',
+                        }}
+                      >
+                        {posHeader && (
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: '#6fa8e0',
+                              letterSpacing: '0.5px',
+                              textTransform: 'uppercase',
+                              marginBottom: 10,
+                            }}
+                          >
+                            {posHeader}
+                          </div>
+                        )}
+                        {/* Make + Model row */}
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: 10,
+                            marginBottom: 10,
+                          }}
+                        >
+                          <div>
+                            <label
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                letterSpacing: '0.5px',
+                                display: 'block',
+                                marginBottom: 4,
+                              }}
+                            >
+                              MAKE *
+                            </label>
+                            <input
+                              placeholder="e.g. Yanmar"
+                              value={inputs.make}
+                              onChange={function (ev) {
+                                setField('make', ev.target.value);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: 14,
+                                border: '1px solid var(--border)',
+                                borderRadius: 8,
+                                background: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                letterSpacing: '0.5px',
+                                display: 'block',
+                                marginBottom: 4,
+                              }}
+                            >
+                              MODEL *
+                            </label>
+                            <input
+                              placeholder="e.g. 4JH45"
+                              value={inputs.model}
+                              onChange={function (ev) {
+                                setField('model', ev.target.value);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: 14,
+                                border: '1px solid var(--border)',
+                                borderRadius: 8,
+                                background: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                              }}
+                            />
+                          </div>
+                        </div>
+                        {/* Year + HP row (optional) */}
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: 10,
+                            marginBottom: 10,
+                          }}
+                        >
+                          <div>
+                            <label
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                letterSpacing: '0.5px',
+                                display: 'block',
+                                marginBottom: 4,
+                              }}
+                            >
+                              YEAR
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 2014"
+                              value={inputs.year}
+                              onChange={function (ev) {
+                                setField('year', ev.target.value);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: 14,
+                                border: '1px solid var(--border)',
+                                borderRadius: 8,
+                                background: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                letterSpacing: '0.5px',
+                                display: 'block',
+                                marginBottom: 4,
+                              }}
+                            >
+                              HP
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 54"
+                              value={inputs.horsepower}
+                              onChange={function (ev) {
+                                setField('horsepower', ev.target.value);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: 14,
+                                border: '1px solid var(--border)',
+                                borderRadius: 8,
+                                background: 'var(--bg-card)',
+                                color: 'var(--text-primary)',
+                              }}
+                            />
+                          </div>
+                        </div>
+                        {/* Fuel type radio (optional) */}
+                        <div>
+                          <label
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: 'var(--text-muted)',
+                              letterSpacing: '0.5px',
+                              display: 'block',
+                              marginBottom: 6,
+                            }}
+                          >
+                            FUEL
+                          </label>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            {['diesel', 'gas'].map(function (ft) {
+                              const selected = inputs.fuel_type === ft;
+                              return (
+                                <button
+                                  key={ft}
+                                  onClick={function () {
+                                    setField('fuel_type', selected ? '' : ft);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: '8px 12px',
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    background: selected
+                                      ? '#4da6ff'
+                                      : 'transparent',
+                                    color: selected ? '#fff' : 'var(--text-secondary)',
+                                    border: selected
+                                      ? '1px solid #4da6ff'
+                                      : '1px solid var(--border)',
+                                    borderRadius: 8,
+                                    cursor: 'pointer',
+                                    textTransform: 'capitalize',
+                                  }}
+                                >
+                                  {ft}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    onClick={saveEngineIdentities}
+                    disabled={savingEngineIdentity}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      background: savingEngineIdentity ? 'var(--bg-subtle)' : '#4da6ff',
+                      color: savingEngineIdentity ? 'var(--text-muted)' : '#fff',
+                      border: 'none',
+                      borderRadius: 10,
+                      cursor: savingEngineIdentity ? 'default' : 'pointer',
+                    }}
+                  >
+                    {savingEngineIdentity ? 'Saving…' : 'Save engine details'}
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
