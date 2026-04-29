@@ -1,11 +1,12 @@
 'use client';
 
-// Hero — text-only, gradient only, no photo.
-// Photo was suppressed by the heavy gradient overlay anyway and cost
-// ~187 KB of LCP weight. Removing it makes the hero faster AND
-// stronger: text + gradient is the Linear/Vercel/Stripe pattern.
+// Hero — 2-column on desktop, stacked on mobile.
+// Left: H1 + subhead + CTAs. Right: phone with looped walkthrough video.
+// Video is the same /videos/walkthrough.mp4 that used to live in
+// VideoShowcase below — that section is now removed; the hero IS the demo.
 
 import React from 'react';
+import PhoneScreenshot from '../PhoneScreenshot';
 
 const NAVY = '#071e3d';
 const NAVY_MID = '#0d2d5e';
@@ -13,56 +14,78 @@ const GOLD = '#f5a623';
 const WHITE = '#ffffff';
 
 interface HeroProps {
+  isMobile: boolean;
   onGetStarted: () => void;
   onLogin: () => void;
 }
 
-export default function Hero({ onGetStarted, onLogin }: HeroProps) {
+export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
   return (
     <section
       style={{
         position: 'relative',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '130px 24px 80px',
+        padding: isMobile ? '88px 20px 56px' : '120px 32px 96px',
         overflow: 'hidden',
         background: `radial-gradient(ellipse at 50% 30%, ${NAVY_MID} 0%, ${NAVY} 70%)`,
       }}
     >
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 780 }}>
-        <h1
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          maxWidth: 1200,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: 'center',
+          gap: isMobile ? 40 : 56,
+        }}
+      >
+        {/* Left column: copy + CTAs */}
+        <div
           style={{
-            fontSize: 'clamp(48px,8vw,96px)',
-            fontWeight: 800,
-            color: WHITE,
-            lineHeight: 1.0,
-            letterSpacing: '-2.5px',
-            margin: '0 0 24px',
-            fontFamily: "'Clash Display','Inter',sans-serif",
+            flex: '1 1 50%',
+            minWidth: 0,
+            textAlign: isMobile ? 'center' : 'left',
           }}
         >
-          Every system. Every part. Every <span style={{ color: GOLD }}>passage.</span>
-        </h1>
+          <h1
+            style={{
+              fontSize: isMobile ? 'clamp(36px,8vw,52px)' : 'clamp(40px,5.5vw,72px)',
+              fontWeight: 800,
+              color: WHITE,
+              lineHeight: 1.05,
+              letterSpacing: '-1.5px',
+              margin: '0 0 20px',
+              fontFamily: "'Clash Display','Inter',sans-serif",
+            }}
+          >
+            Every system. Every part. Every <span style={{ color: GOLD }}>passage.</span>
+          </h1>
 
-        <p
-          style={{
-            fontSize: 'clamp(16px,2vw,20px)',
-            color: 'rgba(255,255,255,0.65)',
-            margin: '0 auto 40px',
-            lineHeight: 1.6,
-            maxWidth: 620,
-          }}
-        >
-          Maintenance, repairs, parts, documents, and logbook — connected.
-          First Mate AI ready when you want a hand.
-        </p>
+          <p
+            style={{
+              fontSize: isMobile ? 16 : 19,
+              color: 'rgba(255,255,255,0.65)',
+              margin: '0 0 32px',
+              lineHeight: 1.55,
+              maxWidth: isMobile ? '100%' : 540,
+              marginLeft: isMobile ? 'auto' : 0,
+              marginRight: isMobile ? 'auto' : 0,
+            }}
+          >
+            Maintenance, repairs, parts, documents, and logbook — connected.
+            First Mate AI ready when you want a hand.
+          </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 12,
+              flexWrap: 'wrap',
+              justifyContent: isMobile ? 'center' : 'flex-start',
+            }}
+          >
             <button
               onClick={onGetStarted}
               style={{
@@ -94,9 +117,22 @@ export default function Hero({ onGetStarted, onLogin }: HeroProps) {
               Log in
             </button>
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2px' }}>
-            Free to start · No credit card · Cancel any time
-          </div>
+        </div>
+
+        {/* Right column: phone with looped walkthrough video */}
+        <div
+          style={{
+            flex: '0 0 auto',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <PhoneScreenshot
+            size={isMobile ? 'mobile' : 'desktop'}
+            src="/images/walkthrough-poster.jpg"
+            videoSrc="/videos/walkthrough.mp4"
+            alt="Keeply walkthrough — S/V Irene: My Boat dashboard, Due Soon maintenance, Equipment, First Mate haul-out advice, and Lists"
+          />
         </div>
       </div>
     </section>

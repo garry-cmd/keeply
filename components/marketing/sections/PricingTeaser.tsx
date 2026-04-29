@@ -35,21 +35,21 @@ const TEASER_PLANS: TeaserPlan[] = [
     name: 'Standard',
     price: '$15',
     priceSuffix: '/mo',
-    tag: '',
+    tag: 'Most popular',
     bullets: ['Unlimited equipment', 'Unlimited repairs', '30 First Mate AI queries / month'],
-    highlight: false,
+    highlight: true,
   },
   {
     name: 'Pro',
     price: '$25',
     priceSuffix: '/mo',
-    tag: 'Most popular',
+    tag: '',
     bullets: [
       'Everything in Standard',
       '50 First Mate queries · voice · weather',
       'Departure checks',
     ],
-    highlight: true,
+    highlight: false,
   },
 ];
 
