@@ -2610,11 +2610,12 @@ export default function App() {
   const [repairs, setRepairs] = useState([]);
   const [vesselMembers, setVesselMembers] = useState([]);
   const [showAddRepair, setShowAddRepair] = useState(false);
-  // pendingListsView — set by the My Boat FAB when the user picks
-  // "Supply" or "Grocery" so ListsTab lands on the right sub-pill instead
-  // of its 'parts' default. ListsTab clears this back to null on consume,
-  // so a fresh bottom-nav tap on Lists still gets the Parts default.
-  const [pendingListsView, setPendingListsView] = useState(null);
+  // Quick-add state for the My Boat FAB → Supply / Grocery items.
+  // Both modals share a single input value (quickAddName) since only one
+  // can be open at a time. INSERT goes straight to supplies / grocery_items.
+  const [showAddSupply, setShowAddSupply] = useState(false);
+  const [showAddGrocery, setShowAddGrocery] = useState(false);
+  const [quickAddName, setQuickAddName] = useState('');
   const [newRepair, setNewRepair] = useState({
     description: '',
     section: 'Engine',
@@ -19399,8 +19400,8 @@ export default function App() {
                       </svg>
                     ),
                     action: function () {
-                      setPendingListsView('supplies');
-                      setTab('lists-standalone');
+                      setQuickAddName('');
+                      setShowAddSupply(true);
                       setShowFab(false);
                     },
                   },
@@ -19425,8 +19426,8 @@ export default function App() {
                       </svg>
                     ),
                     action: function () {
-                      setPendingListsView('grocery');
-                      setTab('lists-standalone');
+                      setQuickAddName('');
+                      setShowAddGrocery(true);
                       setShowFab(false);
                     },
                   },
@@ -20180,13 +20181,7 @@ export default function App() {
 
         {/* ── LISTS standalone — Parts (default) / Supplies / Grocery / Haulout, four surfaces ── */}
         {view === 'customer' && tab === 'lists-standalone' && (
-          <ListsTab
-            activeVesselId={activeVesselId}
-            pendingView={pendingListsView}
-            onConsumePending={function () {
-              setPendingListsView(null);
-            }}
-          />
+          <ListsTab activeVesselId={activeVesselId} />
         )}
 
         {/* ── FIRST MATE inline panel overlay ── */}
@@ -28140,6 +28135,151 @@ export default function App() {
             >
               Save Note
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── QUICK ADD: Supply / Grocery (My Boat FAB) ──
+          Single modal, exclusive (showAddSupply XOR showAddGrocery). Save
+          inserts via supabase + clears input but keeps modal open for
+          rapid-fire entry — same pattern as the inline AddRow in Lists.
+          Tap outside to dismiss. */}
+      {(showAddSupply || showAddGrocery) && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'var(--bg-overlay)',
+            zIndex: 600,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={function () {
+            setShowAddSupply(false);
+            setShowAddGrocery(false);
+            setQuickAddName('');
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: '20px 20px 0 0',
+              width: '100%',
+              maxWidth: 480,
+              padding: '24px 24px 36px',
+              boxShadow: '0 -8px 40px rgba(0,0,0,0.2)',
+            }}
+            onClick={function (e) {
+              e.stopPropagation();
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 4,
+                background: 'var(--border)',
+                borderRadius: 2,
+                margin: '0 auto 20px',
+              }}
+            />
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>
+              {showAddSupply ? 'New Supply' : 'New Grocery Item'}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
+              {showAddSupply
+                ? 'Track something you need to keep aboard'
+                : 'Add to your next provisioning run'}
+            </div>
+
+            <input
+              type="text"
+              autoFocus
+              value={quickAddName}
+              onChange={function (e) {
+                setQuickAddName(e.target.value);
+              }}
+              onKeyDown={async function (e) {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  var trimmed = quickAddName.trim();
+                  if (!trimmed || !activeVesselId) return;
+                  var tableName = showAddSupply ? 'supplies' : 'grocery_items';
+                  var result = await supabase
+                    .from(tableName)
+                    .insert({ vessel_id: activeVesselId, name: trimmed });
+                  if (result.error) {
+                    console.error('quick add ' + tableName + ':', result.error);
+                    return;
+                  }
+                  setQuickAddName('');
+                } else if (e.key === 'Escape') {
+                  setShowAddSupply(false);
+                  setShowAddGrocery(false);
+                  setQuickAddName('');
+                }
+              }}
+              placeholder={
+                showAddSupply
+                  ? 'e.g. spare impeller, fuel filter, oil'
+                  : 'e.g. coffee, eggs, bread'
+              }
+              style={{
+                width: '100%',
+                border: '1.5px solid var(--border)',
+                borderRadius: 10,
+                padding: '12px 14px',
+                fontSize: 15,
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                marginBottom: 14,
+                boxSizing: 'border-box',
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+            />
+
+            <button
+              onClick={async function () {
+                var trimmed = quickAddName.trim();
+                if (!trimmed || !activeVesselId) return;
+                var tableName = showAddSupply ? 'supplies' : 'grocery_items';
+                var result = await supabase
+                  .from(tableName)
+                  .insert({ vessel_id: activeVesselId, name: trimmed });
+                if (result.error) {
+                  console.error('quick add ' + tableName + ':', result.error);
+                  return;
+                }
+                setQuickAddName('');
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                border: 'none',
+                borderRadius: 12,
+                background: quickAddName.trim() ? 'var(--brand)' : 'var(--border)',
+                color: quickAddName.trim() ? '#fff' : 'var(--text-muted)',
+                fontSize: 15,
+                fontWeight: 800,
+                cursor: quickAddName.trim() ? 'pointer' : 'default',
+                fontFamily: 'inherit',
+                transition: 'background 0.15s',
+              }}
+            >
+              Save
+            </button>
+
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                textAlign: 'center',
+                marginTop: 12,
+              }}
+            >
+              Add multiple — tap outside when done
+            </div>
           </div>
         </div>
       )}
