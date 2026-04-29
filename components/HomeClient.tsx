@@ -10,9 +10,16 @@
 // AuthModal is NOT mounted here. It lives in <AuthOpenerProvider> at
 // app/layout.tsx so SiteHeader, About, Features, and the homepage all
 // reach the same modal instance — opening it does not require navigating
-// to / first. HomeClient consumes the same provider via useAuthOpener()
-// to translate URL params (?signup=1 / ?login=1 / ?keeply_recovery=1)
+// to / first. HomeClient consumes the provider via useAuthOpener() and
+// translates URL params (?signup=1 / ?login=1 / ?keeply_recovery=1)
 // into provider open calls on mount.
+//
+// IMPORTANT: destructure individual functions from useAuthOpener — never
+// store the whole context object as a dep. The context value memo
+// re-creates whenever isOpen / isRecovery flip, so depending on the whole
+// object causes effects to re-fire on every modal toggle. The destructured
+// open* functions are useCallback([])'d in the provider and are stable
+// across renders, so depending on them is safe.
 
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -23,8 +30,6 @@ import { useAuthRedirects } from './auth/useAuthRedirects';
 import { useAuthOpener } from './auth/AuthOpenerProvider';
 import type { Subscription } from '@supabase/supabase-js';
 
-// KeeplyApp only loads after the user is authenticated.
-// Keeps the landing page bundle small.
 const KeeplyApp = dynamic(() => import('./KeeplyApp'), {
   ssr: false,
   loading: () => null,
@@ -32,9 +37,6 @@ const KeeplyApp = dynamic(() => import('./KeeplyApp'), {
 
 type AuthState = 'guest' | 'pending' | 'authed';
 
-// After Google OAuth the browser lands on a fresh page load.
-// LandingPage may never mount, so the Stripe dispatch must live here.
-// Returns true if a Stripe redirect was initiated (caller should not set authed).
 async function firePendingStripe(userId: string, userEmail: string): Promise<boolean> {
   let pendingPlan: string | null = null;
   let pendingPriceId: string | null = null;
@@ -47,7 +49,6 @@ async function firePendingStripe(userId: string, userEmail: string): Promise<boo
 
   if (!pendingPlan || pendingPlan === 'free' || !pendingPriceId) return false;
 
-  // Clear immediately — prevents re-firing if SIGNED_IN fires again
   try {
     localStorage.removeItem('keeply_pending_plan');
   } catch (e) {}
@@ -88,9 +89,6 @@ async function firePendingStripe(userId: string, userEmail: string): Promise<boo
   return false;
 }
 
-// Synchronous check for any Supabase auth token in localStorage.
-// If present, we likely have a returning user — hide LandingPage during
-// Supabase verification to avoid a marketing-page flash before KeeplyApp loads.
 function hasAuthHint(): boolean {
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -104,63 +102,42 @@ function hasAuthHint(): boolean {
 }
 
 export default function HomeClient() {
-  // Initial state MUST be 'guest' on both server and first client render so the
-  // SSR HTML matches hydration. The localStorage hint check happens in useEffect.
   const [state, setState] = useState<AuthState>('guest');
 
-  const auth = useAuthOpener();
+  // CRITICAL: destructure individual fns. The context value memo re-creates
+  // when isOpen/isRecovery change; depending on the whole `auth` object would
+  // cause every modal toggle to re-fire effects (re-opening the modal on close).
+  const {
+    openSignup,
+    openLogin,
+    openRecovery,
+    isOpen: authIsOpen,
+    isRecovery: authIsRecovery,
+  } = useAuthOpener();
 
-  // URL param effects (runs once on mount) — drives initial modal state
   const { initialAuthMode, initialRecovery, verifiedBanner } = useAuthRedirects();
 
-  // Apply URL param results on first render — translate to provider calls
+  // Translate URL params → provider open calls on mount.
+  // Deps are all stable: initialAuthMode/initialRecovery are set once by
+  // useAuthRedirects, and the open* functions are useCallback([])'d in
+  // the provider. So this effect runs exactly once after mount.
   useEffect(() => {
-    // PKCE password-recovery: marker set by AuthModal.resetPassword's
-    // redirectTo (`/?keeply_recovery=1`) survives the round-trip and
-    // tells us this session was created from a recovery code. We open
-    // the modal in recovery mode independent of whether PASSWORD_RECOVERY
-    // event fires (it doesn't reliably under PKCE).
     if (initialRecovery) {
-      auth.openRecovery();
+      openRecovery();
       return;
     }
     if (initialAuthMode === 'signup') {
-      // No plan arg — provider hydrates from localStorage so /pricing
-      // flows that pre-set keeply_pending_plan still get the right plan.
-      auth.openSignup();
+      openSignup();
     } else if (initialAuthMode === 'login') {
-      auth.openLogin();
+      openLogin();
     }
-  }, [initialAuthMode, initialRecovery, auth]);
+  }, [initialAuthMode, initialRecovery, openSignup, openLogin, openRecovery]);
 
-  // Lazy supabase reference — populated on demand via ensureSupabaseLoaded().
-  // Held in a ref (not state) so reading it doesn't trigger re-renders, and
-  // so we can guard against double-loading. Type from @supabase/supabase-js.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabaseRef = useRef<any>(null);
   const subscriptionRef = useRef<Subscription | null>(null);
   const supabaseLoadingRef = useRef<Promise<unknown> | null>(null);
 
-  // Track latest auth opener via ref so the supabase listener (set up
-  // once at mount) can call openRecovery() if PASSWORD_RECOVERY fires.
-  const authRef = useRef(auth);
-  useEffect(() => {
-    authRef.current = auth;
-  }, [auth]);
-
-  // Auth state machine — runs once on mount.
-  //
-  // Critical to PageSpeed: do NOT load Supabase eagerly. The Supabase auth
-  // chunk weighs ~205KB decoded; for a fresh guest visit (no session, no
-  // OAuth callback in URL), we never need it on the marketing path. Mobile
-  // Lighthouse scores torpedo on the parse cost. So we conditionally load
-  // it only when there's actual signal:
-  //   1) `hasAuthHint()` — localStorage has an sb-* token (returning user)
-  //   2) `?code=` in URL — PKCE OAuth/recovery callback needs to be
-  //      consumed by supabase to create the session
-  //   3) `?keeply_recovery=1` — our marker for password reset (always
-  //      paired with ?code=, but checking both is defensive)
-  // Otherwise → set guest state immediately, skip the import.
   useEffect(function () {
     let mounted = true;
 
@@ -173,9 +150,6 @@ export default function HomeClient() {
       return false;
     }
 
-    // Lazy loader: returns the supabase client. Sets up the auth state
-    // change listener exactly once (idempotent — repeated calls return
-    // the cached promise / instance).
     async function ensureSupabaseLoaded() {
       if (supabaseRef.current) return supabaseRef.current;
       if (supabaseLoadingRef.current) return supabaseLoadingRef.current;
@@ -186,10 +160,13 @@ export default function HomeClient() {
         supabaseRef.current = mod.supabase;
 
         const sub = mod.supabase.auth.onAuthStateChange(
-          async function (event: string, session: { user?: { id: string; email?: string } } | null) {
+          async function (
+            event: string,
+            session: { user?: { id: string; email?: string } } | null
+          ) {
             if (event === 'PASSWORD_RECOVERY') {
-              // Defensive — primary recovery path is ?keeply_recovery=1 URL marker.
-              authRef.current.openRecovery();
+              // openRecovery is stable from the provider — captured once at first render.
+              openRecovery();
               return;
             }
             if (event === 'SIGNED_IN' && session?.user) {
@@ -213,16 +190,13 @@ export default function HomeClient() {
       return supabaseLoadingRef.current;
     }
 
-    // Initial mount path
     if (!needsSupabaseOnMount()) {
-      // Fresh guest — Supabase stays off the marketing critical path.
       setState('guest');
       return function () {
         mounted = false;
       };
     }
 
-    // Returning user OR PKCE callback in URL — load supabase, validate session
     if (hasAuthHint()) {
       setState('pending');
     }
@@ -253,15 +227,16 @@ export default function HomeClient() {
         subscriptionRef.current = null;
       }
     };
+    // openRecovery is stable; intentionally not in deps to keep this a one-shot mount effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When the user opens AuthModal (provider sets isOpen), eagerly load
-  // supabase if it isn't already loaded. AuthModal itself imports
-  // supabase synchronously, so showing the modal triggers the chunk
-  // download — we just need our listener wired up here so SIGNED_IN /
-  // SIGNED_OUT events from the modal propagate back to HomeClient state.
+  // When the modal opens, eagerly load supabase if it isn't already.
+  // AuthModal imports supabase synchronously, so showing the modal triggers
+  // the chunk download — we just need the listener wired up here so SIGNED_IN
+  // / SIGNED_OUT events propagate to HomeClient state.
   useEffect(() => {
-    if (!auth.isOpen || supabaseRef.current) return;
+    if (!authIsOpen || supabaseRef.current) return;
 
     let mounted = true;
     (async () => {
@@ -271,7 +246,7 @@ export default function HomeClient() {
 
       const sub = mod.supabase.auth.onAuthStateChange(async (event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
-          authRef.current.openRecovery();
+          openRecovery();
           return;
         }
         if (event === 'SIGNED_IN' && session?.user) {
@@ -293,32 +268,23 @@ export default function HomeClient() {
     return () => {
       mounted = false;
     };
-  }, [auth.isOpen]);
+    // openRecovery is stable; only depend on authIsOpen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authIsOpen]);
 
   // Modal callbacks — passed down to LandingPage as props.
-  // Both delegate to the provider; LandingPage stays unaware of the
-  // context so Hero/FinalCTA keep their simple onGetStarted/onLogin
-  // function-prop interface.
   function handleSignupFree() {
-    auth.openSignup('free');
+    openSignup('free');
   }
 
   function handleOpenLogin() {
-    auth.openLogin();
+    openLogin();
   }
 
-  // Render — order matters
-  //
-  // Recovery flow shadows `state === 'authed'`: when the user clicks the
-  // password reset email link, supabase exchanges the URL code for a
-  // valid session AND fires PASSWORD_RECOVERY. Without this branch, the
-  // SIGNED_IN handler flips state to 'authed' and KeeplyApp renders before
-  // the recovery modal ever gets a chance — taking the user "directly into
-  // the app" instead of into "set a new password." So while auth.isRecovery
-  // is true, render the marketing shell regardless of state. The provider
-  // mounts the recovery modal on top. close() clears isRecovery, after
-  // which state === 'authed' wins and KeeplyApp renders normally.
-  if (auth.isRecovery) {
+  // Recovery flow shadows `state === 'authed'`: while authIsRecovery is true,
+  // render the marketing shell so KeeplyApp doesn't take over before the user
+  // sets a new password. Provider mounts the recovery modal on top.
+  if (authIsRecovery) {
     return (
       <>
         <SiteHeader force />
@@ -335,11 +301,6 @@ export default function HomeClient() {
   if (state === 'authed') return <KeeplyApp />;
   if (state === 'pending') return null;
 
-  // Guest branch — own SiteHeader/SiteFooter so they unmount cleanly the
-  // moment auth flips to 'authed'. Without this, layout.tsx's globally-mounted
-  // header would stay visible on top of KeeplyApp until pathname changes
-  // (which it doesn't on login). `force` bypasses HIDE_ON since both
-  // components hide themselves on `/` by default — see SiteHeader.tsx.
   return (
     <>
       <SiteHeader force />
