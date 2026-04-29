@@ -64,3 +64,46 @@ export function trackSignupCompleted(plan: string, emailConfirmedImmediately: bo
   // not dispatched as a separate property to GA4.
   void emailConfirmedImmediately;
 }
+
+// ── Sign-up conversion gate ──────────────────────────────────────────────────
+// Single source of truth for "should we fire trackSignupCompleted right now?"
+// Called from two places: (1) AuthOpenerProvider's SIGNED_IN listener while
+// the modal is open, (2) HomeClient's SIGNED_IN listener after OAuth return
+// (modal is unmounted by then because the OAuth flow navigated away).
+//
+// Gates on:
+//   - user.created_at within 30s of now (i.e. brand-new account, not a returning login)
+//   - sessionStorage sentinel that ensures we fire at most once per browser tab
+//     (sessionStorage persists across same-tab navigations including the OAuth
+//     return AND the Stripe-checkout-and-back round-trip, but is cleared on
+//     tab close — fresh tab = fresh sentinel, which is what we want).
+//
+// Returns true if the conversion was actually fired, false if gated out.
+// Analytics must never break the auth flow — all errors are swallowed.
+export function fireSignupConversionIfNew(user: {
+  created_at?: string;
+  email_confirmed_at?: string | null;
+}): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const createdAt = user?.created_at;
+    if (!createdAt) return false;
+    const ageMs = Date.now() - new Date(createdAt).getTime();
+    const isNewUser = ageMs >= 0 && ageMs < 30_000;
+    if (!isNewUser) return false;
+
+    const SENTINEL = 'keeply_signup_conversion_fired';
+    if (sessionStorage.getItem(SENTINEL) === '1') return false;
+    sessionStorage.setItem(SENTINEL, '1');
+
+    let plan = 'free';
+    try {
+      plan = localStorage.getItem('keeply_pending_plan') || 'free';
+    } catch (e) {}
+    trackSignupCompleted(plan, !!user.email_confirmed_at);
+    return true;
+  } catch (e) {
+    console.error('fireSignupConversionIfNew error:', e);
+    return false;
+  }
+}

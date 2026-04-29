@@ -32,6 +32,7 @@ import {
 import dynamic from 'next/dynamic';
 import type { AuthMode } from './AuthModal';
 import type { Subscription } from '@supabase/supabase-js';
+import { trackPlanSelected, fireSignupConversionIfNew } from '../../lib/analytics';
 
 const AuthModal = dynamic(() => import('./AuthModal'), {
   ssr: false,
@@ -80,6 +81,15 @@ export function AuthOpenerProvider({ children }: ProviderProps) {
           localStorage.removeItem('keeply_pending_price_id');
         }
       } catch (e) {}
+      // Fire trackPlanSelected from every direct-to-modal CTA (SiteHeader,
+      // AboutClient, FeaturesClient, HomeClient hero). Without this, the
+      // Plan Selected ($5 secondary) Google Ads conversion only fired from
+      // /pricing — every other Free CTA on the marketing site skipped the
+      // funnel's middle stage. /pricing still fires its own trackPlanSelected
+      // BEFORE doing window.location.href = '/?signup=1', so when HomeClient
+      // mounts and calls openSignup() (no plan arg, see below) we don't
+      // double-count.
+      trackPlanSelected(plan);
     } else {
       // No plan specified — hydrate from localStorage so /pricing-driven
       // flows (Standard/Pro CTAs that already wrote keeply_pending_plan)
@@ -151,6 +161,15 @@ export function AuthOpenerProvider({ children }: ProviderProps) {
   //      we don't get auto-unmount when HomeClient flips to authed).
   //   2. Hard-nav to / on off-homepage signups so HomeClient can pick
   //      up the session and render KeeplyApp.
+  //   3. Fire the Sign Up Completed Google Ads conversion ($15 primary)
+  //      for genuinely-new users — gates on user.created_at being within
+  //      30 seconds of now AND a sessionStorage sentinel that ensures
+  //      we fire at most once per browser tab. The combination handles:
+  //        - Email/password signup (autoconfirm on, session immediate)
+  //        - Google OAuth signup (returns from oauth provider with new session)
+  //        - Stripe checkout return for paid signups (user is still "new"
+  //          by created_at but sentinel prevents double-fire)
+  //        - Returning users logging in (created_at is older than 30s, skip)
   //
   // We import supabase lazily — by the time isOpen flips to true,
   // AuthModal is mounting and pulling in the supabase chunk anyway, so
@@ -167,6 +186,14 @@ export function AuthOpenerProvider({ children }: ProviderProps) {
       const result = mod.supabase.auth.onAuthStateChange((event, session) => {
         if (event !== 'SIGNED_IN' || !session) return;
         if (typeof window === 'undefined') return;
+
+        // Fire Sign Up Completed conversion if this is a brand-new user. Helper
+        // dedupes via sessionStorage sentinel so this is safe to also call from
+        // HomeClient's listener (which catches the OAuth-return case where the
+        // modal has already unmounted). See lib/analytics.ts for full gate logic.
+        if (session.user) {
+          fireSignupConversionIfNew(session.user);
+        }
 
         if (window.location.pathname !== '/') {
           // Off-homepage signup/login. KeeplyApp only renders inside

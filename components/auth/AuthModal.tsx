@@ -25,7 +25,7 @@
 import React, { useState, type CSSProperties, type FormEvent } from 'react';
 import { supabase } from '../supabase-client';
 import { PLANS as PRICING_CONFIG } from '../../lib/pricing.js';
-import { trackSignupStarted, trackSignupCompleted } from '../../lib/analytics';
+import { trackSignupStarted } from '../../lib/analytics';
 
 const BRAND = '#0f4c8a';
 const NAVY = '#071e3d';
@@ -209,7 +209,10 @@ export default function AuthModal({
               console.error('Stripe checkout error:', stripeErr);
             }
           }
-          trackSignupCompleted(effectivePlan || 'free', false);
+          // Sign Up Completed Google Ads conversion is now fired by
+          // AuthOpenerProvider's SIGNED_IN listener — single source of
+          // truth across email/password, OAuth, and Stripe-return paths.
+          // (Was: trackSignupCompleted(effectivePlan || 'free', false))
 
           // Trigger custom email verification: server endpoint sets
           // app_metadata.email_self_verified=false and emails the verify link.

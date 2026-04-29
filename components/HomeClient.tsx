@@ -28,6 +28,7 @@ import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import { useAuthRedirects } from './auth/useAuthRedirects';
 import { useAuthOpener } from './auth/AuthOpenerProvider';
+import { fireSignupConversionIfNew } from '../lib/analytics';
 import type { Subscription } from '@supabase/supabase-js';
 
 const KeeplyApp = dynamic(() => import('./KeeplyApp'), {
@@ -170,6 +171,13 @@ export default function HomeClient() {
               return;
             }
             if (event === 'SIGNED_IN' && session?.user) {
+              // Fire Sign Up Completed conversion for genuinely-new users.
+              // Helper dedupes via sessionStorage so this won't double-fire
+              // with AuthOpenerProvider's fire (which catches in-modal flows).
+              // This branch specifically catches Google OAuth return — by the
+              // time we get here, AuthModal has unmounted (page navigated to
+              // Google and back) so the provider's listener is gone.
+              fireSignupConversionIfNew(session.user as any);
               const redirecting = await firePendingStripe(
                 session.user.id,
                 session.user.email ?? ''
@@ -209,6 +217,11 @@ export default function HomeClient() {
       if (!mounted) return;
 
       if (data.session?.user) {
+        // Fire Sign Up Completed conversion for genuinely-new users. This is
+        // the OAuth-return path: user went to Google, came back, page mounts
+        // with session already present. Helper dedupes via sessionStorage so
+        // we won't double-fire with the listener-driven path.
+        fireSignupConversionIfNew(data.session.user as any);
         const redirecting = await firePendingStripe(
           data.session.user.id,
           data.session.user.email ?? ''
@@ -250,6 +263,8 @@ export default function HomeClient() {
           return;
         }
         if (event === 'SIGNED_IN' && session?.user) {
+          // Helper dedupes via sessionStorage; fires once across all SIGNED_IN paths.
+          fireSignupConversionIfNew(session.user as any);
           const redirecting = await firePendingStripe(
             session.user.id,
             session.user.email ?? ''
