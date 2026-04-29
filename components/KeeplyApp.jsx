@@ -16,6 +16,7 @@ import {
   getPositionLabel,
   getShortPositionLabel,
   hasMissingEngineInfo,
+  getEngineHoursForTask,
   DISCREPANCY_HOURS_ABS,
 } from '../lib/engines';
 
@@ -2790,6 +2791,7 @@ export default function App() {
               docs: safeJsonbArray(e.docs),
               logs: safeJsonbArray(e.logs),
               photos: safeJsonbArray(e.photos),
+              engine_id: e.engine_id || null,
               _vesselId: e.vessel_id,
             };
           });
@@ -3051,6 +3053,7 @@ export default function App() {
           customParts: safeJsonbArray(e.custom_parts),
           docs: e.docs || [],
           logs: e.logs || [],
+          engine_id: e.engine_id || null,
           _vesselId: e.vessel_id,
         };
       });
@@ -6307,7 +6310,11 @@ export default function App() {
       return v.id === activeVesselId;
     });
     var curHrs2 = activeV2 ? activeV2.engineHours : null;
-    var hb = getHoursBadge(t.due_hours, curHrs2, t.interval_hours);
+    // For tasks linked to a specific engine (via equipment.engine_id), use
+    // that engine's hours instead of the vessel mirror. Falls back to
+    // curHrs2 for non-engine tasks and single-engine vessels.
+    var taskHrs2 = getEngineHoursForTask(t, equipment, engines, curHrs2);
+    var hb = getHoursBadge(t.due_hours, taskHrs2, t.interval_hours);
     var b = getDueBadge(t.dueDate || t.due_date, t.interval_days);
     var hurgency = hb
       ? hb.label.indexOf('Critical') >= 0
@@ -13926,7 +13933,8 @@ export default function App() {
                         return v.id === activeVesselId;
                       });
                       const curHrsb = activeVb ? activeVb.engineHours : null;
-                      const hoursBadge = getHoursBadge(t.due_hours, curHrsb, t.interval_hours);
+                      const taskHrsb = getEngineHoursForTask(t, equipment, engines, curHrsb);
+                      const hoursBadge = getHoursBadge(t.due_hours, taskHrsb, t.interval_hours);
                       const rank = { Critical: 3, Overdue: 2, 'Due Soon': 1 };
                       const badge =
                         dateBadge && hoursBadge
@@ -14146,7 +14154,10 @@ export default function App() {
                                         return v.id === activeVesselId;
                                       });
                                       var cH = avH ? avH.engineHours : null;
-                                      var hbg = getHoursBadge(t.due_hours, cH, t.interval_hours);
+                                      // Per-engine override when the task's
+                                      // equipment is linked to a specific engine.
+                                      var tH = getEngineHoursForTask(t, equipment, engines, cH);
+                                      var hbg = getHoursBadge(t.due_hours, tH, t.interval_hours);
                                       return (
                                         <div
                                           style={{
@@ -14156,11 +14167,11 @@ export default function App() {
                                           }}
                                         >
                                           {t.due_hours}h
-                                          {cH != null
+                                          {tH != null
                                             ? ' (' +
-                                              (t.due_hours - cH > 0
-                                                ? t.due_hours - cH + ' to go'
-                                                : Math.abs(t.due_hours - cH) + ' over') +
+                                              (t.due_hours - tH > 0
+                                                ? t.due_hours - tH + ' to go'
+                                                : Math.abs(t.due_hours - tH) + ' over') +
                                               ')'
                                             : ''}
                                         </div>
@@ -14185,7 +14196,11 @@ export default function App() {
                                   return v.id === activeVesselId;
                                 });
                                 var cH2 = avH2 ? avH2.engineHours : null;
-                                if (cH2 == null)
+                                // Per-engine: if the task's equipment links to
+                                // a specific engine, use THAT engine's hours.
+                                // Falls back to cH2 for unlinked/legacy tasks.
+                                var tH2 = getEngineHoursForTask(t, equipment, engines, cH2);
+                                if (tH2 == null)
                                   return (
                                     <div style={{ paddingLeft: 38, marginBottom: 8 }}>
                                       <span
@@ -14211,7 +14226,7 @@ export default function App() {
                                       </span>
                                     </div>
                                   );
-                                var hbg2 = getHoursBadge(t.due_hours, cH2, t.interval_hours);
+                                var hbg2 = getHoursBadge(t.due_hours, tH2, t.interval_hours);
                                 if (!hbg2) return null;
                                 return (
                                   <div style={{ paddingLeft: 38, marginBottom: 8 }}>
@@ -15684,9 +15699,10 @@ export default function App() {
                                       return v.id === activeVesselId;
                                     });
                                     const cHEq = avEq ? avEq.engineHours : null;
+                                    const tHEq = getEngineHoursForTask(t, equipment, engines, cHEq);
                                     const hoursBadgeEq = getHoursBadge(
                                       t.due_hours,
-                                      cHEq,
+                                      tHEq,
                                       t.interval_hours
                                     );
                                     const rankEq = { Critical: 3, Overdue: 2, 'Due Soon': 1 };
@@ -20897,7 +20913,8 @@ export default function App() {
                             return v.id === activeVesselId;
                           });
                           const cHP = avP ? avP.engineHours : null;
-                          const hoursBadgeP = getHoursBadge(t.due_hours, cHP, t.interval_hours);
+                          const tHP = getEngineHoursForTask(t, equipment, engines, cHP);
+                          const hoursBadgeP = getHoursBadge(t.due_hours, tHP, t.interval_hours);
                           const rankP = { Critical: 3, Overdue: 2, 'Due Soon': 1 };
                           const badge =
                             dateBadgeP && hoursBadgeP
@@ -21992,7 +22009,8 @@ export default function App() {
                               return v.id === activeVesselId;
                             });
                             const cHKB = avKB ? avKB.engineHours : null;
-                            const hoursBadgeKB = getHoursBadge(t.due_hours, cHKB, t.interval_hours);
+                            const tHKB = getEngineHoursForTask(t, equipment, engines, cHKB);
+                            const hoursBadgeKB = getHoursBadge(t.due_hours, tHKB, t.interval_hours);
                             const rankKB = { Critical: 3, Overdue: 2, 'Due Soon': 1 };
                             const badge =
                               dateBadgeKB && hoursBadgeKB
@@ -22236,7 +22254,8 @@ export default function App() {
                   return v.id === activeVesselId;
                 });
                 const cHDoc = avDoc ? avDoc.engineHours : null;
-                const hoursBadgeDoc = getHoursBadge(t.due_hours, cHDoc, t.interval_hours);
+                const tHDoc = getEngineHoursForTask(t, equipment, engines, cHDoc);
+                const hoursBadgeDoc = getHoursBadge(t.due_hours, tHDoc, t.interval_hours);
                 const rankDoc = { Critical: 3, Overdue: 2, 'Due Soon': 1 };
                 const badge =
                   dateBadgeDoc && hoursBadgeDoc

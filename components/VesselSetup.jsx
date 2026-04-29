@@ -396,7 +396,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
   }
 
   async function insertEngines(vesselId, engineRows) {
-    if (!engineRows.length) return;
+    if (!engineRows.length) return [];
     const rows = engineRows.map(function (e) {
       return {
         vessel_id: vesselId,
@@ -412,7 +412,15 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
         position: e.position,
       };
     });
-    await supabase.from('engines').insert(rows);
+    // Return inserted rows (with id, position) so callers can link them
+    // to engine equipment cards via engine_id. Index order is preserved
+    // by Supabase for bulk inserts.
+    const { data, error } = await supabase.from('engines').insert(rows).select();
+    if (error) {
+      console.error('insertEngines failed:', error);
+      return [];
+    }
+    return data || [];
   }
 
   // ── AI build: the happy path ────────────────────────────────────────
@@ -459,7 +467,10 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
       // ── Persist vessel + members + engines ──────────────
       const vessel = await insertVessel(vesselBasePayload(vesselType, engineRows));
       await insertVesselMember(vessel.id);
-      await insertEngines(vessel.id, engineRows);
+      // Capture inserted engine rows so we can link engine equipment cards
+      // back to specific engines via engine_id (Phase 2F). Index order
+      // matches engineRows because Supabase preserves insert order.
+      const insertedEngines = await insertEngines(vessel.id, engineRows);
 
       // ── Enrich Engine equipment cards with engine-table data ─────
       // The AI returns one generic "Engine" / "Main Engine" entry. The
@@ -494,7 +505,8 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
 
       const engineCards = [];
       if (engineRows.length > 0) {
-        for (const eng of engineRows) {
+        for (let i = 0; i < engineRows.length; i++) {
+          const eng = engineRows[i];
           const pos = eng.position ? ' (' + titleCase(eng.position) + ')' : '';
           const base = engineTemplate || {
             category: 'Engine',
@@ -502,17 +514,24 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
             model: null,
             tasks: [],
           };
+          // Match this card to the inserted engine row by index. Supabase
+          // preserves insert order on bulk inserts, so insertedEngines[i]
+          // corresponds to engineRows[i]. Stash the id as _engineId so
+          // the equipment insert below picks it up.
+          const insertedRow = insertedEngines[i] || null;
           engineCards.push(
             Object.assign({}, base, {
               name: (eng.make + ' ' + eng.model + pos).trim(),
               manufacturer: eng.make,
               model: eng.model,
               _notes: engineCardNotes(eng),
+              _engineId: insertedRow ? insertedRow.id : null,
             })
           );
         }
       } else if (engineTemplate) {
         // No user-entered engines (edge case); keep the AI's generic entry.
+        // _engineId stays null — this card won't link to any engine row.
         engineCards.push(engineTemplate);
       }
 
@@ -563,18 +582,33 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
             custom_parts: partsPayload,
             docs: [],
             logs: [],
+            // Phase 2F: link engine equipment cards to engines rows so
+            // per-engine maintenance task urgency works. Non-engine cards
+            // and single-engine vessels: this is null (helper falls back
+            // to the vessel's mirrored engine_hours).
+            engine_id: item._engineId || null,
           })
           .select()
           .single();
         if (eErr) continue;
         if (item.tasks && item.tasks.length > 0) {
-          // For engine-category tasks, compute due_hours from the first
-          // engine's current hours + interval_hours. (Single-engine:
-          // straightforward. Twins: we mirror port engine's hours.)
-          const firstEngineHours =
-            engineRows[0] && engineRows[0].engine_hours != null
+          // Per-engine baseline: for engine-category tasks linked to a
+          // specific engine, snapshot from THAT engine's hours so port and
+          // starboard tasks start from their actual readings (port=408,
+          // stbd=410, not both from port). Falls back to first engine for
+          // unlinked engine cards (single-engine path) and non-engine
+          // tasks where any prior engine reading is fine.
+          const linkedEngineHours = (function () {
+            if (item._engineId && Array.isArray(insertedEngines)) {
+              const linked = insertedEngines.find(function (e) {
+                return e && e.id === item._engineId;
+              });
+              if (linked && linked.engine_hours != null) return linked.engine_hours;
+            }
+            return engineRows[0] && engineRows[0].engine_hours != null
               ? engineRows[0].engine_hours
               : null;
+          })();
 
           const taskRows = item.tasks.map(function (t) {
             const dueDate = new Date();
@@ -592,10 +626,10 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
             };
             // Dual-trigger: if AI provided interval_hours and we have a
             // starting engine hours reading, compute due_hours.
-            if (t.interval_hours && firstEngineHours != null) {
+            if (t.interval_hours && linkedEngineHours != null) {
               row.interval_hours = t.interval_hours;
-              row.last_service_hours = firstEngineHours;
-              row.due_hours = firstEngineHours + t.interval_hours;
+              row.last_service_hours = linkedEngineHours;
+              row.due_hours = linkedEngineHours + t.interval_hours;
             }
             return row;
           });
