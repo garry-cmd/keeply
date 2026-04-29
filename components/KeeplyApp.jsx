@@ -7924,7 +7924,7 @@ export default function App() {
               </button>
             );
           })()}
-          {/* Lists — Session 1: routes to ListsTab which renders LandHoShell until beta_features includes 'lists' */}
+          {/* Lists — 4 surfaces (Parts default / Supplies / Grocery / Haulout) via ListsTab pill router */}
           {(function () {
             const active = view === 'customer' && tab === 'lists-standalone';
             return (
@@ -20189,7 +20189,7 @@ export default function App() {
           />
         )}
 
-        {/* ── LISTS standalone — Session 2: NeedToBuy live behind 'lists' beta gate; LandHoShell for everyone else ── */}
+        {/* ── LISTS standalone — Parts (default) / Supplies / Grocery / Haulout, four surfaces ── */}
         {view === 'customer' && tab === 'lists-standalone' && (
           <ListsTab activeVesselId={activeVesselId} />
         )}

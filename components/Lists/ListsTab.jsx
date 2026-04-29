@@ -1,32 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { useBetaFeature } from './hooks/useBetaFeature';
-import LandHoShell from './LandHoShell';
-import NeedToBuy from './NeedToBuy/NeedToBuy';
-import Supplies from './Supplies/Supplies';
-import Haulout from './Haulout/Haulout';
+import PartsView from './PartsView';
+import SimpleListView from './SimpleListView';
 
-// ListsTab — entry point for the Lists bottom-nav tab.
+// ListsTab — entry for the Lists bottom-nav tab.
 //
-// Session 1: schema + LandHoShell shipped behind 'lists' beta gate.
-// Session 2: Need to buy view live (saved_parts procurement queue).
-// Session 3: Supplies inventory view added; pill router introduced.
-// Session 4: Haulout queue added; lens over flagged maintenance_tasks + repairs.
+// Four parallel surfaces, each backed by its own table:
+//   Parts     → saved_parts (existing; needed/ordered/received state lifecycle)
+//   Supplies  → supplies (existing; +completed_at for tap-to-disappear)
+//   Grocery   → grocery_items (Lists Session 1)
+//   Haulout   → haulout_items (Lists Session 1)
 //
-// Sessions 5+ will add Grocery as a fourth sub-view.
-// Kill switch: array_remove(beta_features, 'lists') reverts everyone to LandHoShell instantly.
+// Parts is the default landing view. Supplies/Grocery/Haulout share
+// <SimpleListView /> — same shape, same UX (tap bubble → undo toast → row gone).
+//
+// Sessions:
+//   Session 1 (this commit): schema + skeleton + 4-pill router. Sub-views are stubs.
+//   Session 2: PartsView built (its own component — bubble + archive icon).
+//   Session 3: SimpleListView built; Supplies/Grocery/Haulout all live via that one component.
+//   Session 4: polish pass across all four.
 export default function ListsTab({ activeVesselId }) {
-  const hasLists = useBetaFeature('lists');
-  const [view, setView] = useState('need-to-buy');
-
-  if (!hasLists) {
-    return <LandHoShell />;
-  }
+  const [view, setView] = useState('parts');
 
   return (
     <div>
-      {/* Sub-view pill router */}
+      {/* Pill router */}
       <div
         style={{
           display: 'flex',
@@ -35,20 +34,54 @@ export default function ListsTab({ activeVesselId }) {
           overflowX: 'auto',
         }}
       >
-        <PillButton active={view === 'need-to-buy'} onClick={function () { setView('need-to-buy'); }}>
-          Need to buy
+        <PillButton active={view === 'parts'} onClick={function () { setView('parts'); }}>
+          Parts
         </PillButton>
         <PillButton active={view === 'supplies'} onClick={function () { setView('supplies'); }}>
           Supplies
+        </PillButton>
+        <PillButton active={view === 'grocery'} onClick={function () { setView('grocery'); }}>
+          Grocery
         </PillButton>
         <PillButton active={view === 'haulout'} onClick={function () { setView('haulout'); }}>
           Haulout
         </PillButton>
       </div>
 
-      {view === 'need-to-buy' && <NeedToBuy activeVesselId={activeVesselId} />}
-      {view === 'supplies' && <Supplies activeVesselId={activeVesselId} />}
-      {view === 'haulout' && <Haulout activeVesselId={activeVesselId} />}
+      {view === 'parts' && <PartsView activeVesselId={activeVesselId} />}
+
+      {view === 'supplies' && (
+        <SimpleListView
+          activeVesselId={activeVesselId}
+          tableName="supplies"
+          surfaceLabel="supplies"
+          emptyTitle="No supplies tracked"
+          emptyHint="Tap + to add things you need to keep stocked aboard."
+          addPlaceholder="e.g. spare impeller, fuel filter, oil"
+        />
+      )}
+
+      {view === 'grocery' && (
+        <SimpleListView
+          activeVesselId={activeVesselId}
+          tableName="grocery_items"
+          surfaceLabel="grocery"
+          emptyTitle="Empty grocery list"
+          emptyHint="Tap + to add items for your next provisioning run."
+          addPlaceholder="e.g. coffee, eggs, bread"
+        />
+      )}
+
+      {view === 'haulout' && (
+        <SimpleListView
+          activeVesselId={activeVesselId}
+          tableName="haulout_items"
+          surfaceLabel="haulout"
+          emptyTitle="No haulout items"
+          emptyHint="Tap + to add jobs for the next time you're on the hard."
+          addPlaceholder="e.g. bottom paint, replace zincs, polish prop"
+        />
+      )}
     </div>
   );
 }
@@ -68,6 +101,7 @@ function PillButton({ active, onClick, children }) {
         cursor: 'pointer',
         flexShrink: 0,
         whiteSpace: 'nowrap',
+        fontFamily: 'inherit',
       }}
     >
       {children}
