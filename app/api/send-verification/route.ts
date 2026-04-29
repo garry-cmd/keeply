@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const RESEND_KEY = process.env.RESEND_API_KEY;
-
     if (!SUPABASE_URL || !SERVICE_KEY) {
       return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
     }
@@ -29,7 +28,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Authenticate caller via Bearer token ──
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    const authHeader =
+      req.headers.get('authorization') || req.headers.get('Authorization') || '';
     const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
     if (!jwt) {
       return NextResponse.json({ error: 'Missing auth token' }, { status: 401 });
@@ -44,7 +44,6 @@ export async function POST(req: NextRequest) {
     const user = userData.user;
     const userId = user.id;
     const userEmail = user.email;
-
     if (!userEmail) {
       return NextResponse.json({ error: 'User has no email' }, { status: 400 });
     }
@@ -85,9 +84,7 @@ export async function POST(req: NextRequest) {
 
     // ── Send email ──
     const resend = new Resend(RESEND_KEY);
-
     const subject = 'Verify your email for Keeply';
-
     const plainText = `Hi,
 
 Click the link below to verify your email address (${userEmail}) for your Keeply account:
@@ -98,40 +95,83 @@ This link expires in 24 hours.
 
 Why verify? So you can reset your password and recover your account if you ever lose access. Without a verified email, we can't help you back into your account.
 
-If you didn't sign up for Keeply, you can ignore this email.
+If you didn't sign up for Keeply, you can safely ignore this email.
 
-— The Keeply team`;
+— Keeply
+Always ready to go.`;
 
-    const html = `
-<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #f8fafc; padding: 0; border-radius: 8px; overflow: hidden;">
-  <div style="background: #0f4c8a; padding: 22px 28px;">
-    <div style="color: #fff; font-size: 18px; font-weight: 700; letter-spacing: 0.3px;">⚓ Verify your email</div>
-  </div>
-  <div style="background: #ffffff; padding: 28px;">
-    <p style="font-size: 15px; color: #1a1d23; line-height: 1.6; margin: 0 0 14px;">Hi,</p>
-    <p style="font-size: 15px; color: #1a1d23; line-height: 1.6; margin: 0 0 18px;">
-      Click the button below to verify <strong>${escapeHtml(userEmail)}</strong> for your Keeply account.
-    </p>
-    <p style="margin: 0 0 24px;">
-      <a href="${verifyUrl}" style="display: inline-block; background: #0f4c8a; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: 600;">Verify email</a>
-    </p>
-    <div style="background: #f1f5f9; border-radius: 6px; padding: 14px 16px; margin-bottom: 18px;">
-      <div style="font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;">Why verify?</div>
-      <div style="font-size: 13px; color: #1a1d23; line-height: 1.5;">
-        So you can reset your password and recover your account if you ever lose access. Without a verified email, we can't help you back in.
-      </div>
-    </div>
-    <p style="font-size: 12px; color: #6b7280; line-height: 1.5; margin: 0 0 6px;">
-      This link expires in 24 hours. If the button doesn't work, copy this URL into your browser:
-    </p>
-    <p style="font-size: 12px; color: #4b5563; line-height: 1.4; margin: 0 0 18px; word-break: break-all;">
-      ${escapeHtml(verifyUrl)}
-    </p>
-    <p style="font-size: 12px; color: #9ca3af; line-height: 1.5; margin: 0;">
-      If you didn't sign up for Keeply, you can ignore this email.
-    </p>
-  </div>
-</div>`.trim();
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify your email for Keeply</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;color:#1a1a1a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f7fa;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e6e8eb;">
+
+          <tr>
+            <td style="background-color:#071e3d;padding:24px 32px;">
+              <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;line-height:1;">Keeply</div>
+              <div style="font-size:11px;color:#f5a623;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;margin-top:6px;">Always ready to go.</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:36px 32px 24px;">
+              <h1 style="font-size:22px;font-weight:700;margin:0 0 16px;color:#071e3d;letter-spacing:-0.2px;">Verify your email</h1>
+              <p style="font-size:15px;line-height:1.6;margin:0 0 24px;color:#3a3a3a;">
+                Click the button below to verify <strong style="color:#071e3d;">${escapeHtml(userEmail)}</strong> for your Keeply account.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 28px;">
+                <tr>
+                  <td bgcolor="#f5a623" style="border-radius:8px;">
+                    <a href="${verifyUrl}" target="_blank" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#1a1200;text-decoration:none;border-radius:8px;letter-spacing:-0.1px;">Verify email</a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;background-color:#f5f7fa;border-radius:8px;">
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <div style="font-size:11px;font-weight:700;color:#0f4c8a;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Why verify?</div>
+                    <div style="font-size:13px;color:#3a3a3a;line-height:1.55;">
+                      So you can reset your password and recover your account if you ever lose access. Without a verified email, we can't help you back in.
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:13px;line-height:1.6;margin:0 0 8px;color:#666;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="font-size:12px;line-height:1.5;margin:0 0 24px;color:#0f4c8a;word-break:break-all;">${escapeHtml(verifyUrl)}</p>
+
+              <p style="font-size:13px;line-height:1.6;margin:0;color:#666;border-top:1px solid #eee;padding-top:20px;">
+                This link expires in 24 hours. If you didn't sign up for Keeply, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#fafbfc;padding:18px 32px;border-top:1px solid #eee;">
+              <p style="font-size:12px;line-height:1.5;margin:0;color:#888;">
+                Sent by Keeply LLC. Questions? Reply to this email or write to <a href="mailto:hello@keeply.boats" style="color:#0f4c8a;text-decoration:none;">hello@keeply.boats</a>.
+              </p>
+              <p style="font-size:11px;line-height:1.5;margin:8px 0 0;color:#aaa;">
+                You're receiving this because someone signed up at keeply.boats with this email address.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
 
     const result = await resend.emails.send({
       from: 'Keeply <noreply@keeply.boats>',
