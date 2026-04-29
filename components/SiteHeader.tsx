@@ -161,7 +161,13 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
               Log in
             </a>
             <a
-              href="/?plans=1"
+              href="/?signup=1"
+              onClick={function () {
+                try {
+                  localStorage.setItem('keeply_pending_plan', 'free');
+                  localStorage.removeItem('keeply_pending_price_id');
+                } catch (e) {}
+              }}
               style={{
                 background: GOLD,
                 border: 'none',
@@ -273,7 +279,13 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
               Log in
             </a>
             <a
-              href="/?plans=1"
+              href="/?signup=1"
+              onClick={function () {
+                try {
+                  localStorage.setItem('keeply_pending_plan', 'free');
+                  localStorage.removeItem('keeply_pending_price_id');
+                } catch (e) {}
+              }}
               style={{
                 flex: 1,
                 background: GOLD,

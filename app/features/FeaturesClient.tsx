@@ -646,7 +646,13 @@ export default function FeaturesClient() {
           }}
         >
           <a
-            href="/?plans=1"
+            href="/?signup=1"
+            onClick={function () {
+              try {
+                localStorage.setItem('keeply_pending_plan', 'free');
+                localStorage.removeItem('keeply_pending_price_id');
+              } catch (e) {}
+            }}
             style={{
               background: GOLD,
               color: '#1a1200',

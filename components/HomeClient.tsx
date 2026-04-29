@@ -318,8 +318,19 @@ export default function HomeClient() {
   }, [showAuth]);
 
   // Modal callbacks — passed down to LandingPage as props
-  function handleOpenPlanPicker() {
-    setShowPlanPicker(true);
+  function handleSignupFree() {
+    // Mirror /pricing's Free-tier handlePlanClick so AuthModal sees the same
+    // state regardless of entry point: localStorage hydrated + pendingPlan
+    // pre-set + signup mode. Skips PlanPickerModal entirely — the user
+    // clicked a "Get Keeply Free" CTA, they want free, not a plan menu.
+    try {
+      localStorage.setItem('keeply_pending_plan', 'free');
+      localStorage.removeItem('keeply_pending_price_id');
+    } catch (e) {}
+    setPendingPlan('free');
+    setIsRecovery(false);
+    setAuthMode('signup');
+    setShowAuth(true);
   }
 
   function handleOpenLogin() {
@@ -358,7 +369,7 @@ export default function HomeClient() {
       <>
         <SiteHeader force />
         <LandingPage
-          onOpenPlanPicker={handleOpenPlanPicker}
+          onSignupFree={handleSignupFree}
           onOpenLogin={handleOpenLogin}
           verifiedBanner={verifiedBanner}
         />
@@ -387,7 +398,7 @@ export default function HomeClient() {
     <>
       <SiteHeader force />
       <LandingPage
-        onOpenPlanPicker={handleOpenPlanPicker}
+        onSignupFree={handleSignupFree}
         onOpenLogin={handleOpenLogin}
         verifiedBanner={verifiedBanner}
       />

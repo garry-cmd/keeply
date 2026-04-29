@@ -564,7 +564,13 @@ export default function AboutClient() {
               Free for as long as you want. No credit card. Sign up now and be onboard in 3 minutes.
             </p>
             <a
-              href="/?plans=1"
+              href="/?signup=1"
+              onClick={function () {
+                try {
+                  localStorage.setItem('keeply_pending_plan', 'free');
+                  localStorage.removeItem('keeply_pending_price_id');
+                } catch (e) {}
+              }}
               style={{
                 display: 'inline-block',
                 background: GOLD,

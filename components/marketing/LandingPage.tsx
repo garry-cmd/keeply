@@ -27,8 +27,10 @@ const NAVY = '#071e3d';
 
 interface LandingPageProps {
   // Triggered by Hero "Get Keeply Free" + bottom FinalCTA "Get Keeply Free".
-  // HomeClient opens the plan picker.
-  onOpenPlanPicker: () => void;
+  // HomeClient routes straight to AuthModal in signup mode with pendingPlan='free'
+  // — no plan picker. (Cross-page CTAs in SiteHeader/About/Features navigate to
+  // /?signup=1 instead of calling this prop.)
+  onSignupFree: () => void;
   // Triggered by Hero "Log in". HomeClient opens AuthModal in login mode.
   onOpenLogin: () => void;
   // Banner shown after email verification redirect (?verified=1 / ?verified=0)
@@ -36,7 +38,7 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({
-  onOpenPlanPicker,
+  onSignupFree,
   onOpenLogin,
   verifiedBanner,
 }: LandingPageProps) {
@@ -88,7 +90,7 @@ export default function LandingPage({
         </div>
       )}
 
-      <Hero isMobile={isMobile} onGetStarted={onOpenPlanPicker} onLogin={onOpenLogin} />
+      <Hero isMobile={isMobile} onGetStarted={onSignupFree} onLogin={onOpenLogin} />
       <SocialProofMarquee />
       <HowItWorks isMobile={isMobile} />
       <Testimonial isMobile={isMobile} />
@@ -97,7 +99,7 @@ export default function LandingPage({
       <div id="pricing">
         <PricingTeaser isMobile={isMobile} />
       </div>
-      <FinalCTA isMobile={isMobile} onGetStarted={onOpenPlanPicker} />
+      <FinalCTA isMobile={isMobile} onGetStarted={onSignupFree} />
     </div>
   );
 }
