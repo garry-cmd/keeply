@@ -563,7 +563,7 @@ export default function AboutClient() {
                 lineHeight: 1.6,
               }}
             >
-              Free for as long as you want. No credit card. Sign up now and be onboard in 3 minutes.
+              Free for as long as you want. Sign up now and be onboard in 3 minutes.
             </p>
             <button
               type="button"
@@ -584,7 +584,7 @@ export default function AboutClient() {
                 fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif",
               }}
             >
-              Get Keeply Free {'\u2192'}
+              Start Free Plan {'\u2192'}
             </button>
           </div>
         </div>

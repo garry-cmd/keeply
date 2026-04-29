@@ -34,21 +34,12 @@ export default function FinalCTA({ isMobile, onGetStarted }: FinalCTAProps) {
           letterSpacing: '-0.5px',
           fontWeight: 700,
           color: WHITE,
-          margin: '0 0 14px',
+          margin: '0 0 32px',
           fontFamily: "'Satoshi','DM Sans',sans-serif",
         }}
       >
         Always ready to go.
       </h2>
-      <p
-        style={{
-          fontSize: 15,
-          color: 'rgba(255,255,255,0.55)',
-          margin: '0 0 32px',
-        }}
-      >
-        Free to start · No credit card · Cancel any time
-      </p>
       <div
         style={{
           display: 'flex',
@@ -72,7 +63,7 @@ export default function FinalCTA({ isMobile, onGetStarted }: FinalCTAProps) {
             fontFamily: "'Satoshi','DM Sans',sans-serif",
           }}
         >
-          Get Keeply Free {'\u2192'}
+          Start Free Plan {'\u2192'}
         </button>
         <a
           href="/pricing"

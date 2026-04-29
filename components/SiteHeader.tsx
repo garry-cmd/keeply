@@ -179,7 +179,7 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
                 fontFamily: FONT,
               }}
             >
-              Get Keeply Free {'\u2192'}
+              Start Free Plan {'\u2192'}
             </button>
           </div>
         )}
@@ -298,7 +298,7 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
                 fontFamily: FONT,
               }}
             >
-              Get Keeply Free {'\u2192'}
+              Start Free Plan {'\u2192'}
             </button>
           </div>
         </div>

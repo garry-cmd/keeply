@@ -625,20 +625,11 @@ export default function FeaturesClient() {
             letterSpacing: '-0.01em',
             fontWeight: 700,
             color: WHITE,
-            margin: '0 0 14px',
+            margin: '0 0 28px',
           }}
         >
           Ready when you are.
         </h2>
-        <p
-          style={{
-            fontSize: 15,
-            color: 'rgba(255,255,255,0.6)',
-            margin: '0 0 28px',
-          }}
-        >
-          Free to start. No credit card. Cancel any time.
-        </p>
         <div
           style={{
             display: 'flex',
@@ -664,7 +655,7 @@ export default function FeaturesClient() {
               fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif",
             }}
           >
-            Get Keeply Free →
+            Start Free Plan →
           </button>
           <a
             href="/pricing"

@@ -76,23 +76,12 @@ export default function PricingTeaser({ isMobile }: PricingTeaserProps) {
               color: WHITE,
               letterSpacing: '-0.5px',
               lineHeight: 1.2,
-              margin: '0 0 14px',
+              margin: 0,
               fontFamily: "'Satoshi','DM Sans',sans-serif",
             }}
           >
             Simple pricing.
           </h2>
-          <p
-            style={{
-              fontSize: isMobile ? 14 : 16,
-              color: 'rgba(255,255,255,0.55)',
-              lineHeight: 1.6,
-              margin: '0 auto',
-              maxWidth: 540,
-            }}
-          >
-            Free to start. Upgrade only when your boat needs more.
-          </p>
         </div>
 
         <div

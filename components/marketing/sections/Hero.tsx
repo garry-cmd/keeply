@@ -99,7 +99,7 @@ export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
                 cursor: 'pointer',
               }}
             >
-              Get Keeply Free {'\u2192'}
+              Start Free Plan {'\u2192'}
             </button>
             <button
               onClick={onLogin}

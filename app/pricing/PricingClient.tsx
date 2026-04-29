@@ -37,7 +37,7 @@ const DISPLAY_PLANS = [
     effectiveMonthly: null,
     sub: '',
     subheader: "What's included",
-    cta: 'Get Keeply Free',
+    cta: 'Start Free Plan',
     features: [
       'Automated boat setup',
       '1 vessel',
@@ -268,7 +268,7 @@ export default function PricingClient() {
           >
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>
-              No credit card needed
+              Free plan, forever
             </span>
           </div>
           <h1
@@ -844,17 +844,8 @@ export default function PricingClient() {
               fontFamily: FONT,
             }}
           >
-            Get Keeply Free {'\u2192'}
+            Start Free Plan {'\u2192'}
           </button>
-          <div
-            style={{
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.4)',
-              marginTop: 12,
-            }}
-          >
-            No credit card needed.
-          </div>
         </div>
       </div>
     </div>
