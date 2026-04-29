@@ -468,6 +468,66 @@ function buildVesselPrompt(ctx) {
     today +
     '.\n\n';
 
+  // Per-engine block. Client now sends vessel.engines (array of
+  // { position, label, identity, hours, hoursDate, fuelBurn, fuelType,
+  // missingInfo }). Format depends on count.
+  let engineBlock = '';
+  const engines = Array.isArray(vessel.engines) ? vessel.engines : [];
+  if (engines.length === 0) {
+    engineBlock = 'Engine hours: not recorded\n';
+  } else if (engines.length === 1) {
+    const e = engines[0];
+    const idLine = e.identity ? 'Engine: ' + e.identity + '\n' : '';
+    const hoursLine =
+      'Engine hours: ' +
+      (e.hours != null
+        ? e.hours +
+          ' hrs' +
+          (e.hoursDate ? ' (as of ' + e.hoursDate + ')' : '')
+        : 'not recorded') +
+      '\n';
+    const fuelLine = e.fuelBurn ? 'Fuel burn rate: ' + e.fuelBurn + ' gal/hr\n' : '';
+    const missingLine = e.missingInfo
+      ? 'Engine identity not yet recorded — recommend the user complete engine details (make/model/year) on the My Boat tab for accurate maintenance guidance.\n'
+      : '';
+    engineBlock = idLine + hoursLine + fuelLine + missingLine;
+  } else {
+    // Twin or more: block per engine with position label.
+    engineBlock = 'Engines (' + engines.length + '):\n';
+    let anyMissing = false;
+    let hoursList = [];
+    engines.forEach(function (e) {
+      if (e.missingInfo) anyMissing = true;
+      const lbl = e.label || 'Engine';
+      const id = e.identity ? ' — ' + e.identity : '';
+      const hr =
+        e.hours != null
+          ? e.hours +
+            ' hrs' +
+            (e.hoursDate ? ' (as of ' + e.hoursDate + ')' : '')
+          : 'hours not recorded';
+      const fb = e.fuelBurn ? ', ' + e.fuelBurn + ' gal/hr' : '';
+      engineBlock += '  ' + lbl + id + ': ' + hr + fb + '\n';
+      if (e.hours != null) hoursList.push(e.hours);
+    });
+    // Discrepancy signal: surface if engines diverge meaningfully.
+    if (hoursList.length >= 2) {
+      const spread = Math.max.apply(null, hoursList) - Math.min.apply(null, hoursList);
+      const max = Math.max.apply(null, hoursList);
+      const pct = max > 0 ? spread / max : 0;
+      if (spread > 50 || pct > 0.1) {
+        engineBlock +=
+          'Engine-hours discrepancy of ' +
+          spread +
+          ' hrs detected — surface this when relevant; one engine may have been favored or had service the other did not.\n';
+      }
+    }
+    if (anyMissing) {
+      engineBlock +=
+        'One or more engines are missing identity (make/model/year) — recommend the user complete engine details on the My Boat tab for accurate maintenance guidance.\n';
+    }
+  }
+
   p +=
     '== VESSEL ==\n' +
     'Name: ' +
@@ -478,14 +538,7 @@ function buildVesselPrompt(ctx) {
     (vessel.make
       ? 'Make/Model: ' + [vessel.year, vessel.make, vessel.model].filter(Boolean).join(' ') + '\n'
       : '') +
-    'Engine hours: ' +
-    (vessel.engineHours
-      ? vessel.engineHours +
-        ' hrs' +
-        (vessel.engineHoursDate ? ' (as of ' + vessel.engineHoursDate + ')' : '')
-      : 'not recorded') +
-    '\n' +
-    (vessel.fuelBurnRate ? 'Fuel burn rate: ' + vessel.fuelBurnRate + ' gal/hr\n' : '') +
+    engineBlock +
     (vessel.homePort ? 'Home port: ' + vessel.homePort + '\n' : '') +
     '\n';
 
