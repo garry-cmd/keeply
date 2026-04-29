@@ -1,24 +1,27 @@
 'use client';
 
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { supabase } from '../../lib/supabase';
+
 // SimpleListView — generic list component used by Supplies, Grocery, AND Haulout.
 //
-// Lists Session 1 (this commit): stub placeholder. Renders the empty state copy
-// passed in by the parent so each surface looks distinct even before logic ships.
+// Lists Session 3:
+//   Reads {tableName} rows WHERE completed_at IS NULL — active items only.
+//   Tap bubble → optimistic remove + 3.5s undo toast (sets completed_at).
+//   Tap row body or ⋯ menu → action sheet (Edit / Delete).
+//   FAB at bottom-right opens add sheet (name required, notes optional).
 //
-// Lists Session 3: full implementation. Same shape on all three surfaces:
-//   - Repair-card row: bubble (left) | name (center) | edit/delete (right)
-//   - FAB to add a new item
-//   - Tap bubble → row collapses, "Done — undo" toast for ~3s, then row removed
-//     from view. completed_at set on the underlying row (rows aren't deleted —
-//     keeps history if we ever want it later).
-//   - Active-only filter: query rows WHERE completed_at IS NULL.
+// Schema contract (all three target tables share these columns):
+//   id (PK), vessel_id (FK), name (required), notes (optional),
+//   completed_at (timestamptz, NULL = active), created_at (default now())
 //
-// Parameters:
-//   tableName       — Postgres table to read/write (supplies | grocery_items | haulout_items)
-//   surfaceLabel    — short string used in toast copy ("supply", "grocery item", etc.)
-//   emptyTitle      — heading shown when list is empty
-//   emptyHint       — sub-line shown under the heading
-//   addPlaceholder  — input placeholder when adding a new item
+// supplies has additional legacy columns (in_stock, min_stock, equipment_id,
+// location_id, unit, updated_at) — read-side ignored, write-side filled by
+// DB defaults (in_stock/min_stock both default to 0; updated_at defaults to now()).
+//
+// NOTE — primitives (UndoToast, ActionSheet, AddOrEditSheet, Field, etc.) are
+// duplicated from PartsView.jsx. Tech debt to extract to a shared file in
+// Session 4 polish.
 export default function SimpleListView({
   activeVesselId,
   tableName,
@@ -27,22 +30,735 @@ export default function SimpleListView({
   emptyHint,
   addPlaceholder,
 }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(null); // null | item
+  const [actionSheet, setActionSheet] = useState(null); // null | item
+  const [toast, setToast] = useState(null); // null | { label, undo }
+  const toastTimerRef = useRef(null);
+
+  // ── Load ──
+  const load = useCallback(
+    async function () {
+      if (!activeVesselId) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('id, name, notes, completed_at, created_at')
+        .eq('vessel_id', activeVesselId)
+        .is('completed_at', null)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('SimpleListView load (' + tableName + '):', error);
+        setItems([]);
+      } else {
+        setItems(data || []);
+      }
+      setLoading(false);
+    },
+    [activeVesselId, tableName]
+  );
+
+  useEffect(
+    function () {
+      load();
+    },
+    [load]
+  );
+
+  // Cleanup toast timer on unmount.
+  useEffect(function () {
+    return function () {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  // ── Mark complete (tap bubble) ──
+  async function markComplete(item) {
+    if (busyId) return;
+    setBusyId(item.id);
+    const completedAt = new Date().toISOString();
+    // Optimistic remove
+    setItems(function (prev) {
+      return prev.filter(function (r) {
+        return r.id !== item.id;
+      });
+    });
+    const { error } = await supabase
+      .from(tableName)
+      .update({ completed_at: completedAt })
+      .eq('id', item.id);
+    setBusyId(null);
+    if (error) {
+      console.error('markComplete:', error);
+      // Revert
+      setItems(function (prev) {
+        return [item, ...prev];
+      });
+      return;
+    }
+    showToast({
+      label: 'Done',
+      undo: async function () {
+        const { error: undoErr } = await supabase
+          .from(tableName)
+          .update({ completed_at: null })
+          .eq('id', item.id);
+        if (!undoErr) {
+          setItems(function (prev) {
+            const next = [...prev, { ...item, completed_at: null }];
+            next.sort(function (a, b) {
+              return (b.created_at || '').localeCompare(a.created_at || '');
+            });
+            return next;
+          });
+        }
+      },
+    });
+  }
+
+  function showToast(t) {
+    setToast(t);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(function () {
+      setToast(null);
+    }, 3500);
+  }
+
+  function dismissToast() {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(null);
+  }
+
+  async function handleUndo() {
+    if (!toast || !toast.undo) return;
+    const undoFn = toast.undo;
+    dismissToast();
+    await undoFn();
+  }
+
+  // ── Add ──
+  async function addItem(payload) {
+    if (!activeVesselId) return;
+    const trimmedName = (payload.name || '').trim();
+    if (!trimmedName) return;
+    const insertRow = {
+      vessel_id: activeVesselId,
+      name: trimmedName,
+      notes: payload.notes && payload.notes.trim() ? payload.notes.trim() : null,
+    };
+    const { data, error } = await supabase
+      .from(tableName)
+      .insert(insertRow)
+      .select('id, name, notes, completed_at, created_at')
+      .single();
+    if (error) {
+      console.error('addItem:', error);
+      return;
+    }
+    setItems(function (prev) {
+      return [data, ...prev];
+    });
+    setAdding(false);
+  }
+
+  // ── Edit ──
+  async function saveEdit(payload) {
+    if (!editing) return;
+    const trimmedName = (payload.name || '').trim();
+    if (!trimmedName) return;
+    setBusyId(editing.id);
+    const patch = {
+      name: trimmedName,
+      notes: payload.notes && payload.notes.trim() ? payload.notes.trim() : null,
+    };
+    const { error } = await supabase.from(tableName).update(patch).eq('id', editing.id);
+    setBusyId(null);
+    if (error) {
+      console.error('saveEdit:', error);
+      return;
+    }
+    setItems(function (prev) {
+      return prev.map(function (r) {
+        return r.id === editing.id ? { ...r, ...patch } : r;
+      });
+    });
+    setEditing(null);
+  }
+
+  // ── Delete ──
+  async function deleteItem(item) {
+    if (!window.confirm('Delete "' + item.name + '"? This cannot be undone.')) return;
+    setBusyId(item.id);
+    setItems(function (prev) {
+      return prev.filter(function (r) {
+        return r.id !== item.id;
+      });
+    });
+    const { error } = await supabase.from(tableName).delete().eq('id', item.id);
+    setBusyId(null);
+    if (error) {
+      console.error('deleteItem:', error);
+      setItems(function (prev) {
+        const next = [...prev, item];
+        next.sort(function (a, b) {
+          return (b.created_at || '').localeCompare(a.created_at || '');
+        });
+        return next;
+      });
+    }
+    setActionSheet(null);
+  }
+
+  // ── Render ──
+
+  if (!activeVesselId) {
+    return (
+      <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+        Select a vessel to see your {surfaceLabel} list.
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '14px 14px 80px', position: 'relative', minHeight: 'calc(100vh - 240px)' }}>
+      {items.length === 0 ? (
+        <div
+          style={{
+            padding: '48px 24px',
+            textAlign: 'center',
+            color: 'var(--text-muted)',
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, color: 'var(--text-primary)' }}>
+            {emptyTitle}
+          </div>
+          <div style={{ fontSize: 12, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
+            {emptyHint}
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '0.5px solid var(--border)',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
+        >
+          {items.map(function (item, i) {
+            return (
+              <Row
+                key={item.id}
+                item={item}
+                isLast={i === items.length - 1}
+                onComplete={markComplete}
+                onMenu={setActionSheet}
+                busy={busyId === item.id}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* FAB */}
+      <button
+        onClick={function () { setAdding(true); }}
+        aria-label="Add item"
+        style={{
+          position: 'fixed',
+          right: 18,
+          bottom: 'calc(76px + env(safe-area-inset-bottom))',
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: 'var(--brand)',
+          border: 'none',
+          color: '#fff',
+          fontSize: 28,
+          fontWeight: 300,
+          lineHeight: 1,
+          cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(15,76,138,0.35)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          fontFamily: 'inherit',
+        }}
+      >
+        +
+      </button>
+
+      {/* Add sheet */}
+      {adding && (
+        <AddOrEditSheet
+          mode="add"
+          initialName=""
+          initialNotes=""
+          placeholder={addPlaceholder}
+          onClose={function () { setAdding(false); }}
+          onSave={addItem}
+        />
+      )}
+
+      {/* Action sheet (Edit / Delete) */}
+      {actionSheet && (
+        <ActionSheet
+          item={actionSheet}
+          onClose={function () { setActionSheet(null); }}
+          onEdit={function () {
+            setEditing(actionSheet);
+            setActionSheet(null);
+          }}
+          onDelete={function () { deleteItem(actionSheet); }}
+        />
+      )}
+
+      {/* Edit sheet */}
+      {editing && (
+        <AddOrEditSheet
+          mode="edit"
+          initialName={editing.name}
+          initialNotes={editing.notes || ''}
+          placeholder={addPlaceholder}
+          onClose={function () { setEditing(null); }}
+          onSave={saveEdit}
+          busy={busyId === editing.id}
+        />
+      )}
+
+      {/* Undo toast */}
+      {toast && (
+        <UndoToast label={toast.label} onUndo={handleUndo} onDismiss={dismissToast} />
+      )}
+    </div>
+  );
+}
+
+// ── Row ──
+function Row({ item, isLast, onComplete, onMenu, busy }) {
   return (
     <div
       style={{
-        padding: '48px 24px',
-        textAlign: 'center',
-        color: 'var(--text-muted)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '11px 14px',
+        borderBottom: isLast ? 'none' : '0.5px solid var(--border)',
+        opacity: busy ? 0.55 : 1,
+        transition: 'opacity 0.15s',
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>
-        {emptyTitle}
+      {/* Bubble */}
+      <button
+        onClick={function () { onComplete(item); }}
+        disabled={busy}
+        aria-label="Mark complete"
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          border: '1.5px solid var(--border-strong)',
+          background: 'transparent',
+          padding: 0,
+          cursor: 'pointer',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.15s',
+          fontFamily: 'inherit',
+        }}
+      />
+
+      {/* Body — name + notes preview */}
+      <div
+        onClick={function () { onMenu(item); }}
+        style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+      >
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.name}
+        </div>
+        {item.notes && (
+          <div
+            style={{
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              marginTop: 2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.notes}
+          </div>
+        )}
       </div>
-      <div style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 4 }}>
-        {emptyHint}
+
+      {/* ⋯ menu */}
+      <button
+        onClick={function () { onMenu(item); }}
+        disabled={busy}
+        aria-label="More actions"
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 6,
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-muted)',
+          flexShrink: 0,
+          padding: 0,
+          fontFamily: 'inherit',
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="5" r="1.6" />
+          <circle cx="12" cy="12" r="1.6" />
+          <circle cx="12" cy="19" r="1.6" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// ── Action sheet (Edit / Delete) ──
+function ActionSheet({ item, onClose, onEdit, onDelete }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        zIndex: 9000,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={function (e) { e.stopPropagation(); }}
+        style={{
+          width: '100%',
+          maxWidth: 480,
+          background: 'var(--bg-elevated)',
+          borderTopLeftRadius: 14,
+          borderTopRightRadius: 14,
+          padding: '8px 0 calc(env(safe-area-inset-bottom) + 12px)',
+          borderTop: '1px solid var(--border)',
+        }}
+      >
+        <div
+          style={{
+            padding: '12px 16px 14px',
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            borderBottom: '0.5px solid var(--border)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.name}
+        </div>
+        <SheetButton onClick={onEdit}>Edit</SheetButton>
+        <SheetButton onClick={onDelete} danger>
+          Delete
+        </SheetButton>
+        <SheetButton onClick={onClose} muted>
+          Cancel
+        </SheetButton>
       </div>
-      <div style={{ fontSize: 11, opacity: 0.7, marginTop: 12 }}>
-        Coming soon.
+    </div>
+  );
+}
+
+function SheetButton({ children, onClick, danger, muted }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'block',
+        width: '100%',
+        padding: '14px 16px',
+        textAlign: 'left',
+        background: 'transparent',
+        border: 'none',
+        borderBottom: '0.5px solid var(--border)',
+        fontSize: 14,
+        fontWeight: muted ? 500 : 600,
+        color: danger ? '#e74c3c' : muted ? 'var(--text-muted)' : 'var(--text-primary)',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── Add/Edit sheet ──
+function AddOrEditSheet({ mode, initialName, initialNotes, placeholder, onClose, onSave, busy }) {
+  const [name, setName] = useState(initialName || '');
+  const [notes, setNotes] = useState(initialNotes || '');
+
+  function handleSave() {
+    if (!name.trim()) return;
+    onSave({ name: name, notes: notes });
+  }
+
+  function handleKeyDown(e) {
+    // Enter on the name field saves; Shift+Enter in textarea is normal newline
+    if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      handleSave();
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        zIndex: 9000,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={function (e) { e.stopPropagation(); }}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: '100%',
+          maxWidth: 480,
+          background: 'var(--bg-elevated)',
+          borderTopLeftRadius: 14,
+          borderTopRightRadius: 14,
+          padding: '16px 16px calc(env(safe-area-inset-bottom) + 16px)',
+          borderTop: '1px solid var(--border)',
+          maxHeight: '85vh',
+          overflowY: 'auto',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+            {mode === 'add' ? 'Add item' : 'Edit item'}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: 20,
+              cursor: 'pointer',
+              padding: '0 4px',
+              fontFamily: 'inherit',
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <Field label="Name" value={name} onChange={setName} placeholder={placeholder} autoFocus />
+        <Field label="Notes" value={notes} onChange={setNotes} multiline />
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <button
+            onClick={onClose}
+            disabled={busy}
+            style={{
+              flex: 1,
+              padding: '12px',
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={busy || !name.trim()}
+            style={{
+              flex: 1,
+              padding: '12px',
+              border: 'none',
+              background: name.trim() ? 'var(--brand)' : 'var(--border)',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#fff',
+              cursor: name.trim() ? 'pointer' : 'not-allowed',
+              fontFamily: 'inherit',
+            }}
+          >
+            {busy ? 'Saving…' : mode === 'add' ? 'Add' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, multiline, autoFocus }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.5px',
+          textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={function (e) { onChange(e.target.value); }}
+          placeholder={placeholder}
+          rows={3}
+          style={{
+            width: '100%',
+            padding: '8px 10px',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            background: 'var(--bg-card)',
+            fontSize: 13,
+            color: 'var(--text-primary)',
+            fontFamily: 'inherit',
+            resize: 'vertical',
+          }}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={function (e) { onChange(e.target.value); }}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          style={{
+            width: '100%',
+            padding: '8px 10px',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            background: 'var(--bg-card)',
+            fontSize: 13,
+            color: 'var(--text-primary)',
+            fontFamily: 'inherit',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Undo toast ──
+function UndoToast({ label, onUndo, onDismiss }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 'calc(72px + env(safe-area-inset-bottom))',
+        left: 0,
+        right: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        zIndex: 9100,
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          background: '#1a2942',
+          color: '#fff',
+          borderRadius: 10,
+          padding: '10px 6px 10px 16px',
+          fontSize: 13,
+          fontWeight: 600,
+          boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          minWidth: 220,
+          maxWidth: 'calc(100% - 24px)',
+          pointerEvents: 'auto',
+        }}
+      >
+        <span style={{ flex: 1 }}>{label}</span>
+        <button
+          onClick={onUndo}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#f5a623',
+            fontSize: 13,
+            fontWeight: 700,
+            padding: '6px 12px',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Undo
+        </button>
+        <button
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(255,255,255,0.6)',
+            fontSize: 18,
+            padding: '4px 10px',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          ×
+        </button>
       </div>
     </div>
   );
