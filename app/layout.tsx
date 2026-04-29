@@ -1,6 +1,7 @@
 ﻿import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { PostHogProvider } from '@/components/PostHogProvider';
+import { AuthOpenerProvider } from '@/components/auth/AuthOpenerProvider';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 
@@ -157,9 +158,11 @@ if ('requestIdleCallback' in window) {
       </head>
       <body className="dark-mode">
         <PostHogProvider>
-          <SiteHeader />
-          {children}
-          <SiteFooter />
+          <AuthOpenerProvider>
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+          </AuthOpenerProvider>
         </PostHogProvider>
         <script
           dangerouslySetInnerHTML={{

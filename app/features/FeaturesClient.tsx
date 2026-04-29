@@ -20,6 +20,7 @@
 // so this component contains ONLY the body content for the route.
 
 import { useState, useEffect } from 'react';
+import { useAuthOpener } from '@/components/auth/AuthOpenerProvider';
 
 // Visuals on this page are now real product screenshots wrapped in a phone
 // bezel mockup (see PhoneScreenshot component below) — replacing the animated
@@ -378,6 +379,7 @@ const FIRST_MATE_SECTION: {
 
 export default function FeaturesClient() {
   const [isMobile, setIsMobile] = useState(false);
+  const { openSignup } = useAuthOpener();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -645,26 +647,25 @@ export default function FeaturesClient() {
             flexWrap: 'wrap',
           }}
         >
-          <a
-            href="/?signup=1"
+          <button
+            type="button"
             onClick={function () {
-              try {
-                localStorage.setItem('keeply_pending_plan', 'free');
-                localStorage.removeItem('keeply_pending_price_id');
-              } catch (e) {}
+              openSignup('free');
             }}
             style={{
               background: GOLD,
               color: '#1a1200',
+              border: 'none',
               padding: '14px 28px',
               borderRadius: 10,
               fontSize: 15,
               fontWeight: 700,
-              textDecoration: 'none',
+              cursor: 'pointer',
+              fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif",
             }}
           >
             Get Keeply Free →
-          </a>
+          </button>
           <a
             href="/pricing"
             style={{

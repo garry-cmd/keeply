@@ -12,6 +12,7 @@
 // so this component contains ONLY the body content for the route.
 
 import { useState, useEffect } from 'react';
+import { useAuthOpener } from '@/components/auth/AuthOpenerProvider';
 
 const NAVY = '#071e3d';
 const NAVY_MID = '#0d2d5e';
@@ -55,6 +56,7 @@ function HeroLogo({ size = 88 }: { size?: number }) {
 
 export default function AboutClient() {
   const [isMobile, setIsMobile] = useState(false);
+  const { openSignup } = useAuthOpener();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -563,28 +565,27 @@ export default function AboutClient() {
             >
               Free for as long as you want. No credit card. Sign up now and be onboard in 3 minutes.
             </p>
-            <a
-              href="/?signup=1"
+            <button
+              type="button"
               onClick={function () {
-                try {
-                  localStorage.setItem('keeply_pending_plan', 'free');
-                  localStorage.removeItem('keeply_pending_price_id');
-                } catch (e) {}
+                openSignup('free');
               }}
               style={{
                 display: 'inline-block',
                 background: GOLD,
                 color: '#1a1200',
+                border: 'none',
                 padding: '14px 30px',
                 borderRadius: 8,
                 fontSize: 14,
                 fontWeight: 700,
-                textDecoration: 'none',
+                cursor: 'pointer',
                 letterSpacing: '-0.005em',
+                fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif",
               }}
             >
               Get Keeply Free {'\u2192'}
-            </a>
+            </button>
           </div>
         </div>
         </div>

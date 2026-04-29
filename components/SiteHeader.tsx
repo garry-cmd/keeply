@@ -13,6 +13,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAuthOpener } from './auth/AuthOpenerProvider';
 
 const NAVY = '#071e3d';
 const GOLD = '#f5a623';
@@ -55,6 +56,7 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
   const pathname = usePathname() || '/';
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { openSignup } = useAuthOpener();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -160,13 +162,10 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
             >
               Log in
             </a>
-            <a
-              href="/?signup=1"
+            <button
+              type="button"
               onClick={function () {
-                try {
-                  localStorage.setItem('keeply_pending_plan', 'free');
-                  localStorage.removeItem('keeply_pending_price_id');
-                } catch (e) {}
+                openSignup('free');
               }}
               style={{
                 background: GOLD,
@@ -176,11 +175,12 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
                 borderRadius: 8,
                 fontSize: 13,
                 fontWeight: 700,
-                textDecoration: 'none',
+                cursor: 'pointer',
+                fontFamily: FONT,
               }}
             >
               Get Keeply Free {'\u2192'}
-            </a>
+            </button>
           </div>
         )}
 
@@ -278,13 +278,11 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
             >
               Log in
             </a>
-            <a
-              href="/?signup=1"
+            <button
+              type="button"
               onClick={function () {
-                try {
-                  localStorage.setItem('keeply_pending_plan', 'free');
-                  localStorage.removeItem('keeply_pending_price_id');
-                } catch (e) {}
+                setMenuOpen(false);
+                openSignup('free');
               }}
               style={{
                 flex: 1,
@@ -296,11 +294,12 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
                 fontSize: 14,
                 fontWeight: 700,
                 textAlign: 'center',
-                textDecoration: 'none',
+                cursor: 'pointer',
+                fontFamily: FONT,
               }}
             >
               Get Keeply Free {'\u2192'}
-            </a>
+            </button>
           </div>
         </div>
       )}

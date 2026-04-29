@@ -4,14 +4,15 @@
 //
 // Owns:
 //   - Auth state machine (guest → pending → authed)
-//   - PASSWORD_RECOVERY detection (lazy-load AuthModal in recovery mode)
 //   - SIGNED_IN dispatch (firePendingStripe for paid OAuth)
 //   - Lazy-loading of KeeplyApp (after authed)
-//   - Lazy-loading of AuthModal + PlanPickerModal (on user action)
 //
-// LandingPage stays Supabase-free. AuthModal (Supabase) only enters the
-// browser bundle when the user clicks Get Started / Log In, or when an
-// OAuth code / password recovery URL is detected.
+// AuthModal is NOT mounted here. It lives in <AuthOpenerProvider> at
+// app/layout.tsx so SiteHeader, About, Features, and the homepage all
+// reach the same modal instance — opening it does not require navigating
+// to / first. HomeClient consumes the same provider via useAuthOpener()
+// to translate URL params (?signup=1 / ?login=1 / ?keeply_recovery=1)
+// into provider open calls on mount.
 
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -19,25 +20,12 @@ import LandingPage from './marketing/LandingPage';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import { useAuthRedirects } from './auth/useAuthRedirects';
-import type { AuthMode } from './auth/AuthModal';
+import { useAuthOpener } from './auth/AuthOpenerProvider';
 import type { Subscription } from '@supabase/supabase-js';
 
 // KeeplyApp only loads after the user is authenticated.
 // Keeps the landing page bundle small.
 const KeeplyApp = dynamic(() => import('./KeeplyApp'), {
-  ssr: false,
-  loading: () => null,
-});
-
-// AuthModal pulls in Supabase. Lazy-loaded on demand.
-const AuthModal = dynamic(() => import('./auth/AuthModal'), {
-  ssr: false,
-  loading: () => null,
-});
-
-// PlanPickerModal is small + Supabase-free, but we still defer it to keep
-// the landing bundle minimal.
-const PlanPickerModal = dynamic(() => import('./auth/PlanPickerModal'), {
   ssr: false,
   loading: () => null,
 });
@@ -120,46 +108,30 @@ export default function HomeClient() {
   // SSR HTML matches hydration. The localStorage hint check happens in useEffect.
   const [state, setState] = useState<AuthState>('guest');
 
-  // Modal state — lives here so LandingPage doesn't need to manage auth UI
-  const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>('signup');
-  const [isRecovery, setIsRecovery] = useState(false);
-  const [showPlanPicker, setShowPlanPicker] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
+  const auth = useAuthOpener();
 
   // URL param effects (runs once on mount) — drives initial modal state
-  const {
-    initialAuthMode,
-    initialRecovery,
-    showPlanPickerOnMount,
-    verifiedBanner,
-  } = useAuthRedirects();
+  const { initialAuthMode, initialRecovery, verifiedBanner } = useAuthRedirects();
 
-  // Apply URL param results on first render
+  // Apply URL param results on first render — translate to provider calls
   useEffect(() => {
-    if (initialAuthMode) {
-      setAuthMode(initialAuthMode);
-      setShowAuth(true);
-    }
-    if (showPlanPickerOnMount) {
-      setShowPlanPicker(true);
-    }
     // PKCE password-recovery: marker set by AuthModal.resetPassword's
     // redirectTo (`/?keeply_recovery=1`) survives the round-trip and
-    // tells us this session was created from a recovery code. We set
-    // isRecovery=true so HomeClient's render shadow opens the modal in
-    // recovery mode — independent of whether PASSWORD_RECOVERY event
-    // fires (it doesn't reliably under PKCE).
+    // tells us this session was created from a recovery code. We open
+    // the modal in recovery mode independent of whether PASSWORD_RECOVERY
+    // event fires (it doesn't reliably under PKCE).
     if (initialRecovery) {
-      setIsRecovery(true);
-      setShowAuth(true);
+      auth.openRecovery();
+      return;
     }
-    // Hydrate pendingPlan from localStorage (set by /pricing CTA or PlanPickerModal)
-    try {
-      const stored = localStorage.getItem('keeply_pending_plan');
-      if (stored) setPendingPlan(stored);
-    } catch (e) {}
-  }, [initialAuthMode, initialRecovery, showPlanPickerOnMount]);
+    if (initialAuthMode === 'signup') {
+      // No plan arg — provider hydrates from localStorage so /pricing
+      // flows that pre-set keeply_pending_plan still get the right plan.
+      auth.openSignup();
+    } else if (initialAuthMode === 'login') {
+      auth.openLogin();
+    }
+  }, [initialAuthMode, initialRecovery, auth]);
 
   // Lazy supabase reference — populated on demand via ensureSupabaseLoaded().
   // Held in a ref (not state) so reading it doesn't trigger re-renders, and
@@ -168,6 +140,13 @@ export default function HomeClient() {
   const supabaseRef = useRef<any>(null);
   const subscriptionRef = useRef<Subscription | null>(null);
   const supabaseLoadingRef = useRef<Promise<unknown> | null>(null);
+
+  // Track latest auth opener via ref so the supabase listener (set up
+  // once at mount) can call openRecovery() if PASSWORD_RECOVERY fires.
+  const authRef = useRef(auth);
+  useEffect(() => {
+    authRef.current = auth;
+  }, [auth]);
 
   // Auth state machine — runs once on mount.
   //
@@ -209,8 +188,8 @@ export default function HomeClient() {
         const sub = mod.supabase.auth.onAuthStateChange(
           async function (event: string, session: { user?: { id: string; email?: string } } | null) {
             if (event === 'PASSWORD_RECOVERY') {
-              setIsRecovery(true);
-              setShowAuth(true);
+              // Defensive — primary recovery path is ?keeply_recovery=1 URL marker.
+              authRef.current.openRecovery();
               return;
             }
             if (event === 'SIGNED_IN' && session?.user) {
@@ -276,13 +255,13 @@ export default function HomeClient() {
     };
   }, []);
 
-  // When the user opens AuthModal, eagerly load supabase if it isn't
-  // already loaded. AuthModal itself imports supabase synchronously, so
-  // showing the modal triggers the chunk download — we just need the
-  // listener wired up here so SIGNED_IN / SIGNED_OUT events from the
-  // modal propagate back to HomeClient state.
+  // When the user opens AuthModal (provider sets isOpen), eagerly load
+  // supabase if it isn't already loaded. AuthModal itself imports
+  // supabase synchronously, so showing the modal triggers the chunk
+  // download — we just need our listener wired up here so SIGNED_IN /
+  // SIGNED_OUT events from the modal propagate back to HomeClient state.
   useEffect(() => {
-    if (!showAuth || supabaseRef.current) return;
+    if (!auth.isOpen || supabaseRef.current) return;
 
     let mounted = true;
     (async () => {
@@ -292,8 +271,7 @@ export default function HomeClient() {
 
       const sub = mod.supabase.auth.onAuthStateChange(async (event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
-          setIsRecovery(true);
-          setShowAuth(true);
+          authRef.current.openRecovery();
           return;
         }
         if (event === 'SIGNED_IN' && session?.user) {
@@ -315,56 +293,32 @@ export default function HomeClient() {
     return () => {
       mounted = false;
     };
-  }, [showAuth]);
+  }, [auth.isOpen]);
 
-  // Modal callbacks — passed down to LandingPage as props
+  // Modal callbacks — passed down to LandingPage as props.
+  // Both delegate to the provider; LandingPage stays unaware of the
+  // context so Hero/FinalCTA keep their simple onGetStarted/onLogin
+  // function-prop interface.
   function handleSignupFree() {
-    // Mirror /pricing's Free-tier handlePlanClick so AuthModal sees the same
-    // state regardless of entry point: localStorage hydrated + pendingPlan
-    // pre-set + signup mode. Skips PlanPickerModal entirely — the user
-    // clicked a "Get Keeply Free" CTA, they want free, not a plan menu.
-    try {
-      localStorage.setItem('keeply_pending_plan', 'free');
-      localStorage.removeItem('keeply_pending_price_id');
-    } catch (e) {}
-    setPendingPlan('free');
-    setIsRecovery(false);
-    setAuthMode('signup');
-    setShowAuth(true);
+    auth.openSignup('free');
   }
 
   function handleOpenLogin() {
-    setAuthMode('login');
-    setIsRecovery(false);
-    setShowAuth(true);
-  }
-
-  function handlePlanSelected(planId: 'free' | 'standard' | 'pro') {
-    setPendingPlan(planId);
-    setShowPlanPicker(false);
-    setAuthMode('signup');
-    setIsRecovery(false);
-    setShowAuth(true);
-  }
-
-  function handleCloseAuth() {
-    setShowAuth(false);
-    setIsRecovery(false);
+    auth.openLogin();
   }
 
   // Render — order matters
   //
   // Recovery flow shadows `state === 'authed'`: when the user clicks the
-  // password reset email link, supabase exchanges the URL fragment for a
+  // password reset email link, supabase exchanges the URL code for a
   // valid session AND fires PASSWORD_RECOVERY. Without this branch, the
   // SIGNED_IN handler flips state to 'authed' and KeeplyApp renders before
   // the recovery modal ever gets a chance — taking the user "directly into
-  // the app" instead of into "set a new password." So while isRecovery is
-  // true, render the marketing shell + recovery modal regardless of state.
-  // handleCloseAuth() clears isRecovery, after which state === 'authed'
-  // wins and KeeplyApp renders normally (user is now logged in with their
-  // new password).
-  if (isRecovery) {
+  // the app" instead of into "set a new password." So while auth.isRecovery
+  // is true, render the marketing shell regardless of state. The provider
+  // mounts the recovery modal on top. close() clears isRecovery, after
+  // which state === 'authed' wins and KeeplyApp renders normally.
+  if (auth.isRecovery) {
     return (
       <>
         <SiteHeader force />
@@ -374,14 +328,6 @@ export default function HomeClient() {
           verifiedBanner={verifiedBanner}
         />
         <SiteFooter force />
-        <AuthModal
-          open
-          mode={authMode}
-          isRecovery
-          pendingPlan={pendingPlan}
-          onClose={handleCloseAuth}
-          onModeChange={setAuthMode}
-        />
       </>
     );
   }
@@ -403,23 +349,6 @@ export default function HomeClient() {
         verifiedBanner={verifiedBanner}
       />
       <SiteFooter force />
-      {showPlanPicker && (
-        <PlanPickerModal
-          open={showPlanPicker}
-          onClose={() => setShowPlanPicker(false)}
-          onPlanSelected={handlePlanSelected}
-        />
-      )}
-      {showAuth && (
-        <AuthModal
-          open={showAuth}
-          mode={authMode}
-          isRecovery={isRecovery}
-          pendingPlan={pendingPlan}
-          onClose={handleCloseAuth}
-          onModeChange={setAuthMode}
-        />
-      )}
     </>
   );
 }
