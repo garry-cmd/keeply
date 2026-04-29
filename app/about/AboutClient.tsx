@@ -577,7 +577,7 @@ export default function AboutClient() {
                 letterSpacing: '-0.005em',
               }}
             >
-              Get started {'\u2192'}
+              Get Keeply Free {'\u2192'}
             </a>
           </div>
         </div>

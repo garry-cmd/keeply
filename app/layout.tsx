@@ -7,7 +7,7 @@ import SiteFooter from '@/components/SiteFooter';
 export const metadata: Metadata = {
   title: 'Keeply — Boat Maintenance App & Vessel Tracker',
   description:
-    'Keeply is the AI-powered boat maintenance app for serious boat owners. Track maintenance schedules, equipment, repairs, and logbook entries — with First Mate AI always ready.',
+    'Keeply keeps every system on your boat covered — maintenance, repairs, parts, documents, and passage logs. With First Mate AI when you need a hand. Free to start, no credit card.',
   manifest: '/manifest.json',
   alternates: {
     canonical: 'https://www.keeply.boats',
@@ -30,24 +30,24 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: 'https://www.keeply.boats',
-    title: "Keeply — Your vessel's First Mate, always ready",
+    title: 'Keeply — Every system on your boat, covered.',
     description:
-      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI always ready when you are.',
+      'Boat maintenance, repairs, parts, documents, and passage logs — connected. First Mate AI on hand when you want it.',
     siteName: 'Keeply',
     images: [
       {
         url: 'https://www.keeply.boats/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: "Keeply — Your vessel's First Mate, always ready",
+        alt: 'Keeply — Every system on your boat, covered.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Keeply — Your vessel's First Mate, always ready",
+    title: 'Keeply — Every system on your boat, covered.',
     description:
-      'AI-powered boat management — maintenance scheduling, passage logbook, and First Mate AI.',
+      'Boat maintenance, repairs, parts, documents, and passage logs — connected. First Mate AI on hand when you want it.',
     images: ['https://www.keeply.boats/og-image.jpg'],
   },
 };

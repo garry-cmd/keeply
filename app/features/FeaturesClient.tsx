@@ -657,7 +657,7 @@ export default function FeaturesClient() {
               textDecoration: 'none',
             }}
           >
-            Get started →
+            Get Keeply Free →
           </a>
           <a
             href="/pricing"

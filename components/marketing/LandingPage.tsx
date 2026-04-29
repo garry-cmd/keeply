@@ -30,8 +30,8 @@ const NAVY = '#071e3d';
 const GOLD = '#f5a623';
 
 interface LandingPageProps {
-  // Triggered by Hero "Get started" + bottom FinalCTA "Get started" + the
-  // "Start free" link in the trust strip. HomeClient opens the plan picker.
+  // Triggered by Hero "Get Keeply Free" + bottom FinalCTA "Get Keeply Free"
+  // + the "Start free" link in the trust strip. HomeClient opens the plan picker.
   onOpenPlanPicker: () => void;
   // Triggered by Hero "Log in". HomeClient opens AuthModal in login mode.
   onOpenLogin: () => void;

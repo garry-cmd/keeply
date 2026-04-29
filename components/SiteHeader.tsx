@@ -173,7 +173,7 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
                 textDecoration: 'none',
               }}
             >
-              Get started {'\u2192'}
+              Get Keeply Free {'\u2192'}
             </a>
           </div>
         )}
@@ -287,7 +287,7 @@ export default function SiteHeader({ force = false }: SiteHeaderProps = {}) {
                 textDecoration: 'none',
               }}
             >
-              Get started {'\u2192'}
+              Get Keeply Free {'\u2192'}
             </a>
           </div>
         </div>

@@ -1,7 +1,8 @@
 'use client';
 
-// FinalCTA — closes the page with action language, not a brand
-// repeat. Hero already says "Always ready to go."
+// FinalCTA — closes the page with the brand line.
+// Hero now leads with coverage; this section carries
+// "Always ready to go." home.
 // Anchor id="get-started" preserved for in-page links from elsewhere.
 
 import React from 'react';
@@ -37,7 +38,7 @@ export default function FinalCTA({ isMobile, onGetStarted }: FinalCTAProps) {
           fontFamily: "'Satoshi','DM Sans',sans-serif",
         }}
       >
-        Get started in 3 minutes.
+        Always ready to go.
       </h2>
       <p
         style={{
@@ -71,7 +72,7 @@ export default function FinalCTA({ isMobile, onGetStarted }: FinalCTAProps) {
             fontFamily: "'Satoshi','DM Sans',sans-serif",
           }}
         >
-          Get started {'\u2192'}
+          Get Keeply Free {'\u2192'}
         </button>
         <a
           href="/pricing"

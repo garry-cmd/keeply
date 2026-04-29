@@ -37,7 +37,7 @@ const DISPLAY_PLANS = [
     effectiveMonthly: null,
     sub: '',
     subheader: "What's included",
-    cta: 'Get started free',
+    cta: 'Get Keeply Free',
     features: [
       'Automated boat setup',
       '1 vessel',
@@ -844,7 +844,7 @@ export default function PricingClient() {
               fontFamily: FONT,
             }}
           >
-            Get started free {'\u2192'}
+            Get Keeply Free {'\u2192'}
           </button>
           <div
             style={{

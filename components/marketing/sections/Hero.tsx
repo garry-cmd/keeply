@@ -45,7 +45,7 @@ export default function Hero({ onGetStarted, onLogin }: HeroProps) {
             fontFamily: "'Clash Display','Inter',sans-serif",
           }}
         >
-          Always ready <span style={{ color: GOLD }}>to go.</span>
+          Every system. Every part. Every <span style={{ color: GOLD }}>passage.</span>
         </h1>
 
         <p
@@ -57,8 +57,8 @@ export default function Hero({ onGetStarted, onLogin }: HeroProps) {
             maxWidth: 620,
           }}
         >
-          From the bilge pump to the next haul-out — every system tracked,
-          every part remembered, every passage logged.
+          Maintenance, repairs, parts, documents, and logbook — connected.
+          First Mate AI ready when you want a hand.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -76,7 +76,7 @@ export default function Hero({ onGetStarted, onLogin }: HeroProps) {
                 cursor: 'pointer',
               }}
             >
-              Get started {'\u2192'}
+              Get Keeply Free {'\u2192'}
             </button>
             <button
               onClick={onLogin}
