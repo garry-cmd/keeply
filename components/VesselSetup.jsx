@@ -222,13 +222,51 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
     });
   }
 
-  function addSecondEngine() {
-    // Promote the single engine to 'port', add 'starboard' alongside.
-    setEngines(function (prev) {
+  // ── Position assignment rules ──────────────────────────────────────────
+  // 1 engine: position = null (single)
+  // 2 engines: port + starboard
+  // 3 engines: port + center + starboard
+  // 4+ engines: engine_1 .. engine_N (getPositionLabel falls back to "Engine N")
+  //
+  // Canonical labels exist for 1–3 engines because port/center/starboard maps
+  // cleanly to recreational vessels (twin outboards, triple outboards). For
+  // 4+ we drop the canonical scheme — quad+ engine layouts vary too much
+  // (port_outer/port_inner/etc.) to assume a single convention. Numeric
+  // identity preserves "which engine is which" without overclaiming layout.
+  function reassignPositions(list) {
+    const n = list.length;
+    if (n === 0) return list;
+    if (n === 1) {
+      return [Object.assign({}, list[0], { position: null })];
+    }
+    if (n === 2) {
       return [
-        Object.assign({}, prev[0], { position: 'port' }),
-        blankEngine('starboard'),
+        Object.assign({}, list[0], { position: 'port' }),
+        Object.assign({}, list[1], { position: 'starboard' }),
       ];
+    }
+    if (n === 3) {
+      return [
+        Object.assign({}, list[0], { position: 'port' }),
+        Object.assign({}, list[1], { position: 'center' }),
+        Object.assign({}, list[2], { position: 'starboard' }),
+      ];
+    }
+    // 4+: numeric, preserves array order
+    return list.map(function (e, i) {
+      return Object.assign({}, e, { position: 'engine_' + (i + 1) });
+    });
+  }
+
+  function addEngine() {
+    setEngines(function (prev) {
+      // Special-case the 1→2 add: insert new engine BEFORE the existing one
+      // so the existing user-entered data slots into 'starboard'. Wait — no.
+      // Existing data slot is index 0 (was single, now becomes port). New
+      // engine is index 1 (starboard). That's what users expect — the new
+      // empty card appears below their existing one.
+      const next = prev.concat([blankEngine(null)]);
+      return reassignPositions(next);
     });
   }
 
@@ -237,10 +275,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
       const remaining = prev.filter(function (_, i) {
         return i !== idx;
       });
-      // Single engine left — clear position back to null
-      return remaining.map(function (e) {
-        return Object.assign({}, e, { position: null });
-      });
+      return reassignPositions(remaining);
     });
   }
 
@@ -252,8 +287,17 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
     if (!vesselModel.trim()) return 'Please enter your vessel model.';
     for (let i = 0; i < engines.length; i++) {
       const e = engines[i];
-      const posLabel =
-        engines.length > 1 ? (e.position === 'starboard' ? 'starboard' : 'port') + ' engine ' : 'engine ';
+      // Friendly per-engine label for error messages. Long-form
+      // ("starboard", not "stbd"; "engine 2", not "engine_2") so the
+      // sentence reads naturally.
+      let posLabel = 'engine ';
+      if (engines.length > 1) {
+        const p = e.position;
+        if (p === 'port') posLabel = 'port engine ';
+        else if (p === 'starboard') posLabel = 'starboard engine ';
+        else if (p === 'center') posLabel = 'center engine ';
+        else posLabel = 'engine ' + (i + 1) + ' ';
+      }
       if (!e.make || !e.make.trim()) {
         return 'Please enter a ' + posLabel + 'make.';
       }
@@ -666,17 +710,22 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
 
   // ── Engine block renderer ───────────────────────────────────────────
   function renderEngineBlock(engine, idx) {
-    const isTwin = engines.length > 1;
-    const positionLabel =
-      engine.position === 'port'
-        ? 'Port engine'
-        : engine.position === 'starboard'
-          ? 'Starboard engine'
-          : null;
+    const isMulti = engines.length > 1;
+    // Long-form labels for the card header — "Port engine", "Starboard
+    // engine", "Center engine", or "Engine N" for 4+. Single engine gets
+    // no header label (the section title already says "Engine").
+    let positionLabel = null;
+    if (isMulti) {
+      const p = engine.position;
+      if (p === 'port') positionLabel = 'Port engine';
+      else if (p === 'starboard') positionLabel = 'Starboard engine';
+      else if (p === 'center') positionLabel = 'Center engine';
+      else positionLabel = 'Engine ' + (idx + 1);
+    }
 
     return (
       <div key={idx} style={{ marginBottom: 16 }}>
-        {isTwin && (
+        {isMulti && (
           <div
             style={{
               display: 'flex',
@@ -940,19 +989,19 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
               return renderEngineBlock(e, i);
             })}
 
-            {engines.length === 1 && (
-              <div style={{ padding: '10px 0 18px', textAlign: 'center' }}>
-                <span
-                  onClick={addSecondEngine}
-                  style={{
-                    fontSize: 12,
-                    color: '#6fa8e0',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  + Add another engine
-                </span>
+            <div style={{ padding: '10px 0 18px', textAlign: 'center' }}>
+              <span
+                onClick={addEngine}
+                style={{
+                  fontSize: 12,
+                  color: '#6fa8e0',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                + Add another engine
+              </span>
+              {engines.length === 1 && (
                 <span
                   style={{
                     fontSize: 11,
@@ -962,9 +1011,8 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
                 >
                   for twin-engine vessels
                 </span>
-              </div>
-            )}
-            {engines.length === 2 && <div style={{ height: 10 }}></div>}
+              )}
+            </div>
 
             {/* ── Primary action ── */}
             <button
