@@ -307,8 +307,8 @@ const SECTIONS: Array<{
     id: 'setup',
     icon: 'setup',
     eyebrow: 'Setup',
-    title: 'Three minutes to start. Thirty to set up properly.',
-    body: 'Tell Keeply what boat you have and the AI seeds your vessel — the equipment, the maintenance items, and the things that make boats run. Three minutes gets you a real working system. A thirty-minute session of curating the details gets you completely set up. Automation makes this fast, and you stay in control of what gets recorded.',
+    title: 'Three minutes to start.',
+    body: 'Tell Keeply what boat you have and the AI seeds your vessel — the equipment, the maintenance items, and the things that make boats run. Three minutes gets you a real working system. A session of curating the details gets you completely set up. Automation makes this fast, and you stay in control of what gets recorded.',
     Visual: makeShot('/images/features/setup.jpg', 'Onboarding screen'),
   },
   {
@@ -324,7 +324,7 @@ const SECTIONS: Array<{
     icon: 'equipment',
     eyebrow: 'Equipment',
     title: 'Every piece of equipment on your boat with its own card.',
-    body: 'Make, model, year, photos, manuals, service log, parts. When you create a new equipment card, First Mate identifies the gear and builds the maintenance schedule for it — or enter it manually if you prefer. Either way, the equipment library is what makes everything else possible: Keeply knows your gear, so the maintenance schedule fits, the parts are right, and the answers are specific.',
+    body: 'Make, model, year, photos, manuals, service log, parts. When you create a new equipment card, First Mate identifies the gear and builds the maintenance schedule for it — or enter it manually if you prefer. Service intervals are fully customizable, with engines tracked by hours run. Either way, the equipment library is what makes everything else possible: Keeply knows your gear, so the maintenance schedule fits, the parts are right, and the answers are specific.',
     Visual: makeShot('/images/features/equipment.jpg', 'Equipment card'),
   },
   {
@@ -340,7 +340,7 @@ const SECTIONS: Array<{
     icon: 'repairs',
     eyebrow: 'Repairs',
     title: 'From open to closed, with photos and history.',
-    body: 'A repair tracker that does not pretend to be a maintenance task. Open a repair when something breaks, attach photos, link the affected equipment, log notes as you work it. Close it when fixed. Every closed repair stays in the history of that equipment — for you, your insurance, or the next owner.',
+    body: 'A repair tracker that does not pretend to be a maintenance task. Open a repair when something breaks, attach photos, link the affected equipment, log notes as you work it. Close it when fixed. Every closed repair stays in the history of that equipment.',
     Visual: makeShot('/images/features/repairs.jpg', 'Repair detail view'),
   },
   {
@@ -348,7 +348,7 @@ const SECTIONS: Array<{
     icon: 'parts',
     eyebrow: 'Parts',
     title: 'Find the right part. Order it without the hunt.',
-    body: 'Open any maintenance item or repair — Keeply already knows your equipment make and model. One tap searches major marine retailers for the exact part. Save parts to a shopping list and add to it as you go, so the next time you place an order, everything you need is in one cart.',
+    body: 'Open any maintenance item or repair — Keeply already knows your equipment make and model. One tap searches major marine retailers for the exact part. Save parts to a shopping list and add to it as you go, so the next time you place an order, everything you need is in one list.',
     Visual: makeShot('/images/features/parts.jpg', 'Find parts results'),
   },
   {
