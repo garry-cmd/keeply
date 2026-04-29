@@ -1,6 +1,5 @@
 ﻿import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { PostHogProvider } from '@/components/PostHogProvider';
 import { AuthOpenerProvider } from '@/components/auth/AuthOpenerProvider';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
@@ -157,13 +156,11 @@ if ('requestIdleCallback' in window) {
         <meta name="color-scheme" content="dark" />
       </head>
       <body className="dark-mode">
-        <PostHogProvider>
-          <AuthOpenerProvider>
-            <SiteHeader />
-            {children}
-            <SiteFooter />
-          </AuthOpenerProvider>
-        </PostHogProvider>
+        <AuthOpenerProvider>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </AuthOpenerProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if ('serviceWorker' in navigator) {

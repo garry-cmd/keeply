@@ -1,13 +1,8 @@
 /**
- * Unified analytics dispatcher — fires events to PostHog, GA4, and Google Ads
+ * Unified analytics dispatcher — fires events to GA4 and Google Ads
  * conversions in one call. Use this for top-of-funnel and conversion events
- * on the landing page so all three vendors stay in sync.
- *
- * Existing in-app event tracking (KeeplyApp.jsx etc.) can keep using
- * lib/posthog.ts helpers directly — those don't need Ads conversions.
+ * on the landing page so both vendors stay in sync.
  */
-
-import posthog from 'posthog-js';
 
 // ── Google Ads conversion config ─────────────────────────────────────────────
 // Conversion ID is the same for all three conversions on this Ads account.
@@ -33,8 +28,8 @@ function fireAdsConversion(conversion: AdsConversion) {
 }
 
 // ── Public tracking helpers ──────────────────────────────────────────────────
-// Each helper fires PostHog (product analytics) + GA4 (web analytics) +
-// Google Ads (paid conversion). Single call site, three vendors.
+// Each helper fires GA4 (web analytics) + Google Ads (paid conversion).
+// Single call site, two vendors.
 
 /**
  * User opened the signup auth modal (didn't necessarily complete).
@@ -42,7 +37,6 @@ function fireAdsConversion(conversion: AdsConversion) {
  */
 export function trackSignupStarted() {
   if (typeof window === 'undefined') return;
-  posthog.capture('signup_started');
   (window as any).gtag?.('event', 'signup_started');
   fireAdsConversion('signup_started');
 }
@@ -54,7 +48,6 @@ export function trackSignupStarted() {
 export function trackPlanSelected(plan: string, priceId?: string) {
   if (typeof window === 'undefined') return;
   const props = priceId ? { plan, price_id: priceId } : { plan };
-  posthog.capture('plan_selected', props);
   (window as any).gtag?.('event', 'plan_selected', props);
   fireAdsConversion('plan_selected');
 }
@@ -65,8 +58,9 @@ export function trackPlanSelected(plan: string, priceId?: string) {
  */
 export function trackSignupCompleted(plan: string, emailConfirmedImmediately: boolean) {
   if (typeof window === 'undefined') return;
-  const props = { plan, email_confirmed_immediately: emailConfirmedImmediately };
-  posthog.capture('signup_completed', props);
   (window as any).gtag?.('event', 'signup_completed', { plan });
   fireAdsConversion('signup_completed');
+  // emailConfirmedImmediately retained in signature for future use; currently
+  // not dispatched as a separate property to GA4.
+  void emailConfirmedImmediately;
 }

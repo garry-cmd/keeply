@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { trackException } from '@/lib/posthog';
 
 /**
  * Route-level error boundary.
@@ -9,9 +8,8 @@ import { trackException } from '@/lib/posthog';
  * Catches errors thrown during rendering, in lifecycle methods, and in constructors
  * of components below the root layout.
  *
- * Errors caught here are reported to PostHog via trackException — they would not
- * otherwise reach PostHog's global capture_exceptions handler because React has
- * already caught them.
+ * Errors are logged to the browser console; production errors also surface in
+ * Vercel runtime logs via Next.js's built-in capture.
  */
 export default function Error({
   error,
@@ -22,11 +20,6 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error('Route error boundary caught:', error);
-    trackException(error, {
-      source: 'error-boundary',
-      scope: 'route',
-      digest: error.digest,
-    });
   }, [error]);
 
   return (

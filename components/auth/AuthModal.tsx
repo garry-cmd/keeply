@@ -16,7 +16,7 @@
 //   3. If a paid plan + priceId → POST /api/stripe/checkout, redirect on URL
 //   4. Otherwise → POST /api/send-verification, refresh session, show inbox state
 //
-// On login: supabase.auth.signInWithPassword + posthog.identify.
+// On login: supabase.auth.signInWithPassword.
 // On Google: supabase.auth.signInWithOAuth — HomeClient handles the SIGNED_IN
 // event after redirect (firePendingStripe).
 //
@@ -25,7 +25,6 @@
 import React, { useState, type CSSProperties, type FormEvent } from 'react';
 import { supabase } from '../supabase-client';
 import { PLANS as PRICING_CONFIG } from '../../lib/pricing.js';
-import posthog from 'posthog-js';
 import { trackSignupStarted, trackSignupCompleted } from '../../lib/analytics';
 
 const BRAND = '#0f4c8a';
@@ -242,8 +241,6 @@ export default function AuthModal({
           password,
         });
         if (loginResult.error) throw loginResult.error;
-        posthog.identify(loginResult.data.user.id, { email });
-        posthog.capture('login_completed');
       }
     } catch (err: any) {
       setError(err.message);

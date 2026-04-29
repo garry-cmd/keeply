@@ -9,7 +9,7 @@
 //
 // CTAs follow the existing sign-up funnel:
 //   1. Stamp keeply_pending_plan + keeply_pending_price_id in localStorage
-//   2. Fire trackPlanSelected (PostHog + GA4 + Google Ads)
+//   2. Fire trackPlanSelected (GA4 + Google Ads)
 //   3. window.location.href = '/?signup=1'
 // LandingPage's URL-param effect picks up signup=1 and opens the auth modal.
 // After auth, app/page.tsx reads pending_price_id and dispatches Stripe Checkout.
