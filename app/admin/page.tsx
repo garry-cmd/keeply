@@ -72,6 +72,13 @@ interface AdminStats {
       daysSinceSignup: number;
     }[];
   };
+  lists: {
+    partsNeeded: { count: number; value: number; vessels: number };
+    partsOrdered: { count: number; value: number; vessels: number };
+    supplies: { count: number; vessels: number };
+    grocery: { count: number; vessels: number };
+    haulout: { count: number; vessels: number };
+  };
   fetchedAt: string;
 }
 
@@ -488,7 +495,7 @@ export default function AdminPage() {
     );
   if (!stats) return null;
 
-  const { users, product, revenue, engagement, appStore, geography, orphans, verification } =
+  const { users, product, revenue, engagement, appStore, geography, orphans, verification, lists } =
     stats;
   const freeUsers = Math.max(0, users.total - revenue.activeSubscriptions - revenue.trialing);
   const convRate = pct(revenue.activeSubscriptions, users.total);
@@ -1447,6 +1454,38 @@ export default function AdminPage() {
               label="Open Repairs"
               value={product.openRepairs}
               accent={product.openRepairs > 0 ? '#fb923c' : text}
+            />
+          </div>
+        </div>
+
+        {/* ── Lists ────────────────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>Lists</div>
+          <div style={s.grid(5)}>
+            <StatCard
+              label="Parts Needed"
+              value={lists.partsNeeded.count}
+              sub={`$${Math.round(lists.partsNeeded.value).toLocaleString()} · ${lists.partsNeeded.vessels} vessel${lists.partsNeeded.vessels === 1 ? '' : 's'}`}
+            />
+            <StatCard
+              label="Parts Ordered"
+              value={lists.partsOrdered.count}
+              sub={`$${Math.round(lists.partsOrdered.value).toLocaleString()} · ${lists.partsOrdered.vessels} vessel${lists.partsOrdered.vessels === 1 ? '' : 's'}`}
+            />
+            <StatCard
+              label="Supplies"
+              value={lists.supplies.count}
+              sub={`${lists.supplies.vessels} vessel${lists.supplies.vessels === 1 ? '' : 's'}`}
+            />
+            <StatCard
+              label="Grocery"
+              value={lists.grocery.count}
+              sub={`${lists.grocery.vessels} vessel${lists.grocery.vessels === 1 ? '' : 's'}`}
+            />
+            <StatCard
+              label="Haulout"
+              value={lists.haulout.count}
+              sub={`${lists.haulout.vessels} vessel${lists.haulout.vessels === 1 ? '' : 's'}`}
             />
           </div>
         </div>

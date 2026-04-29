@@ -89,6 +89,10 @@ export async function GET(req: NextRequest) {
     repairCreatedResult,
     firstMateResult,
     userProfilesResult, // id + plan — used for orphan detection
+    partsResult, // saved_parts rows with state in (needed, ordered) — for Lists metrics
+    suppliesResult, // active supplies — for Lists metrics
+    groceryResult, // active grocery items — for Lists metrics
+    hauloutResult, // active haulout items — for Lists metrics
   ] = await Promise.allSettled([
     supabase.auth.admin.listUsers({ perPage: 1000 }),
     supabase.from('vessels').select('*', { count: 'exact', head: true }),
@@ -102,6 +106,10 @@ export async function GET(req: NextRequest) {
     supabase.from('repairs').select('created_at').gte('created_at', twoWeeksAgo.toISOString()),
     supabase.from('firstmate_usage').select('count').eq('month_key', currentMonth),
     supabase.from('user_profiles').select('id, plan'),
+    supabase.from('saved_parts').select('vessel_id, state, price').in('state', ['needed', 'ordered']),
+    supabase.from('supplies').select('vessel_id').is('completed_at', null),
+    supabase.from('grocery_items').select('vessel_id').is('completed_at', null),
+    supabase.from('haulout_items').select('vessel_id').is('completed_at', null),
   ]);
 
   // ── Users ─────────────────────────────────────────────────────────────────────
@@ -306,6 +314,56 @@ export async function GET(req: NextRequest) {
   });
   const expiredCount = pendingUsers.filter((p) => p.expired).length;
 
+  // ── Lists (Parts / Supplies / Grocery / Haulout) ──────────────────────────────
+  // Parts pulls saved_parts rows with state in (needed, ordered). Price is text;
+  // missing/empty/non-numeric values default to $1 per Garry's spec. Distinct
+  // vessel counts give "how many vessels are using this surface."
+  function parsePrice(p: string | null | undefined): number {
+    if (!p) return 1;
+    const cleaned = String(p).replace(/[^0-9.]/g, '');
+    if (!cleaned) return 1;
+    const n = parseFloat(cleaned);
+    return isFinite(n) && n > 0 ? n : 1;
+  }
+  type PartRow = { vessel_id: string; state: string; price: string | null };
+  type VesselRow = { vessel_id: string };
+
+  const partsRows: PartRow[] =
+    partsResult.status === 'fulfilled' ? (partsResult.value.data ?? []) : [];
+  let partsNeededCount = 0;
+  let partsNeededValue = 0;
+  let partsOrderedCount = 0;
+  let partsOrderedValue = 0;
+  const partsNeededVessels = new Set<string>();
+  const partsOrderedVessels = new Set<string>();
+  for (const p of partsRows) {
+    const val = parsePrice(p.price);
+    if (p.state === 'needed') {
+      partsNeededCount++;
+      partsNeededValue += val;
+      if (p.vessel_id) partsNeededVessels.add(p.vessel_id);
+    } else if (p.state === 'ordered') {
+      partsOrderedCount++;
+      partsOrderedValue += val;
+      if (p.vessel_id) partsOrderedVessels.add(p.vessel_id);
+    }
+  }
+
+  function aggregateRows(rows: VesselRow[]): { count: number; vessels: number } {
+    const vessels = new Set<string>();
+    for (const r of rows) if (r.vessel_id) vessels.add(r.vessel_id);
+    return { count: rows.length, vessels: vessels.size };
+  }
+  const suppliesRows: VesselRow[] =
+    suppliesResult.status === 'fulfilled' ? (suppliesResult.value.data ?? []) : [];
+  const groceryRows: VesselRow[] =
+    groceryResult.status === 'fulfilled' ? (groceryResult.value.data ?? []) : [];
+  const hauloutRows: VesselRow[] =
+    hauloutResult.status === 'fulfilled' ? (hauloutResult.value.data ?? []) : [];
+  const suppliesAgg = aggregateRows(suppliesRows);
+  const groceryAgg = aggregateRows(groceryRows);
+  const hauloutAgg = aggregateRows(hauloutRows);
+
   // ── App Store ratings (stubbed — wire up once credentials available) ──────────
   // iOS:     Use App Store Connect API → GET /v1/apps/{id}/customerReviews
   // Android: Use Google Play Developer API → reviews.list
@@ -363,6 +421,21 @@ export async function GET(req: NextRequest) {
       expired: expiredCount,
       legacy: legacyCount,
       list: pendingUsers.slice(0, 50),
+    },
+    lists: {
+      partsNeeded: {
+        count: partsNeededCount,
+        value: partsNeededValue,
+        vessels: partsNeededVessels.size,
+      },
+      partsOrdered: {
+        count: partsOrderedCount,
+        value: partsOrderedValue,
+        vessels: partsOrderedVessels.size,
+      },
+      supplies: suppliesAgg,
+      grocery: groceryAgg,
+      haulout: hauloutAgg,
     },
     fetchedAt: new Date().toISOString(),
   });
