@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase-client';
 import { hasCapability } from '../lib/pricing';
+import { getOrderedEngines, getPositionLabel } from '../lib/engines';
 
 const SUPA_URL = 'https://waapqyshmqaaamiiitso.supabase.co';
 const SUPA_KEY =
@@ -188,7 +189,10 @@ function blankForm() {
     to_location: '',
     crew: '',
     distance_nm: '',
-    hours_end: '',
+    // Per-engine hours_end values, keyed by engine.id. Replaces the single
+    // `hours_end` field. Each value is a string (input value pattern).
+    // Empty / missing values mean "this engine wasn't run on this passage."
+    engineHoursEnd: {},
     conditions: '',
     sea_state: '',
     notes: '',
@@ -215,6 +219,7 @@ export default function LogbookPage({
   vesselName,
   vesselType,
   fuelBurnRate,
+  engines,
   onBack,
   openAddForm,
   onAddFormOpened,
@@ -285,7 +290,19 @@ export default function LogbookPage({
           return draft[k] && k !== 'entry_date' && k !== 'departure_time';
         })
       ) {
-        setForm(draft);
+        // Phase 2D defensive normalization: drafts saved before per-engine
+        // hours existed used `hours_end` (string). Strip it (won't be read)
+        // and ensure engineHoursEnd is at least an empty object so reads
+        // don't crash. The user re-enters hours — acceptable since drafts
+        // age out quickly anyway.
+        const normalized = Object.assign({}, draft);
+        if (normalized.hours_end !== undefined) {
+          delete normalized.hours_end;
+        }
+        if (!normalized.engineHoursEnd || typeof normalized.engineHoursEnd !== 'object') {
+          normalized.engineHoursEnd = {};
+        }
+        setForm(normalized);
         setDraftRestored(true);
         setTimeout(function () {
           setDraftRestored(false);
@@ -459,7 +476,40 @@ export default function LogbookPage({
     clearDraft(vesselId);
   };
 
-  const openEdit = function (entry) {
+  const openEdit = async function (entry) {
+    const orderedEngines = getOrderedEngines(engines || []);
+    let engineHoursEnd = {};
+
+    // Try to load per-engine hours from passage_engine_hours. If there are
+    // rows, they're authoritative. If not (legacy passage saved before
+    // Phase 2D), fall back to mapping the single logbook.hours_end onto
+    // the first ordered engine — matches what the back-compat mirror wrote.
+    try {
+      const sess = await supabase.auth.getSession();
+      const token = sess?.data?.session?.access_token || SUPA_KEY;
+      const res = await fetch(
+        `${SUPA_URL}/rest/v1/passage_engine_hours?passage_id=eq.${entry.id}&select=engine_id,hours_end`,
+        {
+          headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + token },
+        }
+      );
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length > 0) {
+        rows.forEach(function (r) {
+          engineHoursEnd[r.engine_id] = String(r.hours_end);
+        });
+      } else if (entry.hours_end != null && orderedEngines[0]) {
+        // Legacy fallback: single hours_end maps to primary (first ordered)
+        engineHoursEnd[orderedEngines[0].id] = String(entry.hours_end);
+      }
+    } catch (err) {
+      console.warn('passage_engine_hours fetch failed on edit:', err);
+      // On fetch failure, still allow edit using legacy fallback
+      if (entry.hours_end != null && orderedEngines[0]) {
+        engineHoursEnd[orderedEngines[0].id] = String(entry.hours_end);
+      }
+    }
+
     setForm({
       entry_date: entry.entry_date || today(),
       departure_time: entry.departure_time || '',
@@ -468,7 +518,7 @@ export default function LogbookPage({
       to_location: entry.to_location || '',
       crew: entry.crew || '',
       distance_nm: entry.distance_nm ? String(entry.distance_nm) : '',
-      hours_end: entry.hours_end ? String(entry.hours_end) : '',
+      engineHoursEnd: engineHoursEnd,
       conditions: entry.conditions || '',
       sea_state: entry.sea_state || '',
       notes: entry.notes || '',
@@ -583,11 +633,21 @@ export default function LogbookPage({
 
   // ── Derived calculations ───────────────────────────────────────────────
 
+  // Primary engine for legacy back-compat purposes (logbook.hours_end mirror,
+  // formDerived fuel calc). For multi-engine vessels this is the first
+  // ordered engine (port). For single-engine, it's the only one.
+  const orderedEnginesForForm = getOrderedEngines(engines || []);
+  const primaryEngineForForm = orderedEnginesForForm[0] || null;
+  const primaryHoursEndStr =
+    primaryEngineForForm && form.engineHoursEnd
+      ? form.engineHoursEnd[primaryEngineForForm.id] || ''
+      : '';
+
   const formDerived = (function () {
     const dep = form.departure_time;
     const arr = form.arrival_time;
     const dist = parseFloat(form.distance_nm) || 0;
-    const hoursEnd = parseFloat(form.hours_end) || null;
+    const hoursEnd = parseFloat(primaryHoursEndStr) || null;
     let timeHrs = null;
     if (dep && arr) {
       const dP = dep.split(':').map(Number);
@@ -622,7 +682,85 @@ export default function LogbookPage({
 
   const savePassage = async function () {
     if (!form.entry_date) return;
+
+    // ── Build per-engine updates from form.engineHoursEnd ───────────────
+    // Only include engines whose input parses as a valid non-negative
+    // number. Empty / blank inputs are interpreted as "this engine wasn't
+    // run on this passage" and skipped.
+    const orderedEngines = getOrderedEngines(engines || []);
+    const engineUpdates = []; // [{ engine, hoursEnd, label }]
+    orderedEngines.forEach(function (e, idx) {
+      const raw =
+        form.engineHoursEnd && form.engineHoursEnd[e.id] != null
+          ? form.engineHoursEnd[e.id]
+          : '';
+      if (raw === '' || raw == null) return;
+      const parsed = parseFloat(raw);
+      if (isNaN(parsed) || parsed < 0) return;
+      engineUpdates.push({
+        engine: e,
+        hoursEnd: parsed,
+        label: getPositionLabel(e, idx) || 'Engine',
+      });
+    });
+
+    // ── Discrepancy prompt: warn if hours added this passage diverge ────
+    // by more than 5hr across engines. Catches typos (1503 vs 1530) and
+    // unbalanced loads ("did port really run 30hr more than starboard?").
+    // Only fires when ≥ 2 engines have valid input AND a previous reading.
+    if (engineUpdates.length >= 2) {
+      const deltas = engineUpdates
+        .filter(function (u) {
+          return u.engine.engine_hours != null;
+        })
+        .map(function (u) {
+          return {
+            label: u.label,
+            delta: u.hoursEnd - u.engine.engine_hours,
+          };
+        });
+      if (deltas.length >= 2) {
+        const maxD = Math.max.apply(
+          null,
+          deltas.map(function (d) {
+            return d.delta;
+          })
+        );
+        const minD = Math.min.apply(
+          null,
+          deltas.map(function (d) {
+            return d.delta;
+          })
+        );
+        const spread = maxD - minD;
+        if (spread > 5) {
+          const lines = deltas
+            .map(function (d) {
+              const sign = d.delta >= 0 ? '+' : '';
+              return d.label + ': ' + sign + d.delta + 'hr';
+            })
+            .join('\n');
+          const msg =
+            'Hours added this passage:\n\n' +
+            lines +
+            '\n\nThat\'s a ' +
+            spread +
+            'hr difference between engines. Save anyway?';
+          if (!window.confirm(msg)) {
+            return; // user cancelled — bail out before any DB writes
+          }
+        }
+      }
+    }
+
     setSaving(true);
+
+    // Primary engine for the legacy logbook.hours_end mirror. First in
+    // canonical order — port for twins, the only engine for singles, null
+    // when no engines have inputs.
+    const primaryUpdate = engineUpdates[0] || null;
+    const legacyHoursEnd = primaryUpdate ? primaryUpdate.hoursEnd : null;
+
     const body = {
       vessel_id: vesselId,
       entry_type: 'passage',
@@ -633,12 +771,14 @@ export default function LogbookPage({
       arrival_time: form.arrival_time || null,
       crew: form.crew || null,
       distance_nm: form.distance_nm ? parseFloat(form.distance_nm) : null,
-      hours_end: form.hours_end ? parseFloat(form.hours_end) : null,
+      hours_end: legacyHoursEnd,
       conditions: form.conditions || null,
       sea_state: form.sea_state || null,
       notes: form.notes || null,
     };
+
     try {
+      let passageId;
       if (editingId) {
         const { data, error: e } = await supabase
           .from('logbook')
@@ -652,36 +792,81 @@ export default function LogbookPage({
             return en.id === editingId ? data : en;
           });
         });
-        if (body.hours_end) {
-          const { error: vErr } = await supabase
-            .from('vessels')
-            .update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date })
-            .eq('id', vesselId);
-          // Only sync parent state if the write actually landed
-          if (!vErr && typeof onEngineHoursUpdate === 'function') {
-            onEngineHoursUpdate(body.hours_end, body.entry_date);
-          }
+        passageId = editingId;
+        // Edit case: clean slate — wipe existing per-engine rows, then
+        // re-insert what's in the current form. Preserves the invariant
+        // "passage_engine_hours rows reflect the current form state."
+        try {
+          await supabase
+            .from('passage_engine_hours')
+            .delete()
+            .eq('passage_id', editingId);
+        } catch (delErr) {
+          console.warn('passage_engine_hours delete (edit) failed:', delErr);
         }
-        clearDraft(vesselId);
-        resetForm();
-        setShowHistory(true);
       } else {
-        const { data, error: e } = await supabase.from('logbook').insert(body).select().single();
+        const { data, error: e } = await supabase
+          .from('logbook')
+          .insert(body)
+          .select()
+          .single();
         if (e) throw e;
-        if (body.hours_end) {
-          const { error: vErr } = await supabase
-            .from('vessels')
-            .update({ engine_hours: body.hours_end, engine_hours_date: body.entry_date })
-            .eq('id', vesselId);
-          if (!vErr && typeof onEngineHoursUpdate === 'function') {
-            onEngineHoursUpdate(body.hours_end, body.entry_date);
-          }
-        }
-        clearDraft(vesselId);
-        resetForm();
+        passageId = data.id;
         setEntries(function (prev) {
           return [data, ...prev];
         });
+      }
+
+      // Insert per-engine rows for engines with valid input.
+      if (engineUpdates.length > 0) {
+        const peRows = engineUpdates.map(function (u) {
+          return {
+            passage_id: passageId,
+            engine_id: u.engine.id,
+            hours_end: u.hoursEnd,
+          };
+        });
+        const { error: peErr } = await supabase
+          .from('passage_engine_hours')
+          .insert(peRows);
+        if (peErr) {
+          console.warn('passage_engine_hours insert failed:', peErr);
+        }
+      }
+
+      // Mirror to vessels.engine_hours (legacy column, dropped Phase 3).
+      if (legacyHoursEnd != null) {
+        try {
+          await supabase
+            .from('vessels')
+            .update({
+              engine_hours: legacyHoursEnd,
+              engine_hours_date: body.entry_date,
+            })
+            .eq('id', vesselId);
+        } catch (vErr) {
+          console.warn('vessels mirror update failed:', vErr);
+        }
+      }
+
+      // Notify parent: array of per-engine updates. KeeplyApp writes them
+      // to engines table + state, mirrors first to vessels state.
+      if (typeof onEngineHoursUpdate === 'function' && engineUpdates.length > 0) {
+        const updatesArray = engineUpdates.map(function (u) {
+          return {
+            engineId: u.engine.id,
+            hours: u.hoursEnd,
+            dateStr: body.entry_date,
+          };
+        });
+        onEngineHoursUpdate(updatesArray);
+      }
+
+      clearDraft(vesselId);
+      resetForm();
+      if (editingId) {
+        setShowHistory(true);
+      } else {
         setSavedBanner(true);
         setTimeout(function () {
           setSavedBanner(false);
@@ -1466,34 +1651,136 @@ export default function LogbookPage({
           </div>
         </div>
 
-        {/* Dist + Hours */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-          <div>
-            <span style={lbl}>Distance nm</span>
-            <input
-              type="number"
-              placeholder="0"
-              value={form.distance_nm}
-              onChange={function (e) {
-                setF('distance_nm', e.target.value);
-              }}
-              style={inp}
-            />
+        {/* Dist + Hours — single-engine: side-by-side. Multi-engine:
+            Distance gets a full row, then per-engine inputs in a labeled
+            section below. */}
+        {orderedEnginesForForm.length <= 1 ? (
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}
+          >
+            <div>
+              <span style={lbl}>Distance nm</span>
+              <input
+                type="number"
+                placeholder="0"
+                value={form.distance_nm}
+                onChange={function (e) {
+                  setF('distance_nm', e.target.value);
+                }}
+                style={inp}
+              />
+            </div>
+            <div>
+              <span style={lbl}>Hours end</span>
+              <input
+                type="number"
+                placeholder={
+                  primaryEngineForForm && primaryEngineForForm.engine_hours != null
+                    ? 'e.g. ' + (primaryEngineForForm.engine_hours + 5)
+                    : 'e.g. 1290'
+                }
+                step="0.1"
+                value={primaryHoursEndStr}
+                onChange={function (e) {
+                  const v = e.target.value;
+                  if (!primaryEngineForForm) return;
+                  const id = primaryEngineForForm.id;
+                  setForm(function (prev) {
+                    return Object.assign({}, prev, {
+                      engineHoursEnd: Object.assign({}, prev.engineHoursEnd, {
+                        [id]: v,
+                      }),
+                    });
+                  });
+                }}
+                style={inp}
+              />
+            </div>
           </div>
-          <div>
-            <span style={lbl}>Hours end</span>
-            <input
-              type="number"
-              placeholder="e.g. 1290"
-              step="0.1"
-              value={form.hours_end}
-              onChange={function (e) {
-                setF('hours_end', e.target.value);
-              }}
-              style={inp}
-            />
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Distance — own row */}
+            <div style={{ marginBottom: 12 }}>
+              <span style={lbl}>Distance nm</span>
+              <input
+                type="number"
+                placeholder="0"
+                value={form.distance_nm}
+                onChange={function (e) {
+                  setF('distance_nm', e.target.value);
+                }}
+                style={inp}
+              />
+            </div>
+            {/* Per-engine hours end. Empty = engine wasn't run. */}
+            <div style={{ marginBottom: 12 }}>
+              <span style={lbl}>Engine hours end</span>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  marginTop: 4,
+                }}
+              >
+                {orderedEnginesForForm.map(function (e, idx) {
+                  const id = e.id;
+                  const posLabel = getPositionLabel(e, idx) || 'Engine ' + (idx + 1);
+                  const raw =
+                    form.engineHoursEnd && form.engineHoursEnd[id] != null
+                      ? form.engineHoursEnd[id]
+                      : '';
+                  const placeholder =
+                    e.engine_hours != null
+                      ? 'e.g. ' + (e.engine_hours + 5)
+                      : 'leave blank if not run';
+                  return (
+                    <div
+                      key={id}
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div
+                        style={{
+                          minWidth: 70,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: '#6fa8e0',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        {posLabel}
+                      </div>
+                      <input
+                        type="number"
+                        placeholder={placeholder}
+                        step="0.1"
+                        value={raw}
+                        onChange={function (ev) {
+                          const v = ev.target.value;
+                          setForm(function (prev) {
+                            return Object.assign({}, prev, {
+                              engineHoursEnd: Object.assign(
+                                {},
+                                prev.engineHoursEnd,
+                                { [id]: v }
+                              ),
+                            });
+                          });
+                        }}
+                        style={Object.assign({}, inp, { flex: 1 })}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Derived row */}
         {(formDerived.timeLabel || formDerived.avgSpd || formDerived.fuelUsed) && (

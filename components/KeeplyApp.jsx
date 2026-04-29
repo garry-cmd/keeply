@@ -19896,6 +19896,7 @@ export default function App() {
             vesselName={boatName}
             vesselType={settings.vesselType}
             fuelBurnRate={settings.fuelBurnRate || null}
+            engines={engines}
             onBack={function () {
               setTab('boat');
             }}
@@ -19904,18 +19905,34 @@ export default function App() {
               setShowAddLog(false);
             }}
             userPlan={userPlan || 'free'}
-            onEngineHoursUpdate={function (hours, dateStr) {
-              // Keep KeeplyApp's vessels state in sync with DB writes done inside
-              // LogbookPage so the engine-hours KPI on My Boat updates immediately.
-              setVessels(function (vs) {
-                return vs.map(function (v) {
-                  return v.id === activeVesselId
-                    ? { ...v, engineHours: hours, engineHoursDate: dateStr }
-                    : v;
+            onEngineHoursUpdate={async function (updates) {
+              // updates: [{ engineId, hours, dateStr }, ...]
+              // Per-engine writes — engines table + state — via the
+              // centralized helper.
+              if (!Array.isArray(updates) || updates.length === 0) return;
+              await Promise.all(
+                updates.map(function (u) {
+                  return updateEngineHours(u.engineId, u.hours, u.dateStr);
+                })
+              );
+              // Mirror first update's value to vessels state (back-compat).
+              // The DB write to vessels.engine_hours already happened inside
+              // LogbookPage's savePassage; this just keeps local state in
+              // sync so the My Boat KPI reflects immediately.
+              const first = updates[0];
+              if (first) {
+                setVessels(function (vs) {
+                  return vs.map(function (v) {
+                    return v.id === activeVesselId
+                      ? {
+                          ...v,
+                          engineHours: first.hours,
+                          engineHoursDate: first.dateStr,
+                        }
+                      : v;
+                  });
                 });
-              });
-              // Mirror to engines table — primary source for KPI/FirstMate display.
-              updatePrimaryEngineHours(hours, dateStr);
+              }
             }}
           />
         )}
