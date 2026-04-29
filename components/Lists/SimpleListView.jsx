@@ -9,7 +9,12 @@ import { supabase } from '../../lib/supabase';
 //   Reads {tableName} rows WHERE completed_at IS NULL — active items only.
 //   Tap bubble → optimistic remove + 3.5s undo toast (sets completed_at).
 //   Tap row body or ⋯ menu → action sheet (Edit / Delete).
-//   FAB at bottom-right opens add sheet (name required, notes optional).
+//
+//   Add: inline "+ Add item" row at the bottom of the list. Tap to activate
+//   input, Enter to save and stay focused for rapid entry, Escape or × to
+//   cancel. No FAB. Notes field is not part of the inline-add path — users
+//   add a name quickly, then tap ⋯ → Edit to add notes if needed (matches
+//   Things 3 / Apple Reminders patterns).
 //
 // Schema contract (all three target tables share these columns):
 //   id (PK), vessel_id (FK), name (required), notes (optional),
@@ -19,9 +24,8 @@ import { supabase } from '../../lib/supabase';
 // location_id, unit, updated_at) — read-side ignored, write-side filled by
 // DB defaults (in_stock/min_stock both default to 0; updated_at defaults to now()).
 //
-// NOTE — primitives (UndoToast, ActionSheet, AddOrEditSheet, Field, etc.) are
-// duplicated from PartsView.jsx. Tech debt to extract to a shared file in
-// Session 4 polish.
+// NOTE — primitives (UndoToast, ActionSheet, EditSheet, Field) are duplicated
+// from PartsView.jsx. Tech debt to extract to a shared file in Session 4 polish.
 export default function SimpleListView({
   activeVesselId,
   tableName,
@@ -33,7 +37,6 @@ export default function SimpleListView({
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
-  const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(null); // null | item
   const [actionSheet, setActionSheet] = useState(null); // null | item
   const [toast, setToast] = useState(null); // null | { label, undo }
@@ -84,7 +87,6 @@ export default function SimpleListView({
     if (busyId) return;
     setBusyId(item.id);
     const completedAt = new Date().toISOString();
-    // Optimistic remove
     setItems(function (prev) {
       return prev.filter(function (r) {
         return r.id !== item.id;
@@ -97,7 +99,6 @@ export default function SimpleListView({
     setBusyId(null);
     if (error) {
       console.error('markComplete:', error);
-      // Revert
       setItems(function (prev) {
         return [item, ...prev];
       });
@@ -143,15 +144,15 @@ export default function SimpleListView({
     await undoFn();
   }
 
-  // ── Add ──
-  async function addItem(payload) {
-    if (!activeVesselId) return;
-    const trimmedName = (payload.name || '').trim();
-    if (!trimmedName) return;
+  // ── Add (inline) ──
+  // Returns true on success so the AddRow can clear and refocus, false on error.
+  async function addItem(name) {
+    if (!activeVesselId) return false;
+    const trimmed = (name || '').trim();
+    if (!trimmed) return false;
     const insertRow = {
       vessel_id: activeVesselId,
-      name: trimmedName,
-      notes: payload.notes && payload.notes.trim() ? payload.notes.trim() : null,
+      name: trimmed,
     };
     const { data, error } = await supabase
       .from(tableName)
@@ -160,12 +161,12 @@ export default function SimpleListView({
       .single();
     if (error) {
       console.error('addItem:', error);
-      return;
+      return false;
     }
     setItems(function (prev) {
       return [data, ...prev];
     });
-    setAdding(false);
+    return true;
   }
 
   // ── Edit ──
@@ -234,12 +235,14 @@ export default function SimpleListView({
     );
   }
 
+  const hasItems = items.length > 0;
+
   return (
-    <div style={{ padding: '14px 14px 80px', position: 'relative', minHeight: 'calc(100vh - 240px)' }}>
-      {items.length === 0 ? (
+    <div style={{ padding: '14px 14px 80px' }}>
+      {!hasItems && (
         <div
           style={{
-            padding: '48px 24px',
+            padding: '32px 24px 18px',
             textAlign: 'center',
             color: 'var(--text-muted)',
           }}
@@ -251,70 +254,33 @@ export default function SimpleListView({
             {emptyHint}
           </div>
         </div>
-      ) : (
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '0.5px solid var(--border)',
-            borderRadius: 10,
-            overflow: 'hidden',
-          }}
-        >
-          {items.map(function (item, i) {
-            return (
-              <Row
-                key={item.id}
-                item={item}
-                isLast={i === items.length - 1}
-                onComplete={markComplete}
-                onMenu={setActionSheet}
-                busy={busyId === item.id}
-              />
-            );
-          })}
-        </div>
       )}
 
-      {/* FAB */}
-      <button
-        onClick={function () { setAdding(true); }}
-        aria-label="Add item"
+      <div
         style={{
-          position: 'fixed',
-          right: 18,
-          bottom: 'calc(76px + env(safe-area-inset-bottom))',
-          width: 52,
-          height: 52,
-          borderRadius: '50%',
-          background: 'var(--brand)',
-          border: 'none',
-          color: '#fff',
-          fontSize: 28,
-          fontWeight: 300,
-          lineHeight: 1,
-          cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(15,76,138,0.35)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          fontFamily: 'inherit',
+          background: 'var(--bg-card)',
+          border: '0.5px solid var(--border)',
+          borderRadius: 10,
+          overflow: 'hidden',
         }}
       >
-        +
-      </button>
-
-      {/* Add sheet */}
-      {adding && (
-        <AddOrEditSheet
-          mode="add"
-          initialName=""
-          initialNotes=""
+        {items.map(function (item, i) {
+          return (
+            <Row
+              key={item.id}
+              item={item}
+              isLast={false /* always followed by AddRow */}
+              onComplete={markComplete}
+              onMenu={setActionSheet}
+              busy={busyId === item.id}
+            />
+          );
+        })}
+        <AddRow
+          onAdd={addItem}
           placeholder={addPlaceholder}
-          onClose={function () { setAdding(false); }}
-          onSave={addItem}
         />
-      )}
+      </div>
 
       {/* Action sheet (Edit / Delete) */}
       {actionSheet && (
@@ -331,11 +297,8 @@ export default function SimpleListView({
 
       {/* Edit sheet */}
       {editing && (
-        <AddOrEditSheet
-          mode="edit"
-          initialName={editing.name}
-          initialNotes={editing.notes || ''}
-          placeholder={addPlaceholder}
+        <EditSheet
+          item={editing}
           onClose={function () { setEditing(null); }}
           onSave={saveEdit}
           busy={busyId === editing.id}
@@ -450,6 +413,180 @@ function Row({ item, isLast, onComplete, onMenu, busy }) {
   );
 }
 
+// ── Inline AddRow ──
+// Inactive: dashed circle + "+" icon + "Add item" muted text. Tap to activate.
+// Active: solid brand circle + "+" icon, input field, × to cancel. Enter to
+// save and stay focused for rapid entry. Escape to cancel.
+function AddRow({ onAdd, placeholder }) {
+  const [active, setActive] = useState(false);
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef(null);
+
+  function activate() {
+    setActive(true);
+    // Focus on next tick so the input has rendered
+    setTimeout(function () {
+      if (inputRef.current) inputRef.current.focus();
+    }, 0);
+  }
+
+  function deactivate() {
+    setActive(false);
+    setValue('');
+  }
+
+  async function submit() {
+    const trimmed = value.trim();
+    if (!trimmed || busy) return;
+    setBusy(true);
+    const ok = await onAdd(trimmed);
+    setBusy(false);
+    if (ok) {
+      setValue('');
+      // Stay focused for rapid entry
+      setTimeout(function () {
+        if (inputRef.current) inputRef.current.focus();
+      }, 0);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      deactivate();
+    }
+  }
+
+  if (!active) {
+    return (
+      <button
+        onClick={activate}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '11px 14px',
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+          color: 'var(--text-muted)',
+          fontFamily: 'inherit',
+        }}
+      >
+        <div
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            border: '1.5px dashed var(--border-strong)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text-muted)',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" strokeWidth="2.5"
+               strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          Add item
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '11px 14px',
+        opacity: busy ? 0.6 : 1,
+        transition: 'opacity 0.15s',
+      }}
+    >
+      <div
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          border: '1.5px solid var(--brand)',
+          background: 'var(--brand)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          flexShrink: 0,
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" strokeWidth="3"
+             strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </div>
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={function (e) { setValue(e.target.value); }}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={busy}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          padding: 0,
+          border: 'none',
+          background: 'transparent',
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          fontFamily: 'inherit',
+          outline: 'none',
+        }}
+      />
+      <button
+        onClick={deactivate}
+        disabled={busy}
+        aria-label="Cancel"
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 6,
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-muted)',
+          flexShrink: 0,
+          padding: 0,
+          fontSize: 18,
+          lineHeight: 1,
+          fontFamily: 'inherit',
+        }}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 // ── Action sheet (Edit / Delete) ──
 function ActionSheet({ item, onClose, onEdit, onDelete }) {
   return (
@@ -527,10 +664,10 @@ function SheetButton({ children, onClick, danger, muted }) {
   );
 }
 
-// ── Add/Edit sheet ──
-function AddOrEditSheet({ mode, initialName, initialNotes, placeholder, onClose, onSave, busy }) {
-  const [name, setName] = useState(initialName || '');
-  const [notes, setNotes] = useState(initialNotes || '');
+// ── Edit sheet ──
+function EditSheet({ item, onClose, onSave, busy }) {
+  const [name, setName] = useState(item.name || '');
+  const [notes, setNotes] = useState(item.notes || '');
 
   function handleSave() {
     if (!name.trim()) return;
@@ -538,7 +675,6 @@ function AddOrEditSheet({ mode, initialName, initialNotes, placeholder, onClose,
   }
 
   function handleKeyDown(e) {
-    // Enter on the name field saves; Shift+Enter in textarea is normal newline
     if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') {
       e.preventDefault();
       handleSave();
@@ -575,7 +711,7 @@ function AddOrEditSheet({ mode, initialName, initialNotes, placeholder, onClose,
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-            {mode === 'add' ? 'Add item' : 'Edit item'}
+            Edit item
           </div>
           <button
             onClick={onClose}
@@ -594,7 +730,7 @@ function AddOrEditSheet({ mode, initialName, initialNotes, placeholder, onClose,
           </button>
         </div>
 
-        <Field label="Name" value={name} onChange={setName} placeholder={placeholder} autoFocus />
+        <Field label="Name" value={name} onChange={setName} autoFocus />
         <Field label="Notes" value={notes} onChange={setNotes} multiline />
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
@@ -632,7 +768,7 @@ function AddOrEditSheet({ mode, initialName, initialNotes, placeholder, onClose,
               fontFamily: 'inherit',
             }}
           >
-            {busy ? 'Saving…' : mode === 'add' ? 'Add' : 'Save'}
+            {busy ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>
