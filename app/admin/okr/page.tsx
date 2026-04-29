@@ -48,7 +48,7 @@ const PHASES = [
     label: "Lists",
     color: "#f5a623", // gold — strategic founder-driven feature
     months: [0, 1],
-    description: "Need to buy + Supplies + Haulout (+ Grocery) — closes the additive-product gap surfaced by founder dogfooding (Garry kept 4 Todoist lists after a month using Keeply). Beta-gated; flip via user_profiles.beta_features text[].",
+    description: "4 surfaces (Parts default / Supplies / Grocery / Haulout). Live for all users (no beta gate). Closes the additive-product gap surfaced by founder dogfooding (Garry kept 4 Todoist lists after a month using Keeply).",
   },
   {
     id: "hygiene",
@@ -128,26 +128,24 @@ const OKRS = [
     krs: [
       { text: "Logbook — Custom Checklists (Pro tier)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "First Mate — Conversation history (all tiers)", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Multi-engine tracking", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Multi-engine tracking — engines table source of truth, equipment.engine_id FK, passage_engine_hours per-passage, KPI strip handles single/twin/triple+ with discrepancy pulse, FM context per-engine; Phase 3 legacy column drop deferred as hygiene", cur: 1, target: 1, unit: "complete", status: "done" },
     ],
   },
   {
     phase: "lists",
     objective: "Ship Lists — close the additive-product gap",
     krs: [
-      { text: "Session 1: Land ho shell + lists_waitlist schema + user_profiles.beta_features text[] kill switch; FM tab swapped for Lists tab", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Nav rework: FM restored to bottom-nav slot 4 with prefab chips; Lists in slot 5; Profile moved to header avatar", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Session 2: Need to buy view + saved_parts schema (needed/ordered/received state machine); bookmark icon wired into all 9 AI parts result surfaces", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Session 3: Supplies inventory view + supplies schema; ListsTab pill router; vessel_locations managed table with manage sheet + ON DELETE RESTRICT", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Session 3.2: Mark received → Supplies handoff (saved_parts.supply_id link, ReceiveModal, skip path)", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Session 4: Haulout queue (requires_haul_out boolean on maintenance_tasks + repairs; reverse-direction picker)", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Session 5: FM context aware of saved_parts/supplies/haulout queue; Need to buy sectioned R&M vs General; Supplies auto-pull to Need to buy on out-of-stock or below-threshold; CHECK constraint extended to allow source_type='supply'", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Haulout exclusions wired into First Mate (active maintenance + open repairs filter out requires_haul_out items)", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Haulout exclusions wired into urgency counts + health score (in-app surfaces still count haulout-flagged items; FM and in-app will disagree until this closes)", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Decrement-on-completion: maintenance task done → matching supply qty -1 (highest-leverage Lists v2; deferred from Apr 26 PM due to toggleTask change density)", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Equipment grouping in Supplies (currently flat alphabetical)", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Grocery v1 — fourth pill (mirrors Supplies mechanic)", cur: 0, target: 1, unit: "complete", status: "not-started" },
-      { text: "Public flip — beta_features default on, all 7 testers notified", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Schema: supplies.completed_at + grocery_items + haulout_items tables (RLS via get_my_vessel_ids())", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Bottom nav: Lists in slot 5; Profile to header avatar; First Mate kept in nav", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "ListsTab — 4-pill router (Parts default / Supplies / Grocery / Haulout); active pill highly visible (solid brand bg + white text + shadow)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "PartsView — bubble + archive lifecycle (needed → ordered → received → hidden); action sheet, edit sheet, undo toast on archive", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "SimpleListView — generic component (Supplies + Grocery + Haulout) reading WHERE completed_at IS NULL; tap-bubble + 3.5s undo toast + edit/delete", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Inline '+ Add item' row at bottom (no FAB) — tap activates input, Enter saves and stays focused, Escape/× cancels", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Optimistic insert — temp row appears in <16ms; _isTemp flag disables interactions until DB reconciles", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Killed legacy scaffolding: LandHoShell + useBetaFeature hook + NeedToBuy/old Supplies/old Haulout sub-views (~3000 LOC removed)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Admin Lists metrics: Parts Needed/Ordered (count + $value with $1 default + vessels), Supplies/Grocery/Haulout (count + vessels)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Polish: extract shared primitives (UndoToast/ActionSheet/EditSheet/Field/SheetButton) from PartsView + SimpleListView dup (~150 LOC)", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Empty-state copy pass after a few days of dogfooding the 4 surfaces", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],
   },
   {
@@ -270,6 +268,9 @@ const BACKLOG = [
   { name: "Messaging audit — pick canonical Keeply one-liner", status: "planned", effort: "S", notes: "Apr 26 surface: About scrub demoted FM and reframed around coverage (\"every system, every part, every passage\"), but root metadata + OG cards + Twitter still carry \"AI-powered\" / \"Your vessel's First Mate, always ready.\" Pre-launch: pick the canonical one-liner that defines Keeply, then propagate to (1) root metadata description + OG title/desc/alt + Twitter title/desc, (2) App Store listing copy, (3) Google Ads creative, (4) email templates (welcome, verify, digest). Strategic call, not just edit. CONTEXT Hard Rules currently flag the contested state." },
   { name: "FM silent-bail UX hardening", status: "planned", effort: "S", notes: "Apr 26 surfaced via DevTools-throttle debug. send() in FirstMateScreen.jsx L374 silently bails on !context (vessel data fetch failed). User clicks suggested-question chip, nothing happens. ~30 lines: disable chips while context loads, show inline 'Loading your boat's data...', console.warn on bail-out. Plus optional retry-on-network-error wrapper around vessel-data fetches (single 800ms retry catches most blips silently)." },
   { name: "Unify dual Supabase clients", status: "planned", effort: "M", notes: "Apr 26: components/supabase-client.js (hardcoded URL/key, used by KeeplyApp + supa() helper) AND lib/supabase.js (env-var-based, used elsewhere) both call createClient() separately. Produces visible 'Multiple GoTrueClient instances detected' console warning. Latent token-refresh-race risk. Pick env-var pattern, migrate all imports, delete the hardcoded one. ~1-2 hours focused work. Apr 28 update: lazy-load surgery in HomeClient defers supabase off the marketing critical path, so the warning fires less often (only after auth modal opens or for returning users) — but the underlying dual-instance condition is unchanged and still worth unifying." },
+  { name: "Lists shared primitives extraction", status: "planned", effort: "S", notes: "Apr 29 tech debt. UndoToast, ActionSheet, EditSheet, Field, SheetButton duplicated (~150 LOC) across components/Lists/PartsView.jsx and components/Lists/SimpleListView.jsx. Extract to components/Lists/shared.jsx and have both views import. Code drift risk if either gets updated independently. ~1 hour focused work." },
+  { name: "Engine identity edit affordance on equipment cards", status: "planned", effort: "S", notes: "Apr 29 tech debt. Phase 2G shipped a banner + bottom-sheet modal (~445 LOC) on My Boat tab targeting only 6 vessels (incl. Irene) needing make/model on auto-backfilled engine rows. Once those 6 backfill, the banner code is dead. The bottom-sheet edit modal itself is good UX — re-expose as a permanent 'Edit details' affordance on engine equipment cards (pencil/lock icon that opens this same editor) so it lives on after the banner dies." },
+  { name: "Phase 3 multi-engine cleanup — drop vessels.engine_hours legacy columns", status: "planned", effort: "S", notes: "Apr 29: drop vessels.engine_hours, vessels.engine_hours_date, vessels.fuel_burn_rate columns + orphan engine_makes (21 rows) + engine_models (271 rows) tables. IRREVERSIBLE. Sweep codebase for vessels.engine_hours reads first — confirm zero remain — then run the migration. Low priority; current dual-write keeps the legacy columns useful as a safety net." },
 ];
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
