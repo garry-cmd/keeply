@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PartsView from './PartsView';
 import SimpleListView from './SimpleListView';
 
@@ -15,13 +15,29 @@ import SimpleListView from './SimpleListView';
 // Parts is the default landing view. Supplies/Grocery/Haulout share
 // <SimpleListView /> — same shape, same UX (tap bubble → undo toast → row gone).
 //
+// pendingView / onConsumePending — optional escape hatch for callers
+// (e.g. the My Boat FAB) that want to deep-link to a specific sub-pill.
+// Internal `view` state still owns user-driven pill changes; the effect
+// syncs once when a pending intent is fed in, then clears it via callback
+// so subsequent bottom-nav clicks don't get sticky state.
+//
 // Sessions:
-//   Session 1 (this commit): schema + skeleton + 4-pill router. Sub-views are stubs.
+//   Session 1: schema + skeleton + 4-pill router. Sub-views are stubs.
 //   Session 2: PartsView built (its own component — bubble + archive icon).
 //   Session 3: SimpleListView built; Supplies/Grocery/Haulout all live via that one component.
 //   Session 4: polish pass across all four.
-export default function ListsTab({ activeVesselId }) {
-  const [view, setView] = useState('parts');
+export default function ListsTab({ activeVesselId, pendingView, onConsumePending }) {
+  const [view, setView] = useState(pendingView || 'parts');
+
+  useEffect(function () {
+    if (pendingView && pendingView !== view) {
+      setView(pendingView);
+    }
+    if (pendingView && onConsumePending) {
+      onConsumePending();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingView]);
 
   return (
     <div>

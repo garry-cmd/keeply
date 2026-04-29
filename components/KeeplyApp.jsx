@@ -2610,6 +2610,11 @@ export default function App() {
   const [repairs, setRepairs] = useState([]);
   const [vesselMembers, setVesselMembers] = useState([]);
   const [showAddRepair, setShowAddRepair] = useState(false);
+  // pendingListsView — set by the My Boat FAB when the user picks
+  // "Supply" or "Grocery" so ListsTab lands on the right sub-pill instead
+  // of its 'parts' default. ListsTab clears this back to null on consume,
+  // so a fresh bottom-nav tap on Lists still gets the Parts default.
+  const [pendingListsView, setPendingListsView] = useState(null);
   const [newRepair, setNewRepair] = useState({
     description: '',
     section: 'Engine',
@@ -19290,46 +19295,7 @@ export default function App() {
               >
                 {[
                   {
-                    label: 'Add Equipment',
-                    stroke: '#94a3b8',
-                    bg: 'rgba(148,163,184,0.15)',
-                    icon: (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#94a3b8"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 2a1.5 1.5 0 0 0-1.5 1.5v1.1a7 7 0 0 0-2.12.88L7.34 4.44a1.5 1.5 0 0 0-2.12 2.12l1.04 1.04A7 7 0 0 0 5.38 10H4.5a1.5 1.5 0 0 0 0 3h.88a7 7 0 0 0 .88 2.4l-1.04 1.04a1.5 1.5 0 0 0 2.12 2.12l1.04-1.04A7 7 0 0 0 10.5 20.5v.88a1.5 1.5 0 0 0 3 0v-.88a7 7 0 0 0 2.4-.88l1.04 1.04a1.5 1.5 0 0 0 2.12-2.12l-1.04-1.04a7 7 0 0 0 .88-2.4h.88a1.5 1.5 0 0 0 0-3h-.88a7 7 0 0 0-.88-2.4l1.04-1.04a1.5 1.5 0 0 0-2.12-2.12l-1.04 1.04A7 7 0 0 0 13.5 4.6V3.5A1.5 1.5 0 0 0 12 2z" />
-                        <circle cx="12" cy="11.5" r="2.8" />
-                      </svg>
-                    ),
-                    action: function () {
-                      var fabEqCount = equipment.filter(function (e) {
-                        return e._vesselId === activeVesselId && e.category !== 'Vessel';
-                      }).length;
-                      var fabIsFree = !userPlan || userPlan === 'free';
-                      if (fabIsFree && fabEqCount >= 10) {
-                        setShowFab(false);
-                        setShowUpgradeModal(true);
-                        return;
-                      }
-                      setTab('equipment-standalone');
-                      setEquipAiMode(true);
-                      setEquipAiDesc('');
-                      setEquipAiResult(null);
-                      setEquipAiError(null);
-                      setEquipAiLoading(false);
-                      setShowAddEquip(true);
-                      setShowFab(false);
-                    },
-                  },
-                  {
-                    label: 'Add Maintenance',
+                    label: 'Maintenance',
                     stroke: '#34d399',
                     bg: 'rgba(52,211,153,0.15)',
                     icon: (
@@ -19353,7 +19319,7 @@ export default function App() {
                     },
                   },
                   {
-                    label: 'Add Repair',
+                    label: 'Repair',
                     stroke: '#f87171',
                     bg: 'rgba(248,113,113,0.15)',
                     icon: (
@@ -19413,31 +19379,54 @@ export default function App() {
                     },
                   },
                   {
-                    label: 'Log Entry',
-                    stroke: '#7dd3fc',
-                    bg: 'rgba(125,211,252,0.15)',
+                    label: 'Supply',
+                    stroke: '#fbbf24',
+                    bg: 'rgba(251,191,36,0.15)',
                     icon: (
                       <svg
                         width="16"
                         height="16"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#7dd3fc"
+                        stroke="#fbbf24"
                         strokeWidth="1.6"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                        <line x1="9" y1="7" x2="15" y2="7" strokeWidth="1.3" />
-                        <line x1="9" y1="10.5" x2="13" y2="10.5" strokeWidth="1.3" />
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                        <line x1="12" y1="22.08" x2="12" y2="12" />
                       </svg>
                     ),
                     action: function () {
-                      setTab('logbook-standalone');
-                      setLogForm({ entry_type: 'passage', entry_date: today() });
-                      setEditingLog(null);
-                      setShowAddLog(true);
+                      setPendingListsView('supplies');
+                      setTab('lists-standalone');
+                      setShowFab(false);
+                    },
+                  },
+                  {
+                    label: 'Grocery',
+                    stroke: '#a3e635',
+                    bg: 'rgba(163,230,53,0.15)',
+                    icon: (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#a3e635"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <path d="M16 10a4 4 0 0 1-8 0" />
+                      </svg>
+                    ),
+                    action: function () {
+                      setPendingListsView('grocery');
+                      setTab('lists-standalone');
                       setShowFab(false);
                     },
                   },
@@ -20191,7 +20180,13 @@ export default function App() {
 
         {/* ── LISTS standalone — Parts (default) / Supplies / Grocery / Haulout, four surfaces ── */}
         {view === 'customer' && tab === 'lists-standalone' && (
-          <ListsTab activeVesselId={activeVesselId} />
+          <ListsTab
+            activeVesselId={activeVesselId}
+            pendingView={pendingListsView}
+            onConsumePending={function () {
+              setPendingListsView(null);
+            }}
+          />
         )}
 
         {/* ── FIRST MATE inline panel overlay ── */}
