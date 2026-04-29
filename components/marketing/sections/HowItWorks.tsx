@@ -23,8 +23,8 @@ const STEPS = [
   },
   {
     n: '03',
-    title: 'Always ready to go',
-    body: 'Your dashboard tells you what is overdue, what is due soon, and what to fix at next haul-out. Nothing falls through.',
+    title: 'Scan, don\u2019t type',
+    body: 'Snap your registration, insurance, or USCG doc \u2014 Keeply\u2019s AI reads every field and files it. Equipment manuals upload in a tap.',
   },
 ];
 
