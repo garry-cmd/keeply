@@ -2539,7 +2539,10 @@ export default function App() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef(null);
   const [showUpdateHoursModal, setShowUpdateHoursModal] = useState(false);
-  const [updateHoursInput, setUpdateHoursInput] = useState('');
+  // Per-engine inputs for the multi-engine Update Hours modal. Keyed by
+  // engine.id; values are strings (input value pattern). Pre-populated when
+  // the modal opens via openUpdateEngineHoursModal() below.
+  const [engineHoursInputs, setEngineHoursInputs] = useState({});
   const [showEquipNote, setShowEquipNote] = useState(false);
   const [haulPlanLoading, setHaulPlanLoading] = useState(false);
   const [haulPlanMsg, setHaulPlanMsg] = useState(null);
@@ -2958,19 +2961,42 @@ export default function App() {
     }
   }, []);
 
+  // updateEngineHours: writes new hours/date to a SPECIFIC engine row by id.
+  // Used by the multi-engine Update modal and (via wrappers) by the saveLog
+  // / LogbookPage code paths.
+  const updateEngineHours = useCallback(async function (engineId, hours, dateStr) {
+    if (!engineId || hours == null) return false;
+    try {
+      await supabase
+        .from('engines')
+        .update({ engine_hours: hours, engine_hours_date: dateStr })
+        .eq('id', engineId);
+      setEngines(function (prev) {
+        return prev.map(function (e) {
+          return e.id === engineId
+            ? { ...e, engine_hours: hours, engine_hours_date: dateStr }
+            : e;
+        });
+      });
+      return true;
+    } catch (err) {
+      console.error('updateEngineHours failed:', err);
+      return false;
+    }
+  }, []);
+
   // updatePrimaryEngineHours: writes new hours/date to the FIRST engine row
   // for the active vessel, AND mirrors to vessels.engine_hours (deprecated
-  // back-compat). Used by the saveLog handler, the Update Engine Hours
-  // modal, and the LogbookPage callback. Phase 2C will replace this with a
-  // proper per-engine update once the modal supports multi-engine.
+  // back-compat). Used by the saveLog handler and the LogbookPage callback
+  // — single-engine code paths that don't disambiguate. Phase 2D will
+  // upgrade the passage form to per-engine writes.
   //
   // Behavior on twin-engine vessels: writes to the engine ordered first by
-  // position (port). The current single-engine modal can't disambiguate;
-  // Phase 2C makes this an explicit per-engine choice.
+  // position (port). The single-engine writers can't disambiguate; Phase 2D
+  // makes the passage form an explicit per-engine choice.
   const updatePrimaryEngineHours = useCallback(
     async function (hours, dateStr) {
       if (hours == null) return;
-      // Find the primary engine — port preferred, else lowest created_at.
       const ordered = getOrderedEngines(engines);
       const primary = ordered[0];
       if (!primary) {
@@ -2980,21 +3006,22 @@ export default function App() {
         console.warn('updatePrimaryEngineHours: no engine row found');
         return;
       }
-      try {
-        await supabase
-          .from('engines')
-          .update({ engine_hours: hours, engine_hours_date: dateStr })
-          .eq('id', primary.id);
-        setEngines(function (prev) {
-          return prev.map(function (e) {
-            return e.id === primary.id
-              ? { ...e, engine_hours: hours, engine_hours_date: dateStr }
-              : e;
-          });
-        });
-      } catch (err) {
-        console.error('updatePrimaryEngineHours failed:', err);
-      }
+      await updateEngineHours(primary.id, hours, dateStr);
+    },
+    [engines, updateEngineHours]
+  );
+
+  // openUpdateEngineHoursModal: pre-populates the per-engine input state
+  // from the current engines list, then opens the modal. Used by every
+  // entry point — KPI tile tap, "no engine hours entered" link, etc.
+  const openUpdateEngineHoursModal = useCallback(
+    function () {
+      const initial = {};
+      getOrderedEngines(engines).forEach(function (e) {
+        initial[e.id] = e.engine_hours != null ? String(e.engine_hours) : '';
+      });
+      setEngineHoursInputs(initial);
+      setShowUpdateHoursModal(true);
     },
     [engines]
   );
@@ -12711,9 +12738,9 @@ export default function App() {
                       >
                         <div
                           onClick={function () {
-                            // Tap engine tile → opens Update Engine Hours modal.
-                            // Phase 2C will redesign this modal for multi-engine.
-                            setShowUpdateHoursModal(true);
+                            // Tap engine tile → multi-engine Update modal.
+                            // Helper pre-populates per-engine inputs.
+                            openUpdateEngineHoursModal();
                           }}
                           style={{
                             background: bgColor,
@@ -14170,8 +14197,7 @@ export default function App() {
                                       >
                                         <span
                                           onClick={function () {
-                                            setUpdateHoursInput('');
-                                            setShowUpdateHoursModal(true);
+                                            openUpdateEngineHoursModal();
                                           }}
                                           style={{
                                             color: 'var(--brand)',
@@ -23248,8 +23274,7 @@ export default function App() {
                           No engine hours entered —{' '}
                           <span
                             onClick={function () {
-                              setUpdateHoursInput('');
-                              setShowUpdateHoursModal(true);
+                              openUpdateEngineHoursModal();
                             }}
                             style={{
                               fontWeight: 700,
@@ -26685,6 +26710,8 @@ export default function App() {
               maxWidth: 480,
               padding: '24px 24px 36px',
               boxShadow: '0 -8px 40px rgba(0,0,0,0.2)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
             }}
             onClick={function (e) {
               e.stopPropagation();
@@ -26703,91 +26730,357 @@ export default function App() {
               Update Engine Hours
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
-              Enter current hours from your engine panel
+              Enter current hours from each engine panel
             </div>
-            <input
-              type="number"
-              placeholder="e.g. 1450"
-              value={updateHoursInput}
-              onChange={function (e) {
-                setUpdateHoursInput(e.target.value);
-              }}
-              style={{
-                width: '100%',
-                border: '2px solid var(--brand)',
-                borderRadius: 10,
-                padding: '12px 16px',
-                fontSize: 20,
-                fontWeight: 700,
-                outline: 'none',
-                boxSizing: 'border-box',
-                textAlign: 'center',
-                color: 'var(--text-primary)',
-                background: 'var(--bg-subtle)',
-                marginBottom: 14,
-              }}
-            />
+
             {(function () {
-              var avp = vessels.find(function (v) {
-                return v.id === activeVesselId;
+              var orderedEngines = getOrderedEngines(engines || []);
+              var engineCount = orderedEngines.length;
+
+              // ── Empty state — no engines on this vessel ────────────────
+              if (engineCount === 0) {
+                return (
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '24px 8px',
+                      color: 'var(--text-muted)',
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    No engines configured on this vessel. Add engine details
+                    on the My Boat tab to start tracking hours.
+                  </div>
+                );
+              }
+
+              // Compute proposed hours after save (using inputs) for the
+              // discrepancy preview banner.
+              var proposedHours = orderedEngines.map(function (e) {
+                var raw = engineHoursInputs[e.id];
+                if (raw === '' || raw == null) return e.engine_hours;
+                var n = parseInt(raw, 10);
+                return isNaN(n) || n < 0 ? e.engine_hours : n;
               });
-              var prev = avp ? avp.engineHours : null;
-              if (prev && updateHoursInput && !isNaN(updateHoursInput)) {
-                var diff2 = parseInt(updateHoursInput) - prev;
-                if (diff2 > 0)
-                  return (
+              var validProposed = proposedHours.filter(function (h) {
+                return h != null;
+              });
+              var proposedSpread =
+                validProposed.length >= 2
+                  ? Math.max.apply(null, validProposed) -
+                    Math.min.apply(null, validProposed)
+                  : 0;
+              var proposedMax =
+                validProposed.length > 0 ? Math.max.apply(null, validProposed) : 0;
+              var willCreateDiscrepancy =
+                validProposed.length >= 2 &&
+                (proposedSpread > DISCREPANCY_HOURS_ABS ||
+                  (proposedMax > 0 && proposedSpread / proposedMax > 0.1));
+
+              // True if at least one input differs from current and parses
+              // as a valid non-negative integer. Disables Save otherwise.
+              var hasValidChange = orderedEngines.some(function (e) {
+                var raw = engineHoursInputs[e.id];
+                if (raw === '' || raw == null) return false;
+                var n = parseInt(raw, 10);
+                if (isNaN(n) || n < 0) return false;
+                return n !== e.engine_hours;
+              });
+
+              // True if any input is invalid (negative or NaN with content).
+              var hasInvalidInput = orderedEngines.some(function (e) {
+                var raw = engineHoursInputs[e.id];
+                if (raw === '' || raw == null) return false;
+                var n = parseInt(raw, 10);
+                return isNaN(n) || n < 0;
+              });
+
+              return (
+                <>
+                  {orderedEngines.map(function (e, idx) {
+                    var posLabel = getPositionLabel(e, idx);
+                    var identity =
+                      e.make && e.model
+                        ? [e.year, e.make, e.model].filter(Boolean).join(' ')
+                        : null;
+                    var currentHours = e.engine_hours;
+                    var currentDate = e.engine_hours_date;
+                    var raw = engineHoursInputs[e.id] != null ? engineHoursInputs[e.id] : '';
+                    var parsed = raw === '' ? null : parseInt(raw, 10);
+                    var validNumber =
+                      parsed != null && !isNaN(parsed) && parsed >= 0;
+                    var diff =
+                      validNumber && currentHours != null
+                        ? parsed - currentHours
+                        : null;
+
+                    // Hint line — "+3 hrs since last update", "no change",
+                    // or warning ("must be a positive number" / "below current").
+                    var hint = null;
+                    if (raw !== '' && !validNumber) {
+                      hint = {
+                        text: 'Must be a non-negative number',
+                        color: 'var(--err-text)',
+                      };
+                    } else if (validNumber && currentHours != null) {
+                      if (diff > 0) {
+                        hint = {
+                          text: '+' + diff + ' hrs since last update',
+                          color: 'var(--ok-text)',
+                        };
+                      } else if (diff === 0) {
+                        hint = {
+                          text: 'no change',
+                          color: 'var(--text-muted)',
+                        };
+                      } else if (diff < 0) {
+                        hint = {
+                          text:
+                            diff +
+                            ' hrs (below current — confirm engine reset?)',
+                          color: 'var(--warn-text, #f5a623)',
+                        };
+                      }
+                    } else if (validNumber && currentHours == null) {
+                      hint = {
+                        text: 'first reading',
+                        color: 'var(--ok-text)',
+                      };
+                    }
+
+                    return (
+                      <div
+                        key={e.id}
+                        style={{
+                          marginBottom: 14,
+                          paddingBottom: 14,
+                          borderBottom:
+                            idx < orderedEngines.length - 1
+                              ? '1px solid var(--border)'
+                              : 'none',
+                        }}
+                      >
+                        {/* Header row: position + identity */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'baseline',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: posLabel ? '#6fa8e0' : 'var(--text-primary)',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.6px',
+                            }}
+                          >
+                            {posLabel ? posLabel + ' ENGINE' : 'ENGINE'}
+                          </div>
+                          {identity && (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: 'var(--text-muted)',
+                                textAlign: 'right',
+                              }}
+                            >
+                              {identity}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Current state line */}
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--text-muted)',
+                            marginBottom: 8,
+                          }}
+                        >
+                          {currentHours != null
+                            ? 'Current: ' +
+                              currentHours.toLocaleString() +
+                              ' hrs' +
+                              (currentDate ? ' · ' + currentDate : '')
+                            : 'No prior reading'}
+                        </div>
+
+                        {/* Input + hint side by side */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 10,
+                            alignItems: 'center',
+                          }}
+                        >
+                          <input
+                            type="number"
+                            placeholder={
+                              currentHours != null
+                                ? String(currentHours)
+                                : 'e.g. 1450'
+                            }
+                            value={raw}
+                            onChange={function (ev) {
+                              var v = ev.target.value;
+                              setEngineHoursInputs(function (prev) {
+                                return Object.assign({}, prev, { [e.id]: v });
+                              });
+                            }}
+                            style={{
+                              width: 120,
+                              border: '2px solid var(--brand)',
+                              borderRadius: 10,
+                              padding: '10px 12px',
+                              fontSize: 17,
+                              fontWeight: 700,
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                              textAlign: 'center',
+                              color: 'var(--text-primary)',
+                              background: 'var(--bg-subtle)',
+                            }}
+                          />
+                          {hint && (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: hint.color,
+                                fontWeight: 600,
+                                flex: 1,
+                              }}
+                            >
+                              {hint.text}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Discrepancy preview banner */}
+                  {willCreateDiscrepancy && (
                     <div
                       style={{
+                        background: 'rgba(245,166,35,0.1)',
+                        border: '1px solid rgba(245,166,35,0.4)',
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        marginBottom: 14,
                         fontSize: 12,
-                        color: 'var(--ok-text)',
-                        textAlign: 'center',
-                        marginBottom: 10,
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.5,
                       }}
                     >
-                      +{diff2} hrs since last update
+                      <strong style={{ color: '#f5a623' }}>
+                        Heads up — this creates a {proposedSpread} hr spread
+                      </strong>
+                      <br />
+                      One engine has run {proposedSpread} more hours than the
+                      other. Worth a glance to confirm the readings are right.
+                      You can still save.
                     </div>
-                  );
-              }
-              return null;
+                  )}
+
+                  <button
+                    disabled={!hasValidChange || hasInvalidInput}
+                    onClick={async function () {
+                      if (!hasValidChange || hasInvalidInput) return;
+                      var dated = today();
+
+                      // Iterate all engines; update only the ones whose
+                      // input differs from current. Run in parallel.
+                      var changedUpdates = orderedEngines
+                        .map(function (e) {
+                          var raw = engineHoursInputs[e.id];
+                          if (raw === '' || raw == null) return null;
+                          var n = parseInt(raw, 10);
+                          if (isNaN(n) || n < 0) return null;
+                          if (n === e.engine_hours) return null;
+                          return { engineId: e.id, hours: n };
+                        })
+                        .filter(Boolean);
+
+                      await Promise.all(
+                        changedUpdates.map(function (u) {
+                          return updateEngineHours(u.engineId, u.hours, dated);
+                        })
+                      );
+
+                      // Back-compat mirror: write the FIRST ordered engine's
+                      // proposed hours to vessels.engine_hours for legacy
+                      // readers. Phase 3 drops the column. If the first
+                      // engine wasn't changed, mirror its current hours +
+                      // today's date so vessels stays roughly in sync.
+                      var firstEngineProposed = (function () {
+                        var first = orderedEngines[0];
+                        if (!first) return null;
+                        var changed = changedUpdates.find(function (u) {
+                          return u.engineId === first.id;
+                        });
+                        return changed ? changed.hours : first.engine_hours;
+                      })();
+                      if (firstEngineProposed != null) {
+                        try {
+                          await supabase
+                            .from('vessels')
+                            .update({
+                              engine_hours: firstEngineProposed,
+                              engine_hours_date: dated,
+                            })
+                            .eq('id', activeVesselId);
+                          setVessels(function (vs) {
+                            return vs.map(function (v) {
+                              return v.id === activeVesselId
+                                ? Object.assign({}, v, {
+                                    engineHours: firstEngineProposed,
+                                    engineHoursDate: dated,
+                                  })
+                                : v;
+                            });
+                          });
+                        } catch (err) {
+                          console.error('Vessels mirror save:', err);
+                        }
+                      }
+
+                      setShowUpdateHoursModal(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      border: 'none',
+                      borderRadius: 12,
+                      background:
+                        hasValidChange && !hasInvalidInput
+                          ? 'var(--brand)'
+                          : 'var(--bg-subtle)',
+                      color:
+                        hasValidChange && !hasInvalidInput
+                          ? '#fff'
+                          : 'var(--text-muted)',
+                      fontSize: 15,
+                      fontWeight: 800,
+                      cursor:
+                        hasValidChange && !hasInvalidInput
+                          ? 'pointer'
+                          : 'not-allowed',
+                    }}
+                  >
+                    {hasValidChange && !hasInvalidInput
+                      ? 'Save changes'
+                      : hasInvalidInput
+                        ? 'Fix invalid entries'
+                        : 'No changes'}
+                  </button>
+                </>
+              );
             })()}
-            <button
-              onClick={async function () {
-                var parsed2 = parseInt(updateHoursInput);
-                if (!updateHoursInput || isNaN(parsed2) || parsed2 < 0) return;
-                var dated2 = today();
-                setVessels(function (vs) {
-                  return vs.map(function (v) {
-                    return v.id === activeVesselId
-                      ? Object.assign({}, v, { engineHours: parsed2, engineHoursDate: dated2 })
-                      : v;
-                  });
-                });
-                try {
-                  await supabase
-                    .from('vessels')
-                    .update({ engine_hours: parsed2, engine_hours_date: dated2 })
-                    .eq('id', activeVesselId);
-                } catch (e2) {
-                  console.error('Engine hours save:', e2);
-                }
-                // Mirror to engines table — primary source for KPI/FirstMate display.
-                updatePrimaryEngineHours(parsed2, dated2);
-                setShowUpdateHoursModal(false);
-              }}
-              style={{
-                width: '100%',
-                padding: '14px',
-                border: 'none',
-                borderRadius: 12,
-                background: 'var(--brand)',
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              Save {updateHoursInput ? parseInt(updateHoursInput).toLocaleString() + ' hrs' : ''}
-            </button>
           </div>
         </div>
       )}
