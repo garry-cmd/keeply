@@ -15054,7 +15054,35 @@ export default function App() {
                               marginBottom: 12,
                             }}
                           >
-                            {eq.notes}
+                            {(function () {
+                              // For engine-linked equipment, render live engine
+                              // hours instead of the stale notes string written
+                              // at onboarding time. Notes contain "X hrs" that
+                              // never refreshes; the engines table does.
+                              const linkedEngine = eq.engine_id
+                                ? engines.find(function (e) {
+                                    return e.id === eq.engine_id;
+                                  })
+                                : null;
+                              if (linkedEngine) {
+                                const parts = [];
+                                if (linkedEngine.year)
+                                  parts.push(String(linkedEngine.year));
+                                if (linkedEngine.fuel_type)
+                                  parts.push(linkedEngine.fuel_type);
+                                if (linkedEngine.engine_hours != null)
+                                  parts.push(linkedEngine.engine_hours + ' hrs');
+                                const summary = parts.join(' · ');
+                                const make = linkedEngine.make || '';
+                                const model = linkedEngine.model || '';
+                                const ident = (make + ' ' + model).trim();
+                                const modelTag = ident ? 'Model: ' + ident : '';
+                                return summary && modelTag
+                                  ? summary + ' | ' + modelTag
+                                  : summary || modelTag || eq.notes;
+                              }
+                              return eq.notes;
+                            })()}
                           </div>
                         )}
 
@@ -15949,18 +15977,62 @@ export default function App() {
                                                         marginBottom: 2,
                                                       }}
                                                     >
-                                                      PRIORITY
+                                                      {t.due_hours ? 'DUE AT HRS' : 'PRIORITY'}
                                                     </div>
-                                                    <div
-                                                      style={{
-                                                        fontSize: 12,
-                                                        fontWeight: 600,
-                                                        color: 'var(--text-secondary)',
-                                                        textTransform: 'capitalize',
-                                                      }}
-                                                    >
-                                                      {t.priority || 'medium'}
-                                                    </div>
+                                                    {t.due_hours ? (
+                                                      (function () {
+                                                        const avHE = vessels.find(function (v) {
+                                                          return v.id === activeVesselId;
+                                                        });
+                                                        const cHE = avHE ? avHE.engineHours : null;
+                                                        // Per-engine override
+                                                        // when the equipment
+                                                        // is linked.
+                                                        const tHE = getEngineHoursForTask(
+                                                          t,
+                                                          equipment,
+                                                          engines,
+                                                          cHE
+                                                        );
+                                                        const hbgE = getHoursBadge(
+                                                          t.due_hours,
+                                                          tHE,
+                                                          t.interval_hours
+                                                        );
+                                                        return (
+                                                          <div
+                                                            style={{
+                                                              fontSize: 12,
+                                                              fontWeight: 700,
+                                                              color: hbgE
+                                                                ? hbgE.color
+                                                                : 'var(--text-secondary)',
+                                                            }}
+                                                          >
+                                                            {t.due_hours}h
+                                                            {tHE != null
+                                                              ? ' (' +
+                                                                (t.due_hours - tHE > 0
+                                                                  ? t.due_hours - tHE + ' to go'
+                                                                  : Math.abs(t.due_hours - tHE) +
+                                                                    ' over') +
+                                                                ')'
+                                                              : ''}
+                                                          </div>
+                                                        );
+                                                      })()
+                                                    ) : (
+                                                      <div
+                                                        style={{
+                                                          fontSize: 12,
+                                                          fontWeight: 600,
+                                                          color: 'var(--text-secondary)',
+                                                          textTransform: 'capitalize',
+                                                        }}
+                                                      >
+                                                        {t.priority || 'medium'}
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </div>
                                                 <div
