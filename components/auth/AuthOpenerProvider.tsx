@@ -110,6 +110,42 @@ export function AuthOpenerProvider({ children }: ProviderProps) {
     setIsRecovery(false);
   }, []);
 
+  // Lock body scroll while the modal is open. Without this, Chrome
+  // auto-scrolls the document by ~200px the instant the modal mounts
+  // (because the modal is appended at the end of the DOM tree, focus
+  // management treats it as if it were in normal flow even though it's
+  // position:fixed). The user perceives this as the H1 / page content
+  // "jumping" upward when they click Login. Locking body scroll keeps
+  // the page visually still while the modal is on top, and restoring
+  // scroll position on close ensures the user lands back where they were.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const savedScrollY = window.scrollY;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    // Compensate for the scrollbar disappearing when overflow: hidden
+    // is applied — without this, the page content shifts horizontally
+    // by the scrollbar width (4px on Keeply, more on standard scrollbars).
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    // Re-apply scroll position in case the browser shifted it during
+    // the DOM-insertion frame.
+    window.scrollTo(0, savedScrollY);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+      window.scrollTo(0, savedScrollY);
+    };
+  }, [isOpen]);
+
   // While the modal is open, listen for SIGNED_IN to:
   //   1. Close the modal (since AuthModal mounts here, not in HomeClient,
   //      we don't get auto-unmount when HomeClient flips to authed).
