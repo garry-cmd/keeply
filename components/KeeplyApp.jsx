@@ -8,6 +8,16 @@ import FirstMate from './FirstMate';
 import FirstMateScreen from './FirstMateScreen';
 import ListsTab from './Lists/ListsTab';
 import { formatPlanSummary, hasCapability, canAddRepair, canAddEquipment, getEquipmentLimit } from '../lib/pricing';
+import {
+  getOrderedEngines,
+  getMaxHours,
+  getHoursSpread,
+  hasEngineDiscrepancy,
+  getPositionLabel,
+  getShortPositionLabel,
+  hasMissingEngineInfo,
+  DISCREPANCY_HOURS_ABS,
+} from '../lib/engines';
 
 // ── Part search helpers ──────────────────────────────────────────────────────
 // Build a context-rich search query: "1985 Hallberg-Rassy 35 Yanmar 3GM30 impeller"
@@ -2437,6 +2447,11 @@ export default function App() {
   // ── Vessels (Supabase) ──
   const [vessels, setVessels] = useState([]);
   const [activeVesselId, setActiveVesselId] = useState(null);
+  // ── Engines for active vessel (Supabase) ──
+  // Per-active-vessel pattern matching equipment/tasks/repairs. Source of
+  // truth for engine_hours displays; vessels.engine_hours is a back-compat
+  // mirror only (drops in Phase 3). Loaded by loadEnginesForVessel below.
+  const [engines, setEngines] = useState([]);
   const [showVesselDropdown, setShowVesselDropdown] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({});
@@ -2753,6 +2768,9 @@ export default function App() {
               : normalizedVessels[0].id;
           setActiveVesselId(firstId);
 
+          // Load engines for first vessel (primary source for KPI / FirstMate)
+          loadEnginesForVessel(firstId);
+
           // Load equipment for first vessel
           const eq = await supa('equipment', {
             query: 'vessel_id=eq.' + firstId + '&order=created_at',
@@ -2919,6 +2937,68 @@ export default function App() {
     [session]
   );
 
+  // ─── ENGINES — load + sync helpers ───────────────────────────────────────────
+  // loadEnginesForVessel: refreshes the `engines` state from DB for the given
+  // vessel. Called on initial load, on switchVessel, and after any write that
+  // changes engine_hours so the KPI + FirstMate context stay current.
+  const loadEnginesForVessel = useCallback(async function (vid) {
+    if (!vid) {
+      setEngines([]);
+      return;
+    }
+    try {
+      const rows = await supa('engines', {
+        query: 'vessel_id=eq.' + vid + '&order=created_at',
+      });
+      setEngines(rows || []);
+    } catch (err) {
+      // Don't block on engines load failure — KPI falls back to "—"; the
+      // user can still operate the app.
+      console.warn('loadEnginesForVessel failed:', err);
+    }
+  }, []);
+
+  // updatePrimaryEngineHours: writes new hours/date to the FIRST engine row
+  // for the active vessel, AND mirrors to vessels.engine_hours (deprecated
+  // back-compat). Used by the saveLog handler, the Update Engine Hours
+  // modal, and the LogbookPage callback. Phase 2C will replace this with a
+  // proper per-engine update once the modal supports multi-engine.
+  //
+  // Behavior on twin-engine vessels: writes to the engine ordered first by
+  // position (port). The current single-engine modal can't disambiguate;
+  // Phase 2C makes this an explicit per-engine choice.
+  const updatePrimaryEngineHours = useCallback(
+    async function (hours, dateStr) {
+      if (hours == null) return;
+      // Find the primary engine — port preferred, else lowest created_at.
+      const ordered = getOrderedEngines(engines);
+      const primary = ordered[0];
+      if (!primary) {
+        // No engine row exists for this vessel. Phase 1 backfill should
+        // have handled this; if it didn't, log and skip. We do NOT create
+        // a row here — that's onboarding's job.
+        console.warn('updatePrimaryEngineHours: no engine row found');
+        return;
+      }
+      try {
+        await supabase
+          .from('engines')
+          .update({ engine_hours: hours, engine_hours_date: dateStr })
+          .eq('id', primary.id);
+        setEngines(function (prev) {
+          return prev.map(function (e) {
+            return e.id === primary.id
+              ? { ...e, engine_hours: hours, engine_hours_date: dateStr }
+              : e;
+          });
+        });
+      } catch (err) {
+        console.error('updatePrimaryEngineHours failed:', err);
+      }
+    },
+    [engines]
+  );
+
   // ─── SWITCH VESSEL — reload equipment + tasks ────────────────────────────────
   const switchVessel = useCallback(async function (vid) {
     setActiveVesselId(vid);
@@ -2928,6 +3008,9 @@ export default function App() {
     setAiSuggestions({});
     setExpandedEquip(null);
     setExpandedRepair(null);
+    // Load engines for the new active vessel — fire-and-forget, KPI handles
+    // the empty/loading state gracefully.
+    loadEnginesForVessel(vid);
     try {
       const eq = await supa('equipment', { query: 'vessel_id=eq.' + vid + '&order=created_at' });
       let eqList = (eq || []).map(function (e) {
@@ -5462,6 +5545,8 @@ export default function App() {
                 : v;
             });
           });
+          // Mirror to engines table — primary source for KPI/FirstMate display.
+          updatePrimaryEngineHours(body.hours_end, body.entry_date);
         }
       } else {
         const { data } = await supabase.from('logbook').insert(body).select().single();
@@ -5482,6 +5567,8 @@ export default function App() {
                 : v;
             });
           });
+          // Mirror to engines table — primary source for KPI/FirstMate display.
+          updatePrimaryEngineHours(body.hours_end, body.entry_date);
         }
       }
       setShowAddLog(false);
@@ -12486,13 +12573,133 @@ export default function App() {
               ];
               return (
                 <>
-                  {/* ── 2-KPI strip: Engine Hours + NM Logged ── */}
+                  {/* ── 2-KPI strip: Engine Hours + NM Logged ──────────
+                      Engine Hrs tile renders single/twin/triple+ variants:
+                       - 0 engines: "—"
+                       - 1 engine: single number, big
+                       - 2 engines: stacked Port/Stbd lines, smaller
+                       - 3+: compact horizontal P# · C# · S#
+                      Twin discrepancy >50hr or >10% pulses the border
+                      orange — surfaces "one engine being favored / had
+                      service the other didn't" without a separate alert. */}
                   {(function () {
-                    var activeV = vessels.find(function (v) {
-                      return v.id === activeVesselId;
-                    });
-                    var engHrs = activeV ? activeV.engineHours : null;
+                    var orderedEngines = getOrderedEngines(engines || []);
+                    var engineCount = orderedEngines.length;
                     var nmLogged = Math.round(logStats.totalNm || 0);
+                    var discrepancy = hasEngineDiscrepancy(orderedEngines);
+                    var spread = getHoursSpread(orderedEngines);
+
+                    // Border color: pulse orange when twin engines diverge
+                    var borderColor = discrepancy
+                      ? 'rgba(245,166,35,0.5)'
+                      : 'rgba(77,166,255,0.18)';
+                    var bgColor = discrepancy
+                      ? 'rgba(245,166,35,0.07)'
+                      : 'rgba(77,166,255,0.08)';
+
+                    // Renderer: the engine hrs tile body
+                    var engineTileBody;
+                    if (engineCount === 0) {
+                      engineTileBody = (
+                        <div
+                          style={{
+                            fontSize: 20,
+                            fontWeight: 800,
+                            color: '#4da6ff',
+                            lineHeight: 1,
+                          }}
+                        >
+                          —
+                        </div>
+                      );
+                    } else if (engineCount === 1) {
+                      var h0 = orderedEngines[0].engine_hours;
+                      engineTileBody = (
+                        <div
+                          style={{
+                            fontSize: 20,
+                            fontWeight: 800,
+                            color: '#4da6ff',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {h0 != null ? h0.toLocaleString() : '—'}
+                        </div>
+                      );
+                    } else if (engineCount === 2) {
+                      // Stacked: PORT 1500 / STBD 1456
+                      engineTileBody = (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2,
+                            alignItems: 'center',
+                            lineHeight: 1.05,
+                          }}
+                        >
+                          {orderedEngines.map(function (e, i) {
+                            var h = e.engine_hours;
+                            var lbl = getPositionLabel(e, i) || 'Engine';
+                            return (
+                              <div
+                                key={e.id || i}
+                                style={{
+                                  fontSize: 14,
+                                  fontWeight: 800,
+                                  color: '#4da6ff',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    color: 'rgba(77,166,255,0.7)',
+                                    marginRight: 5,
+                                    letterSpacing: '0.4px',
+                                  }}
+                                >
+                                  {lbl.toUpperCase()}
+                                </span>
+                                {h != null ? h.toLocaleString() : '—'}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    } else {
+                      // 3+ — compact horizontal: P1500 · C1450 · S1456
+                      engineTileBody = (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 800,
+                            color: '#4da6ff',
+                            lineHeight: 1,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {orderedEngines
+                            .map(function (e, i) {
+                              var h = e.engine_hours;
+                              return (
+                                getShortPositionLabel(e, i) +
+                                (h != null ? h.toLocaleString() : '—')
+                              );
+                            })
+                            .join(' · ')}
+                        </div>
+                      );
+                    }
+
+                    // Engine label — pluralized + discrepancy hint
+                    var engineLabel =
+                      engineCount > 1 ? 'Engine Hrs' : 'Engine Hrs';
+                    var subLine = discrepancy
+                      ? '+' + spread + ' HR SPREAD'
+                      : null;
+
                     return (
                       <div
                         style={{
@@ -12503,35 +12710,35 @@ export default function App() {
                         }}
                       >
                         <div
+                          onClick={function () {
+                            // Tap engine tile → opens Update Engine Hours modal.
+                            // Phase 2C will redesign this modal for multi-engine.
+                            setShowUpdateHoursModal(true);
+                          }}
                           style={{
-                            background: 'rgba(77,166,255,0.08)',
-                            border: '1px solid rgba(77,166,255,0.18)',
+                            background: bgColor,
+                            border: '1px solid ' + borderColor,
                             borderRadius: 12,
                             padding: '10px 14px',
                             textAlign: 'center',
+                            cursor: 'pointer',
+                            userSelect: 'none',
                           }}
                         >
-                          <div
-                            style={{
-                              fontSize: 20,
-                              fontWeight: 800,
-                              color: '#4da6ff',
-                              lineHeight: 1,
-                            }}
-                          >
-                            {engHrs != null ? engHrs.toLocaleString() : '—'}
-                          </div>
+                          {engineTileBody}
                           <div
                             style={{
                               fontSize: 9,
                               fontWeight: 700,
-                              color: 'rgba(77,166,255,0.55)',
+                              color: discrepancy
+                                ? 'rgba(245,166,35,0.85)'
+                                : 'rgba(77,166,255,0.55)',
                               marginTop: 3,
                               textTransform: 'uppercase',
                               letterSpacing: '0.4px',
                             }}
                           >
-                            Engine Hrs
+                            {subLine || engineLabel}
                           </div>
                         </div>
                         <div
@@ -19681,6 +19888,8 @@ export default function App() {
                     : v;
                 });
               });
+              // Mirror to engines table — primary source for KPI/FirstMate display.
+              updatePrimaryEngineHours(hours, dateStr);
             }}
           />
         )}
@@ -26561,6 +26770,8 @@ export default function App() {
                 } catch (e2) {
                   console.error('Engine hours save:', e2);
                 }
+                // Mirror to engines table — primary source for KPI/FirstMate display.
+                updatePrimaryEngineHours(parsed2, dated2);
                 setShowUpdateHoursModal(false);
               }}
               style={{

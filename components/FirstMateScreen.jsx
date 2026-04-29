@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from './supabase-client';
 import { PLANS } from '../lib/pricing.js';
+import { getEngineContextEntries } from '../lib/engines.js';
 
 const SUPA_URL = 'https://waapqyshmqaaamiiitso.supabase.co';
 const SUPA_KEY =
@@ -20,7 +21,7 @@ async function fetchVesselContext(vesselId) {
   const sess = await supabase.auth.getSession();
   const token = sess?.data?.session?.access_token || SUPA_KEY;
   const h = { apikey: SUPA_KEY, Authorization: 'Bearer ' + token };
-  const [vR, tR, rR, lR, eR, spR, suR] = await Promise.all([
+  const [vR, tR, rR, lR, eR, spR, suR, enR] = await Promise.all([
     fetch(`${SUPA_URL}/rest/v1/vessels?id=eq.${vesselId}&select=*`, { headers: h }),
     fetch(`${SUPA_URL}/rest/v1/maintenance_tasks?vessel_id=eq.${vesselId}&select=*`, {
       headers: h,
@@ -44,16 +45,19 @@ async function fetchVesselContext(vesselId) {
       `${SUPA_URL}/rest/v1/supplies?vessel_id=eq.${vesselId}&order=name.asc&select=*,vessel_locations(name)`,
       { headers: h }
     ),
+    fetch(`${SUPA_URL}/rest/v1/engines?vessel_id=eq.${vesselId}&select=*`, { headers: h }),
   ]);
-  const [vessels, tasks, repairs, logbook, equipment, savedParts, supplies] = await Promise.all([
-    vR.json(),
-    tR.json(),
-    rR.json(),
-    lR.json(),
-    eR.json(),
-    spR.json(),
-    suR.json(),
-  ]);
+  const [vessels, tasks, repairs, logbook, equipment, savedParts, supplies, engines] =
+    await Promise.all([
+      vR.json(),
+      tR.json(),
+      rR.json(),
+      lR.json(),
+      eR.json(),
+      spR.json(),
+      suR.json(),
+      enR.json(),
+    ]);
   const v = vessels[0] || {};
   const prefix = v.vessel_type === 'motor' ? 'M/V' : 'S/V';
   return {
@@ -64,9 +68,10 @@ async function fetchVesselContext(vesselId) {
       year: v.year,
       make: v.make,
       model: v.model,
-      engineHours: v.engine_hours,
-      engineHoursDate: v.engine_hours_date,
-      fuelBurnRate: v.fuel_burn_rate,
+      // Per-engine context. Replaces the deprecated single-engine fields
+      // (engineHours / engineHoursDate / fuelBurnRate). Server route formats
+      // single/twin/triple+ from this list.
+      engines: getEngineContextEntries(engines || []),
       homePort: v.home_port,
     },
     tasks: (tasks || []).map(function (t) {
