@@ -10,8 +10,10 @@
 // rotating caption with the visible slide.
 //
 // Performance:
-//   • First image is loaded eagerly with fetchpriority="high" so it can
-//     serve as the LCP element on mobile. Subsequent images load lazily.
+//   • All images load eagerly. The first carries fetchpriority="high" so it
+//     can serve as the LCP element on mobile; the others load in parallel
+//     so they're decoded before their slide is shown (no flicker on swap).
+//     Total cost is ~150KB for 4 images — acceptable trade for smoothness.
 //   • All images are absolutely positioned; only opacity changes during
 //     transitions — no layout reflow, GPU-accelerated.
 
@@ -68,7 +70,7 @@ export default function Slideshow({
           key={src}
           src={src}
           alt=""
-          loading={idx === 0 ? 'eager' : 'lazy'}
+          loading="eager"
           // fetchPriority is supported in React 18.3+ (lower-case in DOM).
           // @ts-expect-error — older @types/react may not include it.
           fetchpriority={idx === 0 ? 'high' : 'auto'}
