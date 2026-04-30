@@ -1,17 +1,46 @@
 'use client';
 
-// Hero — 2-column on desktop, stacked on mobile.
-// Left: H1 + subhead + CTAs. Right: phone with looped walkthrough video.
-// Video is the same /videos/walkthrough.mp4 that used to live in
-// VideoShowcase below — that section is now removed; the hero IS the demo.
+// Hero — full-bleed mobile, 2-column desktop.
+//
+// Mobile: the entire viewport-equivalent area is filled by a slideshow of
+//   four key app screens. A short scrim sits at the top (covers the iOS
+//   status bar baked into the screenshots), a larger scrim at the bottom
+//   carries a rotating caption + CTAs + slide indicator dots. NO H1 above
+//   the fold — the screenshots tell the story; the H1 ("Every system. Every
+//   part. Every passage.") has moved down to the WhatItDoes section.
+//
+// Desktop: 2-column. Left shows the rotating caption (large) + CTAs +
+//   indicator dots. Right shows the same slideshow inside the existing
+//   PhoneScreenshot frame.
+//
+// The slideshow images and captions stay in lock-step because Hero owns
+// the activeIdx state and Slideshow notifies us via onIndexChange. A
+// single Slideshow instance drives both the visual cycle and the caption.
 
-import React from 'react';
+import React, { useState } from 'react';
+import Slideshow from '../Slideshow';
 import PhoneScreenshot from '../PhoneScreenshot';
 
 const NAVY = '#071e3d';
 const NAVY_MID = '#0d2d5e';
 const GOLD = '#f5a623';
 const WHITE = '#ffffff';
+
+interface Slide {
+  src: string;
+  caption: string;
+}
+
+const SLIDES: Slide[] = [
+  { src: '/images/hero-my-boat.jpg',        caption: 'Your boat at a glance' },
+  { src: '/images/features/equipment.jpg',  caption: 'Every system, tracked' },
+  { src: '/images/hero-firstmate.jpg',      caption: 'Ask your First Mate' },
+  { src: '/images/hero-logbook.jpg',        caption: 'Every passage, logged' },
+];
+
+const SRCS = SLIDES.map(s => s.src);
+const SLIDESHOW_ALT =
+  'Keeply screenshots — My Boat dashboard, Equipment, First Mate AI, Logbook';
 
 interface HeroProps {
   isMobile: boolean;
@@ -20,11 +49,143 @@ interface HeroProps {
 }
 
 export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const caption = SLIDES[activeIdx]?.caption ?? '';
+
+  if (isMobile) {
+    return (
+      <section
+        style={{
+          position: 'relative',
+          height: 'min(85vh, 720px)',
+          minHeight: 500,
+          overflow: 'hidden',
+          background: NAVY,
+        }}
+        aria-label="Keeply — boat maintenance app"
+      >
+        <Slideshow
+          srcs={SRCS}
+          alt={SLIDESHOW_ALT}
+          onIndexChange={setActiveIdx}
+          objectPosition="center"
+          style={{ position: 'absolute', inset: 0 }}
+        />
+
+        {/* Top scrim — covers the iOS status bar baked into screenshots */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 70,
+            background:
+              'linear-gradient(180deg, rgba(7,30,61,0.65) 0%, rgba(7,30,61,0) 100%)',
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        />
+
+        {/* Bottom scrim — carries caption + CTAs + dots */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            paddingTop: 80,
+            paddingBottom: 28,
+            paddingLeft: 24,
+            paddingRight: 24,
+            background:
+              'linear-gradient(180deg, rgba(7,30,61,0) 0%, rgba(7,30,61,0.78) 35%, rgba(7,30,61,0.94) 100%)',
+            zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 14,
+          }}
+        >
+          <span
+            key={activeIdx}
+            style={{
+              color: 'rgba(255,255,255,0.88)',
+              fontSize: 14,
+              fontWeight: 500,
+              letterSpacing: 0.2,
+              animation: 'keeplyHeroCaptionIn 280ms ease-out',
+            }}
+          >
+            {caption}
+          </span>
+
+          <button
+            onClick={onGetStarted}
+            style={{
+              background: GOLD,
+              border: 'none',
+              color: '#1a1200',
+              padding: '14px 32px',
+              borderRadius: 10,
+              fontSize: 16,
+              fontWeight: 700,
+              cursor: 'pointer',
+              minWidth: 240,
+            }}
+          >
+            Start Free Plan {'\u2192'}
+          </button>
+
+          <button
+            onClick={onLogin}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              padding: 4,
+            }}
+          >
+            Log in
+          </button>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+            {SLIDES.map((_, i) => (
+              <span
+                key={i}
+                aria-hidden
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background:
+                    i === activeIdx ? WHITE : 'rgba(255,255,255,0.3)',
+                  transition: 'background 200ms',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes keeplyHeroCaptionIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </section>
+    );
+  }
+
   return (
     <section
       style={{
         position: 'relative',
-        padding: isMobile ? '88px 20px 56px' : '120px 32px 96px',
+        padding: '120px 32px 96px',
         overflow: 'hidden',
         background: `radial-gradient(ellipse at 50% 30%, ${NAVY_MID} 0%, ${NAVY} 70%)`,
       }}
@@ -36,56 +197,47 @@ export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
           maxWidth: 1200,
           margin: '0 auto',
           display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
+          flexDirection: 'row',
           alignItems: 'center',
-          gap: isMobile ? 40 : 56,
+          gap: 56,
         }}
       >
-        {/* Left column: copy + CTAs */}
-        <div
-          style={{
-            flex: '1 1 50%',
-            minWidth: 0,
-            textAlign: isMobile ? 'center' : 'left',
-          }}
-        >
-          <h1
+        <div style={{ flex: '1 1 50%', minWidth: 0 }}>
+          <p
+            key={activeIdx}
             style={{
-              fontSize: isMobile ? 'clamp(36px,8vw,52px)' : 'clamp(40px,5.5vw,72px)',
+              fontSize: 'clamp(36px, 4.5vw, 60px)',
               fontWeight: 800,
               color: WHITE,
               lineHeight: 1.05,
-              letterSpacing: '-1.5px',
-              margin: '0 0 20px',
+              letterSpacing: '-1px',
+              margin: '0 0 24px',
               fontFamily: "'Clash Display','Inter',sans-serif",
+              minHeight: '2em',
+              animation: 'keeplyHeroCaptionIn 320ms ease-out',
             }}
           >
-            Every system. Every part. Every <span style={{ color: GOLD }}>passage.</span>
-          </h1>
-
-          <p
-            style={{
-              fontSize: isMobile ? 16 : 19,
-              color: 'rgba(255,255,255,0.65)',
-              margin: '0 0 32px',
-              lineHeight: 1.55,
-              maxWidth: isMobile ? '100%' : 540,
-              marginLeft: isMobile ? 'auto' : 0,
-              marginRight: isMobile ? 'auto' : 0,
-            }}
-          >
-            Maintenance, repairs, parts, documents, and logbook — connected.
-            First Mate AI ready when you want a hand.
+            {caption}
           </p>
 
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              flexWrap: 'wrap',
-              justifyContent: isMobile ? 'center' : 'flex-start',
-            }}
-          >
+          <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+            {SLIDES.map((_, i) => (
+              <span
+                key={i}
+                aria-hidden
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 999,
+                  background:
+                    i === activeIdx ? GOLD : 'rgba(255,255,255,0.25)',
+                  transition: 'background 200ms',
+                }}
+              />
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
               onClick={onGetStarted}
               style={{
@@ -119,7 +271,6 @@ export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
           </div>
         </div>
 
-        {/* Right column: phone with looped walkthrough video */}
         <div
           style={{
             flex: '0 0 auto',
@@ -127,14 +278,22 @@ export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
             justifyContent: 'center',
           }}
         >
-          <PhoneScreenshot
-            size={isMobile ? 'mobile' : 'desktop'}
-            src="/images/walkthrough-poster.jpg"
-            videoSrc="/videos/walkthrough.mp4"
-            alt="Keeply walkthrough — S/V Irene: My Boat dashboard, Due Soon maintenance, Equipment, First Mate haul-out advice, and Lists"
-          />
+          <PhoneScreenshot size="desktop">
+            <Slideshow
+              srcs={SRCS}
+              alt={SLIDESHOW_ALT}
+              onIndexChange={setActiveIdx}
+            />
+          </PhoneScreenshot>
         </div>
       </div>
+
+      <style>{`
+        @keyframes keeplyHeroCaptionIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </section>
   );
 }

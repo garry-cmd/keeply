@@ -1,16 +1,19 @@
-// PhoneScreenshot.tsx — dark phone frame that wraps a real app screenshot
-// or looped walkthrough video.
+// PhoneScreenshot.tsx — dark phone frame that wraps a real app screenshot,
+// looped walkthrough video, or arbitrary children (e.g. a Slideshow).
 //
 // API:
 //   <PhoneScreenshot src="/images/hero-my-boat.jpg" />            → static image
 //   <PhoneScreenshot
-//     src="/images/walkthrough-poster.jpg"  // poster while loading
-//     videoSrc="/videos/walkthrough.mp4"    // looped video, autoplays in view
+//     src="/images/walkthrough-poster.jpg"   // poster while loading
+//     videoSrc="/videos/walkthrough.mp4"     // looped video, autoplays in view
 //   />
+//   <PhoneScreenshot>                                              → custom media
+//     <Slideshow srcs={[...]} />
+//   </PhoneScreenshot>
 //
-// When `videoSrc` is provided, renders a <video> element with `src` as the
-// poster. Otherwise renders <img>. Existing call sites that only pass `src`
-// keep working unchanged.
+// When `children` is provided, it replaces the default img/video. Otherwise:
+//   • `videoSrc` → renders a <video> with `src` as the poster
+//   • `src` only → renders <img>
 //
 // Video defaults: autoPlay loop muted playsInline preload="metadata".
 // `metadata` (not `none`) so the poster can paint immediately while the
@@ -108,6 +111,7 @@ interface PhoneScreenshotProps {
   src?: string;
   videoSrc?: string | null;
   alt?: string;
+  children?: React.ReactNode;
 }
 
 export default function PhoneScreenshot({
@@ -115,6 +119,7 @@ export default function PhoneScreenshot({
   src = '/images/hero-my-boat.jpg',
   videoSrc = null,
   alt = 'Keeply on a phone — My Boat tab showing S/V Irene maintenance overview',
+  children,
 }: PhoneScreenshotProps) {
   // Phone dimensions chosen to match the screenshot aspect ratio (399×860 ≈ 0.464)
   // closely enough that the inner screen image fills naturally without crop bars.
@@ -134,7 +139,6 @@ export default function PhoneScreenshot({
           '0 30px 60px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05) inset',
       }}
     >
-      {/* Top bezel highlight */}
       <div
         style={{
           position: 'absolute',
@@ -148,7 +152,6 @@ export default function PhoneScreenshot({
         }}
       />
 
-      {/* Inner screen */}
       <div
         style={{
           width: '100%',
@@ -161,7 +164,6 @@ export default function PhoneScreenshot({
           flexDirection: 'column',
         }}
       >
-        {/* Dynamic island — sits over the synthesized status bar */}
         <div
           style={{
             position: 'absolute',
@@ -178,7 +180,6 @@ export default function PhoneScreenshot({
 
         <StatusBar />
 
-        {/* Screenshot or looped video fills the rest of the screen area */}
         <div
           style={{
             flex: 1,
@@ -186,7 +187,9 @@ export default function PhoneScreenshot({
             overflow: 'hidden',
           }}
         >
-          {videoSrc ? (
+          {children ? (
+            children
+          ) : videoSrc ? (
             <video
               src={videoSrc}
               poster={src}

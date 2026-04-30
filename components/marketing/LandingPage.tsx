@@ -2,7 +2,7 @@
 
 // LandingPage — the marketing home page.
 //
-// Pure presentation. Composes 7 marketing sections + the verified banner.
+// Pure presentation. Composes 8 marketing sections + the verified banner.
 // SiteHeader and SiteFooter are mounted globally from app/layout.tsx
 // so this file does NOT render its own nav or footer.
 //
@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Hero from './sections/Hero';
+import WhatItDoes from './sections/WhatItDoes';
 import SocialProofMarquee from './sections/SocialProofMarquee';
 import HowItWorks from './sections/HowItWorks';
 import Testimonial from './sections/Testimonial';
@@ -26,7 +27,7 @@ import type { VerifiedBanner } from '../auth/useAuthRedirects';
 const NAVY = '#071e3d';
 
 interface LandingPageProps {
-  // Triggered by Hero "Get Keeply Free" + bottom FinalCTA "Get Keeply Free".
+  // Triggered by Hero "Start Free Plan" + bottom FinalCTA "Start Free Plan".
   // HomeClient routes straight to AuthModal in signup mode with pendingPlan='free'
   // — no plan picker. (Cross-page CTAs in SiteHeader/About/Features navigate to
   // /?signup=1 instead of calling this prop.)
@@ -91,6 +92,7 @@ export default function LandingPage({
       )}
 
       <Hero isMobile={isMobile} onGetStarted={onSignupFree} onLogin={onOpenLogin} />
+      <WhatItDoes isMobile={isMobile} />
       <SocialProofMarquee />
       <HowItWorks isMobile={isMobile} />
       <Testimonial isMobile={isMobile} />
