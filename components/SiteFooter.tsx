@@ -10,7 +10,6 @@
 // To add or reorder links, edit the LINKS array below.
 
 import { usePathname } from 'next/navigation';
-import AvailabilityStrip from './marketing/AvailabilityStrip';
 
 const FONT = "'Satoshi','DM Sans','Helvetica Neue',sans-serif";
 
@@ -54,9 +53,6 @@ export default function SiteFooter({ force = false }: SiteFooterProps = {}) {
         marginTop: 'auto',
       }}
     >
-      <div style={{ marginBottom: 28 }}>
-        <AvailabilityStrip />
-      </div>
       <div
         style={{
           display: 'flex',

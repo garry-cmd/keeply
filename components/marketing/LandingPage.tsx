@@ -65,9 +65,6 @@ export default function LandingPage({
         fontFamily: "'Satoshi','DM Sans','Helvetica Neue',sans-serif",
       }}
     >
-      {/* AvailabilityStrip is rendered by SiteFooter on every public page
-          (including this one). Don't render it here. */}
-
       {/* Verified banner (shown after ?verified=1 / ?verified=0 redirect) */}
       {verifiedBanner && (
         <div
