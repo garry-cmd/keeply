@@ -121,10 +121,19 @@ export default function PhoneScreenshot({
   alt = 'Keeply on a phone — My Boat tab showing S/V Irene maintenance overview',
   children,
 }: PhoneScreenshotProps) {
-  // Phone dimensions chosen to match the screenshot aspect ratio (399×860 ≈ 0.464)
-  // closely enough that the inner screen image fills naturally without crop bars.
+  // Phone dimensions sized so the inner content area accommodates the
+  // tallest screenshot aspect ratio without clipping.
+  //
+  // Inner content area = phoneH - (8px*2 outer padding) - (30px StatusBar) - (18px HomeIndicator).
+  // Desktop: phoneH 750 → content 686 tall × 314 wide (aspect 2.184).
+  // Mobile : phoneH 620 → content 556 tall × 254 wide (aspect 2.189).
+  // Slideshow source screenshots range 2.150–2.181 (h/w); all fit cleanly.
+  // Apr 30: bumped from 720/590 (content 656/526) which was clipping the
+  // bottom-nav LABELS of in-app screenshots — icons stayed visible but the
+  // text under them was sliced off because the screenshot's natural aspect
+  // (≈2.16) is taller than the old content area's aspect (≈2.09).
   const phoneW = size === 'mobile' ? 270 : 330;
-  const phoneH = size === 'mobile' ? 590 : 720;
+  const phoneH = size === 'mobile' ? 620 : 750;
 
   return (
     <div
