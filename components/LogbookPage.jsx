@@ -115,14 +115,43 @@ const CATEGORY_COLORS = {
 };
 
 const SEA_STATES = ['Calm', 'Light chop', 'Moderate', 'Rough', 'Very rough'];
-const CONDITIONS = [
+// Sky / weather state — replaces the old "Conditions" field on basic logbook
+// entries. Captures what the sky looks like, which Sea State + Wind don't.
+const WEATHER_STATES = [
+  'Clear',
+  'Partly cloudy',
+  'Overcast',
+  'Fog',
+  'Rain',
+  'Squalls',
+];
+// Visibility, advanced watch-entry only.
+const VISIBILITY_OPTS = [
+  { value: 'Good', label: 'Good (>5 nm)' },
+  { value: 'Moderate', label: 'Moderate (1–5 nm)' },
+  { value: 'Poor', label: 'Poor (<1 nm)' },
+];
+// Propulsion mode — moved from basic logbook (where it was the "Conditions"
+// field) into advanced watch entries. Includes the additions we agreed on:
+// Beam reach (separate point of sail) and Hove to (intentional storm tactic
+// distinct from drifting). Anchored/At dock supported as special states.
+const PROPULSION_OPTS = [
   'Motoring',
   'Motor sailing',
   'Close hauled',
+  'Beam reach',
   'Broad reach',
   'Downwind',
-  'Drifting',
+  'Hove to',
+  'Anchored',
+  'At dock',
 ];
+// LEGACY: the old "Conditions" field on basic logbook entries has been
+// replaced by `weather` (sky state) on new writes. The 10 existing entries
+// with a populated `conditions` column still surface their value in the
+// completed-passage view and history list as a read-only fallback. The
+// list of legacy options is intentionally not declared as a constant here —
+// nothing renders it as pills anymore.
 
 // ── Network helpers ────────────────────────────────────────────────────────
 
@@ -193,8 +222,8 @@ function blankForm() {
     // `hours_end` field. Each value is a string (input value pattern).
     // Empty / missing values mean "this engine wasn't run on this passage."
     engineHoursEnd: {},
-    conditions: '',
     sea_state: '',
+    weather: '', // Sky state (Clear / Partly cloudy / Overcast / Fog / Rain / Squalls)
     notes: '',
   };
 }
@@ -208,6 +237,12 @@ function blankWatchForm() {
     wind_dir: '',
     wind_speed_kts: '',
     baro_mb: '',
+    // Advanced fields (watch-entry only — added with the watch handoff
+    // upgrade so a relieving watch sees what the previous watch saw).
+    sea_state: '',
+    weather: '',
+    visibility: '',
+    propulsion: '',
     notes: '',
   };
 }
@@ -301,6 +336,16 @@ export default function LogbookPage({
         }
         if (!normalized.engineHoursEnd || typeof normalized.engineHoursEnd !== 'object') {
           normalized.engineHoursEnd = {};
+        }
+        // Drafts saved before the conditions→weather migration carry a
+        // `conditions` key that's no longer in the form schema. Strip it
+        // (the value is meaningless to the new form). Don't auto-map to
+        // weather — the two fields capture different things.
+        if (normalized.conditions !== undefined) {
+          delete normalized.conditions;
+        }
+        if (!('weather' in normalized)) {
+          normalized.weather = '';
         }
         setForm(normalized);
         setDraftRestored(true);
@@ -519,8 +564,13 @@ export default function LogbookPage({
       crew: entry.crew || '',
       distance_nm: entry.distance_nm ? String(entry.distance_nm) : '',
       engineHoursEnd: engineHoursEnd,
-      conditions: entry.conditions || '',
       sea_state: entry.sea_state || '',
+      // Weather replaces conditions on basic logbook entries. Legacy entries
+      // saved before this change carry the value in `entry.conditions` —
+      // we don't migrate it, just don't surface it on edit (it remains
+      // visible on the read-only completed-passage view under a "Conditions
+      // (legacy)" heading so the data isn't hidden from the owner).
+      weather: entry.weather || '',
       notes: entry.notes || '',
     });
     setEditingId(entry.id);
@@ -542,7 +592,7 @@ export default function LogbookPage({
         from_location: form.from_location || null,
         departure_time: form.departure_time || null,
         crew: form.crew || null,
-        conditions: form.conditions || null,
+        weather: form.weather || null,
         notes: form.notes || null,
       };
       const { data, error: e } = await supabase.from('logbook').insert(body).select().single();
@@ -575,6 +625,10 @@ export default function LogbookPage({
           wind_dir: watchForm.wind_dir || null,
           wind_speed_kts: watchForm.wind_speed_kts ? parseInt(watchForm.wind_speed_kts) : null,
           baro_mb: watchForm.baro_mb ? parseFloat(watchForm.baro_mb) : null,
+          sea_state: watchForm.sea_state || null,
+          weather: watchForm.weather || null,
+          visibility: watchForm.visibility || null,
+          propulsion: watchForm.propulsion || null,
           notes: watchForm.notes || null,
         })
         .select()
@@ -772,7 +826,7 @@ export default function LogbookPage({
       crew: form.crew || null,
       distance_nm: form.distance_nm ? parseFloat(form.distance_nm) : null,
       hours_end: legacyHoursEnd,
-      conditions: form.conditions || null,
+      weather: form.weather || null,
       sea_state: form.sea_state || null,
       notes: form.notes || null,
     };
@@ -1870,16 +1924,17 @@ export default function LogbookPage({
           })}
         </div>
 
-        {/* Conditions */}
-        <span style={lbl}>Conditions</span>
+        {/* Weather (sky state) — replaces the old Conditions field. Captures
+            cloud cover and precipitation, which Sea State + crew don't. */}
+        <span style={lbl}>Weather</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-          {CONDITIONS.map(function (c) {
-            const active = form.conditions === c;
+          {WEATHER_STATES.map(function (w) {
+            const active = form.weather === w;
             return (
               <button
-                key={c}
+                key={w}
                 onClick={function () {
-                  setF('conditions', active ? '' : c);
+                  setF('weather', active ? '' : w);
                 }}
                 style={{
                   padding: '9px 16px',
@@ -1893,7 +1948,7 @@ export default function LogbookPage({
                   fontWeight: 600,
                 }}
               >
-                {c}
+                {w}
               </button>
             );
           })}
@@ -2059,100 +2114,248 @@ export default function LogbookPage({
           <span style={{ color: 'rgba(255,255,255,0.45)' }}>en route</span>
         </div>
 
-        {/* Watch entries table */}
+        {/* ── Watch handoff: most recent entry summary card ──────────────
+            The "I just came on watch — what was happening?" use case. Most
+            recent entry surfaced prominently above the chronological log.
+            Big text, every populated field shown. If no entries yet, this
+            block renders nothing and the form below is the entry point. */}
+        {watchEntries.length > 0 &&
+          (function () {
+            // watchEntries is stored ascending by entry_time; find newest by
+            // taking the last one rather than re-sorting, to keep the live
+            // append in saveWatchEntry cheap.
+            const last = watchEntries[watchEntries.length - 1];
+            const facts = [
+              ['Position', last.position],
+              [
+                'Heading',
+                last.course_deg != null
+                  ? last.course_deg + '° at ' + (last.speed_kts != null ? last.speed_kts + ' kt' : '—')
+                  : null,
+              ],
+              [
+                'Wind',
+                last.wind_dir && last.wind_speed_kts
+                  ? last.wind_dir + ' ' + last.wind_speed_kts + ' kt'
+                  : last.wind_dir || null,
+              ],
+              ['Sea', last.sea_state],
+              ['Sky', last.weather],
+              ['Visibility', last.visibility],
+              ['Propulsion', last.propulsion],
+              ['Baro', last.baro_mb != null ? last.baro_mb + ' mb' : null],
+              ['Notes', last.notes],
+            ].filter(function (f) {
+              return f[1];
+            });
+            return (
+              <div
+                style={{
+                  background: 'rgba(77,166,255,0.08)',
+                  border: '1px solid rgba(77,166,255,0.25)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                  marginBottom: 12,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: 'rgba(77,166,255,0.85)',
+                      letterSpacing: 0.6,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Last watch entry · {last.entry_time}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                    gap: '8px 16px',
+                  }}
+                >
+                  {facts.map(function (f) {
+                    return (
+                      <div key={f[0]}>
+                        <div
+                          style={{
+                            fontSize: 9,
+                            color: 'rgba(255,255,255,0.4)',
+                            letterSpacing: 0.4,
+                            textTransform: 'uppercase',
+                            marginBottom: 2,
+                          }}
+                        >
+                          {f[0]}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: '#fff',
+                            fontWeight: 500,
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {f[1]}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+        {/* Watch entries table — full chronological log of the active
+            passage. Newest at top so the relieving watch sees the most
+            recent first; scroll down for older entries. */}
         {watchEntries.length > 0 && (
           <div style={{ marginBottom: 12, overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead>
                 <tr>
-                  {['Time', 'Position', 'COG', 'SOG', 'Wind', 'Notes'].map(function (h) {
-                    return (
-                      <th
-                        key={h}
-                        style={{
-                          color: 'rgba(255,255,255,0.35)',
-                          fontWeight: 600,
-                          textAlign: 'left',
-                          padding: '4px 8px 8px 0',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {h}
-                      </th>
-                    );
-                  })}
+                  {['Time', 'Position', 'COG', 'SOG', 'Wind', 'Sea', 'Sky', 'Vis', 'Mode', 'Notes'].map(
+                    function (h) {
+                      return (
+                        <th
+                          key={h}
+                          style={{
+                            color: 'rgba(255,255,255,0.35)',
+                            fontWeight: 600,
+                            textAlign: 'left',
+                            padding: '4px 8px 8px 0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {h}
+                        </th>
+                      );
+                    }
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {watchEntries.map(function (we) {
-                  return (
-                    <tr key={we.id} style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                      <td
-                        style={{
-                          color: '#fff',
-                          padding: '7px 8px 7px 0',
-                          fontFamily: 'DM Mono, monospace',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {we.entry_time}
-                      </td>
-                      <td
-                        style={{
-                          color: 'rgba(255,255,255,0.7)',
-                          padding: '7px 8px 7px 0',
-                          maxWidth: 120,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {we.position || '—'}
-                      </td>
-                      <td
-                        style={{
-                          color: 'rgba(255,255,255,0.7)',
-                          padding: '7px 8px 7px 0',
-                          fontFamily: 'DM Mono, monospace',
-                        }}
-                      >
-                        {we.course_deg != null ? we.course_deg + '°' : '—'}
-                      </td>
-                      <td
-                        style={{
-                          color: 'rgba(255,255,255,0.7)',
-                          padding: '7px 8px 7px 0',
-                          fontFamily: 'DM Mono, monospace',
-                        }}
-                      >
-                        {we.speed_kts != null ? we.speed_kts + ' kt' : '—'}
-                      </td>
-                      <td
-                        style={{
-                          color: 'rgba(255,255,255,0.7)',
-                          padding: '7px 8px 7px 0',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {we.wind_dir && we.wind_speed_kts
-                          ? we.wind_dir + ' ' + we.wind_speed_kts + 'kt'
-                          : we.wind_dir || '—'}
-                      </td>
-                      <td
-                        style={{
-                          color: 'rgba(255,255,255,0.5)',
-                          padding: '7px 0 7px 0',
-                          maxWidth: 140,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {we.notes || ''}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {watchEntries
+                  .slice()
+                  .sort(function (a, b) {
+                    return b.entry_time.localeCompare(a.entry_time);
+                  })
+                  .map(function (we) {
+                    return (
+                      <tr key={we.id} style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                        <td
+                          style={{
+                            color: '#fff',
+                            padding: '7px 8px 7px 0',
+                            fontFamily: 'DM Mono, monospace',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.entry_time}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.7)',
+                            padding: '7px 8px 7px 0',
+                            maxWidth: 110,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.position || '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.7)',
+                            padding: '7px 8px 7px 0',
+                            fontFamily: 'DM Mono, monospace',
+                          }}
+                        >
+                          {we.course_deg != null ? we.course_deg + '°' : '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.7)',
+                            padding: '7px 8px 7px 0',
+                            fontFamily: 'DM Mono, monospace',
+                          }}
+                        >
+                          {we.speed_kts != null ? we.speed_kts + ' kt' : '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.7)',
+                            padding: '7px 8px 7px 0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.wind_dir && we.wind_speed_kts
+                            ? we.wind_dir + ' ' + we.wind_speed_kts + 'kt'
+                            : we.wind_dir || '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.6)',
+                            padding: '7px 8px 7px 0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.sea_state || '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.6)',
+                            padding: '7px 8px 7px 0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.weather || '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.6)',
+                            padding: '7px 8px 7px 0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.visibility || '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.6)',
+                            padding: '7px 8px 7px 0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.propulsion || '—'}
+                        </td>
+                        <td
+                          style={{
+                            color: 'rgba(255,255,255,0.5)',
+                            padding: '7px 0 7px 0',
+                            maxWidth: 140,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.notes || ''}
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -2319,6 +2522,81 @@ export default function LogbookPage({
                 />
               </div>
             </div>
+            {/* ── Advanced row: Sea / Weather / Visibility / Propulsion ────
+                Optional pills. Sized small to keep watch entry quick to log
+                from a phone in the cockpit. Setting any of these gives the
+                relieving watch much richer context on what the boat was
+                doing on the previous shift. */}
+            {(function () {
+              const pillBase = {
+                padding: '6px 12px',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                borderRadius: 14,
+                whiteSpace: 'nowrap',
+              };
+              const renderPills = function (field, options) {
+                return (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {options.map(function (opt) {
+                      const value = typeof opt === 'string' ? opt : opt.value;
+                      const label = typeof opt === 'string' ? opt : opt.label;
+                      const active = watchForm[field] === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={function () {
+                            setWatchForm(function (f) {
+                              return { ...f, [field]: active ? '' : value };
+                            });
+                          }}
+                          style={{
+                            ...pillBase,
+                            border:
+                              '0.5px solid ' +
+                              (active ? 'rgba(77,166,255,0.6)' : 'rgba(255,255,255,0.15)'),
+                            background: active
+                              ? 'rgba(77,166,255,0.2)'
+                              : 'rgba(255,255,255,0.04)',
+                            color: active ? '#4da6ff' : 'rgba(255,255,255,0.55)',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              };
+              const labelStyle = {
+                fontSize: 10,
+                color: 'rgba(255,255,255,0.4)',
+                marginBottom: 4,
+                letterSpacing: 0.4,
+              };
+              return (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={labelStyle}>SEA</div>
+                    {renderPills('sea_state', SEA_STATES)}
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={labelStyle}>WEATHER</div>
+                    {renderPills('weather', WEATHER_STATES)}
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={labelStyle}>VISIBILITY</div>
+                    {renderPills('visibility', VISIBILITY_OPTS)}
+                  </div>
+                  <div>
+                    <div style={labelStyle}>PROPULSION</div>
+                    {renderPills('propulsion', PROPULSION_OPTS)}
+                  </div>
+                </div>
+              );
+            })()}
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={function () {
@@ -2725,7 +3003,7 @@ export default function LogbookPage({
                             {entry.sea_state}
                           </span>
                         )}
-                        {entry.conditions && (
+                        {(entry.weather || entry.conditions) && (
                           <span
                             style={{
                               fontSize: 10,
@@ -2736,7 +3014,7 @@ export default function LogbookPage({
                               background: 'var(--bg-subtle)',
                             }}
                           >
-                            {entry.conditions}
+                            {entry.weather || entry.conditions}
                           </span>
                         )}
                       </div>
@@ -2912,7 +3190,7 @@ export default function LogbookPage({
                 }
                 // Section 1 — passage summaries
                 const rows = [
-                  'Date,From,To,Distance (nm),Departed,Arrived,Sea State,Conditions,Crew,Notes',
+                  'Date,From,To,Distance (nm),Departed,Arrived,Sea State,Weather,Conditions (legacy),Crew,Notes',
                 ];
                 passages.forEach(function (e) {
                   rows.push(
@@ -2924,6 +3202,7 @@ export default function LogbookPage({
                       e.departure_time || '',
                       e.arrival_time || '',
                       e.sea_state || '',
+                      e.weather || '',
                       e.conditions || '',
                       e.crew || '',
                       (e.notes || '').replace(/,/g, '；'),
@@ -2937,7 +3216,9 @@ export default function LogbookPage({
                 if (hasAny) {
                   rows.push('');
                   rows.push('Watch Log');
-                  rows.push('Passage,Date,Time,Position,COG,SOG,Wind Dir,Wind Kt,Baro,Notes');
+                  rows.push(
+                    'Passage,Date,Time,Position,COG,SOG,Wind Dir,Wind Kt,Baro,Sea State,Weather,Visibility,Propulsion,Notes'
+                  );
                   passages.forEach(function (e) {
                     var wes = watchByPassage[e.id] || [];
                     wes.forEach(function (w) {
@@ -2956,6 +3237,10 @@ export default function LogbookPage({
                           w.wind_dir || '',
                           w.wind_speed_kts || '',
                           w.baro_mb || '',
+                          w.sea_state || '',
+                          w.weather || '',
+                          w.visibility || '',
+                          w.propulsion || '',
                           (w.notes || '').replace(/,/g, '；'),
                         ].join(',')
                       );
@@ -3292,8 +3577,13 @@ export default function LogbookPage({
                       ['Departed', e.departure_time],
                       ['Arrived', e.arrival_time],
                       ['Crew', e.crew],
-                      ['Conditions', e.conditions],
+                      ['Weather', e.weather],
                       ['Sea state', e.sea_state],
+                      // Legacy "Conditions" — only shown when present, since
+                      // new entries don't write this field anymore. Hidden
+                      // entirely when null/empty so it doesn't clutter the
+                      // grid for new passages.
+                      ...(e.conditions ? [['Conditions', e.conditions]] : []),
                       ['Engine hrs end', e.hours_end],
                     ].map(function (pair) {
                       return (
@@ -3348,25 +3638,34 @@ export default function LogbookPage({
                           >
                             <thead>
                               <tr>
-                                {['Time', 'Position', 'COG', 'SOG', 'Wind', 'Notes'].map(
-                                  function (h) {
-                                    return (
-                                      <th
-                                        key={h}
-                                        style={{
-                                          fontSize: 9,
-                                          fontWeight: 700,
-                                          color: 'var(--text-muted)',
-                                          textAlign: 'left',
-                                          padding: '0 8px 7px 0',
-                                          whiteSpace: 'nowrap',
-                                        }}
-                                      >
-                                        {h}
-                                      </th>
-                                    );
-                                  }
-                                )}
+                                {[
+                                  'Time',
+                                  'Position',
+                                  'COG',
+                                  'SOG',
+                                  'Wind',
+                                  'Sea',
+                                  'Sky',
+                                  'Vis',
+                                  'Mode',
+                                  'Notes',
+                                ].map(function (h) {
+                                  return (
+                                    <th
+                                      key={h}
+                                      style={{
+                                        fontSize: 9,
+                                        fontWeight: 700,
+                                        color: 'var(--text-muted)',
+                                        textAlign: 'left',
+                                        padding: '0 8px 7px 0',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {h}
+                                    </th>
+                                  );
+                                })}
                               </tr>
                             </thead>
                             <tbody>
@@ -3429,6 +3728,42 @@ export default function LogbookPage({
                                       {we.wind_dir && we.wind_speed_kts
                                         ? we.wind_dir + ' ' + we.wind_speed_kts + 'kt'
                                         : we.wind_dir || '—'}
+                                    </td>
+                                    <td
+                                      style={{
+                                        padding: '7px 8px 7px 0',
+                                        color: 'var(--text-muted)',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {we.sea_state || '—'}
+                                    </td>
+                                    <td
+                                      style={{
+                                        padding: '7px 8px 7px 0',
+                                        color: 'var(--text-muted)',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {we.weather || '—'}
+                                    </td>
+                                    <td
+                                      style={{
+                                        padding: '7px 8px 7px 0',
+                                        color: 'var(--text-muted)',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {we.visibility || '—'}
+                                    </td>
+                                    <td
+                                      style={{
+                                        padding: '7px 8px 7px 0',
+                                        color: 'var(--text-muted)',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {we.propulsion || '—'}
                                     </td>
                                     <td
                                       style={{
