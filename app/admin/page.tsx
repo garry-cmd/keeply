@@ -387,6 +387,47 @@ export default function AdminPage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteResult, setDeleteResult] = useState<string | null>(null);
 
+  // Push notification end-to-end test (fires to admin user only)
+  const [testPushBusy, setTestPushBusy] = useState(false);
+  const [testPushResult, setTestPushResult] = useState<string | null>(null);
+
+  const performTestPush = useCallback(async () => {
+    setTestPushBusy(true);
+    setTestPushResult(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setTestPushResult('Error: not authenticated');
+        return;
+      }
+      const r = await fetch('/api/admin/test-push', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        setTestPushResult(`Error: ${data.error || 'HTTP ' + r.status}`);
+        return;
+      }
+      if (data.message) {
+        setTestPushResult(data.message);
+      } else {
+        setTestPushResult(
+          `Sent ${data.sent}/${data.total} · expired ${data.expired} · failed ${data.failed}`
+        );
+      }
+    } catch (e) {
+      setTestPushResult(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setTestPushBusy(false);
+    }
+  }, []);
+
   const performDelete = useCallback(async () => {
     if (!deleteTarget) return;
     setDeleteBusy(true);
@@ -1487,6 +1528,40 @@ export default function AdminPage() {
               value={lists.haulout.count}
               sub={`${lists.haulout.vessels} vessel${lists.haulout.vessels === 1 ? '' : 's'}`}
             />
+          </div>
+        </div>
+
+        {/* ── Diagnostics ──────────────────────────────────────────────────── */}
+        <div style={s.sec}>
+          <div style={s.sl}>Diagnostics</div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' as const }}>
+            <button
+              onClick={performTestPush}
+              disabled={testPushBusy}
+              style={{
+                ...s.link,
+                cursor: testPushBusy ? 'wait' : 'pointer',
+                opacity: testPushBusy ? 0.6 : 1,
+              }}
+            >
+              <span style={{ fontSize: 14 }}>🔔</span>
+              <span>{testPushBusy ? 'Sending…' : 'Send test push'}</span>
+            </button>
+            {testPushResult && (
+              <span
+                style={{
+                  fontSize: 11,
+                  color: testPushResult.startsWith('Error') ? red : muted,
+                  fontFamily: sans,
+                }}
+              >
+                {testPushResult}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 10, color: muted, marginTop: 8, fontFamily: sans }}>
+            Fires a notification to your own push subscriptions only. Use this to validate
+            VAPID + service worker + delivery end-to-end after enabling push on a device.
           </div>
         </div>
 

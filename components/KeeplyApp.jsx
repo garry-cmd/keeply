@@ -2365,6 +2365,13 @@ export default function App() {
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [pushStatus, setPushStatus] = useState('unknown'); // unknown | unsupported | denied | granted | subscribed
+  // Post-onboarding push enrollment modal — fires once after first vessel
+  // creation completes, only when push is supported and not yet subscribed.
+  // Per-user dismissal stored in localStorage so it doesn't pester anyone.
+  const [showPushOnboarding, setShowPushOnboarding] = useState(false);
+  // My Boat banner dismissal — sessionStorage so it returns next session if
+  // the user still hasn't enabled and still has overdue tasks.
+  const [pushBannerDismissed, setPushBannerDismissed] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({ category: 'General Feedback', message: '' });
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -2647,6 +2654,9 @@ export default function App() {
     try {
       if (sessionStorage.getItem('keeply_verify_dismissed') === '1') {
         setVerifyDismissed(true);
+      }
+      if (sessionStorage.getItem('keeply_push_banner_dismissed') === '1') {
+        setPushBannerDismissed(true);
       }
     } catch (e) {}
   }, []);
@@ -4857,6 +4867,37 @@ export default function App() {
     }
   };
 
+  // Called from VesselSetup onComplete callbacks. Decides whether to show
+  // the post-onboarding push enrollment modal — the highest-leverage moment
+  // to ask, since the user just had a successful experience and is engaged.
+  // Skip conditions:
+  //   - browser doesn't support push (irrelevant ask)
+  //   - user already subscribed (modal would be confusing)
+  //   - user previously dismissed the modal (don't pester — once is enough)
+  //   - permission already denied (system prompt won't re-show; user must
+  //     change browser setting manually, so the modal would be a dead end)
+  //   - iOS Safari without PWA install (push won't work; the Settings panel
+  //     toggle copy already explains the install requirement, no need to
+  //     duplicate that here in modal form)
+  // Slight delay so the modal doesn't compete visually with the My Boat
+  // initial paint that happens immediately after onComplete.
+  const maybeShowPushOnboarding = function () {
+    try {
+      if (typeof window === 'undefined') return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (isIOS && !isPWA) return;
+      if (typeof Notification === 'undefined') return;
+      if (Notification.permission === 'denied') return;
+      if (pushStatus === 'subscribed') return;
+      if (localStorage.getItem('keeply_push_onboarding_dismissed') === '1') return;
+      setTimeout(function () {
+        setShowPushOnboarding(true);
+      }, 600);
+    } catch (e) {
+      // Fail silent — modal is a nice-to-have, not a critical path
+    }
+  };
+
   // ── Vessel admin tasks ────────────────────────────────────────────────────
   const loadVesselAdminTasks = async function (vesselId) {
     if (!vesselId) return;
@@ -6900,6 +6941,10 @@ export default function App() {
           createDefaultSafetyEquipment(vessel.id);
           // Load all equipment and tasks that were just created by AI onboarding
           switchVessel(vessel.id);
+          // Highest-leverage moment to ask for push permission — user just
+          // had a successful onboarding flow and is engaged. Modal handles
+          // its own skip conditions (already subscribed, dismissed, etc.)
+          maybeShowPushOnboarding();
           // Stripe is now triggered immediately after signup in LandingPage.jsx
         }}
       />
@@ -6944,6 +6989,7 @@ export default function App() {
           createDefaultSafetyEquipment(vessel.id);
           // switchVessel reloads equipment/tasks/repairs for the new vessel
           switchVessel(vessel.id);
+          maybeShowPushOnboarding();
           setShowVesselSetup(false);
         }}
       />
@@ -12758,6 +12804,102 @@ export default function App() {
                 </button>
               </div>
             )}
+
+            {/* ── Push notification enrollment banner ────────────────────
+                Shows on My Boat when: push is supported, user is not yet
+                subscribed, has overdue tasks (so the offer is contextually
+                relevant), and the banner hasn't been dismissed this session.
+                Identical visual pattern to the engine-info banner above. */}
+            {(function () {
+              if (pushBannerDismissed) return null;
+              if (pushStatus !== 'unknown') return null; // hide for subscribed/denied/unsupported/ios-browser
+              const overdueForBanner = tasks.filter(function (t) {
+                return (
+                  t._vesselId === activeVesselId &&
+                  (getTaskUrgency(t) === 'critical' || getTaskUrgency(t) === 'overdue')
+                );
+              }).length;
+              if (overdueForBanner === 0) return null;
+              return (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: '14px 16px',
+                    borderRadius: 12,
+                    background: 'rgba(245,166,35,0.08)',
+                    border: '1px solid rgba(245,166,35,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: '#f5a623',
+                        marginBottom: 2,
+                      }}
+                    >
+                      {overdueForBanner > 1
+                        ? 'You have ' + overdueForBanner + ' overdue items'
+                        : 'You have an overdue item'}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--text-secondary)',
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Get reminders on your phone so nothing slips again.
+                    </div>
+                  </div>
+                  <button
+                    onClick={function () {
+                      enablePushNotifications();
+                    }}
+                    style={{
+                      background: '#f5a623',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '8px 14px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Enable
+                  </button>
+                  <button
+                    onClick={function () {
+                      try {
+                        sessionStorage.setItem('keeply_push_banner_dismissed', '1');
+                      } catch (e) {}
+                      setPushBannerDismissed(true);
+                    }}
+                    title="Dismiss"
+                    style={{
+                      background: 'transparent',
+                      color: 'var(--text-muted)',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '4px 8px',
+                      fontSize: 18,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* Urgency summary cards */}
             {(function () {
@@ -28869,6 +29011,112 @@ export default function App() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Post-onboarding push notification modal ──────────────────────
+          Fires once after first vessel creation when push is supported,
+          not yet subscribed, and not previously dismissed. Captures the
+          highest-leverage moment: the user just had a successful AI
+          onboarding flow and is engaged. */}
+      {showPushOnboarding && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'var(--bg-overlay)',
+            zIndex: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={function () {
+            try {
+              localStorage.setItem('keeply_push_onboarding_dismissed', '1');
+            } catch (e) {}
+            setShowPushOnboarding(false);
+          }}
+        >
+          <div
+            onClick={function (e) {
+              e.stopPropagation();
+            }}
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 380,
+              padding: 24,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔔</div>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                marginBottom: 8,
+              }}
+            >
+              Get reminders on your phone
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.5,
+                marginBottom: 20,
+              }}
+            >
+              Keeply can notify you when maintenance is overdue or due soon.
+              One reminder a day max — never spam.
+            </div>
+            <button
+              onClick={async function () {
+                setShowPushOnboarding(false);
+                try {
+                  localStorage.setItem('keeply_push_onboarding_dismissed', '1');
+                } catch (e) {}
+                await enablePushNotifications();
+              }}
+              style={{
+                width: '100%',
+                background: 'var(--brand)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                padding: '12px 16px',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginBottom: 8,
+              }}
+            >
+              Enable notifications
+            </button>
+            <button
+              onClick={function () {
+                try {
+                  localStorage.setItem('keeply_push_onboarding_dismissed', '1');
+                } catch (e) {}
+                setShowPushOnboarding(false);
+              }}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                color: 'var(--text-muted)',
+                border: 'none',
+                padding: '8px 16px',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              Maybe later
+            </button>
           </div>
         </div>
       )}
