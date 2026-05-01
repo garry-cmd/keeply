@@ -104,17 +104,6 @@ const DISPLAY_PLANS = [
 // "Before you sign up" section there so wording stays consistent.
 const FAQS: Array<{ q: string; a: string }> = [
   {
-    q: 'Is there really a free plan?',
-    a:
-      'Yes — Keeply is free to start with no credit card required. The free plan covers 1 vessel, ' +
-      PRICING_CONFIG.free.equipment +
-      ' equipment cards, ' +
-      PRICING_CONFIG.free.repairs +
-      ' repairs, unlimited maintenance tasks, and ' +
-      PRICING_CONFIG.free.firstMate +
-      ' First Mate AI queries per month.',
-  },
-  {
     q: "What's the difference between Standard and Pro?",
     a:
       'Standard ($' +
