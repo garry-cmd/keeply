@@ -93,7 +93,10 @@ function VesselSetupLoader() {
 // the ICP majority) so the user is never stuck.
 //
 // `userPlan` is used to cap AI-generated equipment for Free users:
-// Free is limited to 2 equipment cards (engine + 1 other). Standard/Pro
+// Free is limited to 3 equipment cards total — engine + Safety Equipment +
+// 1 other AI item. We slice AI output to (limit - 1) here and the parent
+// (KeeplyApp.onComplete) creates the Safety Equipment card via
+// createDefaultSafetyEquipment, filling the reserved slot. Standard/Pro
 // receive the full AI output. The cap fires silently — additional gear
 // the AI identified is dropped, and the upgrade prompt appears later
 // when the user tries to add more equipment manually.
@@ -537,14 +540,17 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
 
       const enrichedEquipment = engineCards.concat(nonEngineAi);
 
-      // Plan cap: Free users get 2 equipment cards total (engine + 1 other).
-      // Engine cards come first in `enrichedEquipment`, so slicing here
-      // preserves the engine and trims the long tail. Standard/Pro pass
-      // through unchanged (limit = -1).
+      // Plan cap: Free users get 3 equipment cards total (engine +
+      // Safety Equipment + 1 other). Engine cards come first in
+      // `enrichedEquipment`, so slicing here preserves the engine and
+      // trims the long tail. Reserve one slot for the Safety Equipment
+      // card, which is created post-onboarding by
+      // KeeplyApp.createDefaultSafetyEquipment. Standard/Pro pass through
+      // unchanged (limit = -1).
       const planEquipLimit = getEquipmentLimit(userPlan);
       const cappedEquipment = planEquipLimit === -1
         ? enrichedEquipment
-        : enrichedEquipment.slice(0, planEquipLimit);
+        : enrichedEquipment.slice(0, Math.max(1, planEquipLimit - 1));
 
       // ── Persist AI-generated equipment + tasks ─────────
       for (const item of cappedEquipment) {

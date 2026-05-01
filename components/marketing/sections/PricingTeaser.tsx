@@ -28,7 +28,7 @@ const TEASER_PLANS: TeaserPlan[] = [
     price: '$0',
     priceSuffix: '',
     tag: '',
-    bullets: ['1 vessel', '2 equipment cards', '5 First Mate AI queries / month'],
+    bullets: ['1 vessel', '3 equipment cards', '5 First Mate AI queries / month'],
     highlight: false,
   },
   {

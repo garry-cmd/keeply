@@ -15,7 +15,7 @@ const SECTIONS = [
     faqs: [
       {
         q: 'Is there a free plan?',
-        a: 'Yes — Keeply is free to start with no credit card required. The free plan includes 1 vessel, 10 equipment cards, unlimited maintenance and repairs, and 5 First Mate AI queries per month.',
+        a: 'Yes — Keeply is free to start with no credit card required. The free plan includes 1 vessel, 3 equipment cards, unlimited maintenance and repairs, and 5 First Mate AI queries per month.',
       },
       {
         q: "What's the difference between Standard and Pro?",
@@ -35,7 +35,7 @@ const SECTIONS = [
       },
       {
         q: 'Can I try it before paying?',
-        a: 'Yes. The free plan has no time limit and no credit card required. For many boaters — especially those with a single, straightforward vessel — the free plan is all you need. It covers 1 vessel, 10 equipment cards, unlimited maintenance and repairs, and 5 First Mate AI queries per month. If you have a more complex boat, lots of equipment, or want the full logbook and repair history, Standard or Pro will serve you better.',
+        a: 'Yes. The free plan has no time limit and no credit card required. For many boaters — especially those with a single, straightforward vessel — the free plan is all you need. It covers 1 vessel, 3 equipment cards, unlimited maintenance and repairs, and 5 First Mate AI queries per month. If you have a more complex boat, lots of equipment, or want the full logbook and repair history, Standard or Pro will serve you better.',
       },
       {
         q: 'What payment methods do you accept?',

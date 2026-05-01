@@ -3844,6 +3844,7 @@ export default function App() {
         });
         switchVessel(nv.id);
         createDefaultAdminTasks(nv.id, userId); // Pre-populate admin tasks
+        createDefaultSafetyEquipment(nv.id); // Pre-populate Safety Equipment card + 6 tasks
         (async function () {
           var freshEq = await supa('equipment', {
             query: 'vessel_id=eq.' + nv.id + '&category=eq.Engine&limit=1',
@@ -3901,8 +3902,9 @@ export default function App() {
   const addEquipment = async function () {
     if (!newEquip.name.trim()) return;
 
-    // Plan gate: Free users are limited to 2 equipment cards (engine + 1 other,
-    // typically established during AI onboarding). Paid plans are unlimited.
+    // Plan gate: Free users are limited to 3 equipment cards (engine + Safety
+    // Equipment + 1 other, typically established during AI onboarding).
+    // Paid plans are unlimited.
     const currentCount = equipment.filter(function (e) {
       return e._vesselId === activeVesselId && e.category !== 'Vessel';
     }).length;
@@ -5032,6 +5034,140 @@ export default function App() {
     }
   };
 
+  // Seed the universal Safety Equipment card on a new vessel — one equipment
+  // row with 6 USCG-aligned maintenance tasks. Idempotent: skips if a card
+  // named 'Safety Equipment' with category 'Safety' already exists. Pushes
+  // both the equipment row and the tasks into local state so the user sees
+  // them immediately regardless of switchVessel ordering at the call site.
+  const createDefaultSafetyEquipment = async function (vesselId) {
+    if (!vesselId) return;
+    try {
+      const existing = await supa('equipment', {
+        query:
+          'vessel_id=eq.' +
+          vesselId +
+          '&category=eq.Safety&name=eq.Safety%20Equipment&limit=1',
+      });
+      if (existing && existing.length) return;
+
+      const created = await supa('equipment', {
+        method: 'POST',
+        body: {
+          vessel_id: vesselId,
+          name: 'Safety Equipment',
+          category: 'Safety',
+          status: 'good',
+          notes:
+            'USCG-required safety gear. Manage flares, fire extinguishers, life jackets, throwable PFD, sound signaling device, and visual distress signals.',
+        },
+        prefer: 'return=representation',
+      });
+      if (!created || !created.length) return;
+      const eqRow = created[0];
+
+      const now2 = today();
+      const SAFETY_TASKS = [
+        { task: 'Flares — replace', interval_days: 1278, priority: 'critical' },
+        {
+          task: 'Fire extinguishers — inspect (replace every 12 years)',
+          interval_days: 365,
+          priority: 'critical',
+        },
+        { task: 'Life jackets — annual visual check', interval_days: 365, priority: 'high' },
+        { task: 'Throwable PFD — annual check', interval_days: 365, priority: 'high' },
+        {
+          task: 'Sound signaling device — annual function check',
+          interval_days: 365,
+          priority: 'medium',
+        },
+        { task: 'Visual distress signal kit — annual check', interval_days: 365, priority: 'high' },
+      ];
+      const payloads = SAFETY_TASKS.map(function (t) {
+        return {
+          vessel_id: vesselId,
+          equipment_id: eqRow.id,
+          task: t.task,
+          section: 'Safety',
+          interval_days: t.interval_days,
+          priority: t.priority,
+          last_service: null,
+          due_date: addDays(now2, t.interval_days),
+          service_logs: [],
+          attachments: [],
+          photos: [],
+        };
+      });
+      const createdTasks = await supa('maintenance_tasks', {
+        method: 'POST',
+        body: payloads,
+        prefer: 'return=representation',
+      });
+
+      // Reflect in local state — dedupe by id so a concurrent switchVessel
+      // reload doesn't double-add the same row.
+      setEquipment(function (prev) {
+        if (
+          prev.some(function (e) {
+            return e.id === eqRow.id;
+          })
+        )
+          return prev;
+        return [
+          ...prev,
+          {
+            id: eqRow.id,
+            name: eqRow.name,
+            category: eqRow.category,
+            status: eqRow.status || 'good',
+            lastService: eqRow.last_service || null,
+            notes: eqRow.notes || '',
+            customParts: [],
+            docs: [],
+            logs: [],
+            engine_id: null,
+            _vesselId: vesselId,
+          },
+        ];
+      });
+      if (createdTasks && createdTasks.length) {
+        setTasks(function (prev) {
+          const ids = new Set(
+            prev.map(function (t) {
+              return t.id;
+            }),
+          );
+          const fresh = createdTasks
+            .filter(function (t) {
+              return !ids.has(t.id);
+            })
+            .map(function (t) {
+              return {
+                id: t.id,
+                section: t.section,
+                task: t.task,
+                interval: t.interval_days + ' days',
+                interval_days: t.interval_days,
+                priority: t.priority,
+                lastService: t.last_service,
+                dueDate: t.due_date,
+                serviceLogs: [],
+                photos: [],
+                interval_hours: null,
+                last_service_hours: null,
+                due_hours: null,
+                pendingComment: '',
+                _vesselId: t.vessel_id,
+                equipment_id: t.equipment_id,
+              };
+            });
+          return [...prev, ...fresh];
+        });
+      }
+    } catch (e) {
+      console.error('createDefaultSafetyEquipment error:', e);
+    }
+  };
+
   const completeAdminTask = async function (task, vesselId) {
     setCompletingAdminTask(task.id);
     const serviceDate = today();
@@ -5178,56 +5314,9 @@ export default function App() {
       interval_months: 24,
       notes: 'Renew every 2 years with BoatUS or USPS',
     },
-    // Safety equipment
-    {
-      name: 'Flares — expiry check',
-      category: 'safety',
-      icon: '🔴',
-      interval_months: 42,
-      notes: 'USCG requires non-expired visual distress signals',
-    },
-    {
-      name: 'EPIRB battery replacement',
-      category: 'safety',
-      icon: '🚨',
-      interval_months: 60,
-      notes: 'Battery expires every 5 years',
-    },
-    {
-      name: 'EPIRB NOAA registration',
-      category: 'safety',
-      icon: '🛰️',
-      interval_months: 24,
-      notes: 'Register/renew at beaconregistration.noaa.gov',
-    },
-    {
-      name: 'Life raft service & re-cert',
-      category: 'safety',
-      icon: '🔵',
-      interval_months: 36,
-      notes: 'Every 3 years — includes hydrostatic release',
-    },
-    {
-      name: 'Fire extinguisher inspection',
-      category: 'safety',
-      icon: '🧯',
-      interval_months: 12,
-      notes: 'Annual professional service per NFPA',
-    },
-    {
-      name: 'PFD inspection & service',
-      category: 'safety',
-      icon: '🦺',
-      interval_months: 12,
-      notes: 'Inspect inflatables — rearming kit & CO₂ cylinder',
-    },
-    {
-      name: 'Bilge pump test',
-      category: 'safety',
-      icon: '💧',
-      interval_months: 1,
-      notes: 'Test all bilge pumps — manual and automatic',
-    },
+    // Safety equipment moved to its own user-deletable Safety Equipment
+    // equipment card (see createDefaultSafetyEquipment) — no longer
+    // tracked here as Admin tab items.
     // Surveys & inspections
     {
       name: 'Marine survey',
@@ -6023,7 +6112,7 @@ export default function App() {
     try {
       if (importType === 'equipment') {
         // Plan gate: truncate the import to whatever slots remain on the
-        // user's plan. Free users with 1 of 2 equipment used can import 1 row;
+        // user's plan. Free users with 2 of 3 equipment used can import 1 row;
         // those at limit see the upgrade modal.
         const currentEquipCount = equipment.filter(function (e) {
           return e._vesselId === activeVesselId && e.category !== 'Vessel';
@@ -6808,6 +6897,7 @@ export default function App() {
           setActiveVesselId(vessel.id);
           localStorage.setItem('keeply_active_vessel', vessel.id);
           createDefaultAdminTasks(vessel.id, session.user.id);
+          createDefaultSafetyEquipment(vessel.id);
           // Load all equipment and tasks that were just created by AI onboarding
           switchVessel(vessel.id);
           // Stripe is now triggered immediately after signup in LandingPage.jsx
@@ -6851,6 +6941,7 @@ export default function App() {
           setActiveVesselId(vessel.id);
           localStorage.setItem('keeply_active_vessel', vessel.id);
           createDefaultAdminTasks(vessel.id, session.user.id);
+          createDefaultSafetyEquipment(vessel.id);
           // switchVessel reloads equipment/tasks/repairs for the new vessel
           switchVessel(vessel.id);
           setShowVesselSetup(false);
@@ -10848,7 +10939,6 @@ export default function App() {
                           const loading = adminTaskLoading[vesselEq._vesselId];
                           const GROUPS = [
                             { key: 'registrations', label: 'Registrations & legal' },
-                            { key: 'safety', label: 'Safety equipment' },
                             { key: 'surveys', label: 'Surveys & inspections' },
                           ];
                           const statusBadge = function (task) {
@@ -11529,7 +11619,6 @@ export default function App() {
                                         }}
                                       >
                                         <option value="registrations">Registrations & legal</option>
-                                        <option value="safety">Safety equipment</option>
                                         <option value="surveys">Surveys & inspections</option>
                                       </select>
                                     </div>
