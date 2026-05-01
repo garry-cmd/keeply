@@ -5058,7 +5058,7 @@ export default function App() {
           category: 'Safety',
           status: 'good',
           notes:
-            'USCG-required safety gear. Manage flares, fire extinguishers, life jackets, throwable PFD, sound signaling device, and visual distress signals.',
+            'USCG Class 2 baseline (recreational vessels 26 to <40 ft). Add tasks if your vessel is 40+ ft (bell required) or has a gas inboard (backfire flame arrestor + ventilation required).',
         },
         prefer: 'return=representation',
       });
