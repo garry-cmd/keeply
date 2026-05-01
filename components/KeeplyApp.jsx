@@ -2365,6 +2365,13 @@ export default function App() {
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [pushStatus, setPushStatus] = useState('unknown'); // unknown | unsupported | denied | granted | subscribed
+  // Resync UI state — when user taps the "Re-sync" link in Settings to
+  // force a fresh POST to /api/push/subscribe. Used to repair the
+  // browser-says-subscribed-but-DB-doesn't-have-the-row case (e.g. user
+  // enabled push on this device months ago, then signed out / signed in
+  // as a different account, or our deploy lost the row).
+  const [pushSyncing, setPushSyncing] = useState(false);
+  const [pushSyncResult, setPushSyncResult] = useState(null);
   // Post-onboarding push enrollment modal — fires once after first vessel
   // creation completes, only when push is supported and not yet subscribed.
   // Per-user dismissal stored in localStorage so it doesn't pester anyone.
@@ -4788,6 +4795,28 @@ export default function App() {
     (window.navigator.standalone === true ||
       window.matchMedia('(display-mode: standalone)').matches);
 
+  // POST a PushSubscription object to our backend so the cron can deliver to
+  // it. Idempotent — backend upserts on (user_id, endpoint). Returns true
+  // on a 2xx, false on anything else (caller decides what to do with it).
+  const pushSubscriptionToServer = async function (sub) {
+    if (!sub || !session?.user?.id) return false;
+    try {
+      const r = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          userId: session.user.id,
+          vesselId: activeVesselId,
+        }),
+      });
+      return r.ok;
+    } catch (e) {
+      console.error('pushSubscriptionToServer error:', e);
+      return false;
+    }
+  };
+
   useEffect(function () {
     if (
       typeof window === 'undefined' ||
@@ -4807,7 +4836,21 @@ export default function App() {
       .then(function (reg) {
         if (Notification.permission === 'granted') {
           reg.pushManager.getSubscription().then(function (sub) {
-            setPushStatus(sub ? 'subscribed' : 'unknown');
+            if (sub) {
+              setPushStatus('subscribed');
+              // Self-heal: the browser thinks it's subscribed (has a valid
+              // PushSubscription locally), but our DB row may have been
+              // wiped by a prior account switch, an admin cleanup, or the
+              // cron pruning a 410-expired row. Silently re-POST so the
+              // backend has what it needs to deliver. Idempotent upsert,
+              // safe to call on every load. Wait until session is loaded
+              // (effect on session below handles that case).
+              if (session?.user?.id) {
+                pushSubscriptionToServer(sub);
+              }
+            } else {
+              setPushStatus('unknown');
+            }
           });
         } else if (Notification.permission === 'denied') {
           setPushStatus('denied');
@@ -4819,7 +4862,8 @@ export default function App() {
         console.error('SW registration failed:', e);
         setPushStatus('unsupported');
       });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   const subscribeToPush = async function () {
     try {
@@ -4829,20 +4873,66 @@ export default function App() {
         applicationServerKey:
           'BJBQZXAhmXHRT7ydVu_D53evImmg-_Cdl2SxFvuATUUbHj3YJGXBk5K-3drehkRDrhAlkmQe6XoIipC66jxWkRY',
       });
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subscription: sub,
-          userId: session?.user?.id,
-          vesselId: activeVesselId,
-        }),
-      });
-      setPushStatus('subscribed');
+      const ok = await pushSubscriptionToServer(sub);
+      if (ok) {
+        setPushStatus('subscribed');
+      } else {
+        // Server rejected the subscription — keep local state in sync
+        // with reality so the user can retry
+        setPushStatus('unknown');
+      }
     } catch (e) {
       console.error('Push subscribe failed:', e);
       if (Notification.permission === 'denied') setPushStatus('denied');
       else setPushStatus('unknown');
+    }
+  };
+
+  // Explicit user action: "Re-sync" link in Settings. Repairs the
+  // browser-says-subscribed-but-DB-empty case for a user who can't
+  // wait for the next page load self-heal, or who has hit the test
+  // push button and got 'No push subscriptions found'. Mirrors the
+  // self-heal logic but reports back via UI so the user knows it
+  // worked. If the local PushSubscription is missing entirely (browser
+  // forgot it somehow), force a fresh subscribe + POST.
+  const resyncPushSubscription = async function () {
+    setPushSyncing(true);
+    setPushSyncResult(null);
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setPushSyncResult('Not supported on this browser');
+        return;
+      }
+      if (Notification.permission !== 'granted') {
+        setPushSyncResult('Notifications not granted in browser settings');
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        // Browser lost the subscription — recreate it fresh
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey:
+            'BJBQZXAhmXHRT7ydVu_D53evImmg-_Cdl2SxFvuATUUbHj3YJGXBk5K-3drehkRDrhAlkmQe6XoIipC66jxWkRY',
+        });
+      }
+      const ok = await pushSubscriptionToServer(sub);
+      if (ok) {
+        setPushStatus('subscribed');
+        setPushSyncResult('Synced ✓');
+      } else {
+        setPushSyncResult('Server error — try again');
+      }
+    } catch (e) {
+      console.error('resyncPushSubscription error:', e);
+      setPushSyncResult('Error — ' + (e.message || 'try again'));
+    } finally {
+      setPushSyncing(false);
+      // Auto-clear status text after 4s so it doesn't stick around
+      setTimeout(function () {
+        setPushSyncResult(null);
+      }, 4000);
     }
   };
 
@@ -25370,6 +25460,37 @@ export default function App() {
                               ? 'Not supported on this browser'
                               : 'Get maintenance reminders on your phone'}
                     </div>
+                    {/* Re-sync affordance: visible only when subscribed.
+                        Repairs the case where the browser thinks it's
+                        subscribed but the backend DB row is missing
+                        (account switch, deploy migration, expired-prune).
+                        Most users will never need this; it's diagnostic
+                        for when test-push reports "no subscriptions". */}
+                    {pushStatus === 'subscribed' && (
+                      <div style={{ marginTop: 6, display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <button
+                          onClick={resyncPushSubscription}
+                          disabled={pushSyncing}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            padding: 0,
+                            fontSize: 11,
+                            color: 'var(--brand)',
+                            cursor: pushSyncing ? 'wait' : 'pointer',
+                            textDecoration: 'underline',
+                            opacity: pushSyncing ? 0.6 : 1,
+                          }}
+                        >
+                          {pushSyncing ? 'Syncing…' : 'Re-sync'}
+                        </button>
+                        {pushSyncResult && (
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {pushSyncResult}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div
                     onClick={function () {
