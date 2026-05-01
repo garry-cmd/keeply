@@ -1,23 +1,36 @@
 'use client';
 
-// Hero — full-bleed mobile, 2-column desktop.
+// Hero — conversion-focused. Apr 30 rewrite.
 //
-// Mobile: the entire viewport-equivalent area is filled by a slideshow of
-//   four key app screens. A short scrim sits at the top (covers the iOS
-//   status bar baked into the screenshots), a larger scrim at the bottom
-//   carries a rotating caption + CTAs + slide indicator dots. NO H1 above
-//   the fold — the screenshots tell the story; the H1 ("Every system. Every
-//   part. Every passage.") has moved down to the WhatItDoes section.
+// Previous version was a full-bleed mobile slideshow with rotating captions
+// and no H1. Critique surfaced: rotating captions can't carry conversion
+// load, the hero never named the user's outcome, "Start Free Plan" CTA
+// didn't differentiate. This rewrite:
 //
-// Desktop: 2-column. Left shows the rotating caption (large) + CTAs +
-//   indicator dots. Right shows the same slideshow inside the existing
-//   PhoneScreenshot frame.
+//   - Adds a real H1 ("Know exactly what your boat needs.") that speaks to
+//     all three personas (Upgrader/Cruiser/Liveaboard) by naming their
+//     shared underlying pain — not knowing for sure what their boat needs.
+//   - Subhead promises the 15-min "oh wow" the ICP names as the conversion
+//     moment (real maintenance schedule + First Mate that knows your boat).
+//     Coverage-first H1 ("Every system. Every part. Every passage.") moves
+//     down to WhatItDoes one scroll below — coverage messaging preserved.
+//   - Primary CTA is action-oriented ("Build my maintenance schedule →") —
+//     self-selects the right visitor and previews the in-product action.
+//   - Secondary CTA scrolls to the existing walkthrough video at #walkthrough
+//     (LandingPage.tsx wraps WhatItDoes with that id).
+//   - Trust line below CTAs ("Free for one boat · No card needed") replaces
+//     the old "Cancel any time" one-liner FinalCTA carries.
 //
-// The slideshow images and captions stay in lock-step because Hero owns
-// the activeIdx state and Slideshow notifies us via onIndexChange. A
-// single Slideshow instance drives both the visual cycle and the caption.
+// Visual:
+//   - Mobile: traditional stacked layout. H1 + subhead + CTAs above, the
+//     existing rotating slideshow inside a phone frame below. The full-bleed
+//     mobile pattern was striking but hid the H1 — fixing that was the whole
+//     point of this rewrite.
+//   - Desktop: 2-column. Copy left, slideshow-in-phone-frame right. Same as
+//     the previous version but with static copy instead of a rotating
+//     caption + dot indicators.
 
-import React, { useState } from 'react';
+import React from 'react';
 import Slideshow from '../Slideshow';
 import PhoneScreenshot from '../PhoneScreenshot';
 
@@ -26,19 +39,12 @@ const NAVY_MID = '#0d2d5e';
 const GOLD = '#f5a623';
 const WHITE = '#ffffff';
 
-interface Slide {
-  src: string;
-  caption: string;
-}
-
-const SLIDES: Slide[] = [
-  { src: '/images/hero-my-boat.jpg',        caption: 'Your boat at a glance' },
-  { src: '/images/features/equipment.jpg',  caption: 'Every system, tracked' },
-  { src: '/images/hero-firstmate.jpg',      caption: 'Ask your First Mate' },
-  { src: '/images/hero-logbook.jpg',        caption: 'Every passage, logged' },
+const SLIDE_SRCS = [
+  '/images/hero-my-boat.jpg',
+  '/images/features/equipment.jpg',
+  '/images/hero-firstmate.jpg',
+  '/images/hero-logbook.jpg',
 ];
-
-const SRCS = SLIDES.map(s => s.src);
 const SLIDESHOW_ALT =
   'Keeply screenshots — My Boat dashboard, Equipment, First Mate AI, Logbook';
 
@@ -49,134 +55,149 @@ interface HeroProps {
 }
 
 export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const caption = SLIDES[activeIdx]?.caption ?? '';
+  // Both layouts share the same copy block — render once.
+  const copy = (
+    <>
+      <h1
+        style={{
+          fontSize: isMobile
+            ? 'clamp(34px, 8vw, 44px)'
+            : 'clamp(44px, 5vw, 64px)',
+          fontWeight: 800,
+          color: WHITE,
+          lineHeight: 1.05,
+          letterSpacing: isMobile ? '-0.5px' : '-1.5px',
+          margin: '0 0 20px',
+          fontFamily: "'Clash Display','Inter',sans-serif",
+        }}
+      >
+        Know <span style={{ color: GOLD }}>exactly</span> what your boat
+        needs.
+      </h1>
+
+      <p
+        style={{
+          fontSize: isMobile ? 16 : 19,
+          color: 'rgba(255,255,255,0.78)',
+          margin: '0 0 28px',
+          lineHeight: 1.55,
+          maxWidth: isMobile ? '100%' : 540,
+        }}
+      >
+        Tell Keeply about your boat. In 15 minutes you{'\u2019'}ll have a real
+        maintenance schedule, every system logged, and a First Mate who knows
+        every piece of equipment on board.
+      </p>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? 12 : 18,
+          marginBottom: 16,
+        }}
+      >
+        <button
+          onClick={onGetStarted}
+          style={{
+            background: GOLD,
+            border: 'none',
+            color: '#1a1200',
+            padding: '15px 28px',
+            borderRadius: 10,
+            fontSize: 16,
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Build my maintenance schedule {'\u2192'}
+        </button>
+
+        <a
+          href="#walkthrough"
+          style={{
+            color: 'rgba(255,255,255,0.85)',
+            fontSize: 15,
+            fontWeight: 600,
+            textDecoration: 'none',
+            padding: '12px 4px',
+            textAlign: isMobile ? 'center' : 'left',
+            borderBottom: '1px solid rgba(255,255,255,0.25)',
+            alignSelf: isMobile ? 'center' : 'auto',
+            display: 'inline-block',
+          }}
+        >
+          See it in 30 seconds {'\u2192'}
+        </a>
+      </div>
+
+      <p
+        style={{
+          fontSize: 13,
+          color: 'rgba(255,255,255,0.55)',
+          margin: '0 0 8px',
+          textAlign: isMobile ? 'center' : 'left',
+        }}
+      >
+        Free for one boat. No credit card needed.
+      </p>
+
+      <button
+        onClick={onLogin}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          color: 'rgba(255,255,255,0.55)',
+          fontSize: 13,
+          fontWeight: 500,
+          cursor: 'pointer',
+          textDecoration: 'underline',
+          padding: 4,
+          textAlign: isMobile ? 'center' : 'left',
+          alignSelf: isMobile ? 'center' : 'auto',
+        }}
+      >
+        Already have an account? Log in
+      </button>
+    </>
+  );
 
   if (isMobile) {
     return (
       <section
         style={{
           position: 'relative',
-          height: 'min(85vh, 720px)',
-          minHeight: 500,
-          overflow: 'hidden',
-          background: NAVY,
+          padding: '40px 24px 56px',
+          background: `linear-gradient(180deg, ${NAVY_MID} 0%, ${NAVY} 100%)`,
         }}
         aria-label="Keeply — boat maintenance app"
       >
-        <Slideshow
-          srcs={SRCS}
-          alt={SLIDESHOW_ALT}
-          onIndexChange={setActiveIdx}
-          objectPosition="center"
-          style={{ position: 'absolute', inset: 0 }}
-        />
-
-        {/* Top scrim — covers the iOS status bar baked into screenshots */}
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 70,
-            background:
-              'linear-gradient(180deg, rgba(7,30,61,0.65) 0%, rgba(7,30,61,0) 100%)',
-            pointerEvents: 'none',
-            zIndex: 2,
-          }}
-        />
-
-        {/* Bottom scrim — carries caption + CTAs + dots */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            paddingTop: 80,
-            paddingBottom: 28,
-            paddingLeft: 24,
-            paddingRight: 24,
-            background:
-              'linear-gradient(180deg, rgba(7,30,61,0) 0%, rgba(7,30,61,0.78) 35%, rgba(7,30,61,0.94) 100%)',
-            zIndex: 2,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 14,
+            textAlign: 'center',
+            gap: 0,
           }}
         >
-          <span
-            key={activeIdx}
+          {copy}
+
+          <div
             style={{
-              color: 'rgba(255,255,255,0.88)',
-              fontSize: 14,
-              fontWeight: 500,
-              letterSpacing: 0.2,
-              animation: 'keeplyHeroCaptionIn 280ms ease-out',
+              marginTop: 36,
+              width: '100%',
+              maxWidth: 320,
+              alignSelf: 'center',
             }}
           >
-            {caption}
-          </span>
-
-          <button
-            onClick={onGetStarted}
-            style={{
-              background: GOLD,
-              border: 'none',
-              color: '#1a1200',
-              padding: '14px 32px',
-              borderRadius: 10,
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: 'pointer',
-              minWidth: 240,
-            }}
-          >
-            Start Free Plan {'\u2192'}
-          </button>
-
-          <button
-            onClick={onLogin}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              padding: 4,
-            }}
-          >
-            Log in
-          </button>
-
-          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-            {SLIDES.map((_, i) => (
-              <span
-                key={i}
-                aria-hidden
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 999,
-                  background:
-                    i === activeIdx ? WHITE : 'rgba(255,255,255,0.3)',
-                  transition: 'background 200ms',
-                }}
-              />
-            ))}
+            <PhoneScreenshot size="mobile">
+              <Slideshow srcs={SLIDE_SRCS} alt={SLIDESHOW_ALT} />
+            </PhoneScreenshot>
           </div>
         </div>
-
-        <style>{`
-          @keyframes keeplyHeroCaptionIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
       </section>
     );
   }
@@ -202,74 +223,7 @@ export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
           gap: 56,
         }}
       >
-        <div style={{ flex: '1 1 50%', minWidth: 0 }}>
-          <p
-            key={activeIdx}
-            style={{
-              fontSize: 'clamp(36px, 4.5vw, 60px)',
-              fontWeight: 800,
-              color: WHITE,
-              lineHeight: 1.05,
-              letterSpacing: '-1px',
-              margin: '0 0 24px',
-              fontFamily: "'Clash Display','Inter',sans-serif",
-              minHeight: '2em',
-              animation: 'keeplyHeroCaptionIn 320ms ease-out',
-            }}
-          >
-            {caption}
-          </p>
-
-          <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
-            {SLIDES.map((_, i) => (
-              <span
-                key={i}
-                aria-hidden
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: 999,
-                  background:
-                    i === activeIdx ? GOLD : 'rgba(255,255,255,0.25)',
-                  transition: 'background 200ms',
-                }}
-              />
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button
-              onClick={onGetStarted}
-              style={{
-                background: GOLD,
-                border: 'none',
-                color: '#1a1200',
-                padding: '14px 32px',
-                borderRadius: 10,
-                fontSize: 16,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Start Free Plan {'\u2192'}
-            </button>
-            <button
-              onClick={onLogin}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.25)',
-                color: WHITE,
-                padding: '14px 28px',
-                borderRadius: 10,
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Log in
-            </button>
-          </div>
-        </div>
+        <div style={{ flex: '1 1 50%', minWidth: 0 }}>{copy}</div>
 
         <div
           style={{
@@ -279,21 +233,10 @@ export default function Hero({ isMobile, onGetStarted, onLogin }: HeroProps) {
           }}
         >
           <PhoneScreenshot size="desktop">
-            <Slideshow
-              srcs={SRCS}
-              alt={SLIDESHOW_ALT}
-              onIndexChange={setActiveIdx}
-            />
+            <Slideshow srcs={SLIDE_SRCS} alt={SLIDESHOW_ALT} />
           </PhoneScreenshot>
         </div>
       </div>
-
-      <style>{`
-        @keyframes keeplyHeroCaptionIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </section>
   );
 }

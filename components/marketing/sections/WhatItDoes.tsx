@@ -1,12 +1,20 @@
 'use client';
 
-// WhatItDoes — first scroll after the Hero. Carries the headline that used
-// to live in the Hero ("Every system. Every part. Every passage.") plus the
-// existing /videos/walkthrough.mp4 in a phone frame.
+// WhatItDoes — first scroll after the Hero. Carries the coverage-first
+// section heading ("Every system. Every part. Every passage.") + the existing
+// /videos/walkthrough.mp4 in a phone frame.
 //
-// This section is also the future home of the FAB demo video — when that
-// video is produced, swap `videoSrc` to /videos/fab-demo.mp4 (and update
-// the poster src). Section structure stays the same.
+// Apr 30: this section's <h1> demoted to <h2> as part of the Hero rewrite —
+// the hero now owns the page H1 ("Know exactly what your boat needs."). This
+// section keeps the coverage-first messaging that was the locked headline as
+// of Apr 28; it just operates one level down in the document outline now.
+// Sized slightly smaller than the hero H1 to keep visual hierarchy clear.
+//
+// Future: when a dedicated FAB demo or hero-loop video is produced, swap
+// `videoSrc` to /videos/fab-demo.mp4. Section structure stays the same.
+//
+// Wrapping <div id="walkthrough"> in LandingPage.tsx makes the secondary
+// hero CTA ("See it in 30 seconds →") scroll to this section.
 
 import React from 'react';
 import PhoneScreenshot from '../PhoneScreenshot';
@@ -46,24 +54,26 @@ export default function WhatItDoes({ isMobile }: WhatItDoesProps) {
             textAlign: isMobile ? 'center' : 'left',
           }}
         >
-          <h1
+          <h2
             style={{
-              fontSize: isMobile ? 'clamp(32px,8vw,46px)' : 'clamp(40px,5vw,64px)',
+              fontSize: isMobile
+                ? 'clamp(28px, 7vw, 38px)'
+                : 'clamp(34px, 4vw, 52px)',
               fontWeight: 800,
               color: WHITE,
-              lineHeight: 1.05,
-              letterSpacing: isMobile ? '-0.5px' : '-1.5px',
-              margin: '0 0 20px',
+              lineHeight: 1.1,
+              letterSpacing: isMobile ? '-0.4px' : '-1px',
+              margin: '0 0 18px',
               fontFamily: "'Clash Display','Inter',sans-serif",
             }}
           >
             Every system. Every part. Every{' '}
             <span style={{ color: GOLD }}>passage.</span>
-          </h1>
+          </h2>
 
           <p
             style={{
-              fontSize: isMobile ? 16 : 19,
+              fontSize: isMobile ? 16 : 18,
               color: 'rgba(255,255,255,0.7)',
               margin: 0,
               lineHeight: 1.55,

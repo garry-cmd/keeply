@@ -27,12 +27,14 @@ import type { VerifiedBanner } from '../auth/useAuthRedirects';
 const NAVY = '#071e3d';
 
 interface LandingPageProps {
-  // Triggered by Hero "Start Free Plan" + bottom FinalCTA "Start Free Plan".
-  // HomeClient routes straight to AuthModal in signup mode with pendingPlan='free'
-  // — no plan picker. (Cross-page CTAs in SiteHeader/About/Features navigate to
-  // /?signup=1 instead of calling this prop.)
+  // Triggered by Hero "Build my maintenance schedule" + bottom FinalCTA
+  // "Get Keeply Free". HomeClient routes straight to AuthModal in signup mode
+  // with pendingPlan='free' — no plan picker. (Cross-page CTAs in
+  // SiteHeader/About/Features navigate to /?signup=1 instead of calling
+  // this prop.)
   onSignupFree: () => void;
-  // Triggered by Hero "Log in". HomeClient opens AuthModal in login mode.
+  // Triggered by Hero "Already have an account? Log in". HomeClient opens
+  // AuthModal in login mode.
   onOpenLogin: () => void;
   // Banner shown after email verification redirect (?verified=1 / ?verified=0)
   verifiedBanner: VerifiedBanner | null;
@@ -92,7 +94,11 @@ export default function LandingPage({
       )}
 
       <Hero isMobile={isMobile} onGetStarted={onSignupFree} onLogin={onOpenLogin} />
-      <WhatItDoes isMobile={isMobile} />
+      {/* Walkthrough anchor — Hero secondary CTA "See it in 30 seconds →"
+          uses href="#walkthrough" to scroll here. */}
+      <div id="walkthrough">
+        <WhatItDoes isMobile={isMobile} />
+      </div>
       <SocialProofMarquee />
       <HowItWorks isMobile={isMobile} />
       <Testimonial isMobile={isMobile} />
