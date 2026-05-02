@@ -2735,10 +2735,81 @@ export default function LogbookPage({
                 })}
               </div>
             </div>
+            {/* ── Wind row: direction (pills) + speed (numeric) ─────────────
+                Wind direction was previously a native <select> dropdown
+                cramped into a 4-column grid alongside numeric fields. Two
+                problems with that: (1) Chrome's native dropdown panel
+                renders white-on-white when the parent <select> uses dark
+                inline styling — options were invisible. (2) Every other
+                selection in this form uses pills — the dropdown was the
+                design outlier. Now: pills for direction (matches sea
+                state, weather, visibility, propulsion patterns above),
+                numeric input for speed inline on the right. */}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>
+                WIND
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map(function (d) {
+                  const active = watchForm.wind_dir === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={function () {
+                        setWatchForm(function (f) {
+                          return { ...f, wind_dir: active ? '' : d };
+                        });
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        minWidth: 38,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        borderRadius: 14,
+                        border:
+                          '0.5px solid ' +
+                          (active ? 'rgba(77,166,255,0.6)' : 'rgba(255,255,255,0.15)'),
+                        background: active ? 'rgba(77,166,255,0.2)' : 'rgba(255,255,255,0.04)',
+                        color: active ? '#4da6ff' : 'rgba(255,255,255,0.6)',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+                {/* Inline kts input on the right — wind direction without
+                    speed is half the picture, so keep them visually paired. */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    marginLeft: 'auto',
+                  }}
+                >
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="15"
+                    value={watchForm.wind_speed_kts}
+                    onChange={function (e) {
+                      setWatchForm(function (f) {
+                        return { ...f, wind_speed_kts: e.target.value };
+                      });
+                    }}
+                    style={{ ...wInp, width: 64, padding: '6px 8px', fontSize: 12 }}
+                  />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>kts</span>
+                </div>
+              </div>
+            </div>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                gridTemplateColumns: '1fr 1fr 1fr',
                 gap: 8,
                 marginBottom: 8,
               }}
@@ -2777,57 +2848,6 @@ export default function LogbookPage({
               </div>
               <div>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
-                  WIND
-                </div>
-                <select
-                  value={watchForm.wind_dir}
-                  onChange={function (e) {
-                    setWatchForm(function (f) {
-                      return { ...f, wind_dir: e.target.value };
-                    });
-                  }}
-                  // Use the browser's native select rendering — overriding
-                  // appearance:none caused the dropdown panel to render
-                  // with default white-on-white styling on Chrome desktop,
-                  // making options invisible. The native control looks
-                  // slightly different cross-browser but is always
-                  // readable. The "color-scheme" CSS hint tells the
-                  // browser to render the dropdown panel using dark mode
-                  // styles where supported (Chrome 81+, Firefox).
-                  style={{ ...wInp, colorScheme: 'dark' }}
-                >
-                  <option value="">—</option>
-                  {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map(function (d) {
-                    return (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
-                  KTS
-                </div>
-                <input
-                  type="number"
-                  placeholder="15"
-                  value={watchForm.wind_speed_kts}
-                  onChange={function (e) {
-                    setWatchForm(function (f) {
-                      return { ...f, wind_speed_kts: e.target.value };
-                    });
-                  }}
-                  style={wInp}
-                />
-              </div>
-            </div>
-            <div
-              style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 8, marginBottom: 12 }}
-            >
-              <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
                   BARO mb
                 </div>
                 <input
@@ -2842,21 +2862,21 @@ export default function LogbookPage({
                   style={wInp}
                 />
               </div>
-              <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
-                  NOTES
-                </div>
-                <input
-                  placeholder="Sail change, traffic, anything notable…"
-                  value={watchForm.notes}
-                  onChange={function (e) {
-                    setWatchForm(function (f) {
-                      return { ...f, notes: e.target.value };
-                    });
-                  }}
-                  style={wInp}
-                />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
+                NOTES
               </div>
+              <input
+                placeholder="Sail change, traffic, anything notable…"
+                value={watchForm.notes}
+                onChange={function (e) {
+                  setWatchForm(function (f) {
+                    return { ...f, notes: e.target.value };
+                  });
+                }}
+                style={wInp}
+              />
             </div>
             {/* ── Advanced row: Sea / Weather / Visibility / Propulsion ────
                 Optional pills. Sized small to keep watch entry quick to log
