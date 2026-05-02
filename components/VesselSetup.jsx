@@ -675,7 +675,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
           date: today,
           section: 'General',
           description:
-            'Upload docs to your Vessel card — tap the ⚓ Vessel card then the Docs tab to add manuals, insurance, or registration',
+            'Upload docs to your Vessel card — tap the Vessel card then the Docs tab to add manuals, insurance, or registration',
           status: 'open',
           equipment_id: null,
           due_date: null,
@@ -903,7 +903,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
               marginBottom: 4,
             }}
           >
-            ⚓ KEEPLY
+            KEEPLY
           </div>
           <div style={{ fontSize: 20, fontWeight: 500, color: '#fff' }}>
             {onCancel ? 'Add a vessel' : 'Welcome aboard'}
@@ -1059,7 +1059,7 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
               onClick={handleBuildMyBoat}
               style={Object.assign({}, s.btn, { background: '#1f6fd6', color: '#fff' })}
             >
-              {aiFailed ? 'Try again' : onCancel ? 'Add Vessel ⚓' : 'Launch Keeply ⚓'}
+              {aiFailed ? 'Try again' : onCancel ? 'Add Vessel' : 'Launch Keeply'}
             </button>
 
             {/* Escape hatch — only after an AI failure */}

@@ -9865,13 +9865,13 @@ export default function App() {
                                   fontSize: 12,
                                   color: 'rgba(255,255,255,0.7)',
                                   marginBottom:
-                                    info.hin || info.uscg_doc || info.home_port ? 10 : 0,
+                                    info.hin || info.uscg_doc || info.home_port || info.flag ? 10 : 0,
                                 }}
                               >
                                 {makeModel}
                               </div>
                             )}
-                            {(info.hin || info.uscg_doc || info.home_port) && (
+                            {(info.hin || info.uscg_doc || info.home_port || info.flag) && (
                               <div
                                 style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 8 }}
                               >
@@ -9940,6 +9940,24 @@ export default function App() {
                                     </div>
                                     <div style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>
                                       {info.home_port}
+                                    </div>
+                                  </div>
+                                )}
+                                {info.flag && (
+                                  <div>
+                                    <div
+                                      style={{
+                                        fontSize: 9,
+                                        color: 'rgba(255,255,255,0.45)',
+                                        letterSpacing: '0.8px',
+                                        textTransform: 'uppercase',
+                                        marginBottom: 2,
+                                      }}
+                                    >
+                                      Flag
+                                    </div>
+                                    <div style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>
+                                      {info.flag}
                                     </div>
                                   </div>
                                 )}
@@ -15125,8 +15143,7 @@ export default function App() {
                       background: 'var(--bg-card)',
                       color: 'var(--text-primary)',
                       cursor: 'pointer',
-                      appearance: 'none',
-                      WebkitAppearance: 'none',
+                      colorScheme: 'dark',
                     }}
                   >
                     <option value="All">All categories</option>
@@ -15272,7 +15289,7 @@ export default function App() {
                                         {makeModel}
                                       </div>
                                     )}
-                                    {(info.hin || info.uscg_doc || info.home_port) && (
+                                    {(info.hin || info.uscg_doc || info.home_port || info.flag) && (
                                       <div
                                         style={{
                                           display: 'flex',
@@ -15349,6 +15366,29 @@ export default function App() {
                                               }}
                                             >
                                               {info.home_port}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {info.flag && (
+                                          <div>
+                                            <div
+                                              style={{
+                                                fontSize: 9,
+                                                color: 'rgba(255,255,255,0.5)',
+                                                letterSpacing: '0.5px',
+                                                textTransform: 'uppercase',
+                                              }}
+                                            >
+                                              Flag
+                                            </div>
+                                            <div
+                                              style={{
+                                                fontSize: 11,
+                                                color: '#fff',
+                                                fontWeight: 600,
+                                              }}
+                                            >
+                                              {info.flag}
                                             </div>
                                           </div>
                                         )}
@@ -20468,6 +20508,10 @@ export default function App() {
               setShowAddLog(false);
             }}
             userPlan={userPlan || 'free'}
+            onRequestUpgrade={function (reason) {
+              if (reason) setUpgradeReason(reason);
+              setShowUpgradeModal(true);
+            }}
             onEngineHoursUpdate={async function (updates) {
               // updates: [{ engineId, hours, dateStr }, ...]
               // Per-engine writes — engines table + state — via the

@@ -78,7 +78,7 @@ const PRE_DEPARTURE_ITEMS = [
   { id: 'pd-bilge-e', label: 'Test electric bilge pump' },
   { id: 'pd-bilge-m', label: 'Test manual bilge pump' },
   { id: 'pd-pfds', label: 'Check PFDs accessible for all aboard' },
-  { id: 'pd-vhf', label: 'Test VHF radio — Ch 16' },
+  { id: 'pd-vhf', label: 'Test VHF radio — DSC test or Ch 9 voice check' },
   { id: 'pd-ais', label: 'Test AIS transponder' },
   { id: 'pd-navlights', label: 'Check navigation lights' },
   { id: 'pd-anchor', label: 'Check anchor secured' },
@@ -311,9 +311,11 @@ export default function LogbookPage({
   onAddFormOpened,
   userPlan,
   onEngineHoursUpdate,
+  onRequestUpgrade,
 }) {
   const hasWatchEntries = hasCapability(userPlan, 'watchEntries');
   const hasPassageExport = hasCapability(userPlan, 'passageExport');
+  const hasCustomChecklists = hasCapability(userPlan, 'customChecklists');
   // Navigation
   const [logbookTab, setLogbookTab] = useState('pre_departure');
   const [showHistory, setShowHistory] = useState(false);
@@ -1261,6 +1263,14 @@ export default function LogbookPage({
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={function () {
+                if (!hasCustomChecklists) {
+                  if (typeof onRequestUpgrade === 'function') {
+                    onRequestUpgrade(
+                      'Customizing checklists is a Standard plan feature. Upgrade to tailor pre-departure and arrival checklists to your vessel.'
+                    );
+                  }
+                  return;
+                }
                 startEditChecklist(type);
               }}
               style={{
@@ -1274,7 +1284,7 @@ export default function LogbookPage({
                 fontFamily: 'inherit',
               }}
             >
-              ✎ Edit
+              {hasCustomChecklists ? '✎ Edit' : '✎ Edit · Standard'}
             </button>
             <button
               onClick={function () {
