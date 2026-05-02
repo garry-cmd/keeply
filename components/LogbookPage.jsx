@@ -2786,19 +2786,15 @@ export default function LogbookPage({
                       return { ...f, wind_dir: e.target.value };
                     });
                   }}
-                  style={{
-                    ...wInp,
-                    // Mobile native pickers handle <select> well; styling
-                    // matches the other inputs. The empty option is the
-                    // unset state so users can clear the value.
-                    appearance: 'none',
-                    WebkitAppearance: 'none',
-                    backgroundImage:
-                      'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(255,255,255,0.4)\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/%3e%3c/svg%3e")',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 8px center',
-                    paddingRight: 26,
-                  }}
+                  // Use the browser's native select rendering — overriding
+                  // appearance:none caused the dropdown panel to render
+                  // with default white-on-white styling on Chrome desktop,
+                  // making options invisible. The native control looks
+                  // slightly different cross-browser but is always
+                  // readable. The "color-scheme" CSS hint tells the
+                  // browser to render the dropdown panel using dark mode
+                  // styles where supported (Chrome 81+, Firefox).
+                  style={{ ...wInp, colorScheme: 'dark' }}
                 >
                   <option value="">—</option>
                   {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map(function (d) {
