@@ -2779,16 +2779,36 @@ export default function LogbookPage({
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
                   WIND
                 </div>
-                <input
-                  placeholder="SW"
+                <select
                   value={watchForm.wind_dir}
                   onChange={function (e) {
                     setWatchForm(function (f) {
                       return { ...f, wind_dir: e.target.value };
                     });
                   }}
-                  style={wInp}
-                />
+                  style={{
+                    ...wInp,
+                    // Mobile native pickers handle <select> well; styling
+                    // matches the other inputs. The empty option is the
+                    // unset state so users can clear the value.
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    backgroundImage:
+                      'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(255,255,255,0.4)\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/%3e%3c/svg%3e")',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 8px center',
+                    paddingRight: 26,
+                  }}
+                >
+                  <option value="">—</option>
+                  {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map(function (d) {
+                    return (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
               <div>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
