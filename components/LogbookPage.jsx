@@ -231,7 +231,20 @@ function blankForm() {
 function blankWatchForm() {
   return {
     entry_time: nowTime(),
+    // Position is the canonical text field that lives in the DB. The
+    // structured lat/lon inputs below are UI-only — they compose into
+    // `position` on save (or capture from GPS / NMEA in the future).
     position: '',
+    // Structured position helpers — degrees + decimal minutes (DDM), the
+    // format chartplotters and paper charts use. Kept as strings during
+    // entry so partial values don't blow up parseFloat. Hemisphere flips
+    // are stored as 'N'|'S' / 'E'|'W'. Empty strings render no position.
+    lat_deg: '',
+    lat_min: '',
+    lat_hem: 'N',
+    lon_deg: '',
+    lon_min: '',
+    lon_hem: 'W',
     course_deg: '',
     speed_kts: '',
     wind_dir: '',
@@ -243,7 +256,45 @@ function blankWatchForm() {
     weather: '',
     visibility: '',
     propulsion: '',
+    crew: '',
     notes: '',
+  };
+}
+
+// Compose a DDM-formatted position string from the structured lat/lon
+// inputs. Returns '' if the user hasn't entered enough to render a real
+// position (we don't show partial garbage like '37°N'). Decimal-minutes
+// trailing zeros are preserved so the chartplotter readout copies cleanly.
+function composePositionDDM(form) {
+  const latDeg = form.lat_deg && form.lat_deg.trim();
+  const latMin = form.lat_min && form.lat_min.trim();
+  const lonDeg = form.lon_deg && form.lon_deg.trim();
+  const lonMin = form.lon_min && form.lon_min.trim();
+  if (!latDeg || !lonDeg) return '';
+  const lat = latDeg + '°' + (latMin ? ' ' + latMin + '′' : ' ') + (form.lat_hem || 'N');
+  const lon = lonDeg + '°' + (lonMin ? ' ' + lonMin + '′' : ' ') + (form.lon_hem || 'W');
+  return lat + ' ' + lon;
+}
+
+// Convert a decimal-degrees lat/lon (browser geolocation gives us this)
+// into the form-state keys above. Sign of the decimal determines the
+// hemisphere — negative lat = S, negative lon = W. The integer part is
+// degrees; the fractional part * 60 is decimal minutes (rounded to 3
+// decimals — chartplotter precision).
+function gpsToFormFields(latDecimal, lonDecimal) {
+  const latAbs = Math.abs(latDecimal);
+  const lonAbs = Math.abs(lonDecimal);
+  const latDeg = Math.floor(latAbs);
+  const lonDeg = Math.floor(lonAbs);
+  const latMin = ((latAbs - latDeg) * 60).toFixed(3);
+  const lonMin = ((lonAbs - lonDeg) * 60).toFixed(3);
+  return {
+    lat_deg: String(latDeg),
+    lat_min: latMin,
+    lat_hem: latDecimal >= 0 ? 'N' : 'S',
+    lon_deg: String(lonDeg),
+    lon_min: lonMin,
+    lon_hem: lonDecimal >= 0 ? 'E' : 'W',
   };
 }
 
@@ -304,6 +355,12 @@ export default function LogbookPage({
   const [showWatchForm, setShowWatchForm] = useState(false);
   const [watchForm, setWatchForm] = useState(blankWatchForm());
   const [savingWatch, setSavingWatch] = useState(false);
+  // GPS button state — busy indicator + last error for when the browser
+  // refuses geolocation (offshore, denied permission, no signal). NMEA 2000
+  // bridge will eventually populate the same form fields without prompting
+  // the browser, but for now the geolocation API is the single source.
+  const [gpsBusy, setGpsBusy] = useState(false);
+  const [gpsError, setGpsError] = useState(null);
   const [showCompleteForm, setShowCompleteForm] = useState(false);
   const [completeForm, setCompleteForm] = useState({
     to_location: '',
@@ -609,17 +666,77 @@ export default function LogbookPage({
   };
 
   // ── Save a watch entry ────────────────────────────────────────────────
+  // ── Watch entry: GPS capture ──────────────────────────────────────────
+  // Browser geolocation → DDM-formatted lat/lon fields. Fast path for the
+  // coastal user who has cell signal; offshore users will fall back to
+  // typing it in (and eventually NMEA 2000 will bypass this entirely).
+  const captureGPS = function () {
+    if (!('geolocation' in navigator)) {
+      setGpsError('GPS not available on this browser');
+      return;
+    }
+    setGpsBusy(true);
+    setGpsError(null);
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        const fields = gpsToFormFields(pos.coords.latitude, pos.coords.longitude);
+        setWatchForm(function (f) {
+          return { ...f, ...fields };
+        });
+        setGpsBusy(false);
+      },
+      function (err) {
+        // err.code 1 = permission denied, 2 = position unavailable (offshore),
+        // 3 = timeout. User-friendly messages for each.
+        const msg =
+          err.code === 1
+            ? 'Location permission denied'
+            : err.code === 2
+              ? 'No GPS signal — try entering manually'
+              : err.code === 3
+                ? 'GPS timed out — try again'
+                : 'GPS error';
+        setGpsError(msg);
+        setGpsBusy(false);
+        // Auto-clear error after 4s so the form doesn't stay loud
+        setTimeout(function () {
+          setGpsError(null);
+        }, 4000);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  };
+
+  // Reset entry_time to the current HH:MM. Used by the "Now" button next
+  // to the time input — common when a watch is filled out a few minutes
+  // after the actual observation and the auto-prefilled time is stale.
+  const setEntryTimeNow = function () {
+    setWatchForm(function (f) {
+      return { ...f, entry_time: nowTime() };
+    });
+  };
+
   const saveWatchEntry = async function () {
     if (!activePassage || !watchForm.entry_time) return;
     setSavingWatch(true);
     try {
+      // Position priority on save:
+      //   1) If the structured lat/lon fields have at least lat_deg + lon_deg,
+      //      compose a DDM string from them. This is the new path — always
+      //      preferred when the user has typed coords or hit GPS.
+      //   2) Otherwise fall back to whatever's in `position` (legacy free
+      //      text input still works if a tester used it on this entry).
+      // The DB column stays `position text` — no schema change needed.
+      const composedPosition = composePositionDDM(watchForm);
+      const positionToSave = composedPosition || watchForm.position || null;
+
       const { data, error: e } = await supabase
         .from('watch_entries')
         .insert({
           passage_id: activePassage.id,
           vessel_id: vesselId,
           entry_time: watchForm.entry_time,
-          position: watchForm.position || null,
+          position: positionToSave,
           course_deg: watchForm.course_deg ? parseInt(watchForm.course_deg) : null,
           speed_kts: watchForm.speed_kts ? parseFloat(watchForm.speed_kts) : null,
           wind_dir: watchForm.wind_dir || null,
@@ -629,6 +746,7 @@ export default function LogbookPage({
           weather: watchForm.weather || null,
           visibility: watchForm.visibility || null,
           propulsion: watchForm.propulsion || null,
+          crew: watchForm.crew || null,
           notes: watchForm.notes || null,
         })
         .select()
@@ -2144,6 +2262,7 @@ export default function LogbookPage({
               ['Visibility', last.visibility],
               ['Propulsion', last.propulsion],
               ['Baro', last.baro_mb != null ? last.baro_mb + ' mb' : null],
+              ['On watch', last.crew],
               ['Notes', last.notes],
             ].filter(function (f) {
               return f[1];
@@ -2225,24 +2344,34 @@ export default function LogbookPage({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead>
                 <tr>
-                  {['Time', 'Position', 'COG', 'SOG', 'Wind', 'Sea', 'Sky', 'Vis', 'Mode', 'Notes'].map(
-                    function (h) {
-                      return (
-                        <th
-                          key={h}
-                          style={{
-                            color: 'rgba(255,255,255,0.35)',
-                            fontWeight: 600,
-                            textAlign: 'left',
-                            padding: '4px 8px 8px 0',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {h}
-                        </th>
-                      );
-                    }
-                  )}
+                  {[
+                    'Time',
+                    'Position',
+                    'COG',
+                    'SOG',
+                    'Wind',
+                    'Sea',
+                    'Sky',
+                    'Vis',
+                    'Mode',
+                    'Crew',
+                    'Notes',
+                  ].map(function (h) {
+                    return (
+                      <th
+                        key={h}
+                        style={{
+                          color: 'rgba(255,255,255,0.35)',
+                          fontWeight: 600,
+                          textAlign: 'left',
+                          padding: '4px 8px 8px 0',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -2343,6 +2472,15 @@ export default function LogbookPage({
                         </td>
                         <td
                           style={{
+                            color: 'rgba(255,255,255,0.6)',
+                            padding: '7px 8px 7px 0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {we.crew || '—'}
+                        </td>
+                        <td
+                          style={{
                             color: 'rgba(255,255,255,0.5)',
                             padding: '7px 0 7px 0',
                             maxWidth: 140,
@@ -2382,37 +2520,219 @@ export default function LogbookPage({
             >
               NEW WATCH ENTRY
             </div>
-            <div
-              style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 8, marginBottom: 8 }}
-            >
-              <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
-                  TIME
-                </div>
+            {/* ── Time row: native time picker + Now button ────────────────
+                type="time" gives the OS-native time wheel on mobile. The
+                Now button resets to the current HH:MM — useful when the
+                watch is filled out a few minutes after the observation. */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
+                TIME
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
                 <input
+                  type="time"
                   value={watchForm.entry_time}
                   onChange={function (e) {
                     setWatchForm(function (f) {
                       return { ...f, entry_time: e.target.value };
                     });
                   }}
-                  style={wInp}
+                  style={{ ...wInp, flex: 1 }}
                 />
+                <button
+                  type="button"
+                  onClick={setEntryTimeNow}
+                  style={{
+                    padding: '0 14px',
+                    border: '0.5px solid rgba(77,166,255,0.4)',
+                    borderRadius: 6,
+                    background: 'rgba(77,166,255,0.12)',
+                    color: '#4da6ff',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Now
+                </button>
               </div>
-              <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>
-                  POSITION
+            </div>
+
+            {/* ── Position row: GPS button + structured DDM lat/lon inputs ─
+                GPS button calls navigator.geolocation and writes the
+                composed result into the lat and lon fields. Manual entry
+                is the fallback for offshore (no signal) or when the user
+                wants to log a logged position from the chartplotter. The
+                composePositionDDM helper turns these back into the
+                position string at save time. */}
+            <div style={{ marginBottom: 10 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 3,
+                }}
+              >
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>POSITION</div>
+                <button
+                  type="button"
+                  onClick={captureGPS}
+                  disabled={gpsBusy}
+                  style={{
+                    padding: '4px 10px',
+                    border: '0.5px solid rgba(77,166,255,0.4)',
+                    borderRadius: 12,
+                    background: 'rgba(77,166,255,0.12)',
+                    color: '#4da6ff',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: gpsBusy ? 'wait' : 'pointer',
+                    opacity: gpsBusy ? 0.6 : 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <span style={{ fontSize: 12 }}>📍</span>
+                  <span>{gpsBusy ? 'Locating…' : 'Use GPS'}</span>
+                </button>
+              </div>
+              {gpsError && (
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: '#f5a623',
+                    marginBottom: 6,
+                  }}
+                >
+                  {gpsError}
                 </div>
+              )}
+              {/* Lat row */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'stretch' }}>
                 <input
-                  placeholder="37°42′N 122°25′W"
-                  value={watchForm.position}
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="37"
+                  value={watchForm.lat_deg}
                   onChange={function (e) {
                     setWatchForm(function (f) {
-                      return { ...f, position: e.target.value };
+                      return { ...f, lat_deg: e.target.value };
                     });
                   }}
-                  style={wInp}
+                  style={{ ...wInp, width: 60 }}
                 />
+                <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                  °
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.001"
+                  placeholder="42.345"
+                  value={watchForm.lat_min}
+                  onChange={function (e) {
+                    setWatchForm(function (f) {
+                      return { ...f, lat_min: e.target.value };
+                    });
+                  }}
+                  style={{ ...wInp, flex: 1 }}
+                />
+                <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                  ′
+                </span>
+                {['N', 'S'].map(function (h) {
+                  const active = watchForm.lat_hem === h;
+                  return (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={function () {
+                        setWatchForm(function (f) {
+                          return { ...f, lat_hem: h };
+                        });
+                      }}
+                      style={{
+                        padding: '0 12px',
+                        border:
+                          '0.5px solid ' +
+                          (active ? 'rgba(77,166,255,0.6)' : 'rgba(255,255,255,0.15)'),
+                        borderRadius: 6,
+                        background: active ? 'rgba(77,166,255,0.2)' : 'rgba(255,255,255,0.04)',
+                        color: active ? '#4da6ff' : 'rgba(255,255,255,0.55)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {h}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Lon row */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="122"
+                  value={watchForm.lon_deg}
+                  onChange={function (e) {
+                    setWatchForm(function (f) {
+                      return { ...f, lon_deg: e.target.value };
+                    });
+                  }}
+                  style={{ ...wInp, width: 60 }}
+                />
+                <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                  °
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.001"
+                  placeholder="25.123"
+                  value={watchForm.lon_min}
+                  onChange={function (e) {
+                    setWatchForm(function (f) {
+                      return { ...f, lon_min: e.target.value };
+                    });
+                  }}
+                  style={{ ...wInp, flex: 1 }}
+                />
+                <span style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                  ′
+                </span>
+                {['E', 'W'].map(function (h) {
+                  const active = watchForm.lon_hem === h;
+                  return (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={function () {
+                        setWatchForm(function (f) {
+                          return { ...f, lon_hem: h };
+                        });
+                      }}
+                      style={{
+                        padding: '0 12px',
+                        border:
+                          '0.5px solid ' +
+                          (active ? 'rgba(77,166,255,0.6)' : 'rgba(255,255,255,0.15)'),
+                        borderRadius: 6,
+                        background: active ? 'rgba(77,166,255,0.2)' : 'rgba(255,255,255,0.04)',
+                        color: active ? '#4da6ff' : 'rgba(255,255,255,0.55)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {h}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div
@@ -2594,6 +2914,79 @@ export default function LogbookPage({
                     <div style={labelStyle}>PROPULSION</div>
                     {renderPills('propulsion', PROPULSION_OPTS)}
                   </div>
+                </div>
+              );
+            })()}
+            {/* ── Crew row: who's on this watch ─────────────────────────────
+                Free-text input + suggestion chips pulled from previous
+                entries on this passage. Tap a chip to fill, or type a
+                fresh name. Solo sailors leave it blank. */}
+            {(function () {
+              const priorCrew = Array.from(
+                new Set(
+                  watchEntries
+                    .map(function (we) {
+                      return (we.crew || '').trim();
+                    })
+                    .filter(Boolean)
+                )
+              ).slice(0, 6);
+              return (
+                <div style={{ marginBottom: 12 }}>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: 'rgba(255,255,255,0.4)',
+                      marginBottom: 4,
+                      letterSpacing: 0.4,
+                    }}
+                  >
+                    ON WATCH
+                  </div>
+                  <input
+                    placeholder="Your name"
+                    value={watchForm.crew}
+                    onChange={function (e) {
+                      setWatchForm(function (f) {
+                        return { ...f, crew: e.target.value };
+                      });
+                    }}
+                    style={wInp}
+                  />
+                  {priorCrew.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6 }}>
+                      {priorCrew.map(function (name) {
+                        const active = watchForm.crew === name;
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={function () {
+                              setWatchForm(function (f) {
+                                return { ...f, crew: name };
+                              });
+                            }}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              borderRadius: 12,
+                              border:
+                                '0.5px solid ' +
+                                (active ? 'rgba(77,166,255,0.6)' : 'rgba(255,255,255,0.15)'),
+                              background: active
+                                ? 'rgba(77,166,255,0.2)'
+                                : 'rgba(255,255,255,0.04)',
+                              color: active ? '#4da6ff' : 'rgba(255,255,255,0.55)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -3217,7 +3610,7 @@ export default function LogbookPage({
                   rows.push('');
                   rows.push('Watch Log');
                   rows.push(
-                    'Passage,Date,Time,Position,COG,SOG,Wind Dir,Wind Kt,Baro,Sea State,Weather,Visibility,Propulsion,Notes'
+                    'Passage,Date,Time,Position,COG,SOG,Wind Dir,Wind Kt,Baro,Sea State,Weather,Visibility,Propulsion,Crew,Notes'
                   );
                   passages.forEach(function (e) {
                     var wes = watchByPassage[e.id] || [];
@@ -3241,6 +3634,7 @@ export default function LogbookPage({
                           w.weather || '',
                           w.visibility || '',
                           w.propulsion || '',
+                          (w.crew || '').replace(/,/g, '；'),
                           (w.notes || '').replace(/,/g, '；'),
                         ].join(',')
                       );
@@ -3648,6 +4042,7 @@ export default function LogbookPage({
                                   'Sky',
                                   'Vis',
                                   'Mode',
+                                  'Crew',
                                   'Notes',
                                 ].map(function (h) {
                                   return (
@@ -3764,6 +4159,15 @@ export default function LogbookPage({
                                       }}
                                     >
                                       {we.propulsion || '—'}
+                                    </td>
+                                    <td
+                                      style={{
+                                        padding: '7px 8px 7px 0',
+                                        color: 'var(--text-muted)',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {we.crew || '—'}
                                     </td>
                                     <td
                                       style={{
