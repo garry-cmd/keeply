@@ -18,6 +18,7 @@ import {
   hasMissingEngineInfo,
   isAutoBackfilled,
   getEngineHoursForTask,
+  getEquipmentHoursMode,
   DISCREPANCY_HOURS_ABS,
 } from '../lib/engines';
 
@@ -2538,6 +2539,12 @@ export default function App() {
   });
   const [addingPartFor, setAddingPartFor] = useState(null);
   const [editingPartId, setEditingPartId] = useState(null);
+  // Phase 2 hours-tracking (May 5, 2026): inline meter-update sheet state.
+  // null = closed; { equipmentId, value, name } = open with that equipment.
+  // Driving the cheap "user just wants to bump their generator to 850 hr"
+  // interaction without opening the full Edit modal.
+  const [meterUpdate, setMeterUpdate] = useState(null);
+  const [meterUpdateSaving, setMeterUpdateSaving] = useState(false);
   const [newPartForm, setNewPartForm] = useState({
     name: '',
     url: '',
@@ -2834,6 +2841,7 @@ export default function App() {
               engine_id: e.engine_id || null,
               runtime_hours: e.runtime_hours == null ? null : Number(e.runtime_hours),
               runtime_hours_date: e.runtime_hours_date || null,
+              hours_tracking: e.hours_tracking || null,
               _vesselId: e.vessel_id,
             };
           });
@@ -3192,6 +3200,7 @@ export default function App() {
           engine_id: e.engine_id || null,
           runtime_hours: e.runtime_hours == null ? null : Number(e.runtime_hours),
           runtime_hours_date: e.runtime_hours_date || null,
+          hours_tracking: e.hours_tracking || null,
           _vesselId: e.vessel_id,
         };
       });
@@ -4009,6 +4018,10 @@ export default function App() {
         runtime_hours: runtimeHoursValue,
         runtime_hours_date: runtimeHoursDateValue,
         engine_id: linkedEngineIdValue,
+        // Phase 2 hours-tracking: persist the radio choice. 'parent_engine'
+        // implies engine_id is set (resolved above), so the modes stay in
+        // sync with the data shape.
+        hours_tracking: newEquip.hoursTracking || 'none',
       };
       const created = await supa('equipment', { method: 'POST', body: payload });
       const e = created[0];
@@ -4027,6 +4040,7 @@ export default function App() {
             engine_id: e.engine_id || null,
             runtime_hours: e.runtime_hours == null ? null : Number(e.runtime_hours),
             runtime_hours_date: e.runtime_hours_date || null,
+            hours_tracking: e.hours_tracking || null,
             _vesselId: e.vessel_id,
           },
         ];
@@ -4069,6 +4083,41 @@ export default function App() {
       });
     } catch (err) {
       setDbError(err.message);
+    }
+  };
+
+  // Phase 2 hours-tracking (May 5, 2026): commit a meter-only update from
+  // the inline sheet. Cheaper than opening the full Edit tab — just writes
+  // runtime_hours + runtime_hours_date and updates state. The equipment
+  // must already be in 'meter' mode for this to be reachable in the UI.
+  const saveMeterUpdate = async function () {
+    if (!meterUpdate) return;
+    const parsed = parseFloat(meterUpdate.value);
+    if (isNaN(parsed) || parsed < 0) {
+      setDbError('Hours must be a number ≥ 0');
+      return;
+    }
+    setMeterUpdateSaving(true);
+    try {
+      const dateStr = today();
+      await supa('equipment', {
+        method: 'PATCH',
+        query: 'id=eq.' + meterUpdate.equipmentId,
+        body: { runtime_hours: parsed, runtime_hours_date: dateStr },
+        prefer: 'return=minimal',
+      });
+      setEquipment(function (eq) {
+        return eq.map(function (e) {
+          return e.id === meterUpdate.equipmentId
+            ? { ...e, runtime_hours: parsed, runtime_hours_date: dateStr }
+            : e;
+        });
+      });
+      setMeterUpdate(null);
+    } catch (err) {
+      setDbError(err.message);
+    } finally {
+      setMeterUpdateSaving(false);
     }
   };
 
@@ -15636,6 +15685,130 @@ export default function App() {
                           e.stopPropagation();
                         }}
                       >
+                        {/* Phase 2 hours-tracking (May 5, 2026): runtime
+                            hours strip. Renders only when the card actually
+                            tracks hours — three variants based on mode. */}
+                        {(function () {
+                          const mode = getEquipmentHoursMode(eq);
+                          if (mode === 'none') return null;
+                          if (isVesselCard) return null; // vessel card never gets hours strip
+                          if (eq.category === 'Engine') return null; // engine cards have their own KPI strip
+                          if (mode === 'meter') {
+                            return (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: 8,
+                                  background: 'var(--bg-card)',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: 8,
+                                  padding: '10px 14px',
+                                  marginBottom: 12,
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                  <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden="true">⏱</span>
+                                  {eq.runtime_hours != null ? (
+                                    <span
+                                      style={{
+                                        fontSize: 13,
+                                        color: 'var(--text-primary)',
+                                        fontVariantNumeric: 'tabular-nums',
+                                      }}
+                                    >
+                                      <strong style={{ fontWeight: 700 }}>
+                                        {Number(eq.runtime_hours).toLocaleString()} hr
+                                      </strong>
+                                      {eq.runtime_hours_date && (
+                                        <span
+                                          style={{ color: 'var(--text-muted)', marginLeft: 6, fontSize: 12 }}
+                                        >
+                                          · updated {new Date(eq.runtime_hours_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        </span>
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                                      No reading yet
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={function () {
+                                    setMeterUpdate({
+                                      equipmentId: eq.id,
+                                      name: eq.name,
+                                      value: eq.runtime_hours != null ? String(eq.runtime_hours) : '',
+                                    });
+                                  }}
+                                  style={{
+                                    background: eq.runtime_hours != null ? 'transparent' : 'var(--brand)',
+                                    color: eq.runtime_hours != null ? 'var(--brand)' : 'var(--text-on-brand)',
+                                    border: eq.runtime_hours != null ? '1px solid var(--brand)' : 'none',
+                                    borderRadius: 6,
+                                    padding: '5px 10px',
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    fontFamily: 'inherit',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {eq.runtime_hours != null ? 'Update' : 'Set hours'}
+                                </button>
+                              </div>
+                            );
+                          }
+                          if (mode === 'parent_engine') {
+                            const linkedEngineLocal = eq.engine_id
+                              ? engines.find(function (e) {
+                                  return e && e.id === eq.engine_id;
+                                })
+                              : null;
+                            if (!linkedEngineLocal) return null;
+                            const engLabel = (function () {
+                              const pos = linkedEngineLocal.position
+                                ? linkedEngineLocal.position.charAt(0).toUpperCase() +
+                                  linkedEngineLocal.position.slice(1) +
+                                  ' '
+                                : '';
+                              return (
+                                pos +
+                                (linkedEngineLocal.make || '') +
+                                (linkedEngineLocal.model ? ' ' + linkedEngineLocal.model : '')
+                              ).trim();
+                            })();
+                            return (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  background: 'var(--bg-card)',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: 8,
+                                  padding: '10px 14px',
+                                  marginBottom: 12,
+                                  fontSize: 13,
+                                  color: 'var(--text-secondary)',
+                                }}
+                              >
+                                <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden="true">⏱</span>
+                                <span>
+                                  Tracked from <strong style={{ color: 'var(--text-primary)' }}>{engLabel}</strong>
+                                  {linkedEngineLocal.engine_hours != null && (
+                                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                      {' '}· {Number(linkedEngineLocal.engine_hours).toLocaleString()} hr
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         {eq.notes && !isVesselCard && (
                           <div
                             style={{
@@ -16103,6 +16276,132 @@ export default function App() {
                                 style={s.inp}
                               />
                             )}
+
+                            {/* Phase 2 hours-tracking (May 5, 2026): the
+                                three-state radio in the edit tab.
+                                Initialized with fallback to eq's current
+                                value (same fallback pattern as other fields
+                                above). 'parent_engine' option only renders
+                                when the vessel has engines. Skipped for the
+                                Vessel card (which is its own thing). */}
+                            {!isVesselCard && (
+                              <div
+                                style={{
+                                  borderTop: '1px solid var(--border)',
+                                  paddingTop: 14,
+                                  marginBottom: 10,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    color: 'var(--text-muted)',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: 10,
+                                  }}
+                                >
+                                  HOURS TRACKING
+                                </div>
+                                {(function () {
+                                  const cur =
+                                    editEquipForm.hoursTracking !== undefined
+                                      ? editEquipForm.hoursTracking
+                                      : (eq.hours_tracking || (eq.engine_id ? 'parent_engine' : eq.runtime_hours != null ? 'meter' : 'none'));
+                                  return (
+                                    <div>
+                                      <HoursTrackingOption
+                                        checked={cur === 'none'}
+                                        onSelect={function () {
+                                          setEditEquipForm(function (f) {
+                                            return { ...f, hoursTracking: 'none' };
+                                          });
+                                        }}
+                                        label="Doesn't track hours"
+                                        desc="Most equipment — date-based maintenance only"
+                                      />
+                                      <HoursTrackingOption
+                                        checked={cur === 'meter'}
+                                        onSelect={function () {
+                                          setEditEquipForm(function (f) {
+                                            return { ...f, hoursTracking: 'meter' };
+                                          });
+                                        }}
+                                        label="Has its own hour meter"
+                                        desc="Generator, watermaker, dinghy outboard, compressor"
+                                      />
+                                      {cur === 'meter' && (
+                                        <div style={{ marginLeft: 28, marginTop: 6, marginBottom: 10 }}>
+                                          <input
+                                            type="number"
+                                            inputMode="decimal"
+                                            placeholder="Current hours"
+                                            value={
+                                              editEquipForm.runtimeHours !== undefined
+                                                ? editEquipForm.runtimeHours
+                                                : (eq.runtime_hours == null ? '' : String(eq.runtime_hours))
+                                            }
+                                            onChange={function (e) {
+                                              setEditEquipForm(function (f) {
+                                                return { ...f, runtimeHours: e.target.value };
+                                              });
+                                            }}
+                                            style={{ ...s.inp, marginBottom: 0 }}
+                                          />
+                                        </div>
+                                      )}
+                                      {Array.isArray(engines) && engines.length > 0 && (
+                                        <HoursTrackingOption
+                                          checked={cur === 'parent_engine'}
+                                          onSelect={function () {
+                                            setEditEquipForm(function (f) {
+                                              return {
+                                                ...f,
+                                                hoursTracking: 'parent_engine',
+                                                linkedEngineId:
+                                                  f.linkedEngineId || eq.engine_id || engines[0].id,
+                                              };
+                                            });
+                                          }}
+                                          label="Tracked by an engine's hours"
+                                          desc="Fuel filters, Racor, raw-water pump, zincs"
+                                        />
+                                      )}
+                                      {cur === 'parent_engine' && engines.length > 1 && (
+                                        <div style={{ marginLeft: 28, marginTop: 6, marginBottom: 10 }}>
+                                          <select
+                                            value={
+                                              editEquipForm.linkedEngineId || eq.engine_id || engines[0].id
+                                            }
+                                            onChange={function (e) {
+                                              setEditEquipForm(function (f) {
+                                                return { ...f, linkedEngineId: e.target.value };
+                                              });
+                                            }}
+                                            style={s.sel}
+                                          >
+                                            {engines.map(function (eng) {
+                                              const pos = eng.position
+                                                ? eng.position.charAt(0).toUpperCase() +
+                                                  eng.position.slice(1) +
+                                                  ' '
+                                                : '';
+                                              return (
+                                                <option key={eng.id} value={eng.id}>
+                                                  {pos}
+                                                  {eng.make} {eng.model}
+                                                </option>
+                                              );
+                                            })}
+                                          </select>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            )}
+
                             <button
                               onClick={function () {
                                 const name = editEquipForm.name || eq.name;
@@ -16143,7 +16442,50 @@ export default function App() {
                                     ]
                                       .filter(Boolean)
                                       .join(' | ');
-                                updateEquipment(eq.id, { name, category, status, notes });
+                                // Phase 2 hours-tracking: assemble patch
+                                // for the three columns based on the radio
+                                // state. Skipped on Vessel card (which
+                                // never tracks hours).
+                                const patch = { name, category, status, notes };
+                                if (!isVesselCard) {
+                                  const ht =
+                                    editEquipForm.hoursTracking !== undefined
+                                      ? editEquipForm.hoursTracking
+                                      : (eq.hours_tracking || (eq.engine_id ? 'parent_engine' : eq.runtime_hours != null ? 'meter' : 'none'));
+                                  patch.hours_tracking = ht;
+                                  if (ht === 'meter') {
+                                    // Reading is optional during edit; only
+                                    // overwrite if user typed something.
+                                    if (editEquipForm.runtimeHours !== undefined) {
+                                      const parsed = parseFloat(editEquipForm.runtimeHours);
+                                      if (!isNaN(parsed) && parsed >= 0) {
+                                        patch.runtime_hours = parsed;
+                                        patch.runtime_hours_date = today();
+                                      } else if (editEquipForm.runtimeHours === '') {
+                                        patch.runtime_hours = null;
+                                        patch.runtime_hours_date = null;
+                                      }
+                                    }
+                                    // Switching from parent_engine to meter
+                                    // clears the engine link.
+                                    patch.engine_id = null;
+                                  } else if (ht === 'parent_engine') {
+                                    patch.engine_id =
+                                      editEquipForm.linkedEngineId ||
+                                      eq.engine_id ||
+                                      (engines[0] ? engines[0].id : null);
+                                    // parent_engine cards never carry their
+                                    // own meter reading.
+                                    patch.runtime_hours = null;
+                                    patch.runtime_hours_date = null;
+                                  } else {
+                                    // 'none' — clear both.
+                                    patch.engine_id = null;
+                                    patch.runtime_hours = null;
+                                    patch.runtime_hours_date = null;
+                                  }
+                                }
+                                updateEquipment(eq.id, patch);
                                 setEditEquipForm({});
                                 setEquipTab(function (prev) {
                                   const n = Object.assign({}, prev);
@@ -19922,6 +20264,116 @@ export default function App() {
               }}
             >
               <span style={{ color: '#fff', fontSize: 28, lineHeight: 1, fontWeight: 300 }}>+</span>
+            </div>
+          </div>
+        )}
+
+        {/* Phase 2 hours-tracking (May 5, 2026): inline meter-update sheet.
+            Lightweight modal triggered by the "Update" / "Set hours" button on
+            the equipment card hours strip. Updates runtime_hours +
+            runtime_hours_date only — full edit tab remains the path for
+            renaming, changing category, switching tracking mode, etc. */}
+        {meterUpdate && (
+          <div
+            style={s.modalBg}
+            onClick={function () {
+              if (!meterUpdateSaving) setMeterUpdate(null);
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                borderRadius: 16,
+                width: '100%',
+                maxWidth: 380,
+                padding: '20px 22px 18px',
+              }}
+              onClick={function (e) {
+                e.stopPropagation();
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  letterSpacing: '0.8px',
+                  textTransform: 'uppercase',
+                  marginBottom: 6,
+                }}
+              >
+                Update hours
+              </div>
+              <div
+                style={{
+                  fontSize: 17,
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  marginBottom: 16,
+                  lineHeight: 1.2,
+                }}
+              >
+                {meterUpdate.name}
+              </div>
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Current hours"
+                autoFocus
+                value={meterUpdate.value}
+                onChange={function (e) {
+                  setMeterUpdate(function (m) {
+                    return m ? { ...m, value: e.target.value } : m;
+                  });
+                }}
+                onKeyDown={function (e) {
+                  if (e.key === 'Enter' && !meterUpdateSaving) {
+                    saveMeterUpdate();
+                  }
+                }}
+                style={{ ...s.inp, marginBottom: 16 }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={function () {
+                    if (!meterUpdateSaving) setMeterUpdate(null);
+                  }}
+                  disabled={meterUpdateSaving}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    padding: '11px 16px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: meterUpdateSaving ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveMeterUpdate}
+                  disabled={meterUpdateSaving || !meterUpdate.value.trim()}
+                  style={{
+                    flex: 1,
+                    background: 'var(--brand)',
+                    color: 'var(--text-on-brand)',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '11px 16px',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: meterUpdateSaving ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    opacity: meterUpdateSaving || !meterUpdate.value.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {meterUpdateSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
             </div>
           </div>
         )}

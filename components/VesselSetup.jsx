@@ -605,6 +605,17 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
           }
         }
 
+        // Phase 2 hours-tracking persistence (May 5, 2026):
+        // Resolve the explicit hours_tracking value from the AI's
+        // classification, with one override: if the card is linked to an
+        // engine (resolvedEngineId set — covers both Engine-category cards
+        // and "parent_engine" filter/Racor cards), force 'parent_engine'
+        // even if the AI guessed wrong. Mode is implied by the relationship.
+        let resolvedHoursTracking = item.hours_tracking || 'none';
+        if (resolvedEngineId) {
+          resolvedHoursTracking = 'parent_engine';
+        }
+
         const { data: eq, error: eErr } = await supabase
           .from('equipment')
           .insert({
@@ -624,6 +635,8 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
             // Phase 1 hours-tracking (May 5, 2026): own-meter equipment.
             runtime_hours: runtimeHours,
             runtime_hours_date: runtimeHoursDate,
+            // Phase 2 hours-tracking (May 5, 2026): explicit mode column.
+            hours_tracking: resolvedHoursTracking,
           })
           .select()
           .single();
