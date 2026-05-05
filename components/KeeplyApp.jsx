@@ -20546,7 +20546,11 @@ export default function App() {
 
         {/* ── LISTS standalone — Parts (default) / Supplies / Grocery / Haulout, four surfaces ── */}
         {view === 'customer' && tab === 'lists-standalone' && (
-          <ListsTab activeVesselId={activeVesselId} />
+          <ListsTab
+            activeVesselId={activeVesselId}
+            userPlan={userPlan}
+            onRequestUpgrade={function () { setShowUpgradeModal(true); }}
+          />
         )}
 
         {/* ── FIRST MATE inline panel overlay ── */}
