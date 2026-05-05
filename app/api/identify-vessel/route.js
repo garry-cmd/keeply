@@ -1,4 +1,12 @@
-﻿// Three request shapes supported:
+// Route-level config — matches haul-plan/route.js (60s).
+// Sonnet generating 12-22 equipment items typically takes 20-30s; the
+// platform default (10-15s depending on plan) was killing the function
+// and returning an empty body, surfacing client-side as the cryptic
+// "Unexpected end of JSON input" parse error.
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
+// Three request shapes supported:
 //
 // 1. singleItem  — { description, singleItem: true }
 //    Identifies a single piece of equipment. Returns { equipment: {…} }.
