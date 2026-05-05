@@ -3930,8 +3930,8 @@ export default function App() {
   const addEquipment = async function () {
     if (!newEquip.name.trim()) return;
 
-    // Plan gate: Free users are limited to 3 equipment cards (engine + Safety
-    // Equipment + 1 other, typically established during AI onboarding).
+    // Plan gate: Free users are limited to 5 equipment cards (engines + Safety
+    // Equipment + AI long-tail, typically established during AI onboarding).
     // Paid plans are unlimited.
     const currentCount = equipment.filter(function (e) {
       return e._vesselId === activeVesselId && e.category !== 'Vessel';
@@ -6284,7 +6284,7 @@ export default function App() {
     try {
       if (importType === 'equipment') {
         // Plan gate: truncate the import to whatever slots remain on the
-        // user's plan. Free users with 2 of 3 equipment used can import 1 row;
+        // user's plan. Free users with 4 of 5 equipment used can import 1 row;
         // those at limit see the upgrade modal.
         const currentEquipCount = equipment.filter(function (e) {
           return e._vesselId === activeVesselId && e.category !== 'Vessel';
@@ -19219,7 +19219,7 @@ export default function App() {
               const totalEquip = equipment.filter(function (e) {
                 return e._vesselId === activeVesselId && e.category !== 'Vessel';
               }).length;
-              const lockedCount = totalEquip - 10;
+              const lockedCount = totalEquip - getEquipmentLimit('free');
               if (lockedCount <= 0) return null;
               return (
                 <div
