@@ -44,6 +44,13 @@ const PHASES = [
     description: "Custom checklists, First Mate history, multi-engine tracking — due May 31",
   },
   {
+    id: "hours",
+    label: "Hours tracking",
+    color: "#06b6d4", // cyan-600 — distinct from social cyan
+    months: [0, 1],
+    description: "Generalize engine-only hour tracking to any equipment (generators, watermakers, dive compressors, aux outboards) plus parent-engine inheritance for filters/Racors. Schema + AI + Add/Edit/Card UI.",
+  },
+  {
     id: "lists",
     label: "Lists",
     color: "#f5a623", // gold — strategic founder-driven feature
@@ -119,7 +126,7 @@ const OKRS = [
       { text: "All 3 personas validated (Active Cruiser, Liveaboard, Upgrader)", cur: 1, target: 3, unit: "personas", status: "on-track" },
       { text: "Feedback received from all testers", cur: 0, target: 5, unit: "responses", status: "not-started" },
       { text: "First Mate query limits — single source of truth (imports from lib/pricing.js)", cur: 1, target: 1, unit: "complete", status: "done" },
-      { text: "Push notifications validated end-to-end on real device", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Push notifications validated end-to-end on real device", cur: 1, target: 1, unit: "complete", status: "done" },
     ],
   },
   {
@@ -129,6 +136,25 @@ const OKRS = [
       { text: "Logbook — Custom Checklists (Pro tier)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "First Mate — Conversation history (all tiers)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Multi-engine tracking — engines table source of truth, equipment.engine_id FK, passage_engine_hours per-passage, KPI strip handles single/twin/triple+ with discrepancy pulse, FM context per-engine; Phase 3 legacy column drop deferred as hygiene", cur: 1, target: 1, unit: "complete", status: "done" },
+    ],
+  },
+  {
+    phase: "hours",
+    objective: "Generalize hours tracking beyond engines",
+    krs: [
+      { text: "Schema: equipment.runtime_hours + runtime_hours_date columns (own-meter equipment)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Schema: equipment.hours_tracking column ('meter' | 'parent_engine' | 'none' | NULL legacy)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "lib/engines.js: getEngineHoursForTask resolves runtime_hours > engine_id > fallback; getEquipmentHoursMode helper for UI dispatch", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "AI structured prompt emits hours_tracking on every equipment item (full vessel onboarding)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "AI single-item prompt emits hours_tracking + interval_hours on tasks", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "VesselSetup: writes hours_tracking on AI insert with engine-card override (engine_id set → always 'parent_engine')", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Add Equipment: three-state radio + meter-hours input + parent-engine picker (when vessel has engines)", cur: 1, target: 1, unit: "complete", status: "done" },
+      { text: "Edit-tab radio: pre-populated from row state with legacy fallback; mode-switching clears unrelated columns correctly", cur: 1, target: 1, unit: "complete", status: "on-track" },
+      { text: "Equipment card hours strip (expanded body only): meter / parent_engine variants; hidden for Engine + Vessel cards", cur: 1, target: 1, unit: "complete", status: "on-track" },
+      { text: "Inline meter-update sheet — single number input, Enter saves; no full-edit-modal needed for meter bumps", cur: 1, target: 1, unit: "complete", status: "on-track" },
+      { text: "Phase 3 deferred: First Mate runtime_hours awareness in vessel-context block", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Phase 3 deferred: 'linked to Port engine' hint badge on parent_engine cards", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Phase 3 deferred: stale-reading hint ('⏱ 845 hr · updated 67 days ago')", cur: 0, target: 1, unit: "complete", status: "not-started" },
     ],
   },
   {
@@ -146,6 +172,7 @@ const OKRS = [
       { text: "Admin Lists metrics: Parts Needed/Ordered (count + $value with $1 default + vessels), Supplies/Grocery/Haulout (count + vessels)", cur: 1, target: 1, unit: "complete", status: "done" },
       { text: "Polish: extract shared primitives (UndoToast/ActionSheet/EditSheet/Field/SheetButton) from PartsView + SimpleListView dup (~150 LOC)", cur: 0, target: 1, unit: "complete", status: "not-started" },
       { text: "Empty-state copy pass after a few days of dogfooding the 4 surfaces", cur: 0, target: 1, unit: "complete", status: "not-started" },
+      { text: "Pro-gate: Supplies/Grocery/Haulout pills locked for Free/Standard via 'lists' capability; Parts stays free; locked pills tappable, route to 'Pro feature' panel with Upgrade CTA wired to UpgradeModal (May 5)", cur: 1, target: 1, unit: "complete", status: "done" },
     ],
   },
   {
