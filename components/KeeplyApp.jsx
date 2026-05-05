@@ -3870,9 +3870,16 @@ export default function App() {
         setVessels(function (vs) {
           return [...vs, normalized];
         });
+        // Race fix (May 4, reapplied May 5): switchVessel() does its own
+        // setEquipment/setTasks fetch that REPLACES state. Awaiting both
+        // helpers before switchVessel guarantees the fetch sees the new
+        // rows. Previously switchVessel fired BEFORE the helpers (worst
+        // variant of the same race). DO NOT remove the await.
+        await Promise.all([
+          createDefaultAdminTasks(nv.id, userId),         // admin tasks
+          createDefaultSafetyEquipment(nv.id),             // Safety Equipment + 6 tasks
+        ]);
         switchVessel(nv.id);
-        createDefaultAdminTasks(nv.id, userId); // Pre-populate admin tasks
-        createDefaultSafetyEquipment(nv.id); // Pre-populate Safety Equipment card + 6 tasks
         (async function () {
           var freshEq = await supa('equipment', {
             query: 'vessel_id=eq.' + nv.id + '&category=eq.Engine&limit=1',
@@ -7046,7 +7053,7 @@ export default function App() {
       <VesselSetup
         userId={session.user.id}
         userPlan={userPlan}
-        onComplete={function (vessel) {
+        onComplete={async function (vessel) {
           setNeedsSetup(false);
           const normalized = {
             id: vessel.id,
@@ -7068,8 +7075,18 @@ export default function App() {
           ]);
           setActiveVesselId(vessel.id);
           localStorage.setItem('keeply_active_vessel', vessel.id);
-          createDefaultAdminTasks(vessel.id, session.user.id);
-          createDefaultSafetyEquipment(vessel.id);
+          // Race fix (May 4, reapplied May 5): the helpers below INSERT
+          // vessel-scoped rows, and switchVessel() does its own
+          // setEquipment/setTasks fetch that REPLACES state. Awaiting both
+          // helpers before switchVessel guarantees the fetch sees the new
+          // rows. Without await, the Safety Equipment card was missing on
+          // ~50% of fresh signups until manual page refresh.
+          // DO NOT remove the await — see also the two sibling sites below
+          // (mid-app Add Vessel and addNewVessel).
+          await Promise.all([
+            createDefaultAdminTasks(vessel.id, session.user.id),
+            createDefaultSafetyEquipment(vessel.id),
+          ]);
           // Load all equipment and tasks that were just created by AI onboarding
           switchVessel(vessel.id);
           // Highest-leverage moment to ask for push permission — user just
@@ -7091,7 +7108,7 @@ export default function App() {
         onCancel={function () {
           setShowVesselSetup(false);
         }}
-        onComplete={function (vessel) {
+        onComplete={async function (vessel) {
           const normalized = {
             id: vessel.id,
             vesselType: vessel.vessel_type || 'sail',
@@ -7116,8 +7133,12 @@ export default function App() {
           });
           setActiveVesselId(vessel.id);
           localStorage.setItem('keeply_active_vessel', vessel.id);
-          createDefaultAdminTasks(vessel.id, session.user.id);
-          createDefaultSafetyEquipment(vessel.id);
+          // Race fix (May 4, reapplied May 5) — see the first-time signup
+          // completion above for the full rationale. DO NOT remove the await.
+          await Promise.all([
+            createDefaultAdminTasks(vessel.id, session.user.id),
+            createDefaultSafetyEquipment(vessel.id),
+          ]);
           // switchVessel reloads equipment/tasks/repairs for the new vessel
           switchVessel(vessel.id);
           maybeShowPushOnboarding();
