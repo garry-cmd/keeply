@@ -577,6 +577,34 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
               })
           : [];
 
+        // Phase 1 hours-tracking translation (May 5, 2026):
+        //   hours_tracking == 'meter'         → runtime_hours = null (user
+        //                                       fills in meter reading later);
+        //                                       engine_id stays null
+        //   hours_tracking == 'parent_engine' → engine_id auto-linked to first
+        //                                       engine for twin-engine vessels
+        //                                       (user can reassign in Edit);
+        //                                       runtime_hours stays null
+        //   hours_tracking == 'none' / absent → both null, today's behavior
+        //
+        // Engine-category cards already had _engineId set above by the
+        // engine-card builder; that path is preserved.
+        let runtimeHours = null;
+        let runtimeHoursDate = null;
+        let resolvedEngineId = item._engineId || null;
+        if (item.hours_tracking === 'meter') {
+          // User will set their reading from the equipment card.
+          runtimeHours = null;
+          runtimeHoursDate = null;
+        } else if (item.hours_tracking === 'parent_engine' && !resolvedEngineId) {
+          // Auto-link to first engine; user can reassign on twin-engine
+          // vessels via the Edit modal. The "linked to <engine>" hint in
+          // the equipment header tells them they can change it.
+          if (Array.isArray(insertedEngines) && insertedEngines[0]) {
+            resolvedEngineId = insertedEngines[0].id;
+          }
+        }
+
         const { data: eq, error: eErr } = await supabase
           .from('equipment')
           .insert({
@@ -592,7 +620,10 @@ export default function VesselSetup({ userId, userPlan, onComplete, onCancel }) 
             // per-engine maintenance task urgency works. Non-engine cards
             // and single-engine vessels: this is null (helper falls back
             // to the vessel's mirrored engine_hours).
-            engine_id: item._engineId || null,
+            engine_id: resolvedEngineId,
+            // Phase 1 hours-tracking (May 5, 2026): own-meter equipment.
+            runtime_hours: runtimeHours,
+            runtime_hours_date: runtimeHoursDate,
           })
           .select()
           .single();

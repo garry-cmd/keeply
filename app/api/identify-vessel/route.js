@@ -81,6 +81,21 @@ Maintenance intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Be sp
         ? `\n\nEngine hours are provided, so engine-category maintenance tasks MUST include interval_hours in addition to interval_days — this lets the app trigger whichever comes first. Typical marine diesel intervals: oil & filter 100 hrs / 365 days, impeller 300 hrs / 365 days, primary fuel filter 250 hrs / 365 days, transmission fluid 300 hrs / 730 days, engine zincs 200 hrs / 365 days, raw water strainer 50 hrs / 30 days, belts & hoses inspection 200 hrs / 365 days, injector service 1000 hrs / 1095 days. Adjust for the specific engine make/model/year. Non-engine tasks (rigging, sails, hull, etc.) should have interval_days only.`
         : '';
 
+      // hours_tracking guidance — three-state model. Phase 1 (May 5, 2026):
+      //   "meter"          equipment has its own hour meter (Generator,
+      //                    Watermaker, dive compressor, aux outboard);
+      //                    set interval_hours on relevant tasks.
+      //   "parent_engine"  equipment is a child of an engine and inherits
+      //                    its hours (fuel filter, Racor, raw-water pump
+      //                    when generated as separate cards from the Engine
+      //                    entry); set interval_hours on relevant tasks.
+      //   "none"           date-based maintenance only. Default for most.
+      const hoursTrackingGuidance = `\n\nFor each equipment item, also classify hours_tracking:
+- "meter" — the equipment has its own runtime hour meter and accumulates hours independently. Use for: Generator, Watermaker, dive/scuba compressor, refrigeration compressor, aux/dinghy Outboard. Tasks SHOULD include interval_hours when relevant (e.g. generator oil 100 hrs / 365 days, watermaker membrane clean 250 hrs / 180 days, watermaker pre-filter 100 hrs / 90 days).
+- "parent_engine" — the equipment is a child of a propulsion engine and is serviced based on that engine's hours. Use for: standalone fuel filter, Racor, raw-water pump, primary water pump, engine zincs, transmission cooler when generated as separate cards. Tasks MUST include interval_hours.
+- "none" — date-based maintenance only. Use for: rigging, sails, anchors, hull, deck, navigation electronics, plumbing fixtures, lights, batteries, safety gear, most other categories.
+The Engine card itself stays "none" — its hours are tracked on the engines table, not the equipment row.`;
+
       prompt = `You are an expert marine surveyor and boat maintenance specialist with deep knowledge of production boats, custom builds, and all types of vessels.
 
 VESSEL: ${vesselLine || '(unknown)'}
@@ -89,7 +104,7 @@ ${engineBlock}
 
 The engine year is especially important — the same model name often spans multiple generations with different base engines, cylinder counts, displacements, and part numbers. Reason about the SPECIFIC year variant when generating tasks and part specs. If the year falls in a transition period where you're not sure which variant, note that in the relevant task text rather than guess.
 
-Generate a complete, specific equipment list that an owner of THIS exact vessel would track for maintenance. Tailor tasks to the actual engine(s) listed — oil specs, impeller size, fuel filter part numbers, zinc locations, and service intervals should match the specific engine make/model/year.${hourGuidance}
+Generate a complete, specific equipment list that an owner of THIS exact vessel would track for maintenance. Tailor tasks to the actual engine(s) listed — oil specs, impeller size, fuel filter part numbers, zinc locations, and service intervals should match the specific engine make/model/year.${hourGuidance}${hoursTrackingGuidance}
 
 For each equipment item, return TWO separate arrays — tasks and parts:
 - tasks: the ACTION to perform, clean and action-focused. Good: "Replace raw water impeller". Bad: "Replace raw water impeller (Johnson 09-812B or equivalent)". Do NOT put part numbers, fluid specs, or quantities in task names — those belong in parts.
@@ -108,6 +123,7 @@ Return ONLY valid JSON — no prose, no markdown, no code fences:
       "manufacturer": "string|null",
       "model": "string|null",
       "category": "string (Engine|Electrical|Electronics|Rigging|Sails|Plumbing|Safety|Navigation|Deck|Bilge|Hull|Dinghy|Generator|Galley|Anchor|Mechanical|Steering|Watermaker)",
+      "hours_tracking": "meter | parent_engine | none",
       "tasks": [
         { "task": "string (action only, no part numbers)", "interval_days": number, "interval_hours": number | null }
       ],

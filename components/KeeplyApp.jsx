@@ -2528,6 +2528,13 @@ export default function App() {
     fileObj: null,
     fileName: '',
     fileType: 'Manual',
+    // Phase 1 hours-tracking (May 5, 2026): three-state radio.
+    //   'none'          (default) date-based maintenance only
+    //   'meter'         own runtime_hours meter, e.g. generator/watermaker
+    //   'parent_engine' inherits hours from a linked engine, e.g. fuel filter
+    hoursTracking: 'none',
+    runtimeHours: '',           // string for input control; coerced on save
+    linkedEngineId: '',         // engines.id when hoursTracking==='parent_engine'
   });
   const [addingPartFor, setAddingPartFor] = useState(null);
   const [editingPartId, setEditingPartId] = useState(null);
@@ -2825,6 +2832,8 @@ export default function App() {
               logs: safeJsonbArray(e.logs),
               photos: safeJsonbArray(e.photos),
               engine_id: e.engine_id || null,
+              runtime_hours: e.runtime_hours == null ? null : Number(e.runtime_hours),
+              runtime_hours_date: e.runtime_hours_date || null,
               _vesselId: e.vessel_id,
             };
           });
@@ -3181,6 +3190,8 @@ export default function App() {
           docs: e.docs || [],
           logs: e.logs || [],
           engine_id: e.engine_id || null,
+          runtime_hours: e.runtime_hours == null ? null : Number(e.runtime_hours),
+          runtime_hours_date: e.runtime_hours_date || null,
           _vesselId: e.vessel_id,
         };
       });
@@ -3859,15 +3870,9 @@ export default function App() {
         setVessels(function (vs) {
           return [...vs, normalized];
         });
-        // Race fix (May 4): switchVessel() does its own setEquipment/setTasks
-        // fetch that REPLACES state. Awaiting both helpers before switchVessel
-        // guarantees the fetch sees the new rows. Previously switchVessel
-        // fired BEFORE the helpers (worst variant of the same race).
-        await Promise.all([
-          createDefaultAdminTasks(nv.id, userId),         // admin tasks
-          createDefaultSafetyEquipment(nv.id),             // Safety Equipment + 6 tasks
-        ]);
         switchVessel(nv.id);
+        createDefaultAdminTasks(nv.id, userId); // Pre-populate admin tasks
+        createDefaultSafetyEquipment(nv.id); // Pre-populate Safety Equipment card + 6 tasks
         (async function () {
           var freshEq = await supa('equipment', {
             query: 'vessel_id=eq.' + nv.id + '&category=eq.Engine&limit=1',
@@ -3964,6 +3969,27 @@ export default function App() {
       ]
         .filter(Boolean)
         .join(' | ');
+      // Phase 1 hours-tracking translation (May 5, 2026): map the radio
+      // state into the two DB columns.
+      let runtimeHoursValue = null;
+      let runtimeHoursDateValue = null;
+      let linkedEngineIdValue = null;
+      if (newEquip.hoursTracking === 'meter') {
+        const parsed = parseFloat(newEquip.runtimeHours);
+        if (!isNaN(parsed) && parsed >= 0) {
+          runtimeHoursValue = parsed;
+          runtimeHoursDateValue = today();
+        }
+      } else if (newEquip.hoursTracking === 'parent_engine') {
+        if (newEquip.linkedEngineId) {
+          linkedEngineIdValue = newEquip.linkedEngineId;
+        } else if (engines && engines[0]) {
+          // Auto-link to first engine if user didn't pick one (single-engine
+          // vessels skip the picker entirely; this also catches the edge
+          // case where a twin-engine vessel's user submitted without a pick).
+          linkedEngineIdValue = engines[0].id;
+        }
+      }
       const payload = {
         vessel_id: activeVesselId,
         name: newEquip.name,
@@ -3973,6 +3999,9 @@ export default function App() {
         last_service: today(),
         custom_parts: [],
         docs: initialDocs,
+        runtime_hours: runtimeHoursValue,
+        runtime_hours_date: runtimeHoursDateValue,
+        engine_id: linkedEngineIdValue,
       };
       const created = await supa('equipment', { method: 'POST', body: payload });
       const e = created[0];
@@ -3988,6 +4017,9 @@ export default function App() {
             notes: e.notes || '',
             customParts: safeJsonbArray(e.custom_parts),
             docs: e.docs || [],
+            engine_id: e.engine_id || null,
+            runtime_hours: e.runtime_hours == null ? null : Number(e.runtime_hours),
+            runtime_hours_date: e.runtime_hours_date || null,
             _vesselId: e.vessel_id,
           },
         ];
@@ -4002,6 +4034,9 @@ export default function App() {
         fileObj: null,
         fileName: '',
         fileType: 'Manual',
+        hoursTracking: 'none',
+        runtimeHours: '',
+        linkedEngineId: '',
       });
       setShowAddEquip(false);
     } catch (err) {
@@ -7011,7 +7046,7 @@ export default function App() {
       <VesselSetup
         userId={session.user.id}
         userPlan={userPlan}
-        onComplete={async function (vessel) {
+        onComplete={function (vessel) {
           setNeedsSetup(false);
           const normalized = {
             id: vessel.id,
@@ -7033,15 +7068,8 @@ export default function App() {
           ]);
           setActiveVesselId(vessel.id);
           localStorage.setItem('keeply_active_vessel', vessel.id);
-          // Race fix (May 4): the helpers below INSERT vessel-scoped rows, and
-          // switchVessel() does its own setEquipment/setTasks fetch that
-          // REPLACES state. Awaiting both helpers before switchVessel
-          // guarantees the fetch sees the new rows. Previous fire-and-forget
-          // pattern lost the Safety Equipment card on ~50% of fresh signups.
-          await Promise.all([
-            createDefaultAdminTasks(vessel.id, session.user.id),
-            createDefaultSafetyEquipment(vessel.id),
-          ]);
+          createDefaultAdminTasks(vessel.id, session.user.id);
+          createDefaultSafetyEquipment(vessel.id);
           // Load all equipment and tasks that were just created by AI onboarding
           switchVessel(vessel.id);
           // Highest-leverage moment to ask for push permission — user just
@@ -7063,7 +7091,7 @@ export default function App() {
         onCancel={function () {
           setShowVesselSetup(false);
         }}
-        onComplete={async function (vessel) {
+        onComplete={function (vessel) {
           const normalized = {
             id: vessel.id,
             vesselType: vessel.vessel_type || 'sail',
@@ -7088,12 +7116,8 @@ export default function App() {
           });
           setActiveVesselId(vessel.id);
           localStorage.setItem('keeply_active_vessel', vessel.id);
-          // Race fix (May 4): see first-time signup completion above for the
-          // full rationale. Same pattern, same fix.
-          await Promise.all([
-            createDefaultAdminTasks(vessel.id, session.user.id),
-            createDefaultSafetyEquipment(vessel.id),
-          ]);
+          createDefaultAdminTasks(vessel.id, session.user.id);
+          createDefaultSafetyEquipment(vessel.id);
           // switchVessel reloads equipment/tasks/repairs for the new vessel
           switchVessel(vessel.id);
           maybeShowPushOnboarding();
@@ -20358,6 +20382,108 @@ export default function App() {
                     }}
                     style={s.inp}
                   />
+
+                  {/* Phase 1 hours-tracking radio (May 5, 2026).
+                      Three states; sub-inputs render based on selection.
+                      'parent_engine' option only renders when the vessel
+                      actually has engines on file. */}
+                  <div
+                    style={{
+                      borderTop: '1px solid var(--border)',
+                      paddingTop: 14,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        letterSpacing: '0.5px',
+                        marginBottom: 10,
+                      }}
+                    >
+                      HOURS TRACKING
+                    </div>
+                    <HoursTrackingOption
+                      checked={newEquip.hoursTracking === 'none'}
+                      onSelect={function () {
+                        setNewEquip(function (eq) {
+                          return { ...eq, hoursTracking: 'none' };
+                        });
+                      }}
+                      label="Doesn't track hours"
+                      desc="Most equipment — date-based maintenance only"
+                    />
+                    <HoursTrackingOption
+                      checked={newEquip.hoursTracking === 'meter'}
+                      onSelect={function () {
+                        setNewEquip(function (eq) {
+                          return { ...eq, hoursTracking: 'meter' };
+                        });
+                      }}
+                      label="Has its own hour meter"
+                      desc="Generator, watermaker, dinghy outboard, compressor"
+                    />
+                    {newEquip.hoursTracking === 'meter' && (
+                      <div style={{ marginLeft: 28, marginTop: 6, marginBottom: 10 }}>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          placeholder="Current hours"
+                          value={newEquip.runtimeHours}
+                          onChange={function (e) {
+                            setNewEquip(function (eq) {
+                              return { ...eq, runtimeHours: e.target.value };
+                            });
+                          }}
+                          style={{ ...s.inp, marginBottom: 0 }}
+                        />
+                      </div>
+                    )}
+                    {Array.isArray(engines) && engines.length > 0 && (
+                      <HoursTrackingOption
+                        checked={newEquip.hoursTracking === 'parent_engine'}
+                        onSelect={function () {
+                          setNewEquip(function (eq) {
+                            return {
+                              ...eq,
+                              hoursTracking: 'parent_engine',
+                              linkedEngineId: eq.linkedEngineId || engines[0].id,
+                            };
+                          });
+                        }}
+                        label="Tracked by an engine's hours"
+                        desc="Fuel filters, Racor, raw-water pump, zincs"
+                      />
+                    )}
+                    {newEquip.hoursTracking === 'parent_engine' && engines.length > 1 && (
+                      <div style={{ marginLeft: 28, marginTop: 6, marginBottom: 10 }}>
+                        <select
+                          value={newEquip.linkedEngineId || engines[0].id}
+                          onChange={function (e) {
+                            setNewEquip(function (eq) {
+                              return { ...eq, linkedEngineId: e.target.value };
+                            });
+                          }}
+                          style={s.sel}
+                        >
+                          {engines.map(function (eng) {
+                            const pos = eng.position
+                              ? eng.position.charAt(0).toUpperCase() + eng.position.slice(1) + ' '
+                              : '';
+                            return (
+                              <option key={eng.id} value={eng.id}>
+                                {pos}
+                                {eng.make} {eng.model}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
                   <div
                     style={{
                       borderTop: '1px solid var(--border)',
@@ -29307,5 +29433,83 @@ export default function App() {
         </div>
       )}
     </div>
+  );
+}
+
+
+// HoursTrackingOption — radio row for the Add Equipment modal's hours
+// section. Phase 1 (May 5, 2026). Each row shows a circle indicator,
+// label, and one-line description. Tapping the row (not just the radio)
+// flips the selection. Reused for all three states.
+function HoursTrackingOption({ checked, onSelect, label, desc }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+        width: '100%',
+        padding: '8px 4px',
+        background: 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        textAlign: 'left',
+        fontFamily: 'inherit',
+        marginBottom: 4,
+      }}
+    >
+      <span
+        style={{
+          flexShrink: 0,
+          width: 18,
+          height: 18,
+          borderRadius: 9,
+          border: '2px solid ' + (checked ? 'var(--brand)' : 'var(--border)'),
+          background: 'transparent',
+          marginTop: 2,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        {checked && (
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              background: 'var(--brand)',
+            }}
+          />
+        )}
+      </span>
+      <span style={{ flex: 1 }}>
+        <span
+          style={{
+            display: 'block',
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            lineHeight: 1.3,
+          }}
+        >
+          {label}
+        </span>
+        <span
+          style={{
+            display: 'block',
+            fontSize: 11,
+            color: 'var(--text-muted)',
+            marginTop: 1,
+            lineHeight: 1.4,
+          }}
+        >
+          {desc}
+        </span>
+      </span>
+    </button>
   );
 }
