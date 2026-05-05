@@ -46,10 +46,14 @@ Identify the specific equipment and return a single JSON object with:
 - manufacturer: Brand/manufacturer name (e.g. "Vulcan") or null if unknown
 - model: Specific model name or spec (e.g. "20kg Bruce-Style") or null if unknown
 - category: One of: Engine|Electrical|Electronics|Rigging|Sails|Plumbing|Safety|Navigation|Deck|Bilge|Hull|Dinghy|Generator|Galley|Anchor|Mechanical|Steering|Watermaker
-- tasks: Array of 2-5 specific maintenance tasks for THIS exact equipment
+- hours_tracking: Classify how this equipment's maintenance is triggered:
+  - "meter" — equipment has its own runtime hour meter and accumulates hours independently. Use for: Generator, Watermaker, dive/scuba compressor, refrigeration compressor, aux/dinghy Outboard. Tasks SHOULD include interval_hours when relevant (generator oil 100 hrs, watermaker membrane clean 250 hrs, fuel filter on a generator 250 hrs).
+  - "parent_engine" — equipment is a child of a propulsion engine and is serviced based on that engine's hours. Use for: standalone fuel filter, Racor, raw-water pump, primary water pump, engine zincs, transmission cooler. Tasks MUST include interval_hours.
+  - "none" — date-based maintenance only. Use for: anchor, rigging, sails, hull, deck, navigation electronics, plumbing fixtures, lights, batteries, safety gear, most other categories.
+- tasks: Array of 2-5 specific maintenance tasks for THIS exact equipment. Each task: { task, interval_days, interval_hours (number or null) }. Set interval_hours when hours_tracking is 'meter' or 'parent_engine' AND the task is hour-driven; otherwise null.
 
 Return ONLY valid JSON — no prose, no markdown, no code fences:
-{ "name": "string", "manufacturer": "string|null", "model": "string|null", "category": "string", "tasks": [{ "task": "string", "interval_days": number }] }
+{ "name": "string", "manufacturer": "string|null", "model": "string|null", "category": "string", "hours_tracking": "meter | parent_engine | none", "tasks": [{ "task": "string", "interval_days": number, "interval_hours": number | null }] }
 
 Maintenance intervals: 365=annual, 180=biannual, 90=quarterly, 730=2years. Be specific to the equipment — a Vulcan anchor needs different tasks than a windlass.`;
     } else if (hasStructured) {

@@ -20686,6 +20686,24 @@ export default function App() {
                             ]
                               .filter(Boolean)
                               .join(' ');
+                            // Phase 2 hours-tracking (May 5, 2026):
+                            // resolve hours-tracking columns from the AI's
+                            // single-item classification. AI returns one of
+                            // 'meter' | 'parent_engine' | 'none'; we
+                            // translate the same way as VesselSetup:
+                            //   meter         → runtime_hours = null,
+                            //                   engine_id = null
+                            //                   (user fills in via "Set hours")
+                            //   parent_engine → engine_id auto-linked to
+                            //                   first engine if vessel has
+                            //                   any (user can reassign in
+                            //                   Edit on twin-engine vessels)
+                            //   none          → both null
+                            const aiHoursTracking = equipAiResult.hours_tracking || 'none';
+                            let aiEngineId = null;
+                            if (aiHoursTracking === 'parent_engine' && Array.isArray(engines) && engines[0]) {
+                              aiEngineId = engines[0].id;
+                            }
                             const payload = {
                               vessel_id: activeVesselId,
                               name: equipAiResult.name,
@@ -20695,6 +20713,10 @@ export default function App() {
                               custom_parts: [],
                               docs: [],
                               logs: [],
+                              hours_tracking: aiHoursTracking,
+                              engine_id: aiEngineId,
+                              runtime_hours: null,
+                              runtime_hours_date: null,
                             };
                             const created = await supa('equipment', {
                               method: 'POST',
@@ -20715,6 +20737,10 @@ export default function App() {
                                   docs: eq.docs || [],
                                   logs: [],
                                   photos: [],
+                                  engine_id: eq.engine_id || null,
+                                  runtime_hours: eq.runtime_hours == null ? null : Number(eq.runtime_hours),
+                                  runtime_hours_date: eq.runtime_hours_date || null,
+                                  hours_tracking: eq.hours_tracking || null,
                                   _vesselId: eq.vessel_id,
                                 },
                               ];
@@ -20730,6 +20756,10 @@ export default function App() {
                                   task: t.task,
                                   section: equipAiResult.category,
                                   interval_days: t.interval_days || 365,
+                                  // Phase 2 hours-tracking: interval_hours
+                                  // is meaningful for tasks on equipment
+                                  // that tracks hours. Null otherwise.
+                                  interval_hours: t.interval_hours || null,
                                   priority: 'medium',
                                   last_service: today,
                                   due_date: d.toISOString().split('T')[0],
@@ -20750,6 +20780,7 @@ export default function App() {
                                       task: t.task,
                                       interval: t.interval_days + ' days',
                                       interval_days: t.interval_days,
+                                      interval_hours: t.interval_hours || null,
                                       priority: t.priority,
                                       lastService: t.last_service,
                                       dueDate: t.due_date,
